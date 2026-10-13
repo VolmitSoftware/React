@@ -49,10 +49,10 @@ class HostTelemetryProviderTest {
     HostTelemetryProvider provider = new HostTelemetryProvider(dataPath);
     HostTelemetrySnapshot snapshot = provider.capture();
 
-    Assertions.assertTrue(snapshot.available());
-    Assertions.assertTrue(snapshot.physicalMemoryUsed() > 0L);
-    Assertions.assertTrue(snapshot.heapMax() > 0L);
-    Assertions.assertTrue(snapshot.processUptimeMs() > 0L);
+    Assertions.assertTrue(snapshot.reading(HostMetric.HEAP_MAX).available());
+    Assertions.assertTrue(snapshot.reading(HostMetric.PHYSICAL_USED).value() > 0L);
+    Assertions.assertTrue(snapshot.reading(HostMetric.HEAP_MAX).value() > 0L);
+    Assertions.assertTrue(snapshot.reading(HostMetric.UPTIME).value() > 0L);
     Assertions.assertNotNull(snapshot.environment().disks);
     Assertions.assertNotNull(snapshot.environment().mounts);
     Assertions.assertNotNull(snapshot.environment().network);

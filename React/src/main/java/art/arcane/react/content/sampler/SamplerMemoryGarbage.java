@@ -20,17 +20,17 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedSampler;
-import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.core.controller.TelemetryController;
+import art.arcane.react.core.telemetry.HostMetric;
+import art.arcane.react.core.telemetry.HostReading;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
 public class SamplerMemoryGarbage extends ReactCachedSampler {
   public static final String ID = "memory-garbage";
-  private transient Sampler memoryUsedAfterGC;
-  private transient Sampler memoryUsed;
 
   public SamplerMemoryGarbage() {
-    super(ID, 50);
+    super(ID, 1000);
   }
 
   @Override
@@ -39,15 +39,25 @@ public class SamplerMemoryGarbage extends ReactCachedSampler {
   }
 
   @Override
-  public void start() {
-    super.start();
-    memoryUsedAfterGC = getSampler(SamplerMemoryUsedAfterGC.ID);
-    memoryUsed = getSampler(SamplerMemoryUsed.ID);
+  public String getName() {
+    return "Heap Growth Since GC";
+  }
+
+  @Override
+  public Metadata metadata() {
+    return new Metadata(1_000L, 0L, Quality.ESTIMATED, "bytes");
+  }
+
+  @Override
+  public boolean isSampleAvailable() {
+    return TelemetryController.currentHostSnapshot().reading(HostMetric.GC_AFTER).available();
   }
 
   @Override
   public double onSample() {
-    return Math.max(memoryUsed.sample() - memoryUsedAfterGC.sample(), 0);
+    HostReading after = TelemetryController.currentHostSnapshot().reading(HostMetric.GC_AFTER);
+    Runtime runtime = Runtime.getRuntime();
+    return after.available() ? Math.max(runtime.totalMemory() - runtime.freeMemory() - after.value(), 0D) : 0D;
   }
 
   @Override

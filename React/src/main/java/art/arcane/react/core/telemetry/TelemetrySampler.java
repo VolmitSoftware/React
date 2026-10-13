@@ -52,6 +52,24 @@ public final class TelemetrySampler implements Sampler {
   }
 
   @Override
+  public Metadata metadata() {
+    long interval = switch (options.id()) {
+      case "react-history-disk-bytes", "react-history-wal-bytes" -> 30_000L;
+      default -> 1_000L;
+    };
+    String unit = switch (options.format()) {
+      case BYTES -> "bytes";
+      case BYTES_PER_SECOND -> "bytes/s";
+      case PERCENT -> "%";
+      case COUNT, DECIMAL -> options.suffix().isEmpty() ? "count" : options.suffix();
+    };
+    long window = options.id().startsWith("react-nearby-") || options.id().startsWith("react-heatmap-")
+        || options.id().startsWith("react-map-") || options.id().startsWith("react-entity-scan-") ? 1_000L
+        : options.suffix().equals("/min") ? 60_000L : 0L;
+    return new Metadata(interval, window, Quality.MEASURED, unit);
+  }
+
+  @Override
   public boolean isSampleAvailable() {
     return active && options.availabilitySupplier().getAsBoolean();
   }

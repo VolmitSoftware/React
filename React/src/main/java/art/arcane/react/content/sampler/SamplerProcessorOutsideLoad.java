@@ -22,6 +22,8 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.core.controller.TelemetryController;
 import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
+import art.arcane.react.core.telemetry.HostMetric;
+import art.arcane.react.core.telemetry.HostReading;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
@@ -62,22 +64,29 @@ public class SamplerProcessorOutsideLoad extends ReactCachedSampler {
   }
 
   @Override
+  public Metadata metadata() {
+    return new Metadata(1_000L, 1_000L, Quality.ESTIMATED, "ratio");
+  }
+
+  @Override
   public boolean isSampleAvailable() {
     HostTelemetrySnapshot snapshot = host.get();
-    return Double.isFinite(snapshot.systemCpuLoad()) && Double.isFinite(snapshot.processCpuLoad());
+    return snapshot.reading(HostMetric.CPU_SYSTEM).fresh(HostMetric.CPU_SYSTEM, System.currentTimeMillis()).available() && snapshot.reading(HostMetric.CPU_PROCESS).fresh(HostMetric.CPU_PROCESS, System.currentTimeMillis()).available();
   }
 
   @Override
   public Reading captureReading() {
     HostTelemetrySnapshot snapshot = host.get();
-    return reading(Math.max(0D, normalizeCpuLoad(snapshot.systemCpuLoad()) - normalizeCpuLoad(snapshot.processCpuLoad())), snapshot.capturedAtMs(),
-        snapshot.available() && Double.isFinite(snapshot.systemCpuLoad()) && Double.isFinite(snapshot.processCpuLoad()));
+    HostReading system = snapshot.reading(HostMetric.CPU_SYSTEM).fresh(HostMetric.CPU_SYSTEM, System.currentTimeMillis());
+    HostReading process = snapshot.reading(HostMetric.CPU_PROCESS).fresh(HostMetric.CPU_PROCESS, System.currentTimeMillis());
+    return reading(Math.max(0D, system.value() - process.value()), Math.min(system.sampledAtMs(), process.sampledAtMs()),
+        system.available() && process.available(), system.available() ? process.unavailableReason() : system.unavailableReason());
   }
 
   @Override
   public double onSample() {
     HostTelemetrySnapshot snapshot = host.get();
-    return Math.max(0D, normalizeCpuLoad(snapshot.systemCpuLoad()) - normalizeCpuLoad(snapshot.processCpuLoad()));
+    return Math.max(0D, snapshot.reading(HostMetric.CPU_SYSTEM).value() - snapshot.reading(HostMetric.CPU_PROCESS).value());
   }
 
   @Override

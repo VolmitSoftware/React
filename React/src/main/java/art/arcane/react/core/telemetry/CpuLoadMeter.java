@@ -5,6 +5,7 @@ import oshi.hardware.CentralProcessor;
 final class CpuLoadMeter {
   static final long MIN_INTERVAL_NANOS = 1_000_000_000L;
   private static final int IDLE = CentralProcessor.TickType.IDLE.getIndex();
+  private static final int STEAL = CentralProcessor.TickType.STEAL.getIndex();
   private static final int IOWAIT = CentralProcessor.TickType.IOWAIT.getIndex();
   private static final long[] NO_TICKS = new long[0];
 
@@ -15,6 +16,8 @@ final class CpuLoadMeter {
   private boolean hasBaseline;
   private double systemLoad = Double.NaN;
   private double processLoad = Double.NaN;
+  private double ioWaitLoad = Double.NaN;
+  private double stealLoad = Double.NaN;
 
   CpuLoadMeter(int logicalProcessors) {
     this.logicalProcessors = Math.max(1, logicalProcessors);
@@ -33,6 +36,8 @@ final class CpuLoadMeter {
     }
 
     systemLoad = systemLoadBetween(previousTicks, currentTicks);
+    ioWaitLoad = categoryLoad(previousTicks, currentTicks, IOWAIT);
+    stealLoad = categoryLoad(previousTicks, currentTicks, STEAL);
     processLoad = processLoadBetween(previousProcessCpuNanos, processCpuNanos, elapsedNanos);
     baseline(atNanos, currentTicks, processCpuNanos);
   }
@@ -43,6 +48,28 @@ final class CpuLoadMeter {
 
   double processLoad() {
     return processLoad;
+  }
+
+  double ioWaitLoad() {
+    return ioWaitLoad;
+  }
+
+  double stealLoad() {
+    return stealLoad;
+  }
+
+  private static double categoryLoad(long[] previous, long[] current, int category) {
+    if (previous.length != current.length || current.length <= category) {
+      return Double.NaN;
+    }
+    long total = 0L;
+    for (int index = 0; index < current.length; index++) {
+      if (current[index] < previous[index]) {
+        return Double.NaN;
+      }
+      total += current[index] - previous[index];
+    }
+    return total > 0L ? (current[category] - previous[category]) / (double) total : Double.NaN;
   }
 
   private void baseline(long atNanos, long[] ticks, long processCpuNanos) {
@@ -59,6 +86,9 @@ final class CpuLoadMeter {
 
     long total = 0L;
     for (int i = 0; i < current.length; i++) {
+      if (current[i] < previous[i]) {
+        return Double.NaN;
+      }
       total += current[i] - previous[i];
     }
     long idle = current[IDLE] - previous[IDLE] + current[IOWAIT] - previous[IOWAIT];

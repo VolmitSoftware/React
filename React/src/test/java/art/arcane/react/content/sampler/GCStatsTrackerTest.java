@@ -7,7 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.lang.management.GarbageCollectorMXBean;
+import java.lang.management.MemoryUsage;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 class GCStatsTrackerTest {
   private static final long FIVE_MINUTES_MS = 300_000L;
@@ -70,6 +73,46 @@ class GCStatsTrackerTest {
   void gcTimePercentStartsFromTheJvmLifetimeShare() {
     Assertions.assertEquals(0.5D, GCStatsTracker.sampleGcTimePercent(120_000L, 600L), 1.0E-9D);
     Assertions.assertEquals(1D, GCStatsTracker.sampleGcTimePercent(180_000L, 1_200L), 1.0E-9D);
+  }
+
+  @Test
+  void collectionMemoryUsesOnlyHeapPoolsAndIgnoresOlderNotifications() {
+    GCStatsTracker.recordMemory(100L,
+        Map.of("heap", new MemoryUsage(0L, 80L, 100L, 100L), "native", new MemoryUsage(0L, 50L, 100L, 100L)),
+        Map.of("heap", new MemoryUsage(0L, 30L, 100L, 100L), "native", new MemoryUsage(0L, 40L, 100L, 100L)),
+        Set.of("heap"));
+    GCStatsTracker.Snapshot first = GCStatsTracker.snapshot(100L);
+    Assertions.assertEquals(30L, first.heapAfterBytes());
+    Assertions.assertEquals(50L, first.reclaimedBytes());
+    Assertions.assertEquals(100L, first.memoryAtMs());
+    GCStatsTracker.recordMemory(50L, Map.of("heap", new MemoryUsage(0L, 90L, 100L, 100L)),
+        Map.of("heap", new MemoryUsage(0L, 10L, 100L, 100L)), Set.of("heap"));
+    Assertions.assertEquals(30L, GCStatsTracker.snapshot(100L).heapAfterBytes());
+  }
+
+  @Test
+  void absentPoolDataDoesNotInventAPostCollectionFootprint() {
+    GCStatsTracker.recordMemory(100L, Map.of(), Map.of(), Set.of("heap"));
+    Assertions.assertEquals(-1L, GCStatsTracker.snapshot(100L).heapAfterBytes());
+    Assertions.assertEquals(0L, GCStatsTracker.snapshot(100L).memoryAtMs());
+  }
+
+  @Test
+  void latestPauseSurvivesExpiryWhileRollingMaximumExpires() {
+    GCStatsTracker.acquire();
+    try {
+      long now = System.currentTimeMillis();
+      GCStatsTracker.recordPause(now, 40L);
+      GCStatsTracker.recordPause(now - 1L, 60L);
+      GCStatsTracker.Snapshot recent = GCStatsTracker.snapshot(now);
+      Assertions.assertEquals(40D, recent.latestPauseMs());
+      Assertions.assertEquals(60D, recent.maxPauseMs());
+      GCStatsTracker.Snapshot expired = GCStatsTracker.snapshot(now + FIVE_MINUTES_MS + 1L);
+      Assertions.assertEquals(40D, expired.latestPauseMs());
+      Assertions.assertEquals(0D, expired.maxPauseMs());
+    } finally {
+      GCStatsTracker.release();
+    }
   }
 
   private static GarbageCollectorMXBean bean(String name, long collectionTimeMs) {
