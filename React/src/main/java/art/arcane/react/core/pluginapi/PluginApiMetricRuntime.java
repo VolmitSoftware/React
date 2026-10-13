@@ -19,7 +19,7 @@ public final class PluginApiMetricRuntime {
   private final LongAdder eventCount = new LongAdder();
   private final AtomicLong totalSamples = new AtomicLong();
   private final AtomicLong failedSamples = new AtomicLong();
-  private volatile Sampler.Reading reading = new Sampler.Reading(0D, 0L, false);
+  private volatile Sampler.Reading reading = new Sampler.Reading(0D, 0L, false, Sampler.Metadata.UNKNOWN, "warming-up");
   private volatile double lastValue;
   private volatile long sampledAtMs;
   private volatile long lastAttemptMs;
@@ -58,7 +58,7 @@ public final class PluginApiMetricRuntime {
     }
     lastValue = transformed;
     sampledAtMs = sampledAt;
-    reading = new Sampler.Reading(transformed, sampledAt, true);
+    reading = new Sampler.Reading(transformed, sampledAt, true, metadata(), "");
     availabilityReason = "";
     consecutiveFailures = 0;
     totalSamples.incrementAndGet();
@@ -87,7 +87,19 @@ public final class PluginApiMetricRuntime {
 
   public Sampler.Reading reading() {
     Sampler.Reading captured = reading;
-    return new Sampler.Reading(captured.value(), captured.sampledAtMs(), available(System.currentTimeMillis()));
+    long now = System.currentTimeMillis();
+    return new Sampler.Reading(captured.value(), captured.sampledAtMs(), available(now), metadata(), availabilityReason(now));
+  }
+
+  public Sampler.Metadata metadata() {
+    String unit = definition.unit().isEmpty() ? switch (definition.kind()) {
+      case PERCENT -> "%";
+      case MILLIS -> "ms";
+      case BYTES -> "B";
+      case RATE -> "/s";
+      default -> "count";
+    } : definition.unit();
+    return new Sampler.Metadata(definition.sampleEveryMs(), 0L, Sampler.Quality.UNKNOWN, unit);
   }
 
   public double lastValue() {

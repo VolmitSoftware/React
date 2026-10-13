@@ -58,6 +58,11 @@ public final class PluginApiSampler extends ReactCachedSampler {
   }
 
   @Override
+  public Metadata metadata() {
+    return runtime.metadata();
+  }
+
+  @Override
   public Reading captureReading() {
     return runtime.reading();
   }

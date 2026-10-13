@@ -231,6 +231,7 @@ public class ReactIntegrationService implements IntegrationSnapshotProvider {
       if (sampler == null || SamplerUnknown.ID.equals(samplerId)) {
         return IntegrationMetricSample.unavailable(descriptor, "react-sampler-not-registered", now);
       }
+      sampler.markDemand();
       Sampler.Reading reading = sampler.captureReading();
       if (!reading.available() || !Double.isFinite(reading.value()) || reading.sampledAtMs() <= 0L
           || reading.sampledAtMs() > System.currentTimeMillis()) {

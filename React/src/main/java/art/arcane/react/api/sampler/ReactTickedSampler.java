@@ -32,6 +32,8 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
   private transient final AtomicLong slastFailureLog;
   private transient final long sactiveInterval;
   private transient final Object sequenceLock;
+  private transient final SamplerHealth health = new SamplerHealth();
+  private transient final long windowMs;
   private transient long sampledAtMs;
   private transient volatile boolean ssleeping;
   private transient volatile boolean sregistered;
@@ -40,6 +42,7 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
     super("sampler", id, tickInterval);
     this.ssequence = new RollingSequence(memory);
     this.sactiveInterval = tickInterval;
+    this.windowMs = tickInterval * Math.max(1, memory);
     this.slastSample = new AtomicLong(0);
     this.slastFailureLog = new AtomicLong(0L);
     this.sequenceLock = new Object();
@@ -70,12 +73,20 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
 
   @Override
   public double sample() {
-    slastSample.set(System.currentTimeMillis());
+    markDemand();
+    return capture();
+  }
 
+  @Override
+  public void markDemand() {
+    slastSample.set(System.currentTimeMillis());
     if (ssleeping) {
       setSsleeping(false);
     }
+  }
 
+  @Override
+  public double capture() {
     synchronized (sequenceLock) {
       return ssequence.getAverage();
     }
@@ -83,10 +94,25 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
 
   @Override
   public Reading captureReading() {
-    sample();
     synchronized (sequenceLock) {
-      return new Reading(ssequence.getAverage(), sampledAtMs, sregistered && sampledAtMs > 0L);
+      return reading(ssequence.getAverage(), sampledAtMs, sregistered && sampledAtMs > 0L && !health.failed());
     }
+  }
+
+  @Override
+  public Metadata metadata() {
+    Metadata metadata = SamplerMetadata.forId(getId(), sactiveInterval);
+    return new Metadata(sactiveInterval, windowMs, metadata.quality(), metadata.unit());
+  }
+
+  @Override
+  public Diagnostics diagnostics() {
+    return health.snapshot();
+  }
+
+  @Override
+  public String availabilityReason() {
+    return !sregistered ? "stopped" : health.failed() ? "sampling-failed" : "warming-up";
   }
 
   private void setSsleeping(boolean ssleeping) {
@@ -111,8 +137,11 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
       return;
     }
 
+    long startedNanos = health.begin();
+    boolean success = false;
     try {
       double sample = onSample();
+      success = Double.isFinite(sample);
       synchronized (sequenceLock) {
         ssequence.put(sample);
         sampledAtMs = System.currentTimeMillis();
@@ -124,6 +153,8 @@ public abstract class ReactTickedSampler extends TickedObject implements Sampler
         React.reportError("Sampler " + getId() + " failed: " + e.getClass().getSimpleName()
             + (e.getMessage() == null ? "" : " - " + e.getMessage()), e);
       }
+    } finally {
+      health.finish(startedNanos, success);
     }
   }
 

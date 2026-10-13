@@ -69,7 +69,7 @@ public class SamplerProcessorSystemLoad extends ReactCachedSampler {
   @Override
   public Reading captureReading() {
     HostTelemetrySnapshot snapshot = host.get();
-    return new Reading(normalizeCpuLoad(snapshot.systemCpuLoad()), snapshot.capturedAtMs(),
+    return reading(normalizeCpuLoad(snapshot.systemCpuLoad()), snapshot.capturedAtMs(),
         snapshot.available() && Double.isFinite(snapshot.systemCpuLoad()));
   }
 
