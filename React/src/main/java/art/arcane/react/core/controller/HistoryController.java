@@ -93,7 +93,6 @@ public class HistoryController implements IController {
   private transient volatile long lastObservedMs;
   private transient volatile Throwable storageFailure;
   private transient long lastCaptureNanos;
-  private transient AtomicLong lastPersistedBucket;
   private transient long lastWalForceMs;
   private transient long lastWriterFailureLogMs;
   private transient long lastQueueFailureLogMs;
@@ -111,7 +110,6 @@ public class HistoryController implements IController {
     lastCaptureDurationNanos = new AtomicLong();
     lastWriteDurationNanos = new AtomicLong();
     lastSuccessfulPersistMs = new AtomicLong();
-    lastPersistedBucket = new AtomicLong(Long.MIN_VALUE);
     activeSegmentLock = new Object();
     samplerFailureLogMs = new HashMap<>();
   }
@@ -145,7 +143,6 @@ public class HistoryController implements IController {
     queryEngine = null;
     activeSegment = null;
     lastCaptureNanos = 0L;
-    lastPersistedBucket.set(Long.MIN_VALUE);
     lastWalForceMs = 0L;
     lastWriterFailureLogMs = 0L;
     lastQueueFailureLogMs = 0L;
@@ -217,7 +214,8 @@ public class HistoryController implements IController {
           value.suffix(),
           0L,
           0L,
-          true
+          true,
+          value.metadata()
       ));
     }
     return List.copyOf(descriptors);
@@ -341,7 +339,7 @@ public class HistoryController implements IController {
     }
   }
 
-  private void recover(HistoryWal.WalRecovery recovery) throws IOException {
+  void recover(HistoryWal.WalRecovery recovery) throws IOException {
     long nowMs = System.currentTimeMillis();
     long currentStart = HistoryTier.RAW.segmentStart(nowMs);
     Map<Long, HistorySegment> recovered = new LinkedHashMap<>();
@@ -349,6 +347,7 @@ public class HistoryController implements IController {
     if (store != null && store.contains(HistoryTier.RAW, currentStart)) {
       HistorySegment existing = store.read(HistoryTier.RAW, currentStart, null);
       if (existing != null) {
+        sequence.accumulateAndGet(existing.lastSequence(), Math::max);
         recovered.put(currentStart, existing);
       }
     }
@@ -366,14 +365,21 @@ public class HistoryController implements IController {
         }
         recovered.put(segmentStart, segment);
       }
+      sequence.accumulateAndGet(segment.lastSequence(), Math::max);
+      if (sample.sequence() <= segment.lastSequence()) {
+        continue;
+      }
       int bucketIndex = rawBucketIndex(segmentStart, bucketTimestamp);
       for (HistoryWal.WalValue value : sample.values()) {
         HistoryWal.WalMetric metric = recovery.metrics().get(value.index());
         if (metric == null) {
           continue;
         }
-        segment.series(metric.id(), metric.name(), metric.suffix()).set(bucketIndex, value.value());
+        HistorySeries series = segment.series(metric.id(), metric.name(), metric.suffix());
+        series.metadata(metric.metadata());
+        series.add(bucketIndex, value.value(), value.sampledAtMs());
       }
+      segment.lastSequence(sample.sequence());
     }
     for (Map.Entry<Long, HistorySegment> entry : recovered.entrySet()) {
       if (entry.getKey() == currentStart) {
@@ -391,7 +397,7 @@ public class HistoryController implements IController {
     }
   }
 
-  private void captureIfDue() {
+  void captureIfDue() {
     if (stopping) {
       return;
     }
@@ -409,15 +415,8 @@ public class HistoryController implements IController {
       if (store != null) {
         store.updateLiveDescriptors(snapshot);
       }
-      long bucket = rawBucket(snapshot.capturedAtMs());
-      long previousBucket = lastPersistedBucket.get();
-      if (enabled
-          && storageOperational
-          && bucket != previousBucket
-          && lastPersistedBucket.compareAndSet(previousBucket, bucket)) {
-        if (!enqueue(snapshot)) {
-          lastPersistedBucket.compareAndSet(bucket, previousBucket);
-        }
+      if (enabled && storageOperational) {
+        enqueue(snapshot);
       }
     } catch (Throwable failure) {
       React.reportError("React metric history capture failed", failure);
@@ -445,8 +444,9 @@ public class HistoryController implements IController {
         if (observed) {
           sampler.markDemand();
         }
-        double value = sampler.capture();
-        boolean available = sampler.isSampleAvailable() && Double.isFinite(value);
+        Sampler.Reading reading = sampler.captureReading();
+        double value = reading.value();
+        boolean available = reading.available();
         if (available) {
           availableCount++;
         } else {
@@ -460,7 +460,11 @@ public class HistoryController implements IController {
             suffix == null ? "" : suffix,
             Double.isFinite(value) ? value : 0D,
             display == null ? "" : display,
-            available
+            available,
+            reading.sampledAtMs(),
+            reading.metadata(),
+            reading.unavailableReason(),
+            sampler.diagnostics()
         ));
       } catch (Throwable failure) {
         unavailableCount++;
@@ -472,7 +476,11 @@ public class HistoryController implements IController {
             "",
             0D,
             "",
-            false
+            false,
+            0L,
+            sampler.metadata(),
+            "sampling-failed",
+            sampler.diagnostics()
         ));
       }
     }
@@ -534,8 +542,6 @@ public class HistoryController implements IController {
       lastSuccessfulPersistMs.set(System.currentTimeMillis());
     } catch (Throwable failure) {
       storageFailure = failure;
-      long failedBucket = rawBucket(snapshot.capturedAtMs());
-      lastPersistedBucket.compareAndSet(failedBucket, Long.MIN_VALUE);
       long nowMs = System.currentTimeMillis();
       if (nowMs - lastWriterFailureLogMs >= FAILURE_LOG_INTERVAL_MS) {
         lastWriterFailureLogMs = nowMs;
@@ -546,7 +552,7 @@ public class HistoryController implements IController {
     }
   }
 
-  private void persist(MetricSnapshot snapshot) throws IOException {
+  void persist(MetricSnapshot snapshot) throws IOException {
     HistoryStore store = historyStore;
     HistoryWal localWal = wal;
     if (store == null || localWal == null) {
@@ -571,9 +577,12 @@ public class HistoryController implements IController {
       int bucketIndex = rawBucketIndex(segmentStart, bucketTimestamp);
       for (MetricSnapshotValue value : snapshot.values()) {
         if (value.available() && Double.isFinite(value.value())) {
-          activeSegment.series(value.id(), value.name(), value.suffix()).set(bucketIndex, value.value());
+          HistorySeries series = activeSegment.series(value.id(), value.name(), value.suffix());
+          series.metadata(value.metadata());
+          series.add(bucketIndex, value.value(), value.sampledAtMs());
         }
       }
+      activeSegment.lastSequence(snapshot.sequence());
     }
     if (rotated) {
       store.compactAll(bucketTimestamp);

@@ -49,6 +49,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 public class Ticker {
   static final long TICK_MS = 50L;
@@ -76,6 +77,15 @@ public class Ticker {
   private final Map<String, FoliaViolationState> foliaViolationStates;
   private volatile boolean closed;
   private int activeExecutions;
+  private final LongAdder submitted = new LongAdder();
+  private final LongAdder executed = new LongAdder();
+  private final LongAdder failures = new LongAdder();
+  private final LongAdder skipped = new LongAdder();
+  private final LongAdder rejected = new LongAdder();
+  private final LongAdder backedOff = new LongAdder();
+  private final LongAdder runtimeNanos = new LongAdder();
+  private final LongAdder queueNanos = new LongAdder();
+  private final AtomicLong maxQueueNanos = new AtomicLong();
 
   public Ticker(Executor tickExecutor) {
     this.tickExecutor = tickExecutor;
@@ -132,6 +142,15 @@ public class Ticker {
         Thread.currentThread().interrupt();
       }
     }
+  }
+
+  public Diagnostics diagnostics() {
+    return new Diagnostics(submitted.sum(), executed.sum(), failures.sum(), skipped.sum(), rejected.sum(),
+        backedOff.sum(), runtimeNanos.sum(), queueNanos.sum(), maxQueueNanos.get(), activeExecutionCount());
+  }
+
+  public record Diagnostics(long submitted, long executed, long failures, long skipped, long rejected,
+                            long backedOff, long runtimeNanos, long queueNanos, long maxQueueNanos, int active) {
   }
 
   public double getTasksPerSecond() {
@@ -199,13 +218,20 @@ public class Ticker {
   }
 
   private void dispatch(TickEntry entry) {
-    if (!entry.ticked.shouldTick() || !entry.inFlight.compareAndSet(false, true)) {
+    if (!entry.ticked.shouldTick()) {
+      return;
+    }
+    if (!entry.inFlight.compareAndSet(false, true)) {
+      skipped.increment();
       return;
     }
 
+    entry.submittedNanos = System.nanoTime();
     try {
       tickExecutor.execute(entry);
+      submitted.increment();
     } catch (RejectedExecutionException rejected) {
+      this.rejected.increment();
       entry.inFlight.set(false);
       if (!closed) {
         throw new IllegalStateException("Ticker dispatch rejected for " + describeTicked(entry.ticked), rejected);
@@ -244,16 +270,23 @@ public class Ticker {
   }
 
   private void executeActiveTick(TickEntry entry) {
+    long queueDelay = Math.max(0L, System.nanoTime() - entry.submittedNanos);
+    queueNanos.add(queueDelay);
+    maxQueueNanos.accumulateAndGet(queueDelay, Math::max);
     if (shouldBackoffTick(entry)) {
+      backedOff.increment();
       return;
     }
 
     Ticked ticked = entry.ticked;
+    long start = System.nanoTime();
+    long elapsedNanos = 0L;
+    boolean callbackCompleted = false;
+    executed.increment();
     try {
-      long start = System.nanoTime();
       ticked.tick();
-      long elapsedNanos = System.nanoTime() - start;
-      executionNanos.addAndGet(elapsedNanos);
+      elapsedNanos = System.nanoTime() - start;
+      callbackCompleted = true;
       clearFoliaViolation(entry);
       long elapsedMS = elapsedNanos / 1_000_000L;
       if (elapsedMS > SLOW_TICK_WARN_THRESHOLD_MS) {
@@ -265,6 +298,10 @@ public class Ticker {
         }
       }
     } catch (Throwable exxx) {
+      if (!callbackCompleted) {
+        elapsedNanos = System.nanoTime() - start;
+        failures.increment();
+      }
       if (closed || React.instance == null || !React.instance.isReady()) {
         return;
       }
@@ -288,6 +325,9 @@ public class Ticker {
         logFailure.printStackTrace(System.err);
         exxx.printStackTrace(System.err);
       }
+    } finally {
+      executionNanos.addAndGet(elapsedNanos);
+      runtimeNanos.add(elapsedNanos);
     }
   }
 
@@ -1056,8 +1096,8 @@ public class Ticker {
   }
 
   private final class TickLoop extends Looper {
-    private int tps;
-    private int tv;
+    private long previousExecuted;
+    private long measuredAtNanos = System.nanoTime();
 
     private TickLoop() {
       super("React Ticker");
@@ -1070,13 +1110,15 @@ public class Ticker {
       }
 
       long start = System.nanoTime();
-      tps += tick();
+      tick();
       tickTime.put(drainExecutionMillis());
-      tv++;
-      if (tv >= 20) {
-        tv = 0;
-        tasksPerSecond.put(tps);
-        tps = 0;
+      long nowNanos = System.nanoTime();
+      long elapsedNanos = nowNanos - measuredAtNanos;
+      if (elapsedNanos >= TimeUnit.SECONDS.toNanos(1L)) {
+        long currentExecuted = executed.sum();
+        tasksPerSecond.put((currentExecuted - previousExecuted) * 1_000_000_000D / elapsedNanos);
+        previousExecuted = currentExecuted;
+        measuredAtNanos = nowNanos;
       }
 
       return nextDelayMS((System.nanoTime() - start) / 1_000_000L);
@@ -1088,6 +1130,7 @@ public class Ticker {
     private final String key;
     private final SlowTickStats stats;
     private final AtomicBoolean inFlight;
+    private volatile long submittedNanos;
 
     private TickEntry(Ticked ticked) {
       this.ticked = ticked;

@@ -44,6 +44,10 @@ class ReactCachedSamplerTest {
     }
 
     Assertions.assertEquals(1, sampler.sampleCalls.get());
+    Assertions.assertEquals(1L, sampler.diagnostics().attempts());
+    Assertions.assertEquals(1L, sampler.diagnostics().successes());
+    Assertions.assertEquals(999L, sampler.diagnostics().cacheHits());
+    Assertions.assertTrue(sampler.diagnostics().totalDurationNanos() > 0L);
   }
 
   @Test
@@ -115,6 +119,9 @@ class ReactCachedSamplerTest {
       Assertions.assertFalse(sampler.captureReading().available());
       Assertions.assertEquals(1, queued.size());
       queued.getFirst().run();
+      Assertions.assertEquals(1L, sampler.diagnostics().attempts());
+      Assertions.assertEquals(1L, sampler.diagnostics().successes());
+      Assertions.assertTrue(sampler.diagnostics().totalQueueNanos() > 0L);
 
       Assertions.assertEquals(5.0D, sampler.sample(), 1.0E-9D);
       Assertions.assertTrue(sampler.captureReading().sampledAtMs() > 0L);

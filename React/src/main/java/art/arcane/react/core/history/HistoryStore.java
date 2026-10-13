@@ -249,7 +249,8 @@ public final class HistoryStore {
           value.suffix(),
           timestamp,
           timestamp,
-          true
+          true,
+          value.metadata()
       );
       descriptors.merge(value.id(), replacement, MetricDescriptor::merge);
     }
@@ -267,7 +268,8 @@ public final class HistoryStore {
               prior.suffix(),
               prior.firstTimestampMs(),
               prior.lastTimestampMs(),
-              false
+              false,
+              prior.metadata()
           )
       );
     }
@@ -416,6 +418,7 @@ public final class HistoryStore {
             inputSeries.name(),
             inputSeries.suffix()
         );
+        outputSeries.metadata(inputSeries.metadata());
         for (int sourceIndex = 0; sourceIndex < input.bucketCount(); sourceIndex++) {
           if (inputSeries.count(sourceIndex) <= 0L) {
             continue;
@@ -480,7 +483,8 @@ public final class HistoryStore {
                 series.suffix(),
                 series.firstTimestampMs(),
                 series.lastTimestampMs(),
-                false
+                false,
+                series.metadata()
             );
             rebuilt.merge(series.id(), descriptor, MetricDescriptor::merge);
           }
@@ -514,7 +518,8 @@ public final class HistoryStore {
           series.suffix(),
           segment.startMs() + (segment.tier().intervalMs() * firstIndex),
           segment.startMs() + (segment.tier().intervalMs() * lastIndex),
-          active
+          active,
+          series.metadata()
       );
       descriptors.merge(series.id(), descriptor, MetricDescriptor::merge);
     }

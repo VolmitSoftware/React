@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MetricsSerializerTest {
   @Test
-  void serializesOnlyCurrentScalarMetadata() {
+  void serializesSourceMetadataWithoutReplacingItsTimestamp() {
     SamplerDto value = new MetricsSerializer().toDto(new FakeSampler());
 
     assertEquals("tick-time", value.id);
@@ -18,6 +18,12 @@ public class MetricsSerializerTest {
     assertEquals("ms", value.suffix);
     assertEquals("42.0", value.display);
     assertTrue(value.available);
+    assertEquals(123L, value.sampledAtMs);
+    assertEquals(500L, value.intervalMs);
+    assertEquals(1_000L, value.windowMs);
+    assertEquals(Sampler.Quality.MEASURED, value.quality);
+    assertEquals("ms", value.unit);
+    assertEquals("", value.unavailableReason);
   }
 
   private static final class FakeSampler implements Sampler {
@@ -34,6 +40,11 @@ public class MetricsSerializerTest {
     @Override
     public double sample() {
       return 42D;
+    }
+
+    @Override
+    public Reading captureReading() {
+      return new Reading(42D, 123L, true, new Metadata(500L, 1_000L, Quality.MEASURED, "ms"), "");
     }
 
     @Override

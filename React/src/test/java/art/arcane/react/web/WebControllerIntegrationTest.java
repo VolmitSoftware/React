@@ -126,7 +126,7 @@ public class WebControllerIntegrationTest {
         when(historyController.latest()).thenReturn(MetricSnapshot.empty());
         when(historyController.latestObserved()).thenReturn(MetricSnapshot.empty());
         when(historyController.descriptors()).thenReturn(List.of(
-            new MetricDescriptor("wc-tick-time", "wc-tick-time", "ms", 1_000L, 3_000L, true)
+            new MetricDescriptor("wc-tick-time", "wc-tick-time", "ms", 1_000L, 3_000L, true, Sampler.Metadata.UNKNOWN)
         ));
         when(historyController.effectiveMaxQuerySeries()).thenReturn(16);
         when(historyController.effectiveMaxQueryPoints()).thenReturn(4_096);
@@ -145,7 +145,7 @@ public class WebControllerIntegrationTest {
                     "wc-tick-time",
                     "wc-tick-time",
                     "ms",
-                    List.of(new HistoryPoint(1_000L, 1_000L, 42D, 40D, 43D, 84D, 42D, 2L))
+                    List.of(new HistoryPoint(1_000L, 1_000L, 42D, 40D, 43D, 84D, 42D, 2L, 0L, 0L))
                 ))
             ));
 
@@ -215,7 +215,7 @@ public class WebControllerIntegrationTest {
         assertEquals(1_000L, historyData.get("actualResolutionMs").getAsLong());
         JsonObject historySeries = historyData.getAsJsonArray("series").get(0).getAsJsonObject();
         assertEquals("wc-tick-time", historySeries.get("id").getAsString());
-        assertEquals(6, historySeries.getAsJsonArray("points").get(0).getAsJsonArray().size());
+        assertEquals(8, historySeries.getAsJsonArray("points").get(0).getAsJsonArray().size());
 
         HttpRequest catalogRequest = HttpRequest.newBuilder()
             .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/metrics/catalog"))

@@ -210,10 +210,13 @@ public final class HistoryQueryEngine {
     private double sum;
     private double last;
     private long count;
+    private long firstSampledAtMs;
+    private long lastSampledAtMs;
 
     void add(HistoryPoint point) {
       if (count == 0L) {
         first = point.first();
+        firstSampledAtMs = point.firstSampledAtMs();
         minimum = point.minimum();
         maximum = point.maximum();
       } else {
@@ -222,11 +225,12 @@ public final class HistoryQueryEngine {
       }
       sum += point.sum();
       last = point.last();
+      lastSampledAtMs = point.lastSampledAtMs();
       count += point.count();
     }
 
     HistoryPoint point(long timestampMs, long resolutionMs) {
-      return new HistoryPoint(timestampMs, resolutionMs, first, minimum, maximum, sum, last, count);
+      return new HistoryPoint(timestampMs, resolutionMs, first, minimum, maximum, sum, last, count, firstSampledAtMs, lastSampledAtMs);
     }
   }
 }

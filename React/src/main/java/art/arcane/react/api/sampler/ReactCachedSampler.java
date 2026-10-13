@@ -41,6 +41,7 @@ public abstract class ReactCachedSampler implements Sampler {
   private transient volatile boolean mainRefreshReady;
   private transient volatile boolean runtimeStarted;
   private transient volatile SampleController sampleController;
+  private transient final SamplerHealth health = new SamplerHealth();
 
   public ReactCachedSampler(String id, long sampleDelay) {
     this.sid = id;
@@ -58,7 +59,7 @@ public abstract class ReactCachedSampler implements Sampler {
   protected double sampleOnMainThread(Supplier<Double> compute) {
     mainRefreshUsed = true;
     if (J.isPrimaryThread()) {
-      Double value = compute.get();
+      Double value = computeRefresh(compute);
       if (value != null) {
         publishMainRefresh(value);
       }
@@ -67,11 +68,13 @@ public abstract class ReactCachedSampler implements Sampler {
 
     if (mainRefreshInFlight.compareAndSet(false, true)) {
       boolean dispatched = false;
+      long submittedNanos = System.nanoTime();
 
       try {
         J.s(() -> {
           try {
-            Double value = compute.get();
+            health.queued(submittedNanos);
+            Double value = computeRefresh(compute);
             if (value != null) {
               publishMainRefresh(value);
             }
@@ -80,14 +83,52 @@ public abstract class ReactCachedSampler implements Sampler {
           }
         });
         dispatched = true;
+      } catch (RuntimeException | Error failure) {
+        health.finish(health.begin(), false);
+        throw failure;
       } finally {
         if (!dispatched) {
           mainRefreshInFlight.set(false);
         }
       }
+    } else {
+      health.skipped();
     }
 
     return mainRefreshValue;
+  }
+
+  private Double computeRefresh(Supplier<Double> compute) {
+    long startedNanos = health.begin();
+    boolean success = false;
+    try {
+      Double value = compute.get();
+      success = value != null && Double.isFinite(value);
+      return value;
+    } finally {
+      health.finish(startedNanos, success);
+    }
+  }
+
+  @Override
+  public Metadata metadata() {
+    return SamplerMetadata.forId(getId(), sampleDelay);
+  }
+
+  @Override
+  public Diagnostics diagnostics() {
+    return health.snapshot();
+  }
+
+  @Override
+  public String availabilityReason() {
+    if (!runtimeStarted) {
+      return "stopped";
+    }
+    if (health.failed()) {
+      return "sampling-failed";
+    }
+    return sampledAtMs <= 0L ? "warming-up" : "source-unavailable";
   }
 
   @Override
@@ -123,22 +164,43 @@ public abstract class ReactCachedSampler implements Sampler {
   @Override
   public Reading captureReading() {
     synchronized (sampleLock) {
-      double value = sample();
-      return new Reading(value, sampledAtMs, runtimeStarted && sampledAtMs > 0L && isSampleAvailable());
+      double value = read();
+      return reading(value, readingTimestampMs(), runtimeStarted && sampledAtMs > 0L && !health.failed() && isSampleAvailable());
     }
   }
 
+  protected long readingTimestampMs() {
+    return sampledAtMs;
+  }
+
   private double read() {
-    if (!canSampleNow() || !slatch.couldFlip()) {
+    if (!canSampleNow()) {
+      return slast.get();
+    }
+    if (!slatch.couldFlip()) {
+      health.cacheHit();
       return slast.get();
     }
 
     synchronized (sampleLock) {
       if (slatch.flip()) {
-        slast.set(onSample());
-        if (!mainRefreshUsed) {
-          sampledAtMs = System.currentTimeMillis();
+        long startedNanos = System.nanoTime();
+        boolean success = false;
+        try {
+          double value = onSample();
+          success = Double.isFinite(value);
+          slast.set(value);
+          if (!mainRefreshUsed && success) {
+            sampledAtMs = System.currentTimeMillis();
+          }
+        } finally {
+          if (!mainRefreshUsed) {
+            health.begin();
+            health.finish(startedNanos, success);
+          }
         }
+      } else {
+        health.cacheHit();
       }
       return slast.get();
     }
@@ -146,7 +208,7 @@ public abstract class ReactCachedSampler implements Sampler {
 
   @Override
   public boolean isSampleAvailable() {
-    return !mainRefreshUsed || mainRefreshReady;
+    return !health.failed() && (!mainRefreshUsed || mainRefreshReady);
   }
 
   public String getId() {
