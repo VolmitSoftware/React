@@ -22,6 +22,8 @@ package art.arcane.react.api.rendering;
 import art.arcane.react.React;
 import art.arcane.react.content.feature.FeatureUnknown;
 import art.arcane.react.core.controller.MapController;
+import art.arcane.react.core.telemetry.ObservationMetrics;
+import art.arcane.react.core.telemetry.ObservationMetrics.Counter;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.MapMessages;
 import art.arcane.volmlib.util.localization.MessageArgument;
@@ -112,15 +114,18 @@ public class MapRendererPipe extends MapRenderer {
       long now = System.currentTimeMillis();
       long nextDrawAt = nextDrawAtMs.get();
       if (!reassigned && now < nextDrawAt) {
+        ObservationMetrics.increment(Counter.MAP_THROTTLE_SKIPS);
         return;
       }
 
       long interval = controller == null ? 0L : controller.redrawIntervalMsFor(map);
       if (!nextDrawAtMs.compareAndSet(nextDrawAt, now + interval) && !reassigned) {
+        ObservationMetrics.increment(Counter.MAP_BUSY_SKIPS);
         return;
       }
 
       if (!composeLock.tryLock()) {
+        ObservationMetrics.increment(Counter.MAP_BUSY_SKIPS);
         return;
       }
 
@@ -177,6 +182,7 @@ public class MapRendererPipe extends MapRenderer {
             .fullFlush(fullFlush)
             .build();
         ReactRenderContext.push(active);
+        long renderStarted = System.nanoTime();
         try {
           if (letterbox != null) {
             fillLetterbox(active, letterbox);
@@ -190,13 +196,21 @@ public class MapRendererPipe extends MapRenderer {
             }
           }
         } finally {
-          active.flush();
-          ReactRenderContext.pop();
+          ObservationMetrics.increment(Counter.MAP_RENDERS);
+          ObservationMetrics.add(Counter.MAP_RENDER_NANOS, System.nanoTime() - renderStarted);
+          long flushStarted = System.nanoTime();
+          try {
+            active.flush();
+          } finally {
+            ObservationMetrics.add(Counter.MAP_FLUSH_NANOS, System.nanoTime() - flushStarted);
+            ReactRenderContext.pop();
+          }
         }
       } finally {
         composeLock.unlock();
       }
     } catch (Throwable e) {
+      ObservationMetrics.increment(Counter.MAP_FAILURES);
       React.verbose(() -> "Map renderer " + rendererId + " failed for player " + player.getName(), e);
     }
   }

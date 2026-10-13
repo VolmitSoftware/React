@@ -81,6 +81,7 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase {
 
   @Override
   public void onDeactivate() {
+    super.onDeactivate();
     replayHeat.clear();
   }
 

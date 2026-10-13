@@ -1,6 +1,8 @@
 package art.arcane.react.util.project.world;
 
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.core.telemetry.ObservationMetrics;
+import art.arcane.react.core.telemetry.ObservationMetrics.Counter;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
@@ -37,13 +39,22 @@ public final class NearbyEntitySampler {
         || neighborhood.bounds == null
         || !neighborhood.bounds.contains(bounds)
         || (accept != null && !sameBounds)) {
-      neighborhood.entities = player.getNearbyEntities(
-          request.horizontalRadius(), request.verticalRadius(), request.horizontalRadius()
-      );
+      long queryStarted = System.nanoTime();
+      try {
+        neighborhood.entities = player.getNearbyEntities(
+            request.horizontalRadius(), request.verticalRadius(), request.horizontalRadius()
+        );
+        ObservationMetrics.add(Counter.NEARBY_CANDIDATES, neighborhood.entities.size());
+      } finally {
+        ObservationMetrics.increment(Counter.NEARBY_QUERIES);
+        ObservationMetrics.add(Counter.NEARBY_QUERY_NANOS, System.nanoTime() - queryStarted);
+      }
       neighborhood.bounds = bounds;
       neighborhood.worldId = worldId;
       neighborhood.tick = tick;
       sameBounds = true;
+    } else {
+      ObservationMetrics.increment(Counter.NEARBY_CACHE_HITS);
     }
     List<Entity> entities = neighborhood.entities;
     if (entities.isEmpty()) {
@@ -65,6 +76,7 @@ public final class NearbyEntitySampler {
       }
     }
     neighborhood.cursors.put(request.consumer(), (start + inspected) % entities.size());
+    ObservationMetrics.add(Counter.NEARBY_SAMPLES, samples.size());
     return samples;
   }
 
