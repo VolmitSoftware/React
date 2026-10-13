@@ -7,7 +7,7 @@ import org.bukkit.event.Listener;
 
 import java.util.concurrent.atomic.LongAdder;
 
-public final class PathfindingDecisions implements Listener {
+public final class PaperPathfindingDecisions implements Listener {
   private final LongAdder decisions = new LongAdder();
   private final LongAdder cancelled = new LongAdder();
 

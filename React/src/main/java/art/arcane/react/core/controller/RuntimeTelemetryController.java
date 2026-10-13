@@ -3,7 +3,7 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.core.telemetry.runtime.FoliaRegionTps;
 import art.arcane.react.core.telemetry.runtime.JfrTelemetry;
-import art.arcane.react.core.telemetry.runtime.PathfindingDecisions;
+import art.arcane.react.core.telemetry.runtime.PaperPathfindingDecisions;
 import art.arcane.react.core.telemetry.runtime.RegionalHealth;
 import art.arcane.react.core.telemetry.runtime.RuntimeMetric;
 import art.arcane.react.core.telemetry.runtime.RuntimeMetricSampler;
@@ -48,8 +48,8 @@ public final class RuntimeTelemetryController implements IController {
   private transient volatile JfrTelemetry jfr;
   private transient Options appliedOptions;
   private transient long appliedRevision = -1L;
-  private transient PathfindingDecisions pathfinding;
-  private transient volatile PathfindingDecisions.Snapshot pathfindingSnapshot = PathfindingDecisions.Snapshot.EMPTY;
+  private transient PaperPathfindingDecisions pathfinding;
+  private transient volatile PaperPathfindingDecisions.Snapshot pathfindingSnapshot = PaperPathfindingDecisions.Snapshot.EMPTY;
   private transient long pathfindingAtNanos;
 
   @Override
@@ -90,7 +90,7 @@ public final class RuntimeTelemetryController implements IController {
     }
     try {
       Class.forName("com.destroystokyo.paper.event.entity.EntityPathfindEvent", false, getClass().getClassLoader());
-      pathfinding = new PathfindingDecisions();
+      pathfinding = new PaperPathfindingDecisions();
       React.instance.registerListener(pathfinding);
       pathfindingAtNanos = System.nanoTime();
     } catch (ClassNotFoundException missing) {
@@ -114,7 +114,7 @@ public final class RuntimeTelemetryController implements IController {
         React.instance.unregisterListener(pathfinding);
         pathfinding = null;
       }
-      pathfindingSnapshot = PathfindingDecisions.Snapshot.EMPTY;
+      pathfindingSnapshot = PaperPathfindingDecisions.Snapshot.EMPTY;
       regionalSnapshot = RegionalHealth.Snapshot.EMPTY;
       jfrSnapshot = JfrTelemetry.Snapshot.EMPTY;
       SampleController controller = React.controller(SampleController.class);
@@ -161,7 +161,7 @@ public final class RuntimeTelemetryController implements IController {
     }
     long nowMs = System.currentTimeMillis();
     if (id.startsWith("pathfinding-")) {
-      PathfindingDecisions.Snapshot snapshot = pathfindingSnapshot;
+      PaperPathfindingDecisions.Snapshot snapshot = pathfindingSnapshot;
       boolean available = snapshot.sampledAtMs() > 0L && nowMs >= snapshot.sampledAtMs() && nowMs - snapshot.sampledAtMs() <= MAX_SNAPSHOT_AGE_MS;
       double value = id.equals("pathfinding-decisions-rate") ? snapshot.decisionsPerSecond() : snapshot.cancelledPerSecond();
       return new RuntimeMetric(value, snapshot.sampledAtMs(), available, available ? "" : "source-unavailable");

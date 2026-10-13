@@ -5,16 +5,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-class PathfindingDecisionsTest {
+class PaperPathfindingDecisionsTest {
   @Test
   void separatesCancelledDecisionsAndResetsEachElapsedWindow() {
-    PathfindingDecisions tracker = new PathfindingDecisions();
+    PaperPathfindingDecisions tracker = new PaperPathfindingDecisions();
     EntityPathfindEvent accepted = Mockito.mock(EntityPathfindEvent.class);
     EntityPathfindEvent cancelled = Mockito.mock(EntityPathfindEvent.class);
     Mockito.when(cancelled.isCancelled()).thenReturn(true);
     tracker.onPathfind(accepted);
     tracker.onPathfind(cancelled);
-    PathfindingDecisions.Snapshot snapshot = tracker.snapshot(2_000L, 2_000_000_000L);
+    PaperPathfindingDecisions.Snapshot snapshot = tracker.snapshot(2_000L, 2_000_000_000L);
     Assertions.assertEquals(1D, snapshot.decisionsPerSecond());
     Assertions.assertEquals(0.5D, snapshot.cancelledPerSecond());
     Assertions.assertEquals(0D, tracker.snapshot(3_000L, 1_000_000_000L).decisionsPerSecond());
