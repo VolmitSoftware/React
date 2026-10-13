@@ -30,6 +30,8 @@ import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.value.MaterialValue;
 import art.arcane.react.util.project.world.EntityKiller;
 import art.arcane.react.util.project.world.NearbyEntitySampler;
+import art.arcane.react.core.telemetry.ObservationMetrics;
+import art.arcane.react.core.telemetry.ObservationMetrics.Counter;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import art.arcane.volmlib.util.scheduling.Looper;
@@ -75,6 +77,7 @@ public class EntityController implements IController, Listener {
   private static final long FOLIA_PLAYER_SNAPSHOT_INTERVAL_MS = 1000L;
   private static final int INITIAL_RECONCILE_CHUNKS_PER_TICK = 1;
   private static final int INITIAL_RECONCILE_ENTITIES_PER_TICK = 256;
+  private static final NearbyEntitySampler.Request ENTITY_SAMPLE = new NearbyEntitySampler.Request("entity", 48D, 32D, 1);
 
   private int perWorldUpdatesPerTick = 15;
   private transient final NearbyEntitySampler nearbyEntitySampler = new NearbyEntitySampler();
@@ -376,6 +379,7 @@ public class EntityController implements IController, Listener {
     }
 
     if (!entityScanQueued.compareAndSet(false, true)) {
+      ObservationMetrics.increment(Counter.ENTITY_SCAN_SKIPS);
       return;
     }
 
@@ -416,6 +420,7 @@ public class EntityController implements IController, Listener {
     int samples = Math.min(players.length, Math.max(1, perWorldUpdatesPerTick));
     FoliaScanFlight flight = new FoliaScanFlight(generation);
     if (!foliaScanFlight.compareAndSet(null, flight)) {
+      ObservationMetrics.increment(Counter.ENTITY_SCAN_SKIPS);
       return;
     }
     if (generation != lifecycleGeneration.get()) {
@@ -477,9 +482,8 @@ public class EntityController implements IController, Listener {
         return;
       }
 
-      List<Entity> nearby = nearbyEntitySampler.sample(
-          player, new NearbyEntitySampler.Request("entity", 48D, 32D, 1)
-      );
+      List<Entity> nearby = nearbyEntitySampler.sample(player, ENTITY_SAMPLE);
+      ObservationMetrics.increment(Counter.ENTITY_SCAN_COMPLETED);
       if (nearby == null || nearby.isEmpty()) {
         return;
       }
