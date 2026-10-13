@@ -62,6 +62,7 @@ import art.arcane.react.api.web.resource.IncidentResource;
 import art.arcane.react.api.web.resource.IntegrationResource;
 import art.arcane.react.api.web.resource.LogsResource;
 import art.arcane.react.api.web.resource.MetricsResource;
+import art.arcane.react.api.web.resource.RuntimeMetricsResource;
 import art.arcane.react.api.web.resource.PlayerResource;
 import art.arcane.react.api.web.resource.PluginApiPackResource;
 import art.arcane.react.api.web.resource.WhoamiResource;
@@ -687,6 +688,7 @@ public class WebController implements IController {
                     javalin.before("/api/v1/metrics", auth);
                     javalin.before("/api/v1/metrics/catalog", auth);
                     javalin.before("/api/v1/metrics/history", auth);
+                    javalin.before("/api/v1/metrics/runtime", auth);
                     javalin.before("/api/v1/features", auth);
                     javalin.before("/api/v1/tweaks", auth);
                 }
@@ -700,6 +702,8 @@ public class WebController implements IController {
                 javalin.get("/api/v1/metrics", metrics::snapshot);
                 javalin.get("/api/v1/metrics/catalog", metrics::historyCatalog);
                 javalin.get("/api/v1/metrics/history", metrics::history);
+                javalin.get("/api/v1/metrics/runtime", new RuntimeMetricsResource(
+                    () -> React.controller(RuntimeTelemetryController.class))::get);
                 javalin.get("/api/v1/features", featureResource::list);
                 javalin.get("/api/v1/features/{id}", featureResource::get);
                 javalin.put("/api/v1/features/{id}", featureResource::toggle);
