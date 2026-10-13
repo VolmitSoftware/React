@@ -81,6 +81,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   private final transient Map<ScanKey, ScanSnapshot> cachedScans = new LinkedHashMap<>(16, 0.75F, true);
   private transient int cachedCells;
   private transient long cacheGeneration;
+  private transient long scanSequence;
 
   protected FeatureChunkHeatmapBase(String id) {
     super(id);
@@ -295,6 +296,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     ScanKey key = new ScanKey(worldId, layout.minChunkX(), layout.maxChunkX(),
         layout.minChunkZ(), layout.maxChunkZ(), minSignificantScore);
     long generation;
+    ScanStamp stamp;
     synchronized (cachedScans) {
       generation = cacheGeneration;
       ScanSnapshot current = cachedScans.get(key);
@@ -302,10 +304,11 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
         ObservationMetrics.increment(Counter.HEATMAP_CACHE_HITS);
         return current;
       }
+      stamp = new ScanStamp(now, ++scanSequence);
     }
     long started = System.nanoTime();
     try {
-      ScanSnapshot refreshed = scanUncached(worldId, layout, now);
+      ScanSnapshot refreshed = scanUncached(worldId, layout, stamp);
       cacheScan(key, refreshed, now, generation);
       return refreshed;
     } finally {
@@ -314,7 +317,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     }
   }
 
-  private ScanSnapshot scanUncached(UUID worldId, ChunkHeatmapLayout layout, long now) {
+  private ScanSnapshot scanUncached(UUID worldId, ChunkHeatmapLayout layout, ScanStamp stamp) {
     double[] cellScores = new double[layout.columns() * layout.rows()];
     Arrays.fill(cellScores, Double.NaN);
     HashMap<LoadedChunkCoordinate, Double> positiveScores = new HashMap<>();
@@ -349,7 +352,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
         layout.minChunkZ(),
         layout.maxChunkZ(),
         minSignificantScore,
-        now,
+        stamp,
         cellScores,
         positiveScores.isEmpty() ? Map.of() : Map.copyOf(positiveScores),
         scale,
@@ -366,14 +369,18 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
       if (generation != cacheGeneration) {
         return;
       }
-      ScanSnapshot replaced = cachedScans.remove(key);
+      ScanSnapshot replaced = cachedScans.get(key);
+      if (replaced != null && replaced.stamp.sequence() > refreshed.stamp.sequence()) {
+        return;
+      }
       if (replaced != null) {
+        cachedScans.remove(key);
         cachedCells -= replaced.cellScores.length;
       }
       Iterator<ScanSnapshot> entries = cachedScans.values().iterator();
       while (entries.hasNext()) {
         ScanSnapshot candidate = entries.next();
-        if (now < candidate.stampMs || now - candidate.stampMs >= SCAN_CACHE_TTL_MS) {
+        if (now - candidate.stamp.sampledAtMs() >= SCAN_CACHE_TTL_MS) {
           cachedCells -= candidate.cellScores.length;
           entries.remove();
         }
@@ -664,6 +671,9 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   private record ScanKey(UUID worldId, int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ, double threshold) {
   }
 
+  private record ScanStamp(long sampledAtMs, long sequence) {
+  }
+
   static final class ScanSnapshot {
     private final UUID worldId;
     private final int minChunkX;
@@ -671,7 +681,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     private final int minChunkZ;
     private final int maxChunkZ;
     private final double significantThreshold;
-    private final long stampMs;
+    private final ScanStamp stamp;
     private final double[] cellScores;
     private final Map<LoadedChunkCoordinate, Double> positiveScores;
     private final ChunkHeatmapScale scale;
@@ -684,7 +694,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
         int minChunkZ,
         int maxChunkZ,
         double significantThreshold,
-        long stampMs,
+        ScanStamp stamp,
         double[] cellScores,
         Map<LoadedChunkCoordinate, Double> positiveScores,
         ChunkHeatmapScale scale,
@@ -696,7 +706,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
       this.minChunkZ = minChunkZ;
       this.maxChunkZ = maxChunkZ;
       this.significantThreshold = significantThreshold;
-      this.stampMs = stampMs;
+      this.stamp = stamp;
       this.cellScores = cellScores;
       this.positiveScores = positiveScores;
       this.scale = scale;
@@ -715,8 +725,8 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
           && minChunkZ == layout.minChunkZ()
           && maxChunkZ == layout.maxChunkZ()
           && Double.compare(significantThreshold, requestedThreshold) == 0
-          && now - stampMs >= 0L
-          && now - stampMs < SCAN_CACHE_TTL_MS;
+          && now - stamp.sampledAtMs() >= 0L
+          && now - stamp.sampledAtMs() < SCAN_CACHE_TTL_MS;
     }
   }
 }

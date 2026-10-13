@@ -9,6 +9,8 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 class FeatureChunkHeatmapCacheTest {
   @Test
@@ -38,7 +40,52 @@ class FeatureChunkHeatmapCacheTest {
       feature.onDeactivate();
       FeatureChunkHeatmapBase.ScanSnapshot replacement = feature.scan(world, layout, 1_002L);
       Assertions.assertNotSame(first, replacement);
-      Assertions.assertNotSame(replacement, feature.scan(world, layout, 999L));
+      FeatureChunkHeatmapBase.ScanSnapshot afterClockChange = feature.scan(world, layout, 999L);
+      Assertions.assertNotSame(replacement, afterClockChange);
+      Assertions.assertSame(afterClockChange, feature.scan(world, layout, 1_000L));
+    }
+  }
+
+  @Test
+  void olderScanCompletionKeepsNewerIndependentViewport() {
+    FeatureChunkSamplerMap feature = new FeatureChunkSamplerMap();
+    UUID world = UUID.randomUUID();
+    ChunkHeatmapLayout first = layout(0, 0, 128);
+    ChunkHeatmapLayout second = layout(64, 0, 128);
+    AtomicBoolean pending = new AtomicBoolean(true);
+    AtomicReference<FeatureChunkHeatmapBase.ScanSnapshot> newer = new AtomicReference<>();
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      react.when(() -> React.controller(ObserverController.class)).thenAnswer(invocation -> {
+        if (pending.getAndSet(false)) {
+          newer.set(feature.scan(world, second, 1_010L));
+        }
+        return null;
+      });
+      FeatureChunkHeatmapBase.ScanSnapshot older = feature.scan(world, first, 1_000L);
+      Assertions.assertSame(newer.get(), feature.scan(world, second, 1_100L));
+      Assertions.assertSame(older, feature.scan(world, first, 1_100L));
+      react.verify(() -> React.controller(ObserverController.class), Mockito.times(2));
+    }
+  }
+
+  @Test
+  void olderScanCompletionCannotReplaceNewerSameViewportAfterClockChange() {
+    FeatureChunkSamplerMap feature = new FeatureChunkSamplerMap();
+    UUID world = UUID.randomUUID();
+    ChunkHeatmapLayout layout = layout(0, 0, 128);
+    AtomicBoolean pending = new AtomicBoolean(true);
+    AtomicReference<FeatureChunkHeatmapBase.ScanSnapshot> newer = new AtomicReference<>();
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      react.when(() -> React.controller(ObserverController.class)).thenAnswer(invocation -> {
+        if (pending.getAndSet(false)) {
+          newer.set(feature.scan(world, layout, 999L));
+        }
+        return null;
+      });
+      FeatureChunkHeatmapBase.ScanSnapshot older = feature.scan(world, layout, 1_000L);
+      Assertions.assertNotSame(older, newer.get());
+      Assertions.assertSame(newer.get(), feature.scan(world, layout, 1_100L));
+      react.verify(() -> React.controller(ObserverController.class), Mockito.times(2));
     }
   }
 
