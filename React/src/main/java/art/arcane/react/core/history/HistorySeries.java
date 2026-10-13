@@ -1,5 +1,7 @@
 package art.arcane.react.core.history;
 
+import art.arcane.react.api.sampler.Sampler;
+
 import java.util.Arrays;
 
 public final class HistorySeries {
@@ -12,6 +14,9 @@ public final class HistorySeries {
   private final double[] sum;
   private final double[] last;
   private final long[] count;
+  private final long[] firstSampledAt;
+  private final long[] lastSampledAt;
+  private Sampler.Metadata metadata = Sampler.Metadata.UNKNOWN;
 
   public HistorySeries(String id, String name, String suffix, int bucketCount) {
     this.id = id;
@@ -23,6 +28,8 @@ public final class HistorySeries {
     this.sum = new double[bucketCount];
     this.last = new double[bucketCount];
     this.count = new long[bucketCount];
+    this.firstSampledAt = new long[bucketCount];
+    this.lastSampledAt = new long[bucketCount];
   }
 
   public String id() {
@@ -65,12 +72,13 @@ public final class HistorySeries {
     return count[index];
   }
 
-  public void add(int index, double value) {
+  public void add(int index, double value, long sampledAtMs) {
     if (!Double.isFinite(value)) {
       return;
     }
     if (count[index] == 0L) {
       first[index] = value;
+      firstSampledAt[index] = sampledAtMs;
       minimum[index] = value;
       maximum[index] = value;
     } else {
@@ -79,6 +87,7 @@ public final class HistorySeries {
     }
     sum[index] += value;
     last[index] = value;
+    lastSampledAt[index] = sampledAtMs;
     count[index]++;
   }
 
@@ -92,6 +101,8 @@ public final class HistorySeries {
     sum[index] = value;
     last[index] = value;
     count[index] = 1L;
+    firstSampledAt[index] = 0L;
+    lastSampledAt[index] = 0L;
   }
 
   public void add(int index, HistoryPoint point) {
@@ -100,6 +111,7 @@ public final class HistorySeries {
     }
     if (count[index] == 0L) {
       first[index] = point.first();
+      firstSampledAt[index] = point.firstSampledAtMs();
       minimum[index] = point.minimum();
       maximum[index] = point.maximum();
     } else {
@@ -108,6 +120,7 @@ public final class HistorySeries {
     }
     sum[index] += point.sum();
     last[index] = point.last();
+    lastSampledAt[index] = point.lastSampledAtMs();
     count[index] += point.count();
   }
 
@@ -120,7 +133,9 @@ public final class HistorySeries {
         maximum[index],
         sum[index],
         last[index],
-        count[index]
+        count[index],
+        firstSampledAt[index],
+        lastSampledAt[index]
     );
   }
 
@@ -131,6 +146,22 @@ public final class HistorySeries {
     if (suffix != null) {
       this.suffix = suffix;
     }
+  }
+
+  public Sampler.Metadata metadata() {
+    return metadata;
+  }
+
+  public void metadata(Sampler.Metadata metadata) {
+    this.metadata = metadata == null ? Sampler.Metadata.UNKNOWN : metadata;
+  }
+
+  long[] firstSampledAtValues() {
+    return firstSampledAt;
+  }
+
+  long[] lastSampledAtValues() {
+    return lastSampledAt;
   }
 
   public long[] counts() {

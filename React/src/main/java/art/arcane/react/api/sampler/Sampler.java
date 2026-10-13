@@ -105,8 +105,8 @@ public interface Sampler extends Registered, ReactRenderer {
 
   record Diagnostics(long attempts, long successes, long failures, long cacheHits, long inFlightSkips,
                      long lastDurationNanos, long maxDurationNanos, long lastQueueNanos, long maxQueueNanos,
-                     long lastSuccessAtMs) {
-    public static final Diagnostics EMPTY = new Diagnostics(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
+                     long lastSuccessAtMs, long totalDurationNanos, long totalQueueNanos) {
+    public static final Diagnostics EMPTY = new Diagnostics(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
   }
 
   default double capture() {

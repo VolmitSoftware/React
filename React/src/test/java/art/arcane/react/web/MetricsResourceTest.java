@@ -48,7 +48,7 @@ public class MetricsResourceTest {
     when(history.latestObserved()).thenReturn(MetricSnapshot.of(
         17L,
         1_000L,
-        List.of(new MetricSnapshotValue("tick-time", "Tick Time", "ms", 42D, "42 ms", true))
+        List.of(new MetricSnapshotValue("tick-time", "Tick Time", "ms", 42D, "42 ms", true, 1L, Sampler.Metadata.UNKNOWN, "", Sampler.Diagnostics.EMPTY))
     ));
     MetricsResource resource = new MetricsResource(controller, history, new MetricsSerializer());
 

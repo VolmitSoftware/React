@@ -57,7 +57,7 @@ class HistoryQueryEngineTest {
     raw.series("tps", "TPS", "").set(0, 1D);
     raw.series("tps", "TPS", "").set(10, 17D);
     store.write(raw);
-    HistoryPoint live = new HistoryPoint(11_000L, 1_000L, 19D, 19D, 19D, 19D, 19D, 1L);
+    HistoryPoint live = new HistoryPoint(11_000L, 1_000L, 19D, 19D, 19D, 19D, 19D, 1L, 0L, 0L);
     HistoryQueryEngine engine = new HistoryQueryEngine(store, (ids, from, to) -> Map.of("tps", List.of(live)));
 
     List<HistoryPoint> points = engine.query(List.of("tps"), 0L, 30_000L, 10_000L, 1L, 30_000L)

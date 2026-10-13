@@ -22,7 +22,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class ReactIntegrationServiceTest {
@@ -120,114 +119,71 @@ class ReactIntegrationServiceTest {
             "plugin", "react",
             "domain", "sampler",
             "scope", "global",
-            "sampler-id", "alpha"
+            "sampler-id", "alpha",
+            "measurement-quality", "UNKNOWN",
+            "sample-interval-ms", "0",
+            "sample-window-ms", "0"
         ),
         alpha.tags()
     );
   }
 
   @Test
-  void samplesOnlyRequestedRegisteredSamplersAsOneBatch() {
-    Map<String, AtomicInteger> reads = new ConcurrentHashMap<>();
-    MetricInstaller.installHostMetrics(
-        () -> Set.of("alpha", "beta", "gamma"),
-        key -> {
-          reads.computeIfAbsent(key, ignored -> new AtomicInteger()).incrementAndGet();
-          return switch (key) {
-            case "alpha" -> 12.5D;
-            case "beta" -> 7D;
-            default -> 99D;
-          };
-        }
-    );
+  void samplesRequestedSamplersWithTheirOriginalSourceTimes() {
+    Sampler alpha = Mockito.mock(Sampler.class);
+    Sampler beta = Mockito.mock(Sampler.class);
+    Mockito.when(alpha.captureReading()).thenReturn(new Sampler.Reading(12.5D, 123L, true, Sampler.Metadata.UNKNOWN, ""));
+    Mockito.when(beta.captureReading()).thenReturn(new Sampler.Reading(7D, 456L, true, Sampler.Metadata.UNKNOWN, ""));
     ReactIntegrationService service = new ReactIntegrationService();
-
-    Map<String, IntegrationMetricSample> samples = service.sampleMetrics(Set.of(
-        "react.sampler.beta",
-        "react.sampler.alpha"
-    ));
-
-    Assertions.assertEquals(
-        List.of("react.sampler.alpha", "react.sampler.beta"),
-        new ArrayList<>(samples.keySet())
-    );
-    Assertions.assertEquals(12.5D, samples.get("react.sampler.alpha").numericValue());
-    Assertions.assertEquals(7D, samples.get("react.sampler.beta").numericValue());
-    Assertions.assertEquals(
-        samples.get("react.sampler.alpha").sampledAtMs(),
-        samples.get("react.sampler.beta").sampledAtMs()
-    );
-    Assertions.assertEquals(1, reads.get("alpha").get());
-    Assertions.assertEquals(1, reads.get("beta").get());
-    Assertions.assertFalse(reads.containsKey("gamma"));
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      react.when(() -> React.sampler("alpha")).thenReturn(alpha);
+      react.when(() -> React.sampler("beta")).thenReturn(beta);
+      Map<String, IntegrationMetricSample> samples = service.sampleMetrics(Set.of("react.sampler.beta", "react.sampler.alpha"));
+      Assertions.assertEquals(List.of("react.sampler.alpha", "react.sampler.beta"), new ArrayList<>(samples.keySet()));
+      Assertions.assertEquals(12.5D, samples.get("react.sampler.alpha").numericValue());
+      Assertions.assertEquals(7D, samples.get("react.sampler.beta").numericValue());
+      Assertions.assertEquals(123L, samples.get("react.sampler.alpha").sampledAtMs());
+      Assertions.assertEquals(456L, samples.get("react.sampler.beta").sampledAtMs());
+      Mockito.verify(alpha).captureReading();
+      Mockito.verify(beta).captureReading();
+      Mockito.verify(alpha).markDemand();
+    }
   }
 
   @Test
   void returnsUnavailableWithoutSamplingUnknownOrNonFiniteValues() {
-    AtomicInteger reads = new AtomicInteger();
-    MetricInstaller.installHostMetrics(
-        () -> Set.of("non-finite"),
-        key -> {
-          reads.incrementAndGet();
-          return Double.NaN;
-        }
-    );
+    Sampler sampler = Mockito.mock(Sampler.class);
+    Mockito.when(sampler.captureReading()).thenReturn(new Sampler.Reading(Double.NaN, 123L, true, Sampler.Metadata.UNKNOWN, ""));
     ReactIntegrationService service = new ReactIntegrationService();
-
-    Map<String, IntegrationMetricSample> samples = service.sampleMetrics(Set.of(
-        "react.sampler.non-finite",
-        "react.sampler.missing",
-        "iris.pregen-queue"
-    ));
-
-    Assertions.assertFalse(samples.get("react.sampler.non-finite").available());
-    Assertions.assertEquals(
-        "react-sampler-value-unavailable",
-        samples.get("react.sampler.non-finite").message()
-    );
-    Assertions.assertEquals(
-        "react-sampler-not-registered",
-        samples.get("react.sampler.missing").message()
-    );
-    Assertions.assertEquals(
-        "react-does-not-publish-this-metric",
-        samples.get("iris.pregen-queue").message()
-    );
-    Assertions.assertEquals(1, reads.get());
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      react.when(() -> React.sampler("non-finite")).thenReturn(sampler);
+      Map<String, IntegrationMetricSample> samples = service.sampleMetrics(Set.of(
+          "react.sampler.non-finite", "react.sampler.missing", "iris.pregen-queue"));
+      Assertions.assertFalse(samples.get("react.sampler.non-finite").available());
+      Assertions.assertEquals("non-finite", samples.get("react.sampler.non-finite").message());
+      Assertions.assertEquals("react-sampler-not-registered", samples.get("react.sampler.missing").message());
+      Assertions.assertEquals("react-does-not-publish-this-metric", samples.get("iris.pregen-queue").message());
+      Mockito.verify(sampler).captureReading();
+    }
   }
 
   @Test
   void isolatesSamplerFailuresWithinRequestedBatch() {
-    MetricInstaller.installHostMetrics(
-        () -> Set.of("broken", "healthy"),
-        key -> {
-          if ("broken".equals(key)) {
-            throw new IllegalStateException("broken sampler");
-          }
-          return 4.25D;
-        }
-    );
+    Sampler broken = Mockito.mock(Sampler.class);
+    Sampler healthy = Mockito.mock(Sampler.class);
+    Mockito.when(broken.captureReading()).thenThrow(new IllegalStateException("broken sampler"));
+    Mockito.when(healthy.captureReading()).thenReturn(new Sampler.Reading(4.25D, 123L, true, Sampler.Metadata.UNKNOWN, ""));
     ReactIntegrationService service = new ReactIntegrationService();
-
-    Map<String, IntegrationMetricSample> samples;
     try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
-      samples = service.sampleMetrics(Set.of(
-          "react.sampler.broken",
-          "react.sampler.healthy"
-      ));
-      react.verify(() -> React.warn(
-          Mockito.contains("id=broken"),
-          Mockito.any(IllegalStateException.class)
-      ));
+      react.when(() -> React.sampler("broken")).thenReturn(broken);
+      react.when(() -> React.sampler("healthy")).thenReturn(healthy);
+      Map<String, IntegrationMetricSample> samples = service.sampleMetrics(Set.of("react.sampler.broken", "react.sampler.healthy"));
+      react.verify(() -> React.warn(Mockito.contains("id=broken"), Mockito.any(IllegalStateException.class)));
+      Assertions.assertFalse(samples.get("react.sampler.broken").available());
+      Assertions.assertEquals("react-sampler-error:IllegalStateException", samples.get("react.sampler.broken").message());
+      Assertions.assertTrue(samples.get("react.sampler.healthy").available());
+      Assertions.assertEquals(4.25D, samples.get("react.sampler.healthy").numericValue());
     }
-
-    Assertions.assertFalse(samples.get("react.sampler.broken").available());
-    Assertions.assertEquals(
-        "react-sampler-error:IllegalStateException",
-        samples.get("react.sampler.broken").message()
-    );
-    Assertions.assertTrue(samples.get("react.sampler.healthy").available());
-    Assertions.assertEquals(4.25D, samples.get("react.sampler.healthy").numericValue());
   }
 
   @Test

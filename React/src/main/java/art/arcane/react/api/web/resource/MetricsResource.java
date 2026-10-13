@@ -86,7 +86,11 @@ public class MetricsResource {
                 descriptor.suffix(),
                 descriptor.firstTimestampMs(),
                 descriptor.lastTimestampMs(),
-                descriptor.active()
+                descriptor.active(),
+                descriptor.metadata().intervalMs(),
+                descriptor.metadata().windowMs(),
+                descriptor.metadata().quality(),
+                descriptor.metadata().unit()
             );
         }
         context.json(new Envelope<>(data));
@@ -258,7 +262,9 @@ public class MetricsResource {
                     point.minimum(),
                     point.maximum(),
                     point.last(),
-                    point.count()
+                    point.count(),
+                    point.firstSampledAtMs(),
+                    point.lastSampledAtMs()
                 };
             }
             data[seriesIndex] = new MetricHistorySeriesDto(

@@ -83,6 +83,9 @@ public abstract class ReactCachedSampler implements Sampler {
           }
         });
         dispatched = true;
+      } catch (RuntimeException | Error failure) {
+        health.finish(health.begin(), false);
+        throw failure;
       } finally {
         if (!dispatched) {
           mainRefreshInFlight.set(false);
@@ -162,8 +165,12 @@ public abstract class ReactCachedSampler implements Sampler {
   public Reading captureReading() {
     synchronized (sampleLock) {
       double value = read();
-      return reading(value, sampledAtMs, runtimeStarted && sampledAtMs > 0L && isSampleAvailable());
+      return reading(value, readingTimestampMs(), runtimeStarted && sampledAtMs > 0L && !health.failed() && isSampleAvailable());
     }
+  }
+
+  protected long readingTimestampMs() {
+    return sampledAtMs;
   }
 
   private double read() {

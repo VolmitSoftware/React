@@ -166,30 +166,8 @@ public class ReactIntegrationService implements IntegrationSnapshotProvider {
     }
     Collections.sort(requestedKeys);
 
-    Set<String> availableSamplerIds = Set.copyOf(samplerIds());
-    long now = System.currentTimeMillis();
     for (String metricKey : requestedKeys) {
-      if (!isSamplerMetricKey(metricKey)) {
-        samples.put(metricKey, IntegrationMetricSample.unavailable(
-            IntegrationMetricSchema.descriptor(metricKey),
-            "react-does-not-publish-this-metric",
-            now
-        ));
-        continue;
-      }
-
-      String samplerId = samplerId(metricKey);
-      IntegrationMetricDescriptor descriptor = samplerDescriptor(samplerId);
-      if (!availableSamplerIds.contains(samplerId)) {
-        samples.put(metricKey, IntegrationMetricSample.unavailable(
-            descriptor,
-            "react-sampler-not-registered",
-            now
-        ));
-        continue;
-      }
-
-      samples.put(metricKey, sampleSampler(descriptor, samplerId, now));
+      samples.put(metricKey, captureSnapshotMetric(metricKey));
     }
     return samples;
   }
@@ -220,7 +198,7 @@ public class ReactIntegrationService implements IntegrationSnapshotProvider {
 
   IntegrationMetricSample captureSnapshotMetric(String key) {
     long now = System.currentTimeMillis();
-    if (!key.startsWith(SAMPLER_METRIC_PREFIX)) {
+    if (!isSamplerMetricKey(key)) {
       return IntegrationMetricSample.unavailable(IntegrationMetricSchema.descriptor(key),
           "react-does-not-publish-this-metric", now);
     }
@@ -228,14 +206,15 @@ public class ReactIntegrationService implements IntegrationSnapshotProvider {
     IntegrationMetricDescriptor descriptor = samplerDescriptor(samplerId);
     try {
       Sampler sampler = React.sampler(samplerId);
-      if (sampler == null || SamplerUnknown.ID.equals(samplerId)) {
+      if (sampler == null || SamplerUnknown.ID.equals(sampler.getId())) {
         return IntegrationMetricSample.unavailable(descriptor, "react-sampler-not-registered", now);
       }
       sampler.markDemand();
       Sampler.Reading reading = sampler.captureReading();
       if (!reading.available() || !Double.isFinite(reading.value()) || reading.sampledAtMs() <= 0L
           || reading.sampledAtMs() > System.currentTimeMillis()) {
-        return IntegrationMetricSample.unavailable(descriptor, "react-sampler-value-unavailable", now);
+        return IntegrationMetricSample.unavailable(descriptor, reading.unavailableReason().isBlank()
+            ? "react-sampler-value-unavailable" : reading.unavailableReason(), now);
       }
       return IntegrationMetricSample.available(descriptor, reading.value(), reading.sampledAtMs());
     } catch (Throwable failure) {
@@ -265,45 +244,22 @@ public class ReactIntegrationService implements IntegrationSnapshotProvider {
   }
 
   private IntegrationMetricDescriptor samplerDescriptor(String samplerId) {
+    Sampler sampler = React.instance == null ? null : React.sampler(samplerId);
+    Sampler.Metadata metadata = sampler == null || sampler.metadata() == null ? Sampler.Metadata.UNKNOWN : sampler.metadata();
     return new IntegrationMetricDescriptor(
         SAMPLER_METRIC_PREFIX + samplerId,
         IntegrationMetricType.DOUBLE,
-        "",
+        metadata.unit(),
         Map.of(
             "plugin", "react",
             "domain", "sampler",
             "scope", "global",
-            "sampler-id", samplerId
+            "sampler-id", samplerId,
+            "measurement-quality", metadata.quality().name(),
+            "sample-interval-ms", Long.toString(metadata.intervalMs()),
+            "sample-window-ms", Long.toString(metadata.windowMs())
         )
     );
-  }
-
-  private IntegrationMetricSample sampleSampler(
-      IntegrationMetricDescriptor descriptor,
-      String samplerId,
-      long now
-  ) {
-    double value;
-    try {
-      value = ReactMetrics.readHostMetric(samplerId);
-    } catch (Throwable e) {
-      reportSamplerFailure(samplerId, e, now);
-      return IntegrationMetricSample.unavailable(
-          descriptor,
-          "react-sampler-error:" + e.getClass().getSimpleName(),
-          now
-      );
-    }
-
-    if (!Double.isFinite(value)) {
-      return IntegrationMetricSample.unavailable(
-          descriptor,
-          "react-sampler-value-unavailable",
-          now
-      );
-    }
-
-    return IntegrationMetricSample.available(descriptor, value, now);
   }
 
   private void reportSamplerFailure(String samplerId, Throwable failure, long now) {

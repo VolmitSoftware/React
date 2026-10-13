@@ -9,6 +9,8 @@ public final class SamplerHealth {
   private final LongAdder failures = new LongAdder();
   private final LongAdder cacheHits = new LongAdder();
   private final LongAdder inFlightSkips = new LongAdder();
+  private final LongAdder totalDuration = new LongAdder();
+  private final LongAdder totalQueue = new LongAdder();
   private final AtomicLong maximumDuration = new AtomicLong();
   private final AtomicLong maximumQueue = new AtomicLong();
   private volatile long lastDuration;
@@ -24,6 +26,7 @@ public final class SamplerHealth {
   public void finish(long startedNanos, boolean success) {
     long duration = Math.max(0L, System.nanoTime() - startedNanos);
     lastDuration = duration;
+    totalDuration.add(duration);
     maximumDuration.accumulateAndGet(duration, Math::max);
     failed = !success;
     if (success) {
@@ -37,6 +40,7 @@ public final class SamplerHealth {
   public void queued(long submittedNanos) {
     long delay = Math.max(0L, System.nanoTime() - submittedNanos);
     lastQueue = delay;
+    totalQueue.add(delay);
     maximumQueue.accumulateAndGet(delay, Math::max);
   }
 
@@ -54,6 +58,6 @@ public final class SamplerHealth {
 
   public Sampler.Diagnostics snapshot() {
     return new Sampler.Diagnostics(attempts.sum(), successes.sum(), failures.sum(), cacheHits.sum(),
-        inFlightSkips.sum(), lastDuration, maximumDuration.get(), lastQueue, maximumQueue.get(), lastSuccessAtMs);
+        inFlightSkips.sum(), lastDuration, maximumDuration.get(), lastQueue, maximumQueue.get(), lastSuccessAtMs, totalDuration.sum(), totalQueue.sum());
   }
 }

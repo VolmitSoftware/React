@@ -1,5 +1,7 @@
 package art.arcane.react.core.history;
 
+import art.arcane.react.api.sampler.Sampler;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -28,7 +30,7 @@ final class HistorySegmentCodec {
   private static final int MAGIC = 0x52485453;
   private static final int SERIES_MAGIC = 0x53455249;
   private static final int FOOTER_MAGIC = 0x454E4421;
-  private static final int VERSION = 1;
+  private static final int VERSION = 2;
   private static final int MAX_SERIES = 4_096;
   private static final int MAX_BUCKETS = 16_384;
   private static final int MAX_STRING_BYTES = 16_384;
@@ -51,6 +53,7 @@ final class HistorySegmentCodec {
         output.writeByte(segment.tier().id());
         output.writeLong(segment.startMs());
         output.writeInt(segment.bucketCount());
+        output.writeLong(segment.lastSequence());
         List<HistorySeries> series = new ArrayList<>(segment.series());
         series.sort(Comparator.comparing(HistorySeries::id));
         output.writeInt(series.size());
@@ -82,6 +85,7 @@ final class HistorySegmentCodec {
       HistoryTier tier = HistoryTier.byId(input.readUnsignedByte());
       long startMs = input.readLong();
       int bucketCount = checkedCount(input.readInt(), MAX_BUCKETS, "bucket");
+      long lastSequence = input.readLong();
       int seriesCount = checkedCount(input.readInt(), MAX_SERIES, "series");
       return new SegmentHeader(tier, startMs, bucketCount, seriesCount);
     }
@@ -97,13 +101,16 @@ final class HistorySegmentCodec {
       HistoryTier tier = HistoryTier.byId(input.readUnsignedByte());
       long startMs = input.readLong();
       int bucketCount = checkedCount(input.readInt(), MAX_BUCKETS, "bucket");
+      long lastSequence = input.readLong();
       int seriesCount = checkedCount(input.readInt(), MAX_SERIES, "series");
       HistorySegment segment = new HistorySegment(tier, startMs, bucketCount);
+      segment.lastSequence(lastSequence);
       for (int index = 0; index < seriesCount; index++) {
         requireMagic(input.readInt(), SERIES_MAGIC, "history series");
         String id = readString(input);
         String name = readString(input);
         String suffix = readString(input);
+        Sampler.Metadata metadata = readMetadata(input);
         input.readInt();
         input.readInt();
         boolean compressed = input.readBoolean();
@@ -127,7 +134,9 @@ final class HistorySegmentCodec {
         if ((int) crc.getValue() != checksum) {
           throw new IOException("History series checksum mismatch for " + id);
         }
-        segment.add(decodeSeries(id, name, suffix, bucketCount, raw));
+        HistorySeries series = decodeSeries(id, name, suffix, bucketCount, raw);
+        series.metadata(metadata);
+        segment.add(series);
       }
       requireMagic(input.readInt(), FOOTER_MAGIC, "history segment footer");
       if (input.read() != -1) {
@@ -149,6 +158,7 @@ final class HistorySegmentCodec {
     writeString(output, series.id());
     writeString(output, series.name());
     writeString(output, series.suffix());
+    writeMetadata(output, series.metadata());
     int firstIndex = firstPresentIndex(series.countValues());
     int lastIndex = lastPresentIndex(series.countValues());
     output.writeInt(firstIndex);
@@ -173,6 +183,12 @@ final class HistorySegmentCodec {
     writeColumn(output, DoubleColumnCodec.encode(series.maximumValues(), counts));
     writeColumn(output, DoubleColumnCodec.encode(series.sums(), counts));
     writeColumn(output, DoubleColumnCodec.encode(series.lastValues(), counts));
+    for (int index = 0; index < counts.length; index++) {
+      if (counts[index] > 0L) {
+        DoubleColumnCodec.writeUnsignedVarLong(output, series.firstSampledAtValues()[index]);
+        DoubleColumnCodec.writeUnsignedVarLong(output, series.lastSampledAtValues()[index]);
+      }
+    }
     output.flush();
     return bytes.toByteArray();
   }
@@ -198,10 +214,16 @@ final class HistorySegmentCodec {
     double[] maximum = DoubleColumnCodec.decode(readColumn(input), counts);
     double[] sums = DoubleColumnCodec.decode(readColumn(input), counts);
     double[] last = DoubleColumnCodec.decode(readColumn(input), counts);
+    HistorySeries series = new HistorySeries(id, name, suffix, bucketCount);
+    for (int index = 0; index < counts.length; index++) {
+      if (counts[index] > 0L) {
+        series.firstSampledAtValues()[index] = DoubleColumnCodec.readUnsignedVarLong(input);
+        series.lastSampledAtValues()[index] = DoubleColumnCodec.readUnsignedVarLong(input);
+      }
+    }
     if (input.available() != 0) {
       throw new IOException("History series contains trailing bytes");
     }
-    HistorySeries series = new HistorySeries(id, name, suffix, bucketCount);
     System.arraycopy(first, 0, series.firstValues(), 0, bucketCount);
     System.arraycopy(minimum, 0, series.minimumValues(), 0, bucketCount);
     System.arraycopy(maximum, 0, series.maximumValues(), 0, bucketCount);
@@ -258,6 +280,26 @@ final class HistorySegmentCodec {
     return bytes.toByteArray();
   }
 
+  static void writeMetadata(DataOutputStream output, Sampler.Metadata metadata) throws IOException {
+    output.writeLong(metadata.intervalMs());
+    output.writeLong(metadata.windowMs());
+    writeString(output, metadata.quality().name());
+    writeString(output, metadata.unit());
+  }
+
+  static Sampler.Metadata readMetadata(DataInputStream input) throws IOException {
+    long intervalMs = input.readLong();
+    long windowMs = input.readLong();
+    if (intervalMs < 0L || windowMs < 0L) {
+      throw new IOException("Invalid metric measurement interval");
+    }
+    try {
+      return new Sampler.Metadata(intervalMs, windowMs, Sampler.Quality.valueOf(readString(input)), readString(input));
+    } catch (IllegalArgumentException failure) {
+      throw new IOException("Invalid metric measurement quality", failure);
+    }
+  }
+
   private static void writeString(DataOutputStream output, String value) throws IOException {
     byte[] bytes = (value == null ? "" : value).getBytes(StandardCharsets.UTF_8);
     if (bytes.length > MAX_STRING_BYTES) {
@@ -309,6 +351,7 @@ final class HistorySegmentCodec {
       HistoryTier tier = HistoryTier.byId(input.readUnsignedByte());
       long startMs = input.readLong();
       int bucketCount = checkedCount(input.readInt(), MAX_BUCKETS, "bucket");
+      long lastSequence = input.readLong();
       int seriesCount = checkedCount(input.readInt(), MAX_SERIES, "series");
       List<SegmentSeriesDescriptor> descriptors = new ArrayList<>(seriesCount);
       for (int index = 0; index < seriesCount; index++) {
@@ -316,6 +359,7 @@ final class HistorySegmentCodec {
         String id = readString(input);
         String name = readString(input);
         String suffix = readString(input);
+        Sampler.Metadata metadata = readMetadata(input);
         int firstIndex = input.readInt();
         int lastIndex = input.readInt();
         input.readBoolean();
@@ -325,7 +369,7 @@ final class HistorySegmentCodec {
         input.skipNBytes(storedLength);
         long firstTimestampMs = firstIndex < 0 ? 0L : startMs + (tier.intervalMs() * firstIndex);
         long lastTimestampMs = lastIndex < 0 ? 0L : startMs + (tier.intervalMs() * lastIndex);
-        descriptors.add(new SegmentSeriesDescriptor(id, name, suffix, firstTimestampMs, lastTimestampMs));
+        descriptors.add(new SegmentSeriesDescriptor(id, name, suffix, firstTimestampMs, lastTimestampMs, metadata));
       }
       requireMagic(input.readInt(), FOOTER_MAGIC, "history segment footer");
       return new SegmentCatalog(tier, startMs, bucketCount, List.copyOf(descriptors));
@@ -361,7 +405,8 @@ final class HistorySegmentCodec {
       String name,
       String suffix,
       long firstTimestampMs,
-      long lastTimestampMs
+      long lastTimestampMs,
+      Sampler.Metadata metadata
   ) {
   }
 

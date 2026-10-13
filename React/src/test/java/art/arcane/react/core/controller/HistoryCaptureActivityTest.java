@@ -64,15 +64,17 @@ class HistoryCaptureActivityTest {
     Sampler first = Mockito.mock(Sampler.class);
     Mockito.when(first.getId()).thenReturn("dynamic");
     Mockito.when(first.getName()).thenReturn("First");
+    Mockito.when(first.captureReading()).thenReturn(new Sampler.Reading(1D, 1L, true, Sampler.Metadata.UNKNOWN, ""));
     Sampler replacement = Mockito.mock(Sampler.class);
     Mockito.when(replacement.getId()).thenReturn("dynamic");
     Mockito.when(replacement.getName()).thenReturn("Replacement");
+    Mockito.when(replacement.captureReading()).thenReturn(new Sampler.Reading(2D, 2L, true, Sampler.Metadata.UNKNOWN, ""));
 
     Assertions.assertEquals("First", history.captureSnapshot(List.of(first, sampler), 1L).value("dynamic").name());
     Assertions.assertEquals("Replacement", history.captureSnapshot(List.of(sampler, replacement), 2L).value("dynamic").name());
     Assertions.assertNull(history.captureSnapshot(List.of(sampler), 3L).value("dynamic"));
-    Mockito.verify(first, Mockito.times(1)).capture();
-    Mockito.verify(replacement, Mockito.times(1)).capture();
+    Mockito.verify(first, Mockito.times(1)).captureReading();
+    Mockito.verify(replacement, Mockito.times(1)).captureReading();
   }
 
   @Test

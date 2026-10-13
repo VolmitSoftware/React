@@ -1,5 +1,7 @@
 package art.arcane.react.core.history;
 
+import art.arcane.react.api.sampler.Sampler;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -42,7 +44,7 @@ class HistoryWalTest {
     return MetricSnapshot.of(
         sequence,
         timestampMs,
-        List.of(new MetricSnapshotValue("tps", "TPS", "", value, Double.toString(value), true))
+        List.of(new MetricSnapshotValue("tps", "TPS", "", value, Double.toString(value), true, 1L, Sampler.Metadata.UNKNOWN, "", Sampler.Diagnostics.EMPTY))
     );
   }
 }
