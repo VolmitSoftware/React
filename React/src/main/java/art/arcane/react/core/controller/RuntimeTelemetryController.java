@@ -28,7 +28,7 @@ public final class RuntimeTelemetryController implements IController {
   private boolean regionalEnabled = true;
   @ConfigDoc(value = "Maximum player locations sampled each second, clamped from 1 to 512. Observations expire after five seconds.", impact = "Higher values improve player coverage at the cost of more region TPS queries.")
   private int playerAnchorsPerRefresh = 64;
-  @ConfigDoc(value = "Enable selective JFR telemetry. Disabled by default. Exports event summaries without addresses, file paths, or stack traces.", impact = "Adds JFR recording work with 30-second and 64-MiB retention limits. Aggregate series reset each second.")
+  @ConfigDoc(value = "Enable selective JFR telemetry. Disabled by default. Published summaries omit addresses, file paths, and stack traces.", impact = "Adds JFR recording work with 30-second and 64-MiB retention limits. Aggregate series reset each second.")
   private boolean jfrEnabled = false;
   @ConfigDoc(value = "Minimum duration in milliseconds for JVM file IO, monitor entry, monitor wait, and thread park events, clamped from 1 to 1000. Chunk generation stages use no duration threshold.", impact = "Lower thresholds emit more JVM events. These metrics describe only events meeting this threshold.")
   private long jfrSlowThresholdMs = 10L;
