@@ -203,7 +203,7 @@ public class ReactIntegrationService implements IntegrationSnapshotProvider {
           "react-does-not-publish-this-metric", now);
     }
     String samplerId = key.substring(SAMPLER_METRIC_PREFIX.length());
-    IntegrationMetricDescriptor descriptor = samplerDescriptor(samplerId);
+    IntegrationMetricDescriptor descriptor = samplerDescriptor(samplerId, Sampler.Metadata.UNKNOWN);
     try {
       Sampler sampler = React.sampler(samplerId);
       if (sampler == null || SamplerUnknown.ID.equals(sampler.getId())) {
@@ -211,10 +211,11 @@ public class ReactIntegrationService implements IntegrationSnapshotProvider {
       }
       sampler.markDemand();
       Sampler.Reading reading = sampler.captureReading();
+      descriptor = samplerDescriptor(samplerId, reading.metadata());
       if (!reading.available() || !Double.isFinite(reading.value()) || reading.sampledAtMs() <= 0L
           || reading.sampledAtMs() > System.currentTimeMillis()) {
         return IntegrationMetricSample.unavailable(descriptor, reading.unavailableReason().isBlank()
-            ? "react-sampler-value-unavailable" : reading.unavailableReason(), now);
+            ? "react-sampler-value-unavailable" : reading.unavailableReason(), reading.sampledAtMs());
       }
       return IntegrationMetricSample.available(descriptor, reading.value(), reading.sampledAtMs());
     } catch (Throwable failure) {
@@ -245,7 +246,11 @@ public class ReactIntegrationService implements IntegrationSnapshotProvider {
 
   private IntegrationMetricDescriptor samplerDescriptor(String samplerId) {
     Sampler sampler = React.instance == null ? null : React.sampler(samplerId);
-    Sampler.Metadata metadata = sampler == null || sampler.metadata() == null ? Sampler.Metadata.UNKNOWN : sampler.metadata();
+    return samplerDescriptor(samplerId, sampler == null ? Sampler.Metadata.UNKNOWN : sampler.metadata());
+  }
+
+  private IntegrationMetricDescriptor samplerDescriptor(String samplerId, Sampler.Metadata sourceMetadata) {
+    Sampler.Metadata metadata = sourceMetadata == null ? Sampler.Metadata.UNKNOWN : sourceMetadata;
     return new IntegrationMetricDescriptor(
         SAMPLER_METRIC_PREFIX + samplerId,
         IntegrationMetricType.DOUBLE,
@@ -277,7 +282,4 @@ public class ReactIntegrationService implements IntegrationSnapshotProvider {
         && metricKey.length() > SAMPLER_METRIC_PREFIX.length();
   }
 
-  private String samplerId(String metricKey) {
-    return metricKey.substring(SAMPLER_METRIC_PREFIX.length());
-  }
 }

@@ -98,6 +98,44 @@ class ReactIntegrationServiceTest {
   }
 
   @Test
+  void readsDescriptorMetadataFromTheCapturedObservation() {
+    Sampler sampler = Mockito.mock(Sampler.class);
+    Sampler.Metadata captured = new Sampler.Metadata(500L, 1_750L, Sampler.Quality.ESTIMATED, "ms");
+    Mockito.when(sampler.metadata()).thenReturn(new Sampler.Metadata(1_000L, 1_000L, Sampler.Quality.UNKNOWN, ""));
+    Mockito.when(sampler.captureReading()).thenReturn(new Sampler.Reading(7D, 123L, true, captured, ""));
+    ReactIntegrationService service = new ReactIntegrationService();
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      react.when(() -> React.sampler("alpha")).thenReturn(sampler);
+      IntegrationMetricSample result = service.captureSnapshotMetric("react.sampler.alpha");
+      Assertions.assertEquals("ms", result.descriptor().unit());
+      Assertions.assertEquals("ESTIMATED", result.descriptor().tags().get("measurement-quality"));
+      Assertions.assertEquals("500", result.descriptor().tags().get("sample-interval-ms"));
+      Assertions.assertEquals("1750", result.descriptor().tags().get("sample-window-ms"));
+      Mockito.verify(sampler, Mockito.never()).metadata();
+    }
+  }
+
+  @Test
+  void unavailablePublicationRetainsItsSourceTimeAndMetadata() {
+    Sampler sampler = Mockito.mock(Sampler.class);
+    Sampler.Metadata captured = new Sampler.Metadata(5_000L, 0L, Sampler.Quality.MEASURED, "bytes");
+    Mockito.when(sampler.captureReading()).thenReturn(new Sampler.Reading(7D, 123L, false, captured, "stale"));
+    ReactIntegrationService service = new ReactIntegrationService();
+    Set<String> keys = Set.of("react.sampler.alpha");
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      react.when(() -> React.sampler("alpha")).thenReturn(sampler);
+      service.snapshotMetrics(keys);
+      service.publishSnapshots();
+      IntegrationMetricSample result = service.snapshotMetrics(keys).samples().get("react.sampler.alpha");
+      Assertions.assertFalse(result.available());
+      Assertions.assertEquals(123L, result.sampledAtMs());
+      Assertions.assertEquals("stale", result.message());
+      Assertions.assertEquals("bytes", result.descriptor().unit());
+      Assertions.assertEquals("5000", result.descriptor().tags().get("sample-interval-ms"));
+    }
+  }
+
+  @Test
   void exposesDeterministicGlobalSamplerDescriptors() {
     MetricInstaller.installHostMetrics(
         () -> new LinkedHashSet<>(List.of("zeta", "unknown", "alpha")),
