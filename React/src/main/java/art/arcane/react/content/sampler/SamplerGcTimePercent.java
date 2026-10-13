@@ -48,6 +48,11 @@ public class SamplerGcTimePercent extends ReactCachedSampler {
   }
 
   @Override
+  public Metadata metadata() {
+    return new Metadata(1_000L, 60_000L, Quality.MEASURED, "%");
+  }
+
+  @Override
   public double onSample() {
     return GCStatsTracker.sampleGcTimePercent();
   }

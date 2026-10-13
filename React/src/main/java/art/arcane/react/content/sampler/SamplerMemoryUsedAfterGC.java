@@ -19,23 +19,26 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.api.sampler.ReactTickedSampler;
+import art.arcane.react.api.sampler.ReactCachedSampler;
+import art.arcane.react.core.controller.TelemetryController;
+import art.arcane.react.core.telemetry.HostMetric;
+import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
-public class SamplerMemoryUsedAfterGC extends ReactTickedSampler {
+public class SamplerMemoryUsedAfterGC extends ReactCachedSampler {
   public static final String ID = "memory-used-after-gc";
-  private transient final AtomicLong lastMemory;
-  private transient final AtomicLong lastMemoryPostGC;
-  private transient final Runtime runtime;
+  private transient final Supplier<HostTelemetrySnapshot> host;
 
   public SamplerMemoryUsedAfterGC() {
-    super(ID, 50, 20);
-    this.runtime = Runtime.getRuntime();
-    this.lastMemory = new AtomicLong(runtime.totalMemory() - runtime.freeMemory());
-    this.lastMemoryPostGC = new AtomicLong(lastMemory.get());
+    this(TelemetryController::currentHostSnapshot);
+  }
+
+  SamplerMemoryUsedAfterGC(Supplier<HostTelemetrySnapshot> host) {
+    super(ID, 1000L);
+    this.host = host;
   }
 
   @Override
@@ -44,29 +47,32 @@ public class SamplerMemoryUsedAfterGC extends ReactTickedSampler {
   }
 
   @Override
+  public Metadata metadata() {
+    return HostMetric.GC_AFTER.metadata();
+  }
+
+  @Override
+  public boolean isSampleAvailable() {
+    return host.get().reading(HostMetric.GC_AFTER).fresh(HostMetric.GC_AFTER, System.currentTimeMillis()).available();
+  }
+
+  @Override
+  public Reading captureReading() {
+    return host.get().reading(HostMetric.GC_AFTER).fresh(HostMetric.GC_AFTER, System.currentTimeMillis()).reading(HostMetric.GC_AFTER);
+  }
+
+  @Override
   public double onSample() {
-    long mem = runtime.totalMemory() - runtime.freeMemory();
-
-    if (lastMemory.get() > mem) {
-      lastMemoryPostGC.set(mem);
-    }
-
-    lastMemory.set(mem);
-    return lastMemoryPostGC.get();
+    return host.get().reading(HostMetric.GC_AFTER).value();
   }
 
   @Override
-  public String formattedValue(double t) {
-    String[] s = Form.memSizeSplit((long) t, 1);
-    if (s[1].equalsIgnoreCase("mb")) {
-      return Form.memSizeSplit((long) t, 0)[0];
-    } else {
-      return s[0];
-    }
+  public String formattedValue(double value) {
+    return Form.memSizeSplit(Math.max(0L, (long) value), 1)[0];
   }
 
   @Override
-  public String formattedSuffix(double t) {
-    return Form.memSizeSplit((long) t, 1)[1];
+  public String formattedSuffix(double value) {
+    return Form.memSizeSplit(Math.max(0L, (long) value), 1)[1];
   }
 }

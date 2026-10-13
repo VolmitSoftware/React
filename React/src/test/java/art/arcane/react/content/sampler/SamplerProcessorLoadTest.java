@@ -1,6 +1,9 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
+import art.arcane.react.core.telemetry.HostMetric;
+import art.arcane.react.core.telemetry.HostReading;
+import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -20,9 +23,9 @@ class SamplerProcessorLoadTest {
     Assertions.assertEquals(0.9D, system.onSample(), 1.0E-9D);
     Assertions.assertEquals(0.25D, process.onSample(), 1.0E-9D);
     Assertions.assertEquals(0.65D, outside.onSample(), 1.0E-9D);
-    Assertions.assertEquals(1L, system.captureReading().sampledAtMs());
-    Assertions.assertEquals(1L, process.captureReading().sampledAtMs());
-    Assertions.assertEquals(1L, outside.captureReading().sampledAtMs());
+    Assertions.assertEquals(host.get().reading(HostMetric.CPU_SYSTEM).sampledAtMs(), system.captureReading().sampledAtMs());
+    Assertions.assertEquals(host.get().reading(HostMetric.CPU_SYSTEM).sampledAtMs(), process.captureReading().sampledAtMs());
+    Assertions.assertEquals(host.get().reading(HostMetric.CPU_SYSTEM).sampledAtMs(), outside.captureReading().sampledAtMs());
     Assertions.assertEquals(0.65D, outside.captureReading().value(), 1.0E-9D);
 
     host.set(withCpu(0.1D, 0.3D));
@@ -53,31 +56,9 @@ class SamplerProcessorLoadTest {
 
   private static HostTelemetrySnapshot withCpu(double systemLoad, double processLoad) {
     HostTelemetrySnapshot empty = HostTelemetrySnapshot.empty();
-    return new HostTelemetrySnapshot(
-        empty.environment(),
-        true,
-        1L,
-        empty.physicalMemoryUsed(),
-        empty.physicalMemoryFree(),
-        empty.diskUsable(),
-        empty.diskReadBytesPerSecond(),
-        empty.diskWriteBytesPerSecond(),
-        empty.networkReceiveBytesPerSecond(),
-        empty.networkSendBytesPerSecond(),
-        empty.networkReceiveDrops(),
-        empty.networkReceiveErrors(),
-        empty.networkSendErrors(),
-        empty.heapMax(),
-        empty.heapCommitted(),
-        empty.heapUtilization(),
-        empty.nonHeapUsed(),
-        empty.directBufferBytes(),
-        empty.directBufferCount(),
-        empty.gcCollectionsPerMinute(),
-        empty.loadedClasses(),
-        empty.processUptimeMs(),
-        systemLoad,
-        processLoad
-    );
+    long nowMs = System.currentTimeMillis();
+    return new HostTelemetrySnapshot(empty.environment(), Map.of(
+        HostMetric.CPU_SYSTEM, new HostReading(systemLoad, nowMs, Double.isFinite(systemLoad), "source-unavailable"),
+        HostMetric.CPU_PROCESS, new HostReading(processLoad, nowMs, Double.isFinite(processLoad), "source-unavailable")));
   }
 }

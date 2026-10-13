@@ -48,6 +48,21 @@ public class SamplerGcPauseP95 extends ReactCachedSampler {
   }
 
   @Override
+  public Metadata metadata() {
+    return new Metadata(1_000L, 300_000L, Quality.MEASURED, "ms");
+  }
+
+  @Override
+  public boolean isSampleAvailable() {
+    return GCStatsTracker.hasPauseSamples();
+  }
+
+  @Override
+  public String availabilityReason() {
+    return "no-pause-samples";
+  }
+
+  @Override
   public double onSample() {
     return SamplerMath.percentile(GCStatsTracker.snapshotPauses(), 0.95D);
   }
