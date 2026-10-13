@@ -114,6 +114,7 @@ public class WebControllerIntegrationTest {
 
         FakeSampler s1 = new FakeSampler("wc-tick-time", 42.0, "ms", new double[]{40.0, 41.0, 42.0});
         FakeSampler s2 = new FakeSampler("wc-tps", 20.0, "", new double[]{20.0, 20.0, 20.0});
+        s2.diagnostics = new Sampler.Diagnostics(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
 
         SampleController sampleController = mock(SampleController.class);
         @SuppressWarnings("unchecked")
@@ -126,7 +127,7 @@ public class WebControllerIntegrationTest {
         when(historyController.latest()).thenReturn(MetricSnapshot.empty());
         when(historyController.latestObserved()).thenReturn(MetricSnapshot.empty());
         when(historyController.descriptors()).thenReturn(List.of(
-            new MetricDescriptor("wc-tick-time", "wc-tick-time", "ms", 1_000L, 3_000L, true)
+            new MetricDescriptor("wc-tick-time", "wc-tick-time", "ms", 1_000L, 3_000L, true, Sampler.Metadata.UNKNOWN)
         ));
         when(historyController.effectiveMaxQuerySeries()).thenReturn(16);
         when(historyController.effectiveMaxQueryPoints()).thenReturn(4_096);
@@ -145,7 +146,7 @@ public class WebControllerIntegrationTest {
                     "wc-tick-time",
                     "wc-tick-time",
                     "ms",
-                    List.of(new HistoryPoint(1_000L, 1_000L, 42D, 40D, 43D, 84D, 42D, 2L))
+                    List.of(new HistoryPoint(1_000L, 1_000L, 42D, 40D, 43D, 84D, 42D, 2L, 0L, 0L))
                 ))
             ));
 
@@ -200,6 +201,11 @@ public class WebControllerIntegrationTest {
             .getAsJsonObject().getAsJsonObject("data").getAsJsonArray("samplers").get(0).getAsJsonObject();
         assertTrue(firstSampler.has("display"), "each sampler in the metrics array must carry a display string");
         assertTrue(firstSampler.has("available"), "each sampler must expose availability");
+        assertTrue(!firstSampler.has("diagnostics"), "unsupported diagnostics must be omitted");
+        JsonObject secondSampler = JsonParser.parseString(metricsResponse.body()).getAsJsonObject()
+            .getAsJsonObject("data").getAsJsonArray("samplers").get(1).getAsJsonObject();
+        assertEquals(12, secondSampler.getAsJsonObject("diagnostics").size());
+        assertEquals(0L, secondSampler.getAsJsonObject("diagnostics").get("attempts").getAsLong());
         assertTrue(!firstSampler.has("history"), "live snapshots must not duplicate historical arrays");
 
         HttpRequest historyRequest = HttpRequest.newBuilder()
@@ -215,7 +221,7 @@ public class WebControllerIntegrationTest {
         assertEquals(1_000L, historyData.get("actualResolutionMs").getAsLong());
         JsonObject historySeries = historyData.getAsJsonArray("series").get(0).getAsJsonObject();
         assertEquals("wc-tick-time", historySeries.get("id").getAsString());
-        assertEquals(6, historySeries.getAsJsonArray("points").get(0).getAsJsonArray().size());
+        assertEquals(8, historySeries.getAsJsonArray("points").get(0).getAsJsonArray().size());
 
         HttpRequest catalogRequest = HttpRequest.newBuilder()
             .uri(URI.create("http://127.0.0.1:" + port + "/api/v1/metrics/catalog"))
@@ -507,6 +513,7 @@ public class WebControllerIntegrationTest {
         private final String id;
         private final double value;
         private final String suffix;
+        private Diagnostics diagnostics = Diagnostics.EMPTY;
 
         FakeSampler(String id, double value, String suffix, double[] history) {
             this.id = id;
@@ -527,6 +534,11 @@ public class WebControllerIntegrationTest {
         @Override
         public String getName() {
             return id;
+        }
+
+        @Override
+        public Diagnostics diagnostics() {
+            return diagnostics;
         }
 
         @Override

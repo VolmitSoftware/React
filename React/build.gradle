@@ -208,6 +208,7 @@ dependencies {
     compileOnly('com.google.code.gson:gson:2.10')
     compileOnly('io.netty:netty-transport:4.1.92.Final')
 
+    testCompileOnly('com.fasterxml.jackson.core:jackson-annotations:2.17.2')
     testImplementation('io.javalin:javalin:6.4.0')
     testImplementation('me.clip:placeholderapi:2.11.6') {
         transitive = false

@@ -78,6 +78,29 @@ class CpuLoadMeterTest {
     Assertions.assertTrue(Double.isNaN(meter.processLoad()));
   }
 
+  @Test
+  void waitAndStealRemainSeparateFromBusyCpu() {
+    CpuLoadMeter meter = new CpuLoadMeter(4);
+    long[] before = ticks(0L, 0L, 0L);
+    long[] after = ticks(25L, 50L, 15L);
+    after[CentralProcessor.TickType.STEAL.getIndex()] = 10L;
+    meter.update(0L, before, 0L);
+    meter.update(SECOND, after, SECOND);
+    Assertions.assertEquals(0.15D, meter.ioWaitLoad());
+    Assertions.assertEquals(0.10D, meter.stealLoad());
+    Assertions.assertEquals(0.35D, meter.systemLoad());
+  }
+
+  @Test
+  void resetCpuTicksDoNotLookLikeMeasuredLoad() {
+    CpuLoadMeter meter = new CpuLoadMeter(1);
+    meter.update(0L, ticks(100L, 100L, 0L), 100L);
+    meter.update(SECOND, ticks(1L, 1L, 0L), 1L);
+    Assertions.assertTrue(Double.isNaN(meter.systemLoad()));
+    Assertions.assertTrue(Double.isNaN(meter.ioWaitLoad()));
+    Assertions.assertTrue(Double.isNaN(meter.processLoad()));
+  }
+
   private static long[] ticks(long user, long idle, long ioWait) {
     long[] ticks = new long[CentralProcessor.TickType.values().length];
     ticks[USER] = user;

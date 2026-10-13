@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris 每秒生成區塊數"
 iris_generation_total_ms = "Iris 總生成耗時（毫秒）"
 iris_pregen_queue = "Iris 預生成進行中"
 iris_pregen_throughput = "Iris 預生成吞吐量"
-jvm_threads = "JVM 執行緒"
+jvm_threads = "JVM 平台執行緒"
 lazy_gravity_skipped = "惰性重力跳過數"
 memory_free = "可用記憶體"
-memory_garbage = "可回收記憶體"
-memory_pressure = "記憶體壓力"
+memory_garbage = "GC 後的堆積增長量"
+memory_pressure = "JVM 配置速率"
 memory_used = "已用記憶體"
 memory_used_after_gc = "GC 後已用記憶體"
 pdc_write_batcher = "PDC 寫入批次處理"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "Iris 預生成器吞吐量 區塊 每秒數."
 jvm_threads = "包含外掛與伺服器執行緒集區在內的存活 JVM 執行緒。"
 lazy_gravity_skipped = "由於惰的重力,遊戲刻被投影爲可以跳過."
 memory_free = "可用 JVM 不斷積聚的記憶力在進一步成長之前"
-memory_garbage = "估計在收集垃圾之前可回收堆積的記憶。"
-memory_pressure = "使用高壓比 React 以檢測記憶體飽和度。"
+memory_garbage = "自最近一次完成的記憶體回收以來的堆積增長量。"
+memory_pressure = "根據 JVM 配置計數器估算的 JVM 堆積配置速率。"
 memory_used = "當前 JVM 堆積的記憶使用量。"
 memory_used_after_gc = "員額GC 近期收集後,足跡呈上升趨勢。"
 pdc_write_batcher = "持續資料寫入組合 React寫批發機。"
@@ -4626,3 +4626,22 @@ impact = "評估間隔遵循 updateCooldownSeconds。刻遙測未知或玩家索
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "預算恢復後單次增加的最大距離（區塊），限制為 1 到 32。"
 impact = "較小的步長可限制恢復時的區塊載入突增量。僅在啟用玩家區塊預算時生效。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "取樣 Folia 玩家位置，並可選擇收集有數量和保留上限的 JDK Flight Recorder 事件。JFR 記錄協定流量總量、區塊生成階段、儲存活動及超過設定門檻的等待。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "啟用玩家所在位置的 Folia 區域 TPS 取樣。"
+impact = "每秒輪流查詢一組數量受限的快取玩家位置，不載入區塊。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "每秒取樣的玩家位置數量上限，限制在 1 至 512 之間。觀測資料在五秒後過期。"
+impact = "數值越高，玩家涵蓋範圍越大，但區域 TPS 查詢次數也越多。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "啟用選擇性 JFR 遙測。預設停用。發布的摘要不包含位址、檔案路徑或堆疊追蹤。"
+impact = "增加 JFR 錄製工作，保留上限為 30 秒和 64 MiB。彙總序列每秒重設。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "JVM 檔案輸入輸出、監視器進入、監視器等待和執行緒停駐事件的最短持續時間，單位為毫秒，限制在 1 至 1000 之間。區塊生成階段不使用持續時間門檻。"
+impact = "門檻越低，產生的 JVM 事件越多。這些指標僅描述達到此門檻的事件。"

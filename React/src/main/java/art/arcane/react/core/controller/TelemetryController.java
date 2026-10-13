@@ -6,7 +6,10 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.ws.CoalescingWsChannel;
 import art.arcane.react.core.integration.ThirdPartyMetricRegistry;
 import art.arcane.react.core.telemetry.CounterRate;
+import art.arcane.react.content.sampler.GCStatsTracker;
 import art.arcane.react.core.telemetry.HostTelemetryProvider;
+import art.arcane.react.core.telemetry.HostMetric;
+import art.arcane.react.core.telemetry.HostMetricSampler;
 import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
 import art.arcane.react.core.telemetry.PlayerActivityTracker;
 import art.arcane.react.core.telemetry.TelemetrySampler;
@@ -97,6 +100,7 @@ public final class TelemetryController implements IController, Listener {
     for (Player player : Bukkit.getOnlinePlayers()) {
       playerActivity.recordActive(player.getUniqueId(), nowMs);
     }
+    GCStatsTracker.acquire();
     registerSamplers();
     Path dataPath = React.instance.getDataFolder().toPath();
     refreshExecutor = Executors.newSingleThreadScheduledExecutor(daemonFactory());
@@ -132,6 +136,7 @@ public final class TelemetryController implements IController, Listener {
     registeredSamplerIds.clear();
     playerActivity.clear();
     hostProvider = null;
+    GCStatsTracker.release();
   }
 
   public HostTelemetrySnapshot hostSnapshot() {
@@ -274,76 +279,18 @@ public final class TelemetryController implements IController, Listener {
         CoalescingWsChannel::coalescedFrames, () -> true, TelemetrySampler.Format.COUNT));
 
     registerHostSamplers(sampleController);
-    registerJvmSamplers(sampleController);
     registerPlayerSamplers(sampleController);
   }
 
   private void registerHostSamplers(SampleController sampleController) {
-    register(sampleController, hostOptions(
-        "physical-memory-used", "Physical Memory Used", "", Material.WATER_BUCKET,
-        () -> hostSnapshot().physicalMemoryUsed(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, hostOptions(
-        "physical-memory-free", "Physical Memory Free", "", Material.BUCKET,
-        () -> hostSnapshot().physicalMemoryFree(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, hostOptions(
-        "disk-usable", "Disk Usable", "", Material.IRON_PICKAXE,
-        () -> hostSnapshot().diskUsable(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, hostOptions(
-        "disk-read-rate", "Disk Read Rate", "", Material.IRON_PICKAXE,
-        () -> hostSnapshot().diskReadBytesPerSecond(), this::hostAvailable,
-        TelemetrySampler.Format.BYTES_PER_SECOND));
-    register(sampleController, hostOptions(
-        "disk-write-rate", "Disk Write Rate", "", Material.IRON_PICKAXE,
-        () -> hostSnapshot().diskWriteBytesPerSecond(), this::hostAvailable,
-        TelemetrySampler.Format.BYTES_PER_SECOND));
-    register(sampleController, hostOptions(
-        "network-receive-rate", "Network Receive Rate", "", Material.OBSERVER,
-        () -> hostSnapshot().networkReceiveBytesPerSecond(), this::hostAvailable,
-        TelemetrySampler.Format.BYTES_PER_SECOND));
-    register(sampleController, hostOptions(
-        "network-send-rate", "Network Send Rate", "", Material.OBSERVER,
-        () -> hostSnapshot().networkSendBytesPerSecond(), this::hostAvailable,
-        TelemetrySampler.Format.BYTES_PER_SECOND));
-    register(sampleController, hostOptions(
-        "network-receive-drops", "Network Receive Drops", "drops", Material.OBSERVER,
-        () -> hostSnapshot().networkReceiveDrops(), this::hostAvailable, TelemetrySampler.Format.COUNT));
-    register(sampleController, hostOptions(
-        "network-receive-errors", "Network Receive Errors", "errors", Material.OBSERVER,
-        () -> hostSnapshot().networkReceiveErrors(), this::hostAvailable, TelemetrySampler.Format.COUNT));
-    register(sampleController, hostOptions(
-        "network-send-errors", "Network Send Errors", "errors", Material.OBSERVER,
-        () -> hostSnapshot().networkSendErrors(), this::hostAvailable, TelemetrySampler.Format.COUNT));
-  }
-
-  private void registerJvmSamplers(SampleController sampleController) {
-    register(sampleController, hostOptions(
-        "jvm-heap-max", "JVM Heap Max", "", Material.EXPERIENCE_BOTTLE,
-        () -> hostSnapshot().heapMax(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, hostOptions(
-        "jvm-heap-committed", "JVM Heap Committed", "", Material.EXPERIENCE_BOTTLE,
-        () -> hostSnapshot().heapCommitted(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, hostOptions(
-        "jvm-heap-utilization", "JVM Heap Utilization", "%", Material.EXPERIENCE_BOTTLE,
-        () -> hostSnapshot().heapUtilization(), this::hostAvailable, TelemetrySampler.Format.PERCENT));
-    register(sampleController, hostOptions(
-        "jvm-nonheap-used", "JVM Non-Heap Used", "", Material.EXPERIENCE_BOTTLE,
-        () -> hostSnapshot().nonHeapUsed(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, hostOptions(
-        "jvm-direct-buffer-bytes", "JVM Direct Buffer Memory", "", Material.EXPERIENCE_BOTTLE,
-        () -> hostSnapshot().directBufferBytes(), this::hostAvailable, TelemetrySampler.Format.BYTES));
-    register(sampleController, hostOptions(
-        "jvm-direct-buffer-count", "JVM Direct Buffer Count", "buffers", Material.EXPERIENCE_BOTTLE,
-        () -> hostSnapshot().directBufferCount(), this::hostAvailable, TelemetrySampler.Format.COUNT));
-    register(sampleController, hostOptions(
-        "jvm-gc-collections-rate", "JVM GC Collections", "/min", Material.EXPERIENCE_BOTTLE,
-        () -> hostSnapshot().gcCollectionsPerMinute(), this::hostAvailable,
-        TelemetrySampler.Format.DECIMAL));
-    register(sampleController, hostOptions(
-        "jvm-loaded-classes", "JVM Loaded Classes", "classes", Material.EXPERIENCE_BOTTLE,
-        () -> hostSnapshot().loadedClasses(), this::hostAvailable, TelemetrySampler.Format.COUNT));
-    register(sampleController, hostOptions(
-        "jvm-process-uptime", "JVM Process Uptime", "ms", Material.CLOCK,
-        () -> hostSnapshot().processUptimeMs(), this::hostAvailable, TelemetrySampler.Format.COUNT));
+    for (HostMetric metric : HostMetric.values()) {
+      if (metric.definition().registered()) {
+        HostMetricSampler sampler = new HostMetricSampler(metric, this::hostSnapshot);
+        if (sampleController.registerSampler(sampler)) {
+          registeredSamplerIds.add(sampler.getId());
+        }
+      }
+    }
   }
 
   private void registerPlayerSamplers(SampleController sampleController) {
@@ -387,28 +334,11 @@ public final class TelemetryController implements IController, Listener {
     );
   }
 
-  private TelemetrySampler.Options hostOptions(
-      String id,
-      String name,
-      String suffix,
-      Material icon,
-      DoubleSupplier valueSupplier,
-      BooleanSupplier availabilitySupplier,
-      TelemetrySampler.Format format
-  ) {
-    return new TelemetrySampler.Options(id, name, suffix, icon, valueSupplier,
-        availabilitySupplier, format, () -> hostSnapshot().capturedAtMs());
-  }
-
   private void register(SampleController controller, TelemetrySampler.Options options) {
     Sampler sampler = new TelemetrySampler(options);
     if (controller.registerSampler(sampler)) {
       registeredSamplerIds.add(sampler.getId());
     }
-  }
-
-  private boolean hostAvailable() {
-    return hostSnapshot().available();
   }
 
   private boolean historyAvailable() {

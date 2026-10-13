@@ -34,6 +34,7 @@ public class MetricsResource {
     private final SampleController samplers;
     private final HistoryController history;
     private final MetricsSerializer serializer;
+    private volatile CachedSnapshot cachedSnapshot;
 
     public MetricsResource(
         SampleController samplers,
@@ -48,12 +49,9 @@ public class MetricsResource {
     public SnapshotResponse snapshotData() {
         MetricSnapshot snapshot = history == null ? MetricSnapshot.empty() : history.latestObserved();
         if (!snapshot.values().isEmpty()) {
-            SamplerDto[] data = new SamplerDto[snapshot.values().size()];
-            for (int index = 0; index < snapshot.values().size(); index++) {
-                data[index] = serializer.toDto(snapshot.values().get(index));
-            }
-            return new SnapshotResponse(snapshot.sequence(), snapshot.capturedAtMs(), data);
+            return snapshotResponse(snapshot);
         }
+        cachedSnapshot = null;
 
         Registry<Sampler> registry = samplers == null ? null : samplers.getSamplers();
         if (registry == null) {
@@ -86,7 +84,11 @@ public class MetricsResource {
                 descriptor.suffix(),
                 descriptor.firstTimestampMs(),
                 descriptor.lastTimestampMs(),
-                descriptor.active()
+                descriptor.active(),
+                descriptor.metadata().intervalMs(),
+                descriptor.metadata().windowMs(),
+                descriptor.metadata().quality(),
+                descriptor.metadata().unit()
             );
         }
         context.json(new Envelope<>(data));
@@ -148,6 +150,26 @@ public class MetricsResource {
             nextCursor,
             seriesDtos(result.series())
         )));
+    }
+
+    private SnapshotResponse snapshotResponse(MetricSnapshot snapshot) {
+        CachedSnapshot cached = cachedSnapshot;
+        if (cached != null && cached.source() == snapshot) {
+            return cached.response();
+        }
+        synchronized (this) {
+            cached = cachedSnapshot;
+            if (cached != null && cached.source() == snapshot) {
+                return cached.response();
+            }
+            SamplerDto[] data = new SamplerDto[snapshot.values().size()];
+            for (int index = 0; index < snapshot.values().size(); index++) {
+                data[index] = serializer.toDto(snapshot.values().get(index));
+            }
+            SnapshotResponse response = new SnapshotResponse(snapshot.sequence(), snapshot.capturedAtMs(), data);
+            cachedSnapshot = new CachedSnapshot(snapshot, response);
+            return response;
+        }
     }
 
     private QueryPage initialQuery(Context context) {
@@ -258,7 +280,9 @@ public class MetricsResource {
                     point.minimum(),
                     point.maximum(),
                     point.last(),
-                    point.count()
+                    point.count(),
+                    point.firstSampledAtMs(),
+                    point.lastSampledAtMs()
                 };
             }
             data[seriesIndex] = new MetricHistorySeriesDto(
@@ -305,6 +329,9 @@ public class MetricsResource {
         } catch (ArithmeticException failure) {
             return Long.MAX_VALUE;
         }
+    }
+
+    private record CachedSnapshot(MetricSnapshot source, SnapshotResponse response) {
     }
 
     public record SnapshotResponse(long sequence, long capturedAtMs, SamplerDto[] samplers) {

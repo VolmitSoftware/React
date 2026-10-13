@@ -18,8 +18,12 @@ import org.mockito.ArgumentCaptor;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,7 +52,7 @@ public class MetricsResourceTest {
     when(history.latestObserved()).thenReturn(MetricSnapshot.of(
         17L,
         1_000L,
-        List.of(new MetricSnapshotValue("tick-time", "Tick Time", "ms", 42D, "42 ms", true))
+        List.of(new MetricSnapshotValue("tick-time", "Tick Time", "ms", 42D, "42 ms", true, 1L, Sampler.Metadata.UNKNOWN, "", Sampler.Diagnostics.EMPTY))
     ));
     MetricsResource resource = new MetricsResource(controller, history, new MetricsSerializer());
 
@@ -60,6 +64,46 @@ public class MetricsResourceTest {
     assertEquals("tick-time", response.samplers()[0].id);
     assertEquals(42D, response.samplers()[0].value);
     assertEquals(true, response.samplers()[0].available);
+  }
+
+  @Test
+  void reusesDtosWhileEveryReadStillMarksViewerActivity() {
+    HistoryController history = mock(HistoryController.class);
+    MetricSnapshotValue value = new MetricSnapshotValue("tick-time", "Tick Time", "ms", 42D, "42", true,
+        123L, Sampler.Metadata.UNKNOWN, "", Sampler.Diagnostics.EMPTY);
+    MetricSnapshot first = MetricSnapshot.of(17L, 1_000L, List.of(value));
+    MetricSnapshot next = MetricSnapshot.of(18L, 1_500L, List.of(value));
+    MetricSnapshot replacement = MetricSnapshot.of(18L, 2_000L, List.of(value));
+    when(history.latestObserved()).thenReturn(first, first, next, next, replacement);
+    MetricsSerializer serializer = spy(new MetricsSerializer());
+    MetricsResource resource = new MetricsResource(null, history, serializer);
+
+    MetricsResource.SnapshotResponse a = resource.snapshotData();
+    assertSame(a, resource.snapshotData());
+    MetricsResource.SnapshotResponse b = resource.snapshotData();
+    assertNotSame(a, b);
+    assertSame(b, resource.snapshotData());
+    MetricsResource.SnapshotResponse c = resource.snapshotData();
+    assertNotSame(b, c);
+    assertEquals(2_000L, c.capturedAtMs());
+    verify(history, times(5)).latestObserved();
+    verify(serializer, times(3)).toDto(value);
+  }
+
+  @Test
+  void registryFallbackKeepsReadingAndMarkingDemand() {
+    SampleController controller = mock(SampleController.class);
+    @SuppressWarnings("unchecked")
+    Registry<Sampler> registry = mock(Registry.class);
+    Sampler sampler = mock(Sampler.class);
+    when(sampler.captureReading()).thenReturn(new Sampler.Reading(20D, 123L, true, Sampler.Metadata.UNKNOWN, ""));
+    when(controller.getSamplers()).thenReturn(registry);
+    when(registry.all()).thenReturn(List.of(sampler));
+    MetricsResource resource = new MetricsResource(controller, null, new MetricsSerializer());
+
+    assertNotSame(resource.snapshotData(), resource.snapshotData());
+    verify(sampler, times(2)).markDemand();
+    verify(sampler, times(2)).captureReading();
   }
 
   @Test

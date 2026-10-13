@@ -1,12 +1,15 @@
 package art.arcane.react.core.history;
 
+import art.arcane.react.api.sampler.Sampler;
+
 public record MetricDescriptor(
     String id,
     String name,
     String suffix,
     long firstTimestampMs,
     long lastTimestampMs,
-    boolean active
+    boolean active,
+    Sampler.Metadata metadata
 ) {
   public MetricDescriptor merge(MetricDescriptor replacement) {
     long first = firstTimestampMs;
@@ -22,7 +25,8 @@ public record MetricDescriptor(
         replacement.suffix == null ? suffix : replacement.suffix,
         first,
         last,
-        replacement.active
+        replacement.active,
+        replacement.metadata
     );
   }
 }

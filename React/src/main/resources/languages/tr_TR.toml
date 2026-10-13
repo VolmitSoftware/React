@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris chunk'lar Per Sekundu"
 iris_generation_total_ms = "Iris Toplam Bayan"
 iris_pregen_queue = "Iris Pregen işlemde"
 iris_pregen_throughput = "Iris Pregen Throughput"
-jvm_threads = "JVM İş Parçacıkları"
+jvm_threads = "JVM platform iş parçacıkları"
 lazy_gravity_skipped = "Enis Gravity Skipped"
 memory_free = "Memory Free"
-memory_garbage = "Memory Garbage"
-memory_pressure = "Memory Basınç"
+memory_garbage = "GC sonrası yığın büyümesi"
+memory_pressure = "JVM ayırma hızı"
 memory_used = "Hatıra Kullanılıyor"
 memory_used_after_gc = "Memory, Gc'den sonra kullanılır"
 pdc_write_batcher = "Pdc Write Batcher"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "Iris pregenerator geçişini saniyede chunk'lar'de."
 jvm_threads = "Eklenti ve sunucu havuzları dahil canlı JVM iş parçacıkları."
 lazy_gravity_skipped = "Düşen blok hareketleri tikler tembel çekim tarafından atlanabilir olarak projelendi."
 memory_free = "kullanılabilir JVM Daha fazla büyümeden önce hafızaya çıkın."
-memory_garbage = "Tahmin edilebilir heap hafızayı çöp koleksiyonu olarak bekleyen."
-memory_pressure = "Heap basınç oranı tarafından kullanılan React hafızayı algılamak için."
+memory_garbage = "Son tamamlanan çöp toplama işleminden bu yana yığın büyümesi."
+memory_pressure = "JVM ayırma sayacından tahmin edilen JVM yığın belleği ayırma hızı."
 memory_used = "Şimdiki akım JVM hafıza kullanımı için."
 memory_used_after_gc = "Son GC işlemlerinden sonraki heap kullanım eğilimi."
 pdc_write_batcher = "Persistent-data, bir araya gelerek React'Sırık yaz."
@@ -4626,3 +4626,22 @@ impact = "Değerlendirmeler updateCooldownSeconds aralığını izler. Bilinmeye
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "Bütçe toparlandıktan sonra chunk cinsinden en yüksek mesafe artışı; 1 ile 32 arasında sınırlandırılır."
 impact = "Küçük adımlar toparlanma sırasında yükleme patlamalarını sınırlar. Yalnızca oyuncu chunk bütçeleri açıkken uygulanır."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "Folia oyuncu konumlarını ve isteğe bağlı olarak sınırlı JDK Flight Recorder olaylarını örnekler. JFR, protokol trafiği toplamlarını, chunk üretim aşamalarını, depolama etkinliğini ve yapılandırılan eşiği aşan beklemeleri kaydeder."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "Oyuncu konumlarında Folia bölgesi TPS örneklemesini etkinleştirir."
+impact = "Chunk yüklemeden, önbellekteki oyuncu konumlarından sınırlı ve dönüşümlü bir kümeyi saniyede bir sorgular."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "Her saniye örneklenen en fazla oyuncu konumu sayısıdır ve 1 ile 512 arasında sınırlandırılır. Gözlemler beş saniye sonra geçerliliğini yitirir."
+impact = "Daha yüksek değerler daha fazla oyuncuyu kapsar ancak daha fazla bölge TPS sorgusu gerektirir."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "Seçici JFR telemetrisini etkinleştirir. Varsayılan olarak devre dışıdır. Yayımlanan özetler adresleri, dosya yollarını ve yığın izlerini içermez."
+impact = "30 saniye ve 64 MiB saklama sınırlarıyla JFR kayıt işi ekler. Toplu ölçüm serileri her saniye sıfırlanır."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "JVM dosya G/Ç, monitöre giriş, monitörde bekleme ve iş parçacığı park etme olayları için milisaniye cinsinden en düşük süredir. 1 ile 1000 arasında sınırlandırılır. Chunk üretim aşamalarında süre eşiği yoktur."
+impact = "Daha düşük eşikler daha fazla JVM olayı üretir. Bu metrikler yalnızca bu eşiğe ulaşan olayları açıklar."

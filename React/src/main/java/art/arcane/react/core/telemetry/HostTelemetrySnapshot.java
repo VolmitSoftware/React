@@ -2,32 +2,17 @@ package art.arcane.react.core.telemetry;
 
 import art.arcane.react.api.web.dto.EnvironmentDto;
 
-public record HostTelemetrySnapshot(
-    EnvironmentDto environment,
-    boolean available,
-    long capturedAtMs,
-    long physicalMemoryUsed,
-    long physicalMemoryFree,
-    long diskUsable,
-    double diskReadBytesPerSecond,
-    double diskWriteBytesPerSecond,
-    double networkReceiveBytesPerSecond,
-    double networkSendBytesPerSecond,
-    long networkReceiveDrops,
-    long networkReceiveErrors,
-    long networkSendErrors,
-    long heapMax,
-    long heapCommitted,
-    double heapUtilization,
-    long nonHeapUsed,
-    long directBufferBytes,
-    long directBufferCount,
-    double gcCollectionsPerMinute,
-    long loadedClasses,
-    long processUptimeMs,
-    double systemCpuLoad,
-    double processCpuLoad
-) {
+import java.util.Map;
+
+public record HostTelemetrySnapshot(EnvironmentDto environment, Map<HostMetric, HostReading> readings) {
+  public HostTelemetrySnapshot {
+    readings = Map.copyOf(readings);
+  }
+
+  public HostReading reading(HostMetric metric) {
+    return readings.getOrDefault(metric, HostReading.EMPTY);
+  }
+
   public static HostTelemetrySnapshot empty() {
     EnvironmentDto environment = new EnvironmentDto();
     environment.cpu = new EnvironmentDto.CpuDto();
@@ -40,31 +25,6 @@ public record HostTelemetrySnapshot(
     environment.disks = new EnvironmentDto.DiskDto[0];
     environment.mounts = new EnvironmentDto.MountDto[0];
     environment.network = new EnvironmentDto.NetworkInterfaceDto[0];
-    return new HostTelemetrySnapshot(
-        environment,
-        false,
-        0L,
-        0L,
-        0L,
-        0L,
-        0D,
-        0D,
-        0D,
-        0D,
-        0L,
-        0L,
-        0L,
-        0L,
-        0L,
-        0D,
-        0L,
-        0L,
-        0L,
-        0D,
-        0L,
-        0L,
-        Double.NaN,
-        Double.NaN
-    );
+    return new HostTelemetrySnapshot(environment, Map.of());
   }
 }

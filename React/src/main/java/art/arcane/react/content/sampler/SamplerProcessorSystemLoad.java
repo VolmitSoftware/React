@@ -22,6 +22,7 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.core.controller.TelemetryController;
 import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
+import art.arcane.react.core.telemetry.HostMetric;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Material;
 
@@ -63,19 +64,22 @@ public class SamplerProcessorSystemLoad extends ReactCachedSampler {
 
   @Override
   public boolean isSampleAvailable() {
-    return Double.isFinite(host.get().systemCpuLoad());
+    return host.get().reading(HostMetric.CPU_SYSTEM).fresh(HostMetric.CPU_SYSTEM, System.currentTimeMillis()).available();
+  }
+
+  @Override
+  public Metadata metadata() {
+    return HostMetric.CPU_SYSTEM.metadata();
   }
 
   @Override
   public Reading captureReading() {
-    HostTelemetrySnapshot snapshot = host.get();
-    return new Reading(normalizeCpuLoad(snapshot.systemCpuLoad()), snapshot.capturedAtMs(),
-        snapshot.available() && Double.isFinite(snapshot.systemCpuLoad()));
+    return host.get().reading(HostMetric.CPU_SYSTEM).fresh(HostMetric.CPU_SYSTEM, System.currentTimeMillis()).reading(HostMetric.CPU_SYSTEM);
   }
 
   @Override
   public double onSample() {
-    return normalizeCpuLoad(host.get().systemCpuLoad());
+    return host.get().reading(HostMetric.CPU_SYSTEM).value();
   }
 
   @Override

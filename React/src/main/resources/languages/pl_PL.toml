@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris chunki na sekundę"
 iris_generation_total_ms = "Iris Generacja ogółem"
 iris_pregen_queue = "Iris Pregen w toku"
 iris_pregen_throughput = "Iris Pregen Throubput"
-jvm_threads = "Wątki JVM"
+jvm_threads = "Wątki platformowe JVM"
 lazy_gravity_skipped = "Grawitacja leniwa pominięta"
 memory_free = "Pamięć wolna"
-memory_garbage = "Śmieci pamięci"
-memory_pressure = "Ciśnienie pamięci"
+memory_garbage = "Wzrost sterty od GC"
+memory_pressure = "Tempo alokacji JVM"
 memory_used = "Używana pamięć"
 memory_used_after_gc = "Używana pamięć po Gc"
 pdc_write_batcher = "Pdc Write Batcher"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "Przegłębienie pregeneracji Iris w chunki na sekundę
 jvm_threads = "Aktywne wątki JVM wraz z pulami wtyczek i serwera."
 lazy_gravity_skipped = "ticki przewidywany jako przejściowy przez leniwą grawitację."
 memory_free = "Dostępne JVM pamięć stos przed dalszym wzrostem."
-memory_garbage = "Szacunkowa pamięć z odzysku do czasu zbiórki śmieci."
-memory_pressure = "Stosunek ciśnienia w głowach stosowany przez React wykryć nasycenie pamięci."
+memory_garbage = "Wzrost sterty od ostatniego zakończonego odśmiecania pamięci."
+memory_pressure = "Szacowane tempo alokacji sterty JVM na podstawie licznika alokacji JVM."
 memory_used = "Bieżący JVM wykorzystanie pamięci."
 memory_used_after_gc = "Po...GC trend w zakresie śladu po ostatnich zbiorach."
 pdc_write_batcher = "Persistent-data pisze połączone przez React's pisz batcher."
@@ -4626,3 +4626,22 @@ impact = "Odstęp ocen określa updateCooldownSeconds. Brak telemetrii ticków l
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "Maksymalny wzrost odległości po odzyskaniu budżetu, w chunkach; ograniczony do 1–32."
 impact = "Mniejsze kroki ograniczają skoki ładowania podczas przywracania. Dotyczy tylko włączonych budżetów chunków graczy."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "Próbkuje pozycje graczy Folia oraz opcjonalnie ograniczony zestaw zdarzeń JDK Flight Recorder. JFR rejestruje sumy ruchu protokołu, etapy generowania chunków, operacje pamięci masowej i oczekiwania przekraczające ustawiony próg."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "Włącza próbkowanie TPS regionów Folia w pozycjach graczy."
+impact = "Raz na sekundę odpytuje ograniczony, rotacyjny zestaw pozycji graczy z pamięci podręcznej bez wczytywania chunków."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "Maksymalna liczba pozycji graczy próbkowanych na sekundę, ograniczona do zakresu od 1 do 512. Obserwacje wygasają po pięciu sekundach."
+impact = "Wyższe wartości obejmują więcej graczy, ale wymagają większej liczby zapytań o TPS regionów."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "Włącza selektywną telemetrię JFR. Domyślnie wyłączona. Publikowane podsumowania pomijają adresy, ścieżki plików i ślady stosu."
+impact = "Dodaje pracę rejestrowania JFR z limitami przechowywania 30 sekund i 64 MiB. Zagregowane serie są zerowane co sekundę."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "Minimalny czas w milisekundach dla zdarzeń JVM dotyczących wejścia i wyjścia plików, wejścia do monitora, oczekiwania na monitorze i parkowania wątków, ograniczony do zakresu od 1 do 1000. Etapy generowania chunków nie mają progu czasu trwania."
+impact = "Niższe progi generują więcej zdarzeń JVM. Te metryki opisują wyłącznie zdarzenia osiągające ten próg."

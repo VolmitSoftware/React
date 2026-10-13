@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris chunkit sekunnissa"
 iris_generation_total_ms = "Iris Sukupolvi yhteensä"
 iris_pregen_queue = "Iris Pregen käynnissä"
 iris_pregen_throughput = "Iris Pregen Throughput"
-jvm_threads = "JVM-säikeet"
+jvm_threads = "JVM:n alustasäikeet"
 lazy_gravity_skipped = "Laiska painovoima ohitti"
 memory_free = "Muisti vapaa"
-memory_garbage = "Muistin roskat"
-memory_pressure = "Muistipaine"
+memory_garbage = "Keon kasvu GC:n jälkeen"
+memory_pressure = "JVM:n muistivarausnopeus"
 memory_used = "Muisti käytetty"
 memory_used_after_gc = "Muisti käytetty Gc:n jälkeen"
 pdc_write_batcher = "Pdc Kirjoita Erä"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "Iris-pregeneratorin läpimäärä chunkit:ssä sekunni
 jvm_threads = "Elävät JVM-säikeet mukaan lukien liitännäis- ja palvelinpoolit."
 lazy_gravity_skipped = "tickit:n laskut-blokkiliikkeen ennustaminen laiskalla painovoimalla."
 memory_free = "Saatavilla JVM kasa muisti ennen lisäkasvua."
-memory_garbage = "Arvioidaan uudelleen saatava kasa muistia odottamassa roskia kokoelma."
-memory_pressure = "Heap painesuhde käytetään React havaita muistin kyllästyminen."
+memory_garbage = "Keon kasvu viimeisen päättyneen roskienkeruun jälkeen."
+memory_pressure = "JVM:n varauslaskurista arvioitu keon muistivarausnopeus."
 memory_used = "Kuluva JVM kasa muistin käyttö."
 memory_used_after_gc = "Lähetys-GC Heap Footprint trendi viimeaikaisten keräämien jälkeen."
 pdc_write_batcher = "Pysyviä tietoja kirjoittaa yhdessä React- Kirjoita erä."
@@ -4626,3 +4626,22 @@ impact = "Arviovälin määrää updateCooldownSeconds. Puuttuva tick-telemetria
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "Etäisyyden suurin lisäys onnistuneen budjettipalautumisen jälkeen chunkeina; rajattu välille 1–32."
 impact = "Pienet askeleet rajoittavat latauspiikkejä palautumisen aikana. Koskee vain käytössä olevia pelaajien chunk-budjetteja."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "Mittaa Folia-pelaajien sijainteja ja valinnaisesti rajattuja JDK Flight Recorder -tapahtumia. JFR tallentaa protokollaliikenteen kokonaismääriä, lohkoalueiden luontivaiheita, tallennustoimintaa ja asetetun kynnyksen ylittäviä odotuksia."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "Ottaa käyttöön Folia-alueiden TPS-mittauksen pelaajien sijainneissa."
+impact = "Kysyy kerran sekunnissa rajatun, vaihtuvan joukon välimuistiin tallennettuja pelaajien sijainteja lataamatta lohkoalueita."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "Sekunnissa mitattavien pelaajasijaintien enimmäismäärä, rajattu välille 1–512. Havainnot vanhenevat viiden sekunnin kuluttua."
+impact = "Suuremmat arvot kattavat useampia pelaajia mutta lisäävät alueiden TPS-kyselyitä."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "Ottaa käyttöön valikoidun JFR-telemetrian. Oletuksena pois käytöstä. Julkaistut yhteenvedot eivät sisällä osoitteita, tiedostopolkuja tai pinojälkiä."
+impact = "Lisää JFR-tallennustyötä, jonka säilytysrajat ovat 30 sekuntia ja 64 MiB. Koostetut mittaussarjat nollataan sekunnin välein."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "JVM:n tiedostosiirtojen, monitoriin siirtymisen, monitoriodotuksen ja säikeiden pysäköinnin vähimmäiskesto millisekunteina, rajattu välille 1–1000. Lohkoalueiden luontivaiheilla ei ole keston kynnysarvoa."
+impact = "Alemmat kynnysarvot tuottavat enemmän JVM-tapahtumia. Nämä mittarit kuvaavat vain kynnysarvon saavuttavia tapahtumia."

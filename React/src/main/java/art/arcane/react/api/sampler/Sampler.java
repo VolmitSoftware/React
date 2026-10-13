@@ -49,11 +49,64 @@ public interface Sampler extends Registered, ReactRenderer {
   double sample();
 
   default Reading captureReading() {
-    double value = sample();
-    return new Reading(value, System.currentTimeMillis(), isSampleAvailable());
+    double value = capture();
+    return reading(value, System.currentTimeMillis(), isSampleAvailable());
   }
 
-  record Reading(double value, long sampledAtMs, boolean available) {
+  default Metadata metadata() {
+    return Metadata.UNKNOWN;
+  }
+
+  default String availabilityReason() {
+    return "source-unavailable";
+  }
+
+  default Diagnostics diagnostics() {
+    return Diagnostics.EMPTY;
+  }
+
+  default Reading reading(double value, long sampledAtMs, boolean available) {
+    return reading(value, sampledAtMs, available, availabilityReason());
+  }
+
+  default Reading reading(double value, long sampledAtMs, boolean available, String reason) {
+    return new Reading(value, sampledAtMs, available, metadata(), reason);
+  }
+
+  enum Quality {
+    UNKNOWN,
+    MEASURED,
+    ESTIMATED
+  }
+
+  record Metadata(long intervalMs, long windowMs, Quality quality, String unit) {
+    public static final Metadata UNKNOWN = new Metadata(0L, 0L, Quality.UNKNOWN, "");
+
+    public Metadata {
+      intervalMs = Math.max(0L, intervalMs);
+      windowMs = Math.max(0L, windowMs);
+      quality = quality == null ? Quality.UNKNOWN : quality;
+      unit = unit == null ? "" : unit.trim();
+    }
+  }
+
+  record Reading(double value, long sampledAtMs, boolean available, Metadata metadata, String unavailableReason) {
+    public Reading {
+      metadata = metadata == null ? Metadata.UNKNOWN : metadata;
+      if (!Double.isFinite(value)) {
+        available = false;
+        unavailableReason = "non-finite";
+      }
+      available = available && sampledAtMs > 0L;
+      unavailableReason = available ? "" : unavailableReason == null || unavailableReason.isBlank()
+          ? sampledAtMs <= 0L ? "warming-up" : "source-unavailable" : unavailableReason;
+    }
+  }
+
+  record Diagnostics(long attempts, long successes, long failures, long cacheHits, long inFlightSkips,
+                     long lastDurationNanos, long maxDurationNanos, long lastQueueNanos, long maxQueueNanos,
+                     long lastSuccessAtMs, long totalDurationNanos, long totalQueueNanos) {
+    public static final Diagnostics EMPTY = new Diagnostics(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
   }
 
   default double capture() {

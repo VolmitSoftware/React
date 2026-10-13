@@ -25,6 +25,8 @@ import art.arcane.react.core.controller.EventController;
 public abstract class ReactEventSampler extends ReactCachedSampler {
   private transient volatile EventController eventController;
   private transient volatile boolean sampledWhileMeasuring;
+  private transient volatile long measuredAtMs;
+  private transient volatile long measuredWindowMs;
 
   protected ReactEventSampler(String id, long sampleDelay) {
     super(id, sampleDelay);
@@ -37,12 +39,31 @@ public abstract class ReactEventSampler extends ReactCachedSampler {
     EventController controller = controller();
     boolean measuring = controller != null && controller.isMeasuring();
     sampledWhileMeasuring = measuring;
+    measuredAtMs = measuring ? controller.getWindowPublishedAtMs() : 0L;
+    measuredWindowMs = measuring ? Math.round(controller.getWindowSeconds() * 1_000D) : 0L;
     return measuring ? onMeasuredSample(controller) : 0D;
   }
 
   @Override
+  protected long readingTimestampMs() {
+    return measuredAtMs;
+  }
+
+  @Override
+  public Metadata metadata() {
+    Metadata metadata = super.metadata();
+    return new Metadata(sampleDelay, measuredWindowMs, Quality.MEASURED,
+        getId().startsWith("plugin-") ? "ms/s" : metadata.unit());
+  }
+
+  @Override
+  public String availabilityReason() {
+    return sampledWhileMeasuring ? "measurement-stale" : "not-measuring";
+  }
+
+  @Override
   public boolean isSampleAvailable() {
-    if (!sampledWhileMeasuring) {
+    if (!sampledWhileMeasuring || !super.isSampleAvailable()) {
       return false;
     }
 
@@ -62,6 +83,8 @@ public abstract class ReactEventSampler extends ReactCachedSampler {
   public void start() {
     super.start();
     sampledWhileMeasuring = false;
+    measuredAtMs = 0L;
+    measuredWindowMs = 0L;
     eventController = React.controller(EventController.class);
   }
 

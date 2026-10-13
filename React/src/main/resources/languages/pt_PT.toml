@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris chunks por segundo"
 iris_generation_total_ms = "Iris Total de Geração Ms"
 iris_pregen_queue = "Iris Pregen em curso"
 iris_pregen_throughput = "Iris Produção de Pregen"
-jvm_threads = "Threads da JVM"
+jvm_threads = "Threads de plataforma da JVM"
 lazy_gravity_skipped = "A gravidade preguiçosa foi ignorada"
 memory_free = "Sem Memória"
-memory_garbage = "Lixo de Memória"
-memory_pressure = "Pressão da memória"
+memory_garbage = "Crescimento do heap desde GC"
+memory_pressure = "Taxa de alocação da JVM"
 memory_used = "Memória Usada"
 memory_used_after_gc = "Memória usada após Gc"
 pdc_write_batcher = "Pdc Write Batcher"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "O rendimento do pré-gerador Iris em chunks por segund
 jvm_threads = "Threads JVM ativas incluindo pools de plugins e do servidor."
 lazy_gravity_skipped = "O movimento de blocos caídos ticks projetado como saltável pela gravidade preguiçosa."
 memory_free = "Disponível JVM memória de pilha antes de um crescimento mais."
-memory_garbage = "Estimativa de memória de pilha recuperável pendente coleta de lixo."
-memory_pressure = "Relação de pressão de peso utilizada por React para detectar a saturação da memória."
+memory_garbage = "Crescimento do heap desde a última recolha de lixo concluída."
+memory_pressure = "Taxa estimada de alocação do heap da JVM a partir do seu contador de alocações."
 memory_used = "Actual JVM Utilização da memória de pilha."
 memory_used_after_gc = "Pós-...GC tendência de pegada do heap após as coleções recentes."
 pdc_write_batcher = "Os dados persistentes são gravados em conjunto com ReactÉ um batedor de escrita."
@@ -4626,3 +4626,22 @@ impact = "As avaliações seguem updateCooldownSeconds. Telemetria de ticks desc
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "Aumento máximo da distância após a recuperação do orçamento, em chunks; limitado entre 1 e 32."
 impact = "Passos pequenos limitam picos de carregamento durante a recuperação. Aplica-se apenas com os orçamentos de chunks dos jogadores ativos."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "Amostra posições de jogadores Folia e, opcionalmente, um conjunto limitado de eventos JDK Flight Recorder. O JFR regista totais de tráfego do protocolo, fases de geração de chunks, atividade de armazenamento e esperas acima do limiar configurado."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "Ativa a amostragem de TPS das regiões Folia nas posições dos jogadores."
+impact = "Consulta uma seleção limitada e rotativa de posições de jogadores em cache uma vez por segundo, sem carregar chunks."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "Número máximo de posições de jogadores amostradas por segundo, limitado de 1 a 512. As observações expiram após cinco segundos."
+impact = "Valores mais altos abrangem mais jogadores, mas exigem mais consultas de TPS das regiões."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "Ativa a telemetria JFR seletiva. Desativada por predefinição. Os resumos publicados omitem endereços, caminhos de ficheiros e rastreios da pilha."
+impact = "Adiciona trabalho de gravação JFR com limites de retenção de 30 segundos e 64 MiB. As séries agregadas são repostas a zero a cada segundo."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "Duração mínima em milissegundos para eventos JVM de E/S de ficheiros, entrada em monitores, espera em monitores e estacionamento de threads, limitada de 1 a 1000. As fases de geração de chunks não têm limiar de duração."
+impact = "Limiares mais baixos produzem mais eventos JVM. Estas métricas descrevem apenas os eventos que atingem este limiar."

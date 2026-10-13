@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris pasaulio segmentai per sekundę"
 iris_generation_total_ms = "Iris Iš viso gamybos įrenginių"
 iris_pregen_queue = "Iris Pregen vykdoma"
 iris_pregen_throughput = "Iris Pregen Exposput"
-jvm_threads = "JVM gijos"
+jvm_threads = "JVM platformos gijos"
 lazy_gravity_skipped = "Lazy Gravity Praleistas"
 memory_free = "Atminties nėra"
-memory_garbage = "Atminties šiukšlės"
-memory_pressure = "Atminties slėgis"
+memory_garbage = "Atminties krūvos augimas po GC"
+memory_pressure = "JVM atminties skyrimo sparta"
 memory_used = "Naudojama atmintis"
 memory_used_after_gc = "Atmintis, naudojama po Gc"
 pdc_write_batcher = "Pdc Rašyti Batcher"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "Iris prateiklis per sekundę pasaulio segmentai."
 jvm_threads = "Gyvos JVM gijos, įskaitant įskiepių ir serverio telkinius."
 lazy_gravity_skipped = "žaidimo taktai, kuriame yra nukrito blokas, buvo išreikštas kaip nešvaistamas dėl laikinos gravitacijos."
 memory_free = "Prieinama JVM įkelti atmintį prieš tolesnį augimą."
-memory_garbage = "Numatyta, kad bus susigrąžinama krūvos atmintis laukiant šiukšlių surinkimo."
-memory_pressure = "HEAR slėgio santykis, naudojamas React aptikti atminties sodrumą."
+memory_garbage = "Atminties krūvos augimas nuo paskutinio užbaigto šiukšlių surinkimo."
+memory_pressure = "Apytikslė JVM atminties krūvos skyrimo sparta pagal JVM skyrimo skaitiklį."
 memory_used = "Dabartinis JVM įkelti atminties naudojimą."
 memory_used_after_gc = "Užrašas-GC Neseniai surinktų sumų atsiskaitymo tendencija."
 pdc_write_batcher = "Persistento duomenys rašo kartu su React- Rašo barškintuvas."
@@ -4626,3 +4626,22 @@ impact = "Vertinimai vyksta pagal updateCooldownSeconds. Nežinoma tikų telemet
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "Didžiausias atstumo padidėjimas atkūrus biudžetą, chunk vienetais; apribotas nuo 1 iki 32."
 impact = "Mažesni žingsniai riboja įkėlimo šuolius atkūrimo metu. Taikoma tik įjungus žaidėjų chunk biudžetus."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "Imamos Folia žaidėjų vietų imtys ir pasirinktinai ribotas JDK Flight Recorder įvykių rinkinys. JFR registruoja protokolo srauto sumas, pasaulio sričių generavimo etapus, saugyklos veiklą ir laukimą virš nustatyto slenksčio."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "Įjungia Folia regionų TPS matavimą žaidėjų vietose."
+impact = "Kartą per sekundę užklausia ribotą, pakaitomis parenkamą podėlyje saugomų žaidėjų vietų rinkinį, neįkeliant pasaulio sričių."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "Didžiausias per sekundę matuojamų žaidėjų vietų skaičius, apribotas nuo 1 iki 512. Stebėjimai nustoja galioti po penkių sekundžių."
+impact = "Didesnės reikšmės apima daugiau žaidėjų, bet reikalauja daugiau regionų TPS užklausų."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "Įjungia atrankinę JFR telemetriją. Pagal numatytuosius nustatymus išjungta. Skelbiamose suvestinėse nėra adresų, failų kelių ar iškvietimų dėklo pėdsakų."
+impact = "Prideda JFR įrašymo darbą su 30 sekundžių ir 64 MiB saugojimo ribomis. Apibendrintos matavimų sekos iš naujo pradedamos kas sekundę."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "Mažiausia JVM failų įvesties ir išvesties, įėjimo į monitorių, laukimo monitoriuje ir gijų parkavimo įvykių trukmė milisekundėmis, apribota nuo 1 iki 1000. Pasaulio sričių generavimo etapams trukmės slenkstis netaikomas."
+impact = "Mažesni slenksčiai sukuria daugiau JVM įvykių. Ši metrika aprašo tik įvykius, pasiekiančius šį slenkstį."

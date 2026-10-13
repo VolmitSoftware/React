@@ -32,6 +32,8 @@ import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.core.controller.ObserverController.LoadedChunkCoordinate;
+import art.arcane.react.core.telemetry.ObservationMetrics;
+import art.arcane.react.core.telemetry.ObservationMetrics.Counter;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.model.SampledChunk;
@@ -42,6 +44,8 @@ import org.bukkit.entity.Player;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -49,6 +53,8 @@ import java.util.UUID;
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Chunk Heatmap Base feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRenderer, ChunkGridExporter {
   private static final long SCAN_CACHE_TTL_MS = 300L;
+  private static final int MAX_CACHED_SCANS = 16;
+  private static final int MAX_CACHED_CELLS = 65_536;
   private static final int COLOR_RAMP_STEPS = 64;
   private static final int LEGEND_RAMP_STEPS = 16;
   private static final ThreadLocal<Projection> PROJECTION = ThreadLocal.withInitial(Projection::new);
@@ -72,10 +78,22 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   private boolean drawLabel = true;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum peak chunk score required before the heatmap renders activity.", impact = "Below this the map shows an explicit quiet state instead of amplifying measurement noise into full-scale colors.")
   private double minSignificantScore = 0.001D;
-  private transient volatile ScanSnapshot cachedScan = ScanSnapshot.empty();
+  private final transient Map<ScanKey, ScanSnapshot> cachedScans = new LinkedHashMap<>(16, 0.75F, true);
+  private transient int cachedCells;
+  private transient long cacheGeneration;
+  private transient long scanSequence;
 
   protected FeatureChunkHeatmapBase(String id) {
     super(id);
+  }
+
+  @Override
+  public void onDeactivate() {
+    synchronized (cachedScans) {
+      cachedScans.clear();
+      cachedCells = 0;
+      cacheGeneration++;
+    }
   }
 
   @Override
@@ -271,12 +289,35 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
   }
 
   private ScanSnapshot scan(UUID worldId, ChunkHeatmapLayout layout) {
-    long now = System.currentTimeMillis();
-    ScanSnapshot current = cachedScan;
-    if (current.matches(worldId, layout, minSignificantScore, now)) {
-      return current;
-    }
+    return scan(worldId, layout, System.currentTimeMillis());
+  }
 
+  ScanSnapshot scan(UUID worldId, ChunkHeatmapLayout layout, long now) {
+    ScanKey key = new ScanKey(worldId, layout.minChunkX(), layout.maxChunkX(),
+        layout.minChunkZ(), layout.maxChunkZ(), minSignificantScore);
+    long generation;
+    ScanStamp stamp;
+    synchronized (cachedScans) {
+      generation = cacheGeneration;
+      ScanSnapshot current = cachedScans.get(key);
+      if (current != null && current.matches(worldId, layout, minSignificantScore, now)) {
+        ObservationMetrics.increment(Counter.HEATMAP_CACHE_HITS);
+        return current;
+      }
+      stamp = new ScanStamp(now, ++scanSequence);
+    }
+    long started = System.nanoTime();
+    try {
+      ScanSnapshot refreshed = scanUncached(worldId, layout, stamp);
+      cacheScan(key, refreshed, now, generation);
+      return refreshed;
+    } finally {
+      ObservationMetrics.increment(Counter.HEATMAP_SCANS);
+      ObservationMetrics.add(Counter.HEATMAP_SCAN_NANOS, System.nanoTime() - started);
+    }
+  }
+
+  private ScanSnapshot scanUncached(UUID worldId, ChunkHeatmapLayout layout, ScanStamp stamp) {
     double[] cellScores = new double[layout.columns() * layout.rows()];
     Arrays.fill(cellScores, Double.NaN);
     HashMap<LoadedChunkCoordinate, Double> positiveScores = new HashMap<>();
@@ -294,6 +335,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
         if (index < 0) {
           continue;
         }
+        ObservationMetrics.increment(Counter.HEATMAP_CELLS);
         double value = scoreChunk(heatmapWorld, chunk.chunkX(), chunk.chunkZ());
         cellScores[index] = value;
         if (value > 0D) {
@@ -303,21 +345,55 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     }
 
     ChunkHeatmapScale scale = ChunkHeatmapScale.fromValues(cellScores, minSignificantScore);
-    ScanSnapshot refreshed = new ScanSnapshot(
+    return new ScanSnapshot(
         worldId,
         layout.minChunkX(),
         layout.maxChunkX(),
         layout.minChunkZ(),
         layout.maxChunkZ(),
         minSignificantScore,
-        now,
+        stamp,
         cellScores,
         positiveScores.isEmpty() ? Map.of() : Map.copyOf(positiveScores),
         scale,
         buildColorRamp(scale)
     );
-    cachedScan = refreshed;
-    return refreshed;
+  }
+
+  private void cacheScan(ScanKey key, ScanSnapshot refreshed, long now, long generation) {
+    int cells = refreshed.cellScores.length;
+    if (cells > MAX_CACHED_CELLS) {
+      return;
+    }
+    synchronized (cachedScans) {
+      if (generation != cacheGeneration) {
+        return;
+      }
+      ScanSnapshot replaced = cachedScans.get(key);
+      if (replaced != null && replaced.stamp.sequence() > refreshed.stamp.sequence()) {
+        return;
+      }
+      if (replaced != null) {
+        cachedScans.remove(key);
+        cachedCells -= replaced.cellScores.length;
+      }
+      Iterator<ScanSnapshot> entries = cachedScans.values().iterator();
+      while (entries.hasNext()) {
+        ScanSnapshot candidate = entries.next();
+        if (now - candidate.stamp.sampledAtMs() >= SCAN_CACHE_TTL_MS) {
+          cachedCells -= candidate.cellScores.length;
+          entries.remove();
+        }
+      }
+      entries = cachedScans.values().iterator();
+      while (entries.hasNext()
+          && (cachedScans.size() >= MAX_CACHED_SCANS || cachedCells + cells > MAX_CACHED_CELLS)) {
+        cachedCells -= entries.next().cellScores.length;
+        entries.remove();
+      }
+      cachedScans.put(key, refreshed);
+      cachedCells += cells;
+    }
   }
 
   private void drawGrid(
@@ -592,14 +668,20 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
     }
   }
 
-  private static final class ScanSnapshot {
+  private record ScanKey(UUID worldId, int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ, double threshold) {
+  }
+
+  private record ScanStamp(long sampledAtMs, long sequence) {
+  }
+
+  static final class ScanSnapshot {
     private final UUID worldId;
     private final int minChunkX;
     private final int maxChunkX;
     private final int minChunkZ;
     private final int maxChunkZ;
     private final double significantThreshold;
-    private final long stampMs;
+    private final ScanStamp stamp;
     private final double[] cellScores;
     private final Map<LoadedChunkCoordinate, Double> positiveScores;
     private final ChunkHeatmapScale scale;
@@ -612,7 +694,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
         int minChunkZ,
         int maxChunkZ,
         double significantThreshold,
-        long stampMs,
+        ScanStamp stamp,
         double[] cellScores,
         Map<LoadedChunkCoordinate, Double> positiveScores,
         ChunkHeatmapScale scale,
@@ -624,27 +706,11 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
       this.minChunkZ = minChunkZ;
       this.maxChunkZ = maxChunkZ;
       this.significantThreshold = significantThreshold;
-      this.stampMs = stampMs;
+      this.stamp = stamp;
       this.cellScores = cellScores;
       this.positiveScores = positiveScores;
       this.scale = scale;
       this.colorRamp = colorRamp;
-    }
-
-    private static ScanSnapshot empty() {
-      return new ScanSnapshot(
-          null,
-          0,
-          -1,
-          0,
-          -1,
-          0D,
-          0L,
-          new double[0],
-          Map.of(),
-          ChunkHeatmapScale.fromValues(new double[0], 0D),
-          new TinyColor[0]
-      );
     }
 
     private boolean matches(
@@ -659,8 +725,8 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
           && minChunkZ == layout.minChunkZ()
           && maxChunkZ == layout.maxChunkZ()
           && Double.compare(significantThreshold, requestedThreshold) == 0
-          && now - stampMs >= 0L
-          && now - stampMs < SCAN_CACHE_TTL_MS;
+          && now - stamp.sampledAtMs() >= 0L
+          && now - stamp.sampledAtMs() < SCAN_CACHE_TTL_MS;
     }
   }
 }

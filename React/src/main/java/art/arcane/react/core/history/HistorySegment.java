@@ -9,12 +9,21 @@ public final class HistorySegment {
   private final long startMs;
   private final int bucketCount;
   private final Map<String, HistorySeries> seriesById;
+  private long lastSequence;
 
   public HistorySegment(HistoryTier tier, long startMs, int bucketCount) {
     this.tier = tier;
     this.startMs = startMs;
     this.bucketCount = bucketCount;
     this.seriesById = new LinkedHashMap<>();
+  }
+
+  public long lastSequence() {
+    return lastSequence;
+  }
+
+  public void lastSequence(long sequence) {
+    lastSequence = Math.max(lastSequence, sequence);
   }
 
   public HistoryTier tier() {

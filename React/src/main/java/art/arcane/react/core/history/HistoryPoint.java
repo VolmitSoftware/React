@@ -8,7 +8,9 @@ public record HistoryPoint(
     double maximum,
     double sum,
     double last,
-    long count
+    long count,
+    long firstSampledAtMs,
+    long lastSampledAtMs
 ) {
   public double average() {
     return count <= 0L ? 0D : sum / count;

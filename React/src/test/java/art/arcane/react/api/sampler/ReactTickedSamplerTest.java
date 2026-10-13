@@ -30,6 +30,7 @@ class ReactTickedSamplerTest {
     TestSampler sampler = new TestSampler(false);
 
     Assertions.assertFalse(sampler.captureReading().available());
+    sampler.markDemand();
     sampler.onTick();
 
     Assertions.assertEquals(7D, sampler.sample(), 1.0E-9D);

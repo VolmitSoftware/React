@@ -1,5 +1,6 @@
 package art.arcane.react.util.project.config;
 
+import art.arcane.react.core.controller.RuntimeTelemetryController;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.tweak.ReactTweak;
@@ -178,6 +179,7 @@ public final class ConfigLocalization {
         ReactFeature.class,
         ReactTweak.class,
         WebConfiguration.class,
+        RuntimeTelemetryController.class,
         ActionCaptureProfile.class,
         ActionCollectGarbage.class,
         ActionHopperNetworkNormalize.class,
