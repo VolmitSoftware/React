@@ -22,7 +22,7 @@ export default {
           await context.sleep(1000)
           const state = await qa('snapshot')
           context.expect(state.active && state.samples > previous, 'Entity sampling progresses', { current: state.samples, previous })
-          context.expect(state.history.sequence > 0 && state.history.values.length > 100, 'History publishes live metric snapshots')
+          context.expect(state.history.sequence > 0 && state.history.count > 100, 'History publishes live metric snapshots')
           const values = Object.fromEntries(state.history.values.map(value => [value.id, value]))
           for (const id of ['memory-pressure', 'jvm-heap-utilization', 'react-nearby-queries', 'react-nearby-candidates', 'react-nearby-samples']) {
             const value = values[id]
