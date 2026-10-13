@@ -70,8 +70,13 @@ public class PublishedMetricSampler extends ReactCachedSampler {
   @Override
   public Reading captureReading() {
     PublishedMetricStore.Reading reading = store.reading(metric().key(), System.currentTimeMillis());
-    return reading == null ? new Reading(0D, 0L, false)
-        : new Reading(reading.value(), reading.sampledAtMs(), true);
+    return reading == null ? reading(0D, 0L, false)
+        : reading(reading.value(), reading.sampledAtMs(), true);
+  }
+
+  @Override
+  public Metadata metadata() {
+    return new Metadata(sampleDelay, 0L, Quality.UNKNOWN, suffixFor(metric()).trim());
   }
 
   @Override

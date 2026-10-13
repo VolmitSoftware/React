@@ -48,7 +48,7 @@ public final class TelemetrySampler implements Sampler {
   @Override
   public Reading captureReading() {
     long sampledAtMs = options.sampledAtSupplier().getAsLong();
-    return new Reading(sample(), sampledAtMs, isSampleAvailable());
+    return reading(sample(), sampledAtMs, isSampleAvailable());
   }
 
   @Override
