@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "초당 Iris 청크"
 iris_generation_total_ms = "Iris 세대 총 Ms"
 iris_pregen_queue = "Iris 사전 생성 처리 중"
 iris_pregen_throughput = "Iris Pregen 처리량"
-jvm_threads = "JVM 스레드"
+jvm_threads = "JVM 플랫폼 스레드"
 lazy_gravity_skipped = "Lazy Gravity를 건너 뛰기"
 memory_free = "메모리 무료"
-memory_garbage = "메모리 쓰레기"
-memory_pressure = "기억 압력"
+memory_garbage = "GC 이후 힙 증가량"
+memory_pressure = "JVM 할당 속도"
 memory_used = "사용 가능한"
 memory_used_after_gc = "Gc 후에 사용된 기억"
 pdc_write_batcher = "Pdc 쓰기 배터"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "Iris 프리제너터 처리량은 청크에 초당."
 jvm_threads = "플러그인과 서버 풀을 포함한 활성 JVM 스레드."
 lazy_gravity_skipped = "틱는 느슨한 중력에 의해 점프될 수 있는 것으로 예측되었습니다."
 memory_free = "의 특징 JVM 더 성장하기 전에 heap 기억."
-memory_garbage = "추산된 불평한 힙 메모리 폐 쓰레기 수집."
-memory_pressure = "Heap 압력 비율 사용 React 메모리 포화를 감지합니다."
+memory_garbage = "마지막으로 완료된 가비지 컬렉션 이후의 힙 증가량입니다."
+memory_pressure = "JVM 할당 카운터를 기반으로 추정한 JVM 힙 할당 속도입니다."
 memory_used = "현재 위치 JVM heap 메모리 사용."
 memory_used_after_gc = "최근 가비지 컬렉션 이후의 힙 사용량 추세."
 pdc_write_batcher = "Persistent-data는 다음과 같이 쓰입니다. React's write batcher'를 사용합니다."
@@ -4626,3 +4626,22 @@ impact = "평가 간격은 updateCooldownSeconds를 따릅니다. 틱 정보가 
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "예산 복구 후 최대 거리 증가량(청크)이며 1~32로 제한됩니다."
 impact = "작은 증가폭은 복구 중 청크 로드 급증을 제한합니다. 플레이어 청크 예산이 활성화된 경우에만 적용됩니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "Folia 플레이어 위치와 선택적으로 제한된 JDK Flight Recorder 이벤트를 샘플링합니다. JFR은 프로토콜 트래픽 합계, 청크 생성 단계, 저장 장치 활동, 설정한 임계값을 넘는 대기를 기록합니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "플레이어 위치에서 Folia 리전 TPS 샘플링을 활성화합니다."
+impact = "매초 캐시된 플레이어 위치 중 제한된 수를 순환하며 조회합니다. 청크는 로드하지 않습니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "매초 샘플링할 플레이어 위치의 최대 개수이며 1~512로 제한됩니다. 관측값은 5초 후 만료됩니다."
+impact = "값이 높을수록 더 많은 플레이어를 관측하지만 리전 TPS 조회도 늘어납니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "선택적 JFR 원격 측정을 활성화합니다. 기본값은 비활성화입니다. 공개 요약에는 주소, 파일 경로, 스택 추적을 포함하지 않습니다."
+impact = "JFR 기록 작업이 추가되며 보존 한도는 30초 및 64 MiB 입니다. 집계 시계열은 매초 초기화됩니다."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "JVM 파일 입출력, 모니터 진입, 모니터 대기, 스레드 파크 이벤트의 최소 지속 시간입니다. 단위는 밀리초이며 1~1000으로 제한됩니다. 청크 생성 단계에는 지속 시간 임계값을 적용하지 않습니다."
+impact = "임계값이 낮을수록 JVM 이벤트가 더 많이 발생합니다. 이 지표는 임계값에 도달한 이벤트만 나타냅니다."

@@ -102,13 +102,52 @@ class JfrTelemetryTest {
   }
 
   @Test
+  void recordedChunkEventsUseAnnotatedSchemaNames() throws Exception {
+    Path path = directory.resolve("chunks.jfr");
+    try (Recording recording = new Recording()) {
+      recording.enable(ChunkStage.class).withoutStackTrace();
+      recording.enable(ChunkRead.class).withoutStackTrace();
+      recording.start();
+      ChunkStage generation = new ChunkStage();
+      generation.targetStatus = "noise";
+      generation.level = "minecraft:overworld";
+      generation.begin();
+      generation.end();
+      generation.commit();
+      ChunkRead read = new ChunkRead();
+      read.levelId = "world";
+      read.type = "chunk";
+      read.bytes = 256;
+      read.commit();
+      recording.stop();
+      recording.dump(path);
+    }
+    JfrTelemetry.Accumulator accumulator = new JfrTelemetry.Accumulator(10L, 0L);
+    for (RecordedEvent event : RecordingFile.readAllEvents(path)) {
+      boolean generation = event.getEventType().getName().equals("minecraft.ChunkGeneration");
+      Assertions.assertTrue(JfrTelemetry.hasFields(event.getEventType(), generation
+          ? List.of("level", "status", "duration") : List.of("level", "type", "bytes")));
+      accumulator.record(generation ? JfrTelemetry.Channel.GENERATION : JfrTelemetry.Channel.READ, event);
+    }
+    JfrTelemetry.Snapshot snapshot = accumulator.publish(Set.of("minecraft.ChunkGeneration", "minecraft.ChunkRegionRead"), true, 1_000L, 1_000_000_000L);
+    Assertions.assertEquals(1D, snapshot.metrics().get("jfr-chunk-generation-rate").value());
+    Assertions.assertEquals(256D, snapshot.metrics().get("jfr-region-read-bytes-rate").value());
+    Assertions.assertTrue(snapshot.series().stream().anyMatch(series -> series.level().equals("minecraft:overworld") && series.category().equals("noise")));
+    Assertions.assertTrue(snapshot.series().stream().anyMatch(series -> series.level().equals("world") && series.category().equals("chunk")));
+  }
+
+  @Test
   void streamStartsWithSupportedSchemasAndClosesWithoutStaleAvailability() {
     EventType.getEventType(ProtocolSummary.class);
+    EventType.getEventType(ChunkStage.class);
+    EventType.getEventType(ChunkRead.class);
     JfrTelemetry telemetry = JfrTelemetry.start(new JfrTelemetry.Options(10L), failure -> Assertions.fail(failure));
     try {
       JfrTelemetry.Snapshot snapshot = telemetry.snapshot(System.currentTimeMillis());
       Assertions.assertTrue(snapshot.available());
       Assertions.assertTrue(snapshot.supportedEvents().contains("minecraft.NetworkSummary"));
+      Assertions.assertTrue(snapshot.supportedEvents().contains("minecraft.ChunkGeneration"));
+      Assertions.assertTrue(snapshot.supportedEvents().contains("minecraft.ChunkRegionRead"));
       Assertions.assertTrue(snapshot.supportedEvents().contains("jdk.ThreadPark"));
     } finally {
       telemetry.close();
@@ -127,5 +166,20 @@ class JfrTelemetryTest {
 
   static class InvalidSummary extends Event {
     String sentBytes;
+  }
+
+  @Name("minecraft.ChunkGeneration")
+  static class ChunkStage extends Event {
+    @Name("status")
+    String targetStatus;
+    String level;
+  }
+
+  @Name("minecraft.ChunkRegionRead")
+  static class ChunkRead extends Event {
+    @Name("level")
+    String levelId;
+    String type;
+    int bytes;
   }
 }

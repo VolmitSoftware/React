@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris チャンク 秒間"
 iris_generation_total_ms = "Iris ジェネレーション合計M"
 iris_pregen_queue = "Iris 事前生成 処理中"
 iris_pregen_throughput = "Iris 原発のスループット"
-jvm_threads = "JVM スレッド"
+jvm_threads = "JVM プラットフォームスレッド"
 lazy_gravity_skipped = "レイジーグラビティ スキップ"
 memory_free = "記憶 自由"
-memory_garbage = "記憶ガレージ"
-memory_pressure = "記憶圧力"
+memory_garbage = "GC 後のヒープ増加量"
+memory_pressure = "JVM 割り当て速度"
 memory_used = "使用される記憶"
 memory_used_after_gc = "記憶 Gcの後で使用される"
 pdc_write_batcher = "Pdc はバッチャーを書く"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "Iris プレジェネレータのスループット チ
 jvm_threads = "プラグインとサーバーのプールを含む稼働中の JVM スレッド。"
 lazy_gravity_skipped = "怠惰な重力によってスキップ可能なようにプロジェクされた ティック."
 memory_free = "利用できる JVM さらなる成長の前にメモリをヒープします。"
-memory_garbage = "推定回収可能なヒープメモリの保留ゴミ収集。"
-memory_pressure = "ヒープ圧力比 使用による React 記憶飽和を検知する。"
+memory_garbage = "最後に完了したガベージコレクション以降のヒープ増加量です。"
+memory_pressure = "JVM の割り当てカウンターから推定したヒープ割り当て速度です。"
 memory_used = "流れ JVM メモリ使用量をヒープします。"
 memory_used_after_gc = "投稿 -GC 最近のコレクションの後のフットプリントの傾向をヒープします。"
 pdc_write_batcher = "永続データ書き込みと組み合わせる React's write Batcher.   翻訳"
@@ -4626,3 +4626,22 @@ impact = "評価間隔はupdateCooldownSecondsに従います。ティック情�
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "予算回復後の最大距離増加量（チャンク）。1～32に制限されます。"
 impact = "小さい増加幅は回復中の読み込み集中を抑えます。プレイヤーチャンク予算が有効な場合にのみ適用されます。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "Folia のプレイヤー位置と、必要に応じて上限付きの JDK Flight Recorder イベントをサンプリングします。JFR はプロトコル通信量の合計、チャンク生成段階、ストレージ操作、設定したしきい値を超える待機を記録します。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "プレイヤーの位置で Folia リージョンの TPS サンプリングを有効にします。"
+impact = "キャッシュしたプレイヤー位置から毎秒、件数を制限して順番に問い合わせます。チャンクは読み込みません。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "毎秒サンプリングするプレイヤー位置の最大数です。1～512 に制限します。観測結果は 5 秒で期限切れになります。"
+impact = "値を増やすと対象プレイヤーが増えますが、リージョン TPS の問い合わせも増えます。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "対象を限定した JFR テレメトリーを有効にします。既定では無効です。公開する集計にはアドレス、ファイルパス、スタックトレースを含めません。"
+impact = "JFR の記録処理が追加されます。保持上限は 30 秒と 64 MiB です。集計系列は毎秒リセットします。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "JVM のファイル入出力、モニター取得、モニター待機、スレッドのパークを記録する最小時間です。単位はミリ秒で、1～1000 に制限します。チャンク生成段階には時間のしきい値を適用しません。"
+impact = "しきい値を下げると JVM イベントが増えます。これらの指標は、しきい値に達したイベントのみを示します。"

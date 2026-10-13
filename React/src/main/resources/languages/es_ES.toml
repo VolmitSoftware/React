@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris chunks por segundo"
 iris_generation_total_ms = "Iris Generation Total Ms"
 iris_pregen_queue = "Iris Pregen en curso"
 iris_pregen_throughput = "Iris Pregen Throughput"
-jvm_threads = "Hilos JVM"
+jvm_threads = "Hilos de plataforma de la JVM"
 lazy_gravity_skipped = "Lazy Gravity Skipped"
 memory_free = "Memoria Gratis"
-memory_garbage = "Memoria de basura"
-memory_pressure = "Presión de memoria"
+memory_garbage = "Crecimiento del heap desde GC"
+memory_pressure = "Tasa de asignación de la JVM"
 memory_used = "Memoria usada"
 memory_used_after_gc = "Memoria utilizada después de Gc"
 pdc_write_batcher = "Pdc Write Batcher"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "El rendimiento del pregenerador Iris en chunks por seg
 jvm_threads = "Hilos JVM activos, incluidos los grupos del servidor y de los plugins."
 lazy_gravity_skipped = "El movimiento de bloqueo caído del ticks proyectado como saltable por la gravedad perezosa."
 memory_free = "Disponible JVM saltar la memoria antes de un crecimiento más."
-memory_garbage = "Memoria de montón recuperable estimada pendiente de recogida de basura."
-memory_pressure = "ratio de presión del montón utilizado por React para detectar la saturación de memoria."
+memory_garbage = "Crecimiento del heap desde la última recolección de basura completada."
+memory_pressure = "Tasa estimada de asignación del heap de la JVM a partir de su contador de asignaciones."
 memory_used = "Corriente JVM el uso de memoria."
 memory_used_after_gc = "El correo-GC tendencia de la huella después de las recientes colecciones."
 pdc_write_batcher = "Las escrituras de datos persistentes combinadas por React's escribe batcher."
@@ -4626,3 +4626,22 @@ impact = "Las evaluaciones siguen updateCooldownSeconds. La telemetría de ticks
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "Aumento máximo de distancia tras recuperar el presupuesto, en chunks; limitado de 1 a 32."
 impact = "Los pasos pequeños limitan los picos de carga durante la recuperación. Solo se aplica con los presupuestos de chunks de jugadores activados."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "Muestrea ubicaciones de jugadores de Folia y, opcionalmente, eventos limitados de JDK Flight Recorder. JFR captura totales de tráfico del protocolo, etapas de generación de chunks, actividad de almacenamiento y esperas superiores al umbral configurado."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "Activa el muestreo de TPS de las regiones de Folia en las ubicaciones de los jugadores."
+impact = "Consulta una selección rotativa y limitada de ubicaciones de jugadores almacenadas en caché una vez por segundo, sin cargar chunks."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "Número máximo de ubicaciones de jugadores muestreadas por segundo, limitado entre 1 y 512. Las observaciones caducan tras cinco segundos."
+impact = "Los valores más altos cubren más jugadores, pero requieren más consultas de TPS de región."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "Activa la telemetría selectiva de JFR. Desactivada de forma predeterminada. Los resúmenes publicados omiten direcciones, rutas de archivos y trazas de pila."
+impact = "Añade trabajo de grabación JFR con límites de retención de 30 segundos y 64 MiB. Las series agregadas se reinician cada segundo."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "Duración mínima en milisegundos para eventos de E/S de archivos de la JVM, entrada en monitores, espera en monitores y estacionamiento de hilos, limitada entre 1 y 1000. Las etapas de generación de chunks no tienen umbral de duración."
+impact = "Los umbrales más bajos generan más eventos de la JVM. Estas métricas describen solo los eventos que alcanzan este umbral."

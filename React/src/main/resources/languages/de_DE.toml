@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris Chunks pro Sekunde"
 iris_generation_total_ms = "Iris Generation insgesamt M"
 iris_pregen_queue = "Iris Pregen in Bearbeitung"
 iris_pregen_throughput = "Iris Pregendurchsatz"
-jvm_threads = "JVM-Threads"
+jvm_threads = "JVM-Plattformthreads"
 lazy_gravity_skipped = "Lazy Gravity überspringt"
 memory_free = "Memory Free"
-memory_garbage = "Speichermüll"
-memory_pressure = "Speicherdruck"
+memory_garbage = "Heap-Wachstum seit GC"
+memory_pressure = "JVM-Allokationsrate"
 memory_used = "Verwendetes Gedächtnis"
 memory_used_after_gc = "Speicher nach Gc verwendet"
 pdc_write_batcher = "Pdc Schreibbatter"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "Iris-Prägenerator durchsatz in Chunks pro Sekunde."
 jvm_threads = "Aktive JVM-Threads einschließlich Plugin- und Server-Pools."
 lazy_gravity_skipped = "Fallende Blockbewegung Ticks projiziert als überspringen durch faule Schwerkraft."
 memory_free = "Verfügbar JVM Heap-Gedächtnis vor weiterem Wachstum."
-memory_garbage = "Geschätzter wiederaufladbarer Heap-Speicher, der noch nicht erfasst ist."
-memory_pressure = "Verwendetes Gewichtsdruckverhältnis React Speichersättigung zu erkennen."
+memory_garbage = "Heap-Wachstum seit der letzten abgeschlossenen Garbage Collection."
+memory_pressure = "Geschätzte JVM-Heap-Allokationsrate aus dem Allokationszähler der JVM."
 memory_used = "Aktuell JVM Nutzung von Heap-Memory."
 memory_used_after_gc = "Post-GC Heap Footprint Trend nach den letzten Kollektionen."
 pdc_write_batcher = "Persistent-Daten schreibt kombiniert durch React's schreiben Batcher."
@@ -4626,3 +4626,22 @@ impact = "Kleinere Schritte begrenzen Ladespitzen bei der Wiederherstellung. Gil
 [config.documentation.annotation.art.arcane.react.model.reactconfiguration.field.updatenotifications]
 summary = "Prüft GitHub-Releases auf React-Updates."
 impact = "Standardmäßig aktiviert. VolmLib fasst Updates in einer Beitrittsmeldung und unter /volmit plugins updates zusammen. Deaktivieren stoppt React-Prüfungen."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "Erfasst Folia-Spielerpositionen und optional begrenzte JDK-Flight-Recorder-Ereignisse. JFR erfasst Protokollverkehrssummen, Chunk-Generierungsphasen, Speicherzugriffe und Wartezeiten oberhalb des konfigurierten Schwellenwerts."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "Aktiviert die Messung der Folia-Regions-TPS an Spielerpositionen."
+impact = "Fragt einmal pro Sekunde eine begrenzte, wechselnde Auswahl zwischengespeicherter Spielerpositionen ab, ohne Chunks zu laden."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "Maximale Anzahl pro Sekunde erfasster Spielerpositionen, begrenzt auf 1 bis 512. Beobachtungen verfallen nach fünf Sekunden."
+impact = "Höhere Werte erfassen mehr Spieler, erfordern aber mehr Abfragen der Regions-TPS."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "Aktiviert ausgewählte JFR-Messungen. Standardmäßig deaktiviert. Veröffentlichte Zusammenfassungen enthalten keine Adressen, Dateipfade oder Stacktraces."
+impact = "Verursacht JFR-Aufzeichnungsarbeit mit Aufbewahrungsgrenzen von 30 Sekunden und 64 MiB. Aggregierte Messreihen werden jede Sekunde zurückgesetzt."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "Mindestdauer in Millisekunden für JVM-Dateizugriffe, Monitoreintritt, Monitor-Wartezeiten und Thread-Parken, begrenzt auf 1 bis 1000. Für Chunk-Generierungsphasen gilt kein Dauerschwellenwert."
+impact = "Niedrigere Schwellenwerte erzeugen mehr JVM-Ereignisse. Diese Metriken erfassen nur Ereignisse, die diesen Schwellenwert erreichen."

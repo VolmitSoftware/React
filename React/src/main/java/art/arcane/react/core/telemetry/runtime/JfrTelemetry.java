@@ -106,7 +106,7 @@ public final class JfrTelemetry implements AutoCloseable {
       if (field == null) {
         return false;
       }
-      boolean text = name.equals("level") || name.equals("targetStatus") || name.equals("levelId") || name.equals("type");
+      boolean text = name.equals("level") || name.equals("status") || name.equals("type");
       if (text ? !field.getTypeName().equals("java.lang.String")
           : !field.getTypeName().equals("long") && !field.getTypeName().equals("int")) {
         return false;
@@ -131,9 +131,9 @@ public final class JfrTelemetry implements AutoCloseable {
   }
 
   enum Channel {
-    GENERATION("minecraft.ChunkGeneration", "jfr-chunk-generation", "Chunk Generation Stage", true, false, false, List.of("level", "targetStatus", "duration")),
-    READ("minecraft.ChunkRegionRead", "jfr-region-read", "Chunk Storage Reads", false, true, false, List.of("levelId", "type", "bytes")),
-    WRITE("minecraft.ChunkRegionWrite", "jfr-region-write", "Chunk Storage Writes", false, true, false, List.of("levelId", "type", "bytes")),
+    GENERATION("minecraft.ChunkGeneration", "jfr-chunk-generation", "Chunk Generation Stage", true, false, false, List.of("level", "status", "duration")),
+    READ("minecraft.ChunkRegionRead", "jfr-region-read", "Chunk Storage Reads", false, true, false, List.of("level", "type", "bytes")),
+    WRITE("minecraft.ChunkRegionWrite", "jfr-region-write", "Chunk Storage Writes", false, true, false, List.of("level", "type", "bytes")),
     NETWORK("minecraft.NetworkSummary", "jfr-network-sent", "Protocol Packets Sent", false, true, false, List.of("sentPackets", "sentBytes", "receivedPackets", "receivedBytes")),
     FILE_READ("jdk.FileRead", "jfr-slow-file-read", "Slow File Reads", true, true, true, List.of("duration", "bytesRead")),
     FILE_WRITE("jdk.FileWrite", "jfr-slow-file-write", "Slow File Writes", true, true, true, List.of("duration", "bytesWritten")),
@@ -193,9 +193,9 @@ public final class JfrTelemetry implements AutoCloseable {
         receivedBytes += Math.max(0L, event.getLong("receivedBytes"));
       }
       if (channel == Channel.GENERATION) {
-        recordSeries(channel, event.getString("level"), event.getString("targetStatus"), bytes, durationMs);
+        recordSeries(channel, event.getString("level"), event.getString("status"), bytes, durationMs);
       } else if (channel == Channel.READ || channel == Channel.WRITE) {
-        recordSeries(channel, event.getString("levelId"), event.getString("type"), bytes, durationMs);
+        recordSeries(channel, event.getString("level"), event.getString("type"), bytes, durationMs);
       }
     }
 

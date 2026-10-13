@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris chunks per seconde"
 iris_generation_total_ms = "Iris Generatie Totaal"
 iris_pregen_queue = "Iris Pregen onderweg"
 iris_pregen_throughput = "Iris Pregen Throughput"
-jvm_threads = "JVM-threads"
+jvm_threads = "JVM-platformthreads"
 lazy_gravity_skipped = "Lazy Gravity overgeslagen"
 memory_free = "Geheugenvrij"
-memory_garbage = "Geheugenafval"
-memory_pressure = "Geheugendruk"
+memory_garbage = "Heapgroei sinds GC"
+memory_pressure = "JVM-allocatiesnelheid"
 memory_used = "Geheugen gebruikt"
 memory_used_after_gc = "Geheugen gebruikt na Gc"
 pdc_write_batcher = "Pdc schrijf-Batcher"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "Iris-pregenerator doorvoer in chunks per seconde."
 jvm_threads = "Actieve JVM-threads inclusief plugin- en serverpools."
 lazy_gravity_skipped = "ticks-beweging met valblokken, geprojecteerd als overstabbaar door lui zwaartekracht."
 memory_free = "Beschikbaar JVM hoop geheugen voor verdere groei."
-memory_garbage = "Geschatte terug te vorderen hoop geheugen in afwachting van vuilnis collectie."
-memory_pressure = "Drukverhouding van de druk in het water React om geheugenverzadiging te detecteren."
+memory_garbage = "Heapgroei sinds de laatst voltooide garbagecollection."
+memory_pressure = "Geschatte allocatiesnelheid van de JVM-heap op basis van de JVM-allocatieteller."
 memory_used = "Lopend JVM Het geheugen van de hoop."
 memory_used_after_gc = "Post.GC Hoop voetafdruk trend na recente collecties."
 pdc_write_batcher = "Persistente gegevens schrijven gecombineerd met React's Schrijf batcher."
@@ -4626,3 +4626,22 @@ impact = "Controles volgen updateCooldownSeconds. Onbekende tickmetingen of een 
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "Maximale afstandstoename na succesvol budgetherstel, in chunks; begrensd op 1 tot 32."
 impact = "Kleine stappen beperken laadpieken tijdens herstel. Geldt alleen als chunkbudgetten voor spelers zijn ingeschakeld."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "Bemonstert Folia-spelerlocaties en optioneel een begrensde verzameling JDK Flight Recorder-gebeurtenissen. JFR registreert totalen van protocolverkeer, fasen van chunkgeneratie, opslagactiviteit en wachttijden boven de ingestelde drempel."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "Schakelt bemonstering van Folia-regio-TPS op spelerlocaties in."
+impact = "Vraagt eenmaal per seconde een begrensde, wisselende selectie spelerlocaties uit de cache op, zonder chunks te laden."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "Maximaal aantal spelerlocaties dat per seconde wordt bemonsterd, begrensd van 1 tot 512. Waarnemingen verlopen na vijf seconden."
+impact = "Hogere waarden dekken meer spelers, maar vereisen meer opvragingen van regio-TPS."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "Schakelt selectieve JFR-telemetrie in. Standaard uitgeschakeld. Gepubliceerde samenvattingen bevatten geen adressen, bestandspaden of stacktraces."
+impact = "Voegt JFR-opnamewerk toe met bewaarlimieten van 30 seconden en 64 MiB. Samengevoegde meetreeksen worden elke seconde gereset."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "Minimale duur in milliseconden voor JVM-bestands-I/O, monitorbetreding, monitorwachten en threadparkeren, begrensd van 1 tot 1000. Fasen van chunkgeneratie hebben geen duurdrempel."
+impact = "Lagere drempels leveren meer JVM-gebeurtenissen op. Deze metrieken beschrijven alleen gebeurtenissen die deze drempel bereiken."

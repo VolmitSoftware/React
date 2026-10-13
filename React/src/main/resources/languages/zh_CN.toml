@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris 每秒生成区块数"
 iris_generation_total_ms = "Iris 总生成耗时（毫秒）"
 iris_pregen_queue = "Iris 预生成进行中"
 iris_pregen_throughput = "Iris 预生成吞吐量"
-jvm_threads = "JVM 线程"
+jvm_threads = "JVM 平台线程"
 lazy_gravity_skipped = "惰性重力跳过数"
 memory_free = "可用内存"
-memory_garbage = "可回收内存"
-memory_pressure = "内存压力"
+memory_garbage = "GC 后的堆增长量"
+memory_pressure = "JVM 分配速率"
 memory_used = "已用内存"
 memory_used_after_gc = "GC 后已用内存"
 pdc_write_batcher = "PDC 写入批处理"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "Iris 预生成器吞吐量 区块 每秒数."
 jvm_threads = "包括插件与服务器线程池在内的存活 JVM 线程。"
 lazy_gravity_skipped = "由于惰的重力,游戏刻被投影为可以跳过."
 memory_free = "可用 JVM 不断积聚的记忆力在进一步成长之前"
-memory_garbage = "估计在收集垃圾之前可回收堆积的记忆。"
-memory_pressure = "使用高压比 React 以检测内存饱和度。"
+memory_garbage = "自最近一次完成的垃圾回收以来的堆增长量。"
+memory_pressure = "根据 JVM 分配计数器估算的 JVM 堆分配速率。"
 memory_used = "当前 JVM 堆积的记忆使用量。"
 memory_used_after_gc = "员额GC 近期收集后,足迹呈上升趋势。"
 pdc_write_batcher = "持续数据写入组合 React写批发机。"
@@ -4626,3 +4626,22 @@ impact = "评估间隔遵循 updateCooldownSeconds。刻遥测未知或玩家索
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "预算恢复后单次增加的最大距离（区块），限制为 1 到 32。"
 impact = "较小的步长可限制恢复时的区块加载突发量。仅在启用玩家区块预算时生效。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "采样 Folia 玩家位置，并可选择采集有数量和保留上限的 JDK Flight Recorder 事件。JFR 记录协议流量总量、区块生成阶段、存储活动及超过配置阈值的等待。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "启用玩家所在位置的 Folia 区域 TPS 采样。"
+impact = "每秒轮换查询一组数量受限的缓存玩家位置，不加载区块。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "每秒采样的玩家位置数量上限，限制在 1 至 512 之间。观测数据在五秒后过期。"
+impact = "数值越高，玩家覆盖范围越大，但区域 TPS 查询次数也越多。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "启用选择性 JFR 遥测。默认禁用。发布的摘要不包含地址、文件路径或堆栈跟踪。"
+impact = "增加 JFR 录制工作，保留上限为 30 秒和 64 MiB。聚合序列每秒重置。"
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "JVM 文件输入输出、监视器进入、监视器等待和线程停驻事件的最短持续时间，单位为毫秒，限制在 1 至 1000 之间。区块生成阶段不使用持续时间阈值。"
+impact = "阈值越低，产生的 JVM 事件越多。这些指标仅描述达到此阈值的事件。"

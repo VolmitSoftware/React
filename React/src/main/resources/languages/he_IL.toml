@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris צ'אנקים לשנייה"
 iris_generation_total_ms = "Iris דור שלם גב'"
 iris_pregen_queue = "Iris Pregen בתהליך"
 iris_pregen_throughput = "Iris המונחים: Throughput"
-jvm_threads = "תהליכוני מכונת ג'אווה"
+jvm_threads = "תהליכוני פלטפורמה של JVM"
 lazy_gravity_skipped = "Lazy Gravity דלג"
 memory_free = "זיכרון חופשי"
-memory_garbage = "זיכרון Garbage"
-memory_pressure = "לחץ זיכרון"
+memory_garbage = "גידול הערימה מאז GC"
+memory_pressure = "קצב הקצאת JVM"
 memory_used = "זיכרון משומש"
 memory_used_after_gc = "זיכרון בשימוש לאחר Gc"
 pdc_write_batcher = "Pdc Write Batcher"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "תוצאות ה- Iris pregenerator ב- צ'אנקים �
 jvm_threads = "תהליכונים פעילים של מכונת ג'אווה כולל מאגרי תוספים ושרת."
 lazy_gravity_skipped = "תנועת כבלוק הנפילה טיקים נחשבת להיות מתרחקת על ידי כוח הכבידה עצלן."
 memory_free = "זמין JVM זיכרון ערימה לפני צמיחה נוספת."
-memory_garbage = "זיכרון הערימה מחדש הופך את אוסף הזבל."
-memory_pressure = "יחס לחץ הערימה בשימוש React לזהות את הזיכרון  sat."
+memory_garbage = "גידול הערימה מאז איסוף הזבל האחרון שהושלם."
+memory_pressure = "קצב משוער של הקצאת זיכרון בערימת JVM מתוך מונה ההקצאות של JVM."
 memory_used = "נוכחי JVM שימוש זיכרון ערימה"
 memory_used_after_gc = "פוסט-GC טרנד טביעת רגל לאחר אוספים אחרונים."
 pdc_write_batcher = "הסתברות-נתונים כותב יחד על ידי React\"כותבת ממזר."
@@ -4626,3 +4626,22 @@ impact = "הבדיקות מתבצעות לפי updateCooldownSeconds. טלמטר
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "הגדלת המרחק המרבית אחרי התאוששות התקציב, בצ׳אנקים; מוגבלת לטווח 1–32."
 impact = "צעדים קטנים מגבילים קפיצות טעינה בזמן ההתאוששות. חל רק כאשר תקציבי הצ׳אנקים של השחקנים פעילים."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "דוגם מיקומי שחקנים ב-Folia ובאופן אופציונלי אירועי JDK Flight Recorder בהיקף מוגבל. JFR לוכד סיכומי תעבורת פרוטוקול, שלבי יצירת צ׳אנקים, פעילות אחסון והמתנות מעבר לסף שהוגדר."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "מפעיל דגימת TPS של אזורי Folia במיקומי השחקנים."
+impact = "מבצע שאילתה פעם בשנייה על קבוצה מתחלפת ומוגבלת של מיקומי שחקנים מהמטמון, ללא טעינת צ׳אנקים."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "מספר מיקומי השחקנים המרבי שנדגם בכל שנייה, מוגבל לטווח 1 עד 512. תוקף התצפיות פג לאחר חמש שניות."
+impact = "ערכים גבוהים יותר מכסים יותר שחקנים, אך דורשים יותר שאילתות TPS של אזורים."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "מפעיל טלמטריית JFR סלקטיבית. מושבת כברירת מחדל. הסיכומים המפורסמים אינם כוללים כתובות, נתיבי קבצים או עקבות מחסנית."
+impact = "מוסיף עבודת הקלטת JFR עם מגבלות שמירה של 30 שניות ו-64 MiB. סדרות מצטברות מתאפסות בכל שנייה."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "משך מזערי באלפיות שנייה לאירועי קלט ופלט בקובצי JVM, כניסה למוניטור, המתנה במוניטור וחניית תהליכונים, מוגבל לטווח 1 עד 1000. לשלבי יצירת צ׳אנקים אין סף משך."
+impact = "ספים נמוכים יותר מפיקים יותר אירועי JVM. המדדים האלה מתארים רק אירועים שמגיעים לסף הזה."

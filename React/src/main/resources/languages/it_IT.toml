@@ -3635,11 +3635,11 @@ iris_chunks_per_second = "Iris chunk al secondo"
 iris_generation_total_ms = "Iris Generazione Totale signora"
 iris_pregen_queue = "Iris Pregen in corso"
 iris_pregen_throughput = "Iris Potenza di produzione"
-jvm_threads = "Thread JVM"
+jvm_threads = "Thread di piattaforma JVM"
 lazy_gravity_skipped = "Lazy Gravity Skid"
 memory_free = "Memoria gratis"
-memory_garbage = "Garbage di memoria"
-memory_pressure = "Pressione di memoria"
+memory_garbage = "Crescita dell’heap dal GC"
+memory_pressure = "Tasso di allocazione JVM"
 memory_used = "Memoria utilizzata"
 memory_used_after_gc = "Memoria utilizzata dopo Gc"
 pdc_write_batcher = "Pdc Scrivere Batcher"
@@ -3844,8 +3844,8 @@ iris_pregen_throughput = "Iris pregenerator throughput in chunk al secondo."
 jvm_threads = "Thread JVM attivi, inclusi i pool dei plugin e del server."
 lazy_gravity_skipped = "Il movimento di blocco cadente tick proiettato come saltabile da gravità pigra."
 memory_free = "Disponibile JVM la memoria di mucchio prima di ulteriore crescita."
-memory_garbage = "Memoria di raccolta recuperabile stimata in attesa della raccolta rifiuti."
-memory_pressure = "Rapporto di pressione del mucchio utilizzato da React per rilevare la saturazione della memoria."
+memory_garbage = "Crescita dell’heap dall’ultima raccolta dei rifiuti completata."
+memory_pressure = "Tasso stimato di allocazione dell’heap JVM dal contatore delle allocazioni della JVM."
 memory_used = "Corrente JVM uso di memoria."
 memory_used_after_gc = "- Post-GC trend di impronta heap dopo le collezioni recenti."
 pdc_write_batcher = "Scritture di dati persistenti combinate da React's scrivere batcher."
@@ -4626,3 +4626,22 @@ impact = "Le valutazioni seguono updateCooldownSeconds. Telemetria dei tick scon
 [config.documentation.annotation.art.arcane.react.content.feature.featuredynamicviewdistance.field.budgetrecoverystep]
 summary = "Aumento massimo della distanza dopo il recupero del budget, in chunk; limitato da 1 a 32."
 impact = "Passi piccoli limitano i picchi di caricamento durante il ripristino. Vale solo con i budget di chunk dei giocatori abilitati."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller]
+description = "Campiona le posizioni dei giocatori Folia e, facoltativamente, un insieme limitato di eventi JDK Flight Recorder. JFR rileva i totali del traffico di protocollo, le fasi di generazione dei chunk, le attività di archiviazione e le attese oltre la soglia configurata."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.regionalenabled]
+summary = "Abilita il campionamento dei TPS delle regioni Folia nelle posizioni dei giocatori."
+impact = "Interroga ogni secondo una selezione limitata e a rotazione di posizioni dei giocatori nella cache, senza caricare chunk."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.playeranchorsperrefresh]
+summary = "Numero massimo di posizioni dei giocatori campionate ogni secondo, limitato da 1 a 512. Le osservazioni scadono dopo cinque secondi."
+impact = "Valori più alti coprono più giocatori, ma richiedono più interrogazioni dei TPS delle regioni."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
+summary = "Abilita la telemetria JFR selettiva. Disabilitata per impostazione predefinita. I riepiloghi pubblicati omettono indirizzi, percorsi dei file e tracce dello stack."
+impact = "Aggiunge lavoro di registrazione JFR con limiti di conservazione di 30 secondi e 64 MiB. Le serie aggregate vengono azzerate ogni secondo."
+
+[config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
+summary = "Durata minima in millisecondi per gli eventi JVM di I/O dei file, ingresso nei monitor, attesa sui monitor e parcheggio dei thread, limitata da 1 a 1000. Le fasi di generazione dei chunk non hanno soglie di durata."
+impact = "Soglie più basse producono più eventi JVM. Queste metriche descrivono solo gli eventi che raggiungono la soglia."
