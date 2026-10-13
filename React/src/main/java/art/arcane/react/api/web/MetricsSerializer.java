@@ -39,7 +39,7 @@ public class MetricsSerializer {
         dto.quality = value.metadata().quality();
         dto.unit = value.metadata().unit();
         dto.unavailableReason = value.unavailableReason();
-        dto.diagnostics = value.diagnostics();
+        dto.diagnostics = value.diagnostics() == Sampler.Diagnostics.EMPTY ? null : value.diagnostics();
         return dto;
     }
 }

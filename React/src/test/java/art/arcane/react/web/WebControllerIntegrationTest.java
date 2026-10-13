@@ -114,6 +114,7 @@ public class WebControllerIntegrationTest {
 
         FakeSampler s1 = new FakeSampler("wc-tick-time", 42.0, "ms", new double[]{40.0, 41.0, 42.0});
         FakeSampler s2 = new FakeSampler("wc-tps", 20.0, "", new double[]{20.0, 20.0, 20.0});
+        s2.diagnostics = new Sampler.Diagnostics(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
 
         SampleController sampleController = mock(SampleController.class);
         @SuppressWarnings("unchecked")
@@ -200,6 +201,11 @@ public class WebControllerIntegrationTest {
             .getAsJsonObject().getAsJsonObject("data").getAsJsonArray("samplers").get(0).getAsJsonObject();
         assertTrue(firstSampler.has("display"), "each sampler in the metrics array must carry a display string");
         assertTrue(firstSampler.has("available"), "each sampler must expose availability");
+        assertTrue(!firstSampler.has("diagnostics"), "unsupported diagnostics must be omitted");
+        JsonObject secondSampler = JsonParser.parseString(metricsResponse.body()).getAsJsonObject()
+            .getAsJsonObject("data").getAsJsonArray("samplers").get(1).getAsJsonObject();
+        assertEquals(12, secondSampler.getAsJsonObject("diagnostics").size());
+        assertEquals(0L, secondSampler.getAsJsonObject("diagnostics").get("attempts").getAsLong());
         assertTrue(!firstSampler.has("history"), "live snapshots must not duplicate historical arrays");
 
         HttpRequest historyRequest = HttpRequest.newBuilder()
@@ -507,6 +513,7 @@ public class WebControllerIntegrationTest {
         private final String id;
         private final double value;
         private final String suffix;
+        private Diagnostics diagnostics = Diagnostics.EMPTY;
 
         FakeSampler(String id, double value, String suffix, double[] history) {
             this.id = id;
@@ -527,6 +534,11 @@ public class WebControllerIntegrationTest {
         @Override
         public String getName() {
             return id;
+        }
+
+        @Override
+        public Diagnostics diagnostics() {
+            return diagnostics;
         }
 
         @Override

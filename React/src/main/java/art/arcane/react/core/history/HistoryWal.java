@@ -207,7 +207,7 @@ public final class HistoryWal implements AutoCloseable {
   }
 
   private static byte[] samplePayload(long sequence, long timestampMs, List<WalValue> values) throws IOException {
-    ByteArrayOutputStream bytes = new ByteArrayOutputStream(Math.max(32, values.size() * 12));
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream(21 + values.size() * 20);
     DataOutputStream output = new DataOutputStream(bytes);
     output.writeByte(SAMPLE_FRAME);
     output.writeLong(sequence);

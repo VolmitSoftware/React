@@ -106,6 +106,7 @@ public class WebSocketMetricsIntegrationTest {
 
         FakeSampler s1 = new FakeSampler("ws-tick-time", 42.0, "ms", new double[]{40.0, 41.0, 42.0});
         FakeSampler s2 = new FakeSampler("ws-tps", 20.0, "", new double[]{20.0, 20.0, 20.0});
+        s2.diagnostics = new Sampler.Diagnostics(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
 
         SampleController sampleController = mock(SampleController.class);
         @SuppressWarnings("unchecked")
@@ -181,6 +182,10 @@ public class WebSocketMetricsIntegrationTest {
         assertTrue(firstSampler.has("value"), "Sampler entry must have 'value'; got: " + firstSampler);
         assertFalse(firstSampler.has("history"), "Scalar frame must omit duplicated history; got: " + firstSampler);
         assertTrue(firstSampler.has("available"), "Sampler entry must carry availability; got: " + firstSampler);
+        assertFalse(firstSampler.has("diagnostics"), "unsupported diagnostics must be omitted");
+        JsonObject secondSampler = samplers.get(1).getAsJsonObject();
+        assertEquals(12, secondSampler.getAsJsonObject("diagnostics").size());
+        assertEquals(0L, secondSampler.getAsJsonObject("diagnostics").get("attempts").getAsLong());
     }
 
     @Test
@@ -518,6 +523,7 @@ public class WebSocketMetricsIntegrationTest {
         private final String id;
         private final double value;
         private final String suffix;
+        private Diagnostics diagnostics = Diagnostics.EMPTY;
 
         FakeSampler(String id, double value, String suffix, double[] history) {
             this.id = id;
@@ -538,6 +544,11 @@ public class WebSocketMetricsIntegrationTest {
         @Override
         public String getName() {
             return id;
+        }
+
+        @Override
+        public Diagnostics diagnostics() {
+            return diagnostics;
         }
 
         @Override

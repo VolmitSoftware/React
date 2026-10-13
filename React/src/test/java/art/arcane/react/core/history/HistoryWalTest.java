@@ -9,8 +9,11 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -38,6 +41,21 @@ class HistoryWalTest {
     assertEquals(1L, recovery.samples().get(0).sequence());
     assertEquals(20D, recovery.samples().get(0).values().get(0).value());
     second.close();
+  }
+
+  @Test
+  void canonicalSampleFrameBytesRemainUnchanged(@TempDir Path directory) throws Exception {
+    Path path = directory.resolve("active.wal");
+    try (HistoryWal wal = new HistoryWal(path)) {
+      wal.open();
+      wal.append(snapshot(1L, 1_000L, 20D));
+      int start = Math.toIntExact(Files.size(path));
+      wal.append(snapshot(2L, 2_000L, 19D));
+      byte[] bytes = Files.readAllBytes(path);
+      byte[] expected = HexFormat.of().parseHex(
+          "0000002902000000000000000200000000000007d000000001000000004033000000000000000000000000000187ecd919");
+      assertArrayEquals(expected, Arrays.copyOfRange(bytes, start, bytes.length));
+    }
   }
 
   private static MetricSnapshot snapshot(long sequence, long timestampMs, double value) {
