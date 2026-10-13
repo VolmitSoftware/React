@@ -66,7 +66,9 @@ public final class TelemetryFixture {
         entity.setPersistent(false);
         entity.setVisible(false);
       });
-      spawned.add(stand);
+      if (stand.isValid()) {
+        spawned.add(stand);
+      }
     }
     task = player.getScheduler().runAtFixedRate(plugin, ignored -> sample(player), null, 1L, 1L);
   }

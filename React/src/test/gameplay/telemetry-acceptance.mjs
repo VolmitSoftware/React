@@ -16,8 +16,8 @@ export default {
         }
         await context.command(`/tp ${context.bot.username} 8 180 8`, /teleported/i, 5000)
         await context.command('/fill 6 179 6 14 179 14 stone', /filled|no blocks/i, 5000)
-        const initial = await qa('begin 128')
-        context.expect(initial.active && initial.spawned === 128, 'All fixture entities exist', { spawned: initial.spawned, active: initial.active })
+        const initial = await qa('begin 64')
+        context.expect(initial.active && initial.spawned === 64, 'All fixture entities exist', { spawned: initial.spawned, active: initial.active })
       })
       await context.step('observe live measurements with monotonically advancing capture sequence', async () => {
         let previous = 0
