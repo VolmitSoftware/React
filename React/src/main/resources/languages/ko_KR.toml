@@ -4640,7 +4640,7 @@ impact = "값이 높을수록 더 많은 플레이어를 관측하지만 리전 
 
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrenabled]
 summary = "선택적 JFR 원격 측정을 활성화합니다. 기본값은 비활성화입니다. 공개 요약에는 주소, 파일 경로, 스택 추적을 포함하지 않습니다."
-impact = "JFR 기록 작업이 추가되며 보존 한도는 30초 및 64 MiB 입니다. 집계 시계열은 매초 초기화됩니다."
+impact = "30초 및 64 MiB 한도로 JFR 기록 작업을 추가합니다. 집계 시계열은 매초 초기화됩니다."
 
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "JVM 파일 입출력, 모니터 진입, 모니터 대기, 스레드 파크 이벤트의 최소 지속 시간입니다. 단위는 밀리초이며 1~1000으로 제한됩니다. 청크 생성 단계에는 지속 시간 임계값을 적용하지 않습니다."
