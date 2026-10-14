@@ -377,7 +377,11 @@ public class HistoryController implements IController {
         }
         HistorySeries series = segment.series(metric.id(), metric.name(), metric.suffix());
         series.metadata(metric.metadata());
-        series.add(bucketIndex, value.value(), value.sampledAtMs());
+        if (recovery.formatVersion() == 1) {
+          series.set(bucketIndex, value.value());
+        } else {
+          series.add(bucketIndex, value.value(), value.sampledAtMs());
+        }
       }
       segment.lastSequence(sample.sequence());
     }
