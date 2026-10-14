@@ -14,6 +14,7 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +37,7 @@ public final class HistoryWal implements AutoCloseable {
   private final Map<Integer, WalMetric> metricByIndex;
   private FileChannel channel;
   private int nextIndex;
+  private int formatVersion = VERSION;
 
   public HistoryWal(Path path) {
     this.path = path;
@@ -46,6 +48,7 @@ public final class HistoryWal implements AutoCloseable {
   public synchronized WalRecovery open() throws IOException {
     Files.createDirectories(path.getParent());
     WalRecovery recovery = recover();
+    formatVersion = recovery.formatVersion();
     channel = FileChannel.open(
         path,
         StandardOpenOption.CREATE,
@@ -79,7 +82,7 @@ public final class HistoryWal implements AutoCloseable {
       if (existing == null) {
         index = nextIndex++;
         WalMetric metric = new WalMetric(index, value.id(), value.name(), value.suffix(), value.metadata());
-        writeFrame(dictionaryPayload(metric));
+        writeFrame(dictionaryPayload(metric, formatVersion));
         indexById.put(value.id(), index);
         metricByIndex.put(index, metric);
       } else {
@@ -87,13 +90,13 @@ public final class HistoryWal implements AutoCloseable {
         WalMetric prior = metricByIndex.get(index);
         if (prior != null && (!prior.name().equals(value.name()) || !prior.suffix().equals(value.suffix()) || !prior.metadata().equals(value.metadata()))) {
           WalMetric replacement = new WalMetric(index, value.id(), value.name(), value.suffix(), value.metadata());
-          writeFrame(dictionaryPayload(replacement));
+          writeFrame(dictionaryPayload(replacement, formatVersion));
           metricByIndex.put(index, replacement);
         }
       }
       values.add(new WalValue(index, value.value(), value.sampledAtMs()));
     }
-    writeFrame(samplePayload(snapshot.sequence(), snapshot.capturedAtMs(), values));
+    writeFrame(samplePayload(snapshot.sequence(), snapshot.capturedAtMs(), values, formatVersion));
   }
 
   public synchronized void force() throws IOException {
@@ -103,14 +106,27 @@ public final class HistoryWal implements AutoCloseable {
 
   public synchronized void reset() throws IOException {
     requireOpen();
-    channel.truncate(0L);
-    channel.position(0L);
-    writeHeader(channel);
-    channel.force(true);
-    channel.position(channel.size());
-    indexById.clear();
-    metricByIndex.clear();
-    nextIndex = 0;
+    Path replacement = Files.createTempFile(path.getParent(), path.getFileName().toString(), ".tmp");
+    try {
+      try (FileChannel replacementChannel = FileChannel.open(replacement, StandardOpenOption.WRITE)) {
+        writeHeader(replacementChannel);
+        replacementChannel.force(true);
+      }
+      channel.close();
+      channel = null;
+      try {
+        Files.move(replacement, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+      } finally {
+        channel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
+        channel.position(channel.size());
+      }
+      formatVersion = VERSION;
+      indexById.clear();
+      metricByIndex.clear();
+      nextIndex = 0;
+    } finally {
+      Files.deleteIfExists(replacement);
+    }
   }
 
   @Override
@@ -128,15 +144,20 @@ public final class HistoryWal implements AutoCloseable {
 
   private WalRecovery recover() throws IOException {
     if (!Files.exists(path) || Files.size(path) == 0L) {
-      return new WalRecovery(Map.of(), List.of(), false);
+      return new WalRecovery(Map.of(), List.of(), false, VERSION);
     }
     Map<Integer, WalMetric> metrics = new LinkedHashMap<>();
     List<WalSample> samples = new ArrayList<>();
     long validBytes = HEADER_BYTES;
     boolean truncated = false;
+    int version;
     try (DataInputStream input = new DataInputStream(new BufferedInputStream(Files.newInputStream(path)))) {
-      if (input.readInt() != MAGIC || input.readUnsignedShort() != VERSION) {
+      if (input.readInt() != MAGIC) {
         throw new IOException("Invalid React history WAL header");
+      }
+      version = input.readUnsignedShort();
+      if (version != 1 && version != VERSION) {
+        throw new IOException("Unsupported React history WAL version " + version);
       }
       while (true) {
         int frameLength;
@@ -167,7 +188,7 @@ public final class HistoryWal implements AutoCloseable {
           truncated = true;
           break;
         }
-        decodeFrame(payload, metrics, samples);
+        decodeFrame(payload, metrics, samples, version);
         validBytes += Integer.BYTES + frameLength + Integer.BYTES;
       }
     }
@@ -178,7 +199,7 @@ public final class HistoryWal implements AutoCloseable {
       }
       truncated = true;
     }
-    return new WalRecovery(Map.copyOf(metrics), List.copyOf(samples), truncated);
+    return new WalRecovery(Map.copyOf(metrics), List.copyOf(samples), truncated, version);
   }
 
   private void writeFrame(byte[] payload) throws IOException {
@@ -193,7 +214,7 @@ public final class HistoryWal implements AutoCloseable {
     writeFully(channel, footer);
   }
 
-  private static byte[] dictionaryPayload(WalMetric metric) throws IOException {
+  private static byte[] dictionaryPayload(WalMetric metric, int version) throws IOException {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     DataOutputStream output = new DataOutputStream(bytes);
     output.writeByte(DICTIONARY_FRAME);
@@ -201,13 +222,15 @@ public final class HistoryWal implements AutoCloseable {
     writeString(output, metric.id());
     writeString(output, metric.name());
     writeString(output, metric.suffix());
-    HistorySegmentCodec.writeMetadata(output, metric.metadata());
+    if (version >= 2) {
+      HistorySegmentCodec.writeMetadata(output, metric.metadata());
+    }
     output.flush();
     return bytes.toByteArray();
   }
 
-  private static byte[] samplePayload(long sequence, long timestampMs, List<WalValue> values) throws IOException {
-    ByteArrayOutputStream bytes = new ByteArrayOutputStream(21 + values.size() * 20);
+  private static byte[] samplePayload(long sequence, long timestampMs, List<WalValue> values, int version) throws IOException {
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream(21 + values.size() * (version == 1 ? 12 : 20));
     DataOutputStream output = new DataOutputStream(bytes);
     output.writeByte(SAMPLE_FRAME);
     output.writeLong(sequence);
@@ -216,7 +239,9 @@ public final class HistoryWal implements AutoCloseable {
     for (WalValue value : values) {
       output.writeInt(value.index());
       output.writeLong(Double.doubleToRawLongBits(value.value()));
-      output.writeLong(value.sampledAtMs());
+      if (version >= 2) {
+        output.writeLong(value.sampledAtMs());
+      }
     }
     output.flush();
     return bytes.toByteArray();
@@ -225,7 +250,8 @@ public final class HistoryWal implements AutoCloseable {
   private static void decodeFrame(
       byte[] payload,
       Map<Integer, WalMetric> metrics,
-      List<WalSample> samples
+      List<WalSample> samples,
+      int version
   ) throws IOException {
     DataInputStream input = new DataInputStream(new ByteArrayInputStream(payload));
     int type = input.readUnsignedByte();
@@ -234,7 +260,7 @@ public final class HistoryWal implements AutoCloseable {
       if (index < 0) {
         throw new IOException("Negative metric index in React history WAL");
       }
-      WalMetric metric = new WalMetric(index, readString(input), readString(input), readString(input), HistorySegmentCodec.readMetadata(input));
+      WalMetric metric = new WalMetric(index, readString(input), readString(input), readString(input), version == 1 ? Sampler.Metadata.UNKNOWN : HistorySegmentCodec.readMetadata(input));
       metrics.put(index, metric);
     } else if (type == SAMPLE_FRAME) {
       long sequence = input.readLong();
@@ -249,7 +275,7 @@ public final class HistoryWal implements AutoCloseable {
         if (!metrics.containsKey(metricIndex)) {
           throw new IOException("React history WAL sample references an unknown metric index " + metricIndex);
         }
-        values.add(new WalValue(metricIndex, Double.longBitsToDouble(input.readLong()), input.readLong()));
+        values.add(new WalValue(metricIndex, Double.longBitsToDouble(input.readLong()), version == 1 ? 0L : input.readLong()));
       }
       samples.add(new WalSample(sequence, timestampMs, List.copyOf(values)));
     } else {
@@ -310,6 +336,6 @@ public final class HistoryWal implements AutoCloseable {
   public record WalSample(long sequence, long timestampMs, List<WalValue> values) {
   }
 
-  public record WalRecovery(Map<Integer, WalMetric> metrics, List<WalSample> samples, boolean truncated) {
+  public record WalRecovery(Map<Integer, WalMetric> metrics, List<WalSample> samples, boolean truncated, int formatVersion) {
   }
 }
