@@ -79,13 +79,13 @@ final class HistorySegmentCodec {
     try (DataInputStream input = new DataInputStream(new BufferedInputStream(Files.newInputStream(source)))) {
       requireMagic(input.readInt(), MAGIC, "history segment");
       int version = input.readUnsignedShort();
-      if (version != VERSION) {
+      if (version != 1 && version != VERSION) {
         throw new IOException("Unsupported history segment version " + version);
       }
       HistoryTier tier = HistoryTier.byId(input.readUnsignedByte());
       long startMs = input.readLong();
       int bucketCount = checkedCount(input.readInt(), MAX_BUCKETS, "bucket");
-      long lastSequence = input.readLong();
+      long lastSequence = version == 1 ? 0L : input.readLong();
       int seriesCount = checkedCount(input.readInt(), MAX_SERIES, "series");
       return new SegmentHeader(tier, startMs, bucketCount, seriesCount);
     }
@@ -95,13 +95,13 @@ final class HistorySegmentCodec {
     try (DataInputStream input = new DataInputStream(new BufferedInputStream(Files.newInputStream(source)))) {
       requireMagic(input.readInt(), MAGIC, "history segment");
       int version = input.readUnsignedShort();
-      if (version != VERSION) {
+      if (version != 1 && version != VERSION) {
         throw new IOException("Unsupported history segment version " + version);
       }
       HistoryTier tier = HistoryTier.byId(input.readUnsignedByte());
       long startMs = input.readLong();
       int bucketCount = checkedCount(input.readInt(), MAX_BUCKETS, "bucket");
-      long lastSequence = input.readLong();
+      long lastSequence = version == 1 ? 0L : input.readLong();
       int seriesCount = checkedCount(input.readInt(), MAX_SERIES, "series");
       HistorySegment segment = new HistorySegment(tier, startMs, bucketCount);
       segment.lastSequence(lastSequence);
@@ -110,7 +110,7 @@ final class HistorySegmentCodec {
         String id = readString(input);
         String name = readString(input);
         String suffix = readString(input);
-        Sampler.Metadata metadata = readMetadata(input);
+        Sampler.Metadata metadata = version == 1 ? Sampler.Metadata.UNKNOWN : readMetadata(input);
         input.readInt();
         input.readInt();
         boolean compressed = input.readBoolean();
@@ -134,7 +134,7 @@ final class HistorySegmentCodec {
         if ((int) crc.getValue() != checksum) {
           throw new IOException("History series checksum mismatch for " + id);
         }
-        HistorySeries series = decodeSeries(id, name, suffix, bucketCount, raw);
+        HistorySeries series = decodeSeries(id, name, suffix, bucketCount, raw, version);
         series.metadata(metadata);
         segment.add(series);
       }
@@ -198,7 +198,8 @@ final class HistorySegmentCodec {
       String name,
       String suffix,
       int expectedBuckets,
-      byte[] raw
+      byte[] raw,
+      int version
   ) throws IOException {
     DataInputStream input = new DataInputStream(new ByteArrayInputStream(raw));
     int bucketCount = checkedCount(input.readInt(), MAX_BUCKETS, "series bucket");
@@ -215,10 +216,12 @@ final class HistorySegmentCodec {
     double[] sums = DoubleColumnCodec.decode(readColumn(input), counts);
     double[] last = DoubleColumnCodec.decode(readColumn(input), counts);
     HistorySeries series = new HistorySeries(id, name, suffix, bucketCount);
-    for (int index = 0; index < counts.length; index++) {
-      if (counts[index] > 0L) {
-        series.firstSampledAtValues()[index] = DoubleColumnCodec.readUnsignedVarLong(input);
-        series.lastSampledAtValues()[index] = DoubleColumnCodec.readUnsignedVarLong(input);
+    if (version >= 2) {
+      for (int index = 0; index < counts.length; index++) {
+        if (counts[index] > 0L) {
+          series.firstSampledAtValues()[index] = DoubleColumnCodec.readUnsignedVarLong(input);
+          series.lastSampledAtValues()[index] = DoubleColumnCodec.readUnsignedVarLong(input);
+        }
       }
     }
     if (input.available() != 0) {
@@ -345,13 +348,13 @@ final class HistorySegmentCodec {
     try (DataInputStream input = new DataInputStream(new BufferedInputStream(Files.newInputStream(source)))) {
       requireMagic(input.readInt(), MAGIC, "history segment");
       int version = input.readUnsignedShort();
-      if (version != VERSION) {
+      if (version != 1 && version != VERSION) {
         throw new IOException("Unsupported history segment version " + version);
       }
       HistoryTier tier = HistoryTier.byId(input.readUnsignedByte());
       long startMs = input.readLong();
       int bucketCount = checkedCount(input.readInt(), MAX_BUCKETS, "bucket");
-      long lastSequence = input.readLong();
+      long lastSequence = version == 1 ? 0L : input.readLong();
       int seriesCount = checkedCount(input.readInt(), MAX_SERIES, "series");
       List<SegmentSeriesDescriptor> descriptors = new ArrayList<>(seriesCount);
       for (int index = 0; index < seriesCount; index++) {
@@ -359,7 +362,7 @@ final class HistorySegmentCodec {
         String id = readString(input);
         String name = readString(input);
         String suffix = readString(input);
-        Sampler.Metadata metadata = readMetadata(input);
+        Sampler.Metadata metadata = version == 1 ? Sampler.Metadata.UNKNOWN : readMetadata(input);
         int firstIndex = input.readInt();
         int lastIndex = input.readInt();
         input.readBoolean();
