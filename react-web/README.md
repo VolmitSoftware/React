@@ -4,11 +4,13 @@ Local-first Jaspr control plane for React server telemetry, heatmaps, incidents,
 
 ## Local development
 
-React Web requires Dart 3.10 or newer and the pinned `arcane_jaspr` checkout at `.deps/arcane_jaspr`. A symlink to a local clone also works.
+React Web uses Dart 3.13.5 and the `arcane_jaspr` revision pinned in `.github/workflows/react-web-firebase-hosting.yml`, checked out at `.deps/arcane_jaspr`. That checkout supplies the core, Ascii theme, and shared renderers. A symlink to a local clone at the same revision also works.
 
 ```bash
 git clone https://github.com/ArcaneArts/arcane_jaspr .deps/arcane_jaspr
-dart pub get
+ARCANE_JASPR_REF="$(sed -n 's/^  ARCANE_JASPR_REF: //p' ../.github/workflows/react-web-firebase-hosting.yml)"
+git -C .deps/arcane_jaspr checkout "$ARCANE_JASPR_REF"
+dart pub get --enforce-lockfile
 dart analyze
 dart test
 dart run jaspr_cli:jaspr serve
@@ -68,4 +70,4 @@ The Environment workspace polls typed disk and network counters every five secon
 
 The `react-web-plugin` Firebase project and Hosting site serve [react.volmitsoftware.com](https://react.volmitsoftware.com/). On pushes to `master` that change `react-web/`, `.github/workflows/react-web-firebase-hosting.yml` analyzes and tests both packages, builds the Jaspr client, deploys Hosting, and confirms that the custom domain serves the exact client bundle produced by the job.
 
-The workflow requires the repository or production-environment secret `FIREBASE_SERVICE_ACCOUNT_REACT_WEB_PLUGIN`, containing a Firebase service-account JSON document authorized to deploy Hosting for `react-web-plugin`. Local `service-account.json` is ignored by Git and is not read by the workflow.
+The workflow requires the repository or production-environment secret `SERVICE_ACCOUNT`, containing a Firebase service-account JSON document authorized to deploy Hosting for `react-web-plugin`. Local `service-account.json` is ignored by Git and is not read by the workflow.

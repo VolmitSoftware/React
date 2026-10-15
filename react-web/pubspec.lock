@@ -31,21 +31,21 @@ packages:
       path: ".deps/arcane_jaspr"
       relative: true
     source: path
-    version: "5.0.1"
+    version: "6.0.0"
   arcane_jaspr_ascii:
     dependency: "direct main"
     description:
       path: ".deps/arcane_jaspr/packages/arcane_jaspr_ascii"
       relative: true
     source: path
-    version: "0.1.0"
+    version: "1.0.0"
   arcane_jaspr_shadcn:
     dependency: "direct overridden"
     description:
       path: ".deps/arcane_jaspr/packages/arcane_jaspr_shadcn"
       relative: true
     source: path
-    version: "5.0.0"
+    version: "6.0.0"
   archive:
     dependency: transitive
     description:
@@ -919,4 +919,4 @@ packages:
     source: hosted
     version: "2.2.4"
 sdks:
-  dart: ">=3.13.0-107.0.dev <3.14.0-z"
+  dart: ">=3.13.0 <3.14.0-z"
