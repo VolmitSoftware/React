@@ -116,7 +116,7 @@ class _MetricsExplorerScreenState extends State<MetricsExplorerScreen> {
                   placeholder: reactorText(
                     ReactorText.metricsSearchPlaceholder,
                   ),
-                  onChange: (String value) => setState(() => _query = value),
+                  onChanged: (String value) => setState(() => _query = value),
                   fullWidth: true,
                 ),
               ]),

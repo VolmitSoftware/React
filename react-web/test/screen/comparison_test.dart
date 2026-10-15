@@ -1,7 +1,7 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
+import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr_test/server_test.dart';
 
 import 'package:react_web/model/sampler_sample.dart';
@@ -11,7 +11,7 @@ import 'package:react_web/state/connection_manager.dart';
 import 'package:react_web/state/fleet_live_scope.dart';
 import 'package:react_web/state/fleet_rollup.dart';
 
-const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
+const AsciiStylesheet _sheet = AsciiStylesheet();
 
 SamplerSample _sample(
   String id,
@@ -118,24 +118,14 @@ void main() {
 
         final DocumentResponse res = await tester.request('/');
         expect(res.statusCode, equals(200));
-        final int indexA = res.body.lastIndexOf('A');
-        final int indexB = res.body.lastIndexOf('B');
-        expect(
-          indexA > 0 && indexB > 0,
-          isTrue,
-          reason: 'Both A and B must appear in rendered HTML',
-        );
-        expect(
-          res.body.contains('20.0'),
-          isTrue,
-          reason: 'Rank-1 value 20.0 for server A must appear in leaderboard',
-        );
-        expect(
-          res.body.indexOf('20.0') < res.body.indexOf('10.0'),
-          isTrue,
-          reason:
-              'Server A (value 20) must appear before server B (value 10) in leaderboard',
-        );
+        final List<List<String>> rows = res.document!
+            .querySelectorAll('.reactor-leaderboard-row')
+            .map((row) => row.children.map((cell) => cell.text.trim()).toList())
+            .toList();
+        expect(rows, <List<String>>[
+          <String>['#1', 'A', '20.0'],
+          <String>['#2', 'B', '10.0'],
+        ]);
       },
     );
 

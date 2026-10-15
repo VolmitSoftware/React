@@ -1,13 +1,13 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
+import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr_test/server_test.dart';
 
 import 'package:react_web/model/knob.dart';
 import 'package:react_web/widget/knob_editor.dart';
 
-const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
+const AsciiStylesheet _sheet = AsciiStylesheet();
 
 Widget _wrap(Widget child) =>
     ArcaneThemeProvider(stylesheet: _sheet, child: child);

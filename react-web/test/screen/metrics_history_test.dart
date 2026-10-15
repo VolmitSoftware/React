@@ -1,5 +1,5 @@
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
+import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr/jaspr.dart' show Component, DomComponent, StatefulBuilder;
 import 'package:jaspr_test/jaspr_test.dart';
 import 'package:react_web/chart/timeseries_chart.dart';
@@ -85,7 +85,7 @@ void main() {
       late void Function(void Function()) rebuild;
       tester.pumpComponent(
         ArcaneThemeProvider(
-          stylesheet: const ShadcnStylesheet(theme: ShadcnTheme.midnight),
+          stylesheet: const AsciiStylesheet(),
           child: StatefulBuilder(
             builder:
                 (

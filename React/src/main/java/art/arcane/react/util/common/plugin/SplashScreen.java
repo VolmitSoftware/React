@@ -22,6 +22,7 @@ package art.arcane.react.util.common.plugin;
 import art.arcane.react.React;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.plugin.SplashScreenSupport;
+import org.bukkit.Bukkit;
 
 public class SplashScreen {
 
@@ -30,6 +31,6 @@ public class SplashScreen {
       C.DARK_GRAY + "██" + C.AQUA + "╔══" + C.DARK_GRAY + "██" + C.AQUA + "╗" + C.DARK_GRAY + "██" + C.AQUA + "╔════╝" + C.DARK_GRAY + "██" + C.AQUA + "╔══" + C.DARK_GRAY + "██" + C.AQUA + "╗" + C.DARK_GRAY + "██" + C.AQUA + "╔════╝╚══" + C.DARK_GRAY + "██" + C.AQUA + "╔══╝" + C.AQUA + "   React, " + C.DARK_AQUA + "Smart Server Performance " + C.RED + "[" + SplashScreenSupport.releaseTrain(React.instance.getDescription().getVersion()) + " RELEASE]\n" +
       C.DARK_GRAY + "██████" + C.AQUA + "╔╝" + C.DARK_GRAY + "█████" + C.AQUA + "╗  " + C.DARK_GRAY + "███████" + C.AQUA + "║" + C.DARK_GRAY + "██" + C.AQUA + "║        " + C.DARK_GRAY + "██" + C.AQUA + "║   " + C.GRAY + "   Version: " + C.AQUA + React.instance.getDescription().getVersion() + "\n" +
       C.DARK_GRAY + "██" + C.AQUA + "╔══" + C.DARK_GRAY + "██" + C.AQUA + "╗" + C.DARK_GRAY + "██" + C.AQUA + "╔══╝  " + C.DARK_GRAY + "██" + C.AQUA + "╔══" + C.DARK_GRAY + "██" + C.AQUA + "║" + C.DARK_GRAY + "██" + C.AQUA + "║        " + C.DARK_GRAY + "██" + C.AQUA + "║   " + C.GRAY + "   By: " + C.AQUA + "Volmit Software (Arcane Arts)" + C.GRAY + " | Control Panel: " + C.AQUA + "https://react.volmitsoftware.com\n" +
-      C.DARK_GRAY + "██" + C.AQUA + "║  " + C.DARK_GRAY + "██" + C.AQUA + "║" + C.DARK_GRAY + "███████" + C.AQUA + "╗" + C.DARK_GRAY + "██" + C.AQUA + "║  " + C.DARK_GRAY + "██" + C.AQUA + "║╚" + C.DARK_GRAY + "██████" + C.AQUA + "╗   " + C.DARK_GRAY + "██" + C.AQUA + "║   " + C.GRAY + "   Server: " + C.AQUA + SplashScreenSupport.serverVersionWithoutMcSuffix() + "\n" +
+      C.DARK_GRAY + "██" + C.AQUA + "║  " + C.DARK_GRAY + "██" + C.AQUA + "║" + C.DARK_GRAY + "███████" + C.AQUA + "╗" + C.DARK_GRAY + "██" + C.AQUA + "║  " + C.DARK_GRAY + "██" + C.AQUA + "║╚" + C.DARK_GRAY + "██████" + C.AQUA + "╗   " + C.DARK_GRAY + "██" + C.AQUA + "║   " + C.GRAY + "   Server: " + C.AQUA + SplashScreenSupport.serverVersionWithoutMcSuffix(Bukkit.getVersion()) + "\n" +
       C.AQUA + "╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝ ╚═════╝   ╚═╝   " + C.GRAY + "   Java: " + C.AQUA + SplashScreenSupport.javaMajorVersion() + C.GRAY + " | Date: " + C.AQUA + SplashScreenSupport.startupDate() + "\n";
 }

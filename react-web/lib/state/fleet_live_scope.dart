@@ -54,8 +54,8 @@ class _FleetLiveObserverState extends State<FleetLiveObserver> {
   }
 
   @override
-  void didUpdateComponent(FleetLiveObserver oldComponent) {
-    super.didUpdateComponent(oldComponent);
+  void didUpdateWidget(FleetLiveObserver oldComponent) {
+    super.didUpdateWidget(oldComponent);
     if (oldComponent.sources != component.sources) {
       _model.update(component.sources);
     }

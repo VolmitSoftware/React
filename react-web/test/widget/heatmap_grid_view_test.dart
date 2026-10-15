@@ -1,14 +1,14 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
+import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr_test/server_test.dart';
 import 'package:jaspr/jaspr.dart' show Component, DomComponent;
 
 import 'package:react_web/model/heatmap.dart';
 import 'package:react_web/widget/heatmap_grid_view.dart';
 
-const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
+const AsciiStylesheet _sheet = AsciiStylesheet();
 
 Widget _wrap(Widget child) =>
     ArcaneThemeProvider(stylesheet: _sheet, child: child);

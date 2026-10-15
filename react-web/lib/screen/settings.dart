@@ -612,7 +612,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       TextInput(
         value: value,
         type: TextInputType.number,
-        onChange: onChanged,
+        onChanged: onChanged,
         fullWidth: true,
       ),
     ]);
@@ -791,7 +791,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 TextInput(
                   value: renameLabel,
                   placeholder: reactorText(ReactorText.settingsServerLabel),
-                  onChange: (String value) =>
+                  onChanged: (String value) =>
                       setState(() => _renameLabels[cred.id] = value),
                   fullWidth: true,
                 ),
@@ -869,7 +869,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 TextInput(
                   value: tagInput,
                   placeholder: reactorText(ReactorText.settingsAddTag),
-                  onChange: (String value) =>
+                  onChanged: (String value) =>
                       setState(() => _tagInputs[cred.id] = value),
                   fullWidth: true,
                 ),

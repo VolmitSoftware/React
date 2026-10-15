@@ -3,7 +3,7 @@ library;
 import 'dart:collection';
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
+import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr_router/jaspr_router.dart';
 import 'package:jaspr_test/server_test.dart';
 
@@ -15,7 +15,7 @@ import 'package:react_web/screen/environment.dart';
 import 'package:react_web/state/connection_manager.dart';
 import 'package:react_web/state/operate_scope.dart';
 
-const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
+const AsciiStylesheet _sheet = AsciiStylesheet();
 
 EnvironmentInfo _fakeInfo() => EnvironmentInfo(
   sections: LinkedHashMap<String, Map<String, Object?>>.from(

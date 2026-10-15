@@ -3,7 +3,7 @@ library;
 import 'dart:async' show StreamSubscription;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
+import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component, EventCallback, kIsWeb;
 import 'package:jaspr_router/jaspr_router.dart';
@@ -70,23 +70,6 @@ import '../ui/reactor_ui.dart';
 import '../widget/pane_layout.dart';
 import '../widget/pane_splitter.dart';
 import '../widget/language_picker.dart';
-
-class _OfflineShadcnStylesheet extends ShadcnStylesheet {
-  const _OfflineShadcnStylesheet({super.theme});
-
-  @override
-  FontConfig get fonts => const FontConfig(
-    sans:
-        "'Geist', ui-sans-serif, system-ui, -apple-system, "
-        "BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    mono:
-        "'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, "
-        'Consolas, monospace',
-  );
-
-  @override
-  RadiusConfig get radius => const RadiusConfig.sharp();
-}
 
 class ServerEntry {
   final String id;
@@ -428,7 +411,7 @@ class _ReactorAppState extends State<ReactorApp> {
     dependOnReactorLocale(context);
     return ArcaneApp(
       brightness: _brightness,
-      stylesheet: const _OfflineShadcnStylesheet(theme: ShadcnTheme.midnight),
+      stylesheet: const AsciiStylesheet(),
       head: <Widget>[
         const dom.link(href: '/styles/react-web.css', rel: 'stylesheet'),
       ],
@@ -489,8 +472,8 @@ class _LiveServerScopeState extends State<LiveServerScope> {
   }
 
   @override
-  void didUpdateComponent(LiveServerScope oldComponent) {
-    super.didUpdateComponent(oldComponent);
+  void didUpdateWidget(LiveServerScope oldComponent) {
+    super.didUpdateWidget(oldComponent);
     if (oldComponent.manager != component.manager) {
       _unbind();
       _bind(component.manager);
@@ -702,8 +685,8 @@ class _ReactorShellState extends State<ReactorShell> {
   String get currentPath => component.currentPath;
 
   @override
-  void didUpdateComponent(ReactorShell oldComponent) {
-    super.didUpdateComponent(oldComponent);
+  void didUpdateWidget(ReactorShell oldComponent) {
+    super.didUpdateWidget(oldComponent);
     if (oldComponent.currentPath != currentPath) {
       _drawer = _ShellDrawer.none;
     }

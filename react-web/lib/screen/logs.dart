@@ -75,7 +75,7 @@ class LogsView extends StatelessWidget {
               const ArcaneSelectOption(label: 'ERROR', value: 'ERROR'),
               const ArcaneSelectOption(label: 'DEBUG', value: 'DEBUG'),
             ],
-            onChange: (String s) => onLevelFilter?.call(s),
+            onChanged: (String s) => onLevelFilter?.call(s),
           ),
           child: dom.div(classes: 'reactor-terminal', <Widget>[
             dom.div(classes: 'reactor-terminal-toolbar', <Widget>[
@@ -146,10 +146,10 @@ class LogsView extends StatelessWidget {
                   attributes: const <String, String>{'dir': 'ltr'},
                   placeholder: reactorText(ReactorText.consolePlaceholder),
                   disabled: !consoleEnabled || consolePending,
-                  onChange: consoleEnabled && !consolePending
+                  onChanged: consoleEnabled && !consolePending
                       ? onCommandChanged
                       : null,
-                  onSubmit:
+                  onSubmitted:
                       consoleEnabled &&
                           !consolePending &&
                           command.trim().isNotEmpty

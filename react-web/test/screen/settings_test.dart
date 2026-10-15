@@ -3,7 +3,7 @@ library;
 import 'dart:convert';
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
+import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr_test/server_test.dart';
 
 import 'package:react_web/localization/reactor_localizations.dart';
@@ -20,7 +20,7 @@ import 'package:react_web/state/memory_fleet_storage.dart';
 import 'package:react_web/state/server_tags_store.dart';
 import 'package:react_web/theme/reactor_theme.dart';
 
-const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
+const AsciiStylesheet _sheet = AsciiStylesheet();
 
 const String _alphaId = 'srv-alpha';
 const String _betaId = 'srv-beta';

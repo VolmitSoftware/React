@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
+import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr_test/server_test.dart';
 
 import 'package:react_web/localization/reactor_localizations.dart';
@@ -87,7 +87,7 @@ class _MemStorage implements FleetStorage {
   void remove(String key) => _data.remove(key);
 }
 
-const ShadcnStylesheet _sheet = ShadcnStylesheet(theme: ShadcnTheme.midnight);
+const AsciiStylesheet _sheet = AsciiStylesheet();
 final String _serverPubKey = base64Url
     .encode(List<int>.generate(48, (int index) => index + 1))
     .replaceAll('=', '');

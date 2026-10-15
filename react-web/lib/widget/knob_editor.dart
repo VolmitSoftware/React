@@ -32,7 +32,7 @@ class KnobEditor extends StatelessWidget {
         type: TextInputType.number,
         value: knob.intValue.toString(),
         disabled: disabled,
-        onChange: disabled
+        onChanged: disabled
             ? null
             : (String s) {
                 final int? v = int.tryParse(s.trim());
@@ -44,7 +44,7 @@ class KnobEditor extends StatelessWidget {
         type: TextInputType.number,
         value: knob.doubleValue.toString(),
         disabled: disabled,
-        onChange: disabled
+        onChanged: disabled
             ? null
             : (String s) {
                 final double? v = double.tryParse(s.trim());
@@ -56,7 +56,7 @@ class KnobEditor extends StatelessWidget {
         type: TextInputType.text,
         value: knob.stringValue,
         disabled: disabled,
-        onChange: disabled ? null : (String s) => onChanged?.call(s),
+        onChanged: disabled ? null : (String s) => onChanged?.call(s),
       ),
       KnobType.enumType => ArcaneSelect(
         size: ComponentSize.sm,
@@ -67,7 +67,7 @@ class KnobEditor extends StatelessWidget {
           for (final String o in knob.options)
             ArcaneSelectOption(label: o, value: o),
         ],
-        onChange: disabled ? null : (String s) => onChanged?.call(s),
+        onChanged: disabled ? null : (String s) => onChanged?.call(s),
       ),
     };
 

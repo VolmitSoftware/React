@@ -154,7 +154,7 @@ class _AlertsInboxScreenState extends State<AlertsInboxScreen> {
         size: ComponentSize.sm,
         options: severityOptions,
         value: _severityFilter == null ? '' : _severityFilter!.name,
-        onChange: (String v) => setState(() {
+        onChanged: (String v) => setState(() {
           if (v.isEmpty) {
             _severityFilter = null;
           } else {
@@ -168,7 +168,7 @@ class _AlertsInboxScreenState extends State<AlertsInboxScreen> {
         size: ComponentSize.sm,
         options: serverOptions,
         value: _serverIdFilter ?? '',
-        onChange: (String v) =>
+        onChanged: (String v) =>
             setState(() => _serverIdFilter = v.isEmpty ? null : v),
       ),
     ]);

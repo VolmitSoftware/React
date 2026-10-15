@@ -801,7 +801,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
           ],
           value: _selectedWorldKey,
           fullWidth: true,
-          onChange: (String value) => setState(() {
+          onChanged: (String value) => setState(() {
             _selectedWorldKey = value;
           }),
         ),
@@ -814,7 +814,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
           ],
           value: _selectedHeatmapId,
           fullWidth: true,
-          onChange: (String value) {
+          onChanged: (String value) {
             setState(() {
               _selectedHeatmapId = value;
             });
@@ -827,7 +827,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
           value: _centerChunkX,
           error: _coordinatesInvalid ? validationError : null,
           fullWidth: true,
-          onChange: (String value) => setState(() {
+          onChanged: (String value) => setState(() {
             _centerChunkX = value;
             _coordinatesInvalid = false;
           }),
@@ -838,7 +838,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
           value: _centerChunkZ,
           error: _coordinatesInvalid ? validationError : null,
           fullWidth: true,
-          onChange: (String value) => setState(() {
+          onChanged: (String value) => setState(() {
             _centerChunkZ = value;
             _coordinatesInvalid = false;
           }),
@@ -849,7 +849,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
           value: _radius,
           error: _radiusInvalid ? validationError : null,
           fullWidth: true,
-          onChange: (String value) => setState(() {
+          onChanged: (String value) => setState(() {
             _radius = value;
             _radiusInvalid = false;
           }),
@@ -1050,7 +1050,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
             ],
             value: _selectedPlayerId,
             disabled: !live || _teleporting,
-            onChange: (String value) => setState(() {
+            onChanged: (String value) => setState(() {
               _selectedPlayerId = value;
               _pendingTeleportTarget = null;
             }),

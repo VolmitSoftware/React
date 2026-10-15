@@ -31,14 +31,21 @@ packages:
       path: ".deps/arcane_jaspr"
       relative: true
     source: path
-    version: "3.4.0"
-  arcane_jaspr_shadcn:
+    version: "5.0.1"
+  arcane_jaspr_ascii:
     dependency: "direct main"
+    description:
+      path: ".deps/arcane_jaspr/packages/arcane_jaspr_ascii"
+      relative: true
+    source: path
+    version: "0.1.0"
+  arcane_jaspr_shadcn:
+    dependency: "direct overridden"
     description:
       path: ".deps/arcane_jaspr/packages/arcane_jaspr_shadcn"
       relative: true
     source: path
-    version: "3.3.0"
+    version: "5.0.0"
   archive:
     dependency: transitive
     description:
@@ -123,10 +130,10 @@ packages:
     dependency: "direct dev"
     description:
       name: build_web_compilers
-      sha256: c8be4b48f09289d145c7eaa3240f1e7776c529ea1cecddf483218edd3129de3f
+      sha256: ef4bc35e0e335f8520692a333b872446697adce0618cf23c3084715ace641721
       url: "https://pub.dev"
     source: hosted
-    version: "4.8.0"
+    version: "4.8.5"
   built_collection:
     dependency: transitive
     description:
@@ -143,6 +150,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.12.6"
+  characters:
+    dependency: transitive
+    description:
+      name: characters
+      sha256: faf38497bda5ead2a8c7615f4f7939df04333478bf32e4173fcb06d428b5716b
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.1"
   checked_yaml:
     dependency: transitive
     description:
@@ -904,4 +919,4 @@ packages:
     source: hosted
     version: "2.2.4"
 sdks:
-  dart: ">=3.11.0 <3.13.0-z"
+  dart: ">=3.13.0-107.0.dev <3.14.0-z"

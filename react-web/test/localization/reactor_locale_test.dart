@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
+import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component, DomComponent, EventCallback;
 import 'package:jaspr_test/server_test.dart';
@@ -412,7 +412,7 @@ void main() {
   ) async {
     tester.pumpComponent(
       const ArcaneThemeProvider(
-        stylesheet: ShadcnStylesheet(theme: ShadcnTheme.midnight),
+        stylesheet: AsciiStylesheet(),
         child: ArcaneDirection(
           value: ArcaneDirectionValue.rtl,
           children: <Widget>[dom.div(<Widget>[])],

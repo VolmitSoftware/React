@@ -175,7 +175,7 @@ class WorldOverridesView extends StatelessWidget {
       type: TextInputType.number,
       value: value.toString(),
       disabled: readOnly,
-      onChange: readOnly
+      onChanged: readOnly
           ? null
           : (String input) {
               final double? parsed = double.tryParse(input.trim());

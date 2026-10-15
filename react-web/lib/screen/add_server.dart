@@ -426,8 +426,8 @@ class _AddServerScreenState extends State<AddServerScreen> {
                   ),
                   attributes: const <String, String>{'dir': 'ltr'},
                   value: _code,
-                  onChange: _onCodeChanged,
-                  onSubmit: _onPair,
+                  onChanged: _onCodeChanged,
+                  onSubmitted: _onPair,
                   error: inputError,
                   helperText: reactorText(ReactorText.addServerInputHelper),
                   fullWidth: true,
@@ -438,7 +438,7 @@ class _AddServerScreenState extends State<AddServerScreen> {
                     placeholder: 'https://play.example.com/react',
                     attributes: const <String, String>{'dir': 'ltr'},
                     value: _directUrl,
-                    onChange: _onDirectUrlChanged,
+                    onChanged: _onDirectUrlChanged,
                     error: directUrlValid
                         ? null
                         : reactorText(

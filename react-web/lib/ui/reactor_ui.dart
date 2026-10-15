@@ -1,6 +1,7 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
+import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
@@ -159,7 +160,9 @@ class ReactorPageHeader extends StatelessWidget {
       dom.div(classes: 'reactor-page-heading', <Widget>[
         ?lead,
         dom.div(classes: 'reactor-page-heading-copy', <Widget>[
-          dom.h1(<Widget>[Component.text(title)]),
+          dom.h1(<Widget>[
+            AsciiText(title, duration: const Duration(milliseconds: 540)),
+          ]),
           if (sub != null) dom.p(<Widget>[Component.text(sub)]),
         ]),
       ]),

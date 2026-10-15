@@ -13,6 +13,6 @@ void updateReactorThemeMetadata(Brightness brightness) {
   );
   themeColor?.setAttribute(
     'content',
-    brightness == Brightness.light ? '#f5f5f6' : '#0a0a0b',
+    brightness == Brightness.light ? '#f6f5f0' : '#111310',
   );
 }

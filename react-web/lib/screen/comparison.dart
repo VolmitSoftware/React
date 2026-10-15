@@ -211,7 +211,7 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
               ),
             ],
             value: _selectedMetric,
-            onChange: (String v) => setState(() => _selectedMetric = v),
+            onChanged: (String v) => setState(() => _selectedMetric = v),
           ),
       ],
     );

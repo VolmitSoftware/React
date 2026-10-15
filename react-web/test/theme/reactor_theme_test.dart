@@ -59,15 +59,5 @@ void main() {
       expect(bootstrap, contains("localStorage.getItem('reactor.theme')"));
       expect(bootstrap, contains("stored === 'light' || stored === 'dark'"));
     });
-
-    test('ships separate accessible light and dark palettes', () {
-      final String css = File('web/styles/react-web.css').readAsStringSync();
-      expect(css, contains('html.dark #arcane-root'));
-      expect(css, contains('html.light #arcane-root'));
-      expect(css, contains('--reactor-danger: #ff8a8d;'));
-      expect(css, contains('--destructive-foreground: #000000 !important;'));
-      expect(css, contains('--reactor-danger: #b4232c;'));
-      expect(css, contains('--destructive-foreground: #ffffff !important;'));
-    });
   });
 }

@@ -1,25 +1,21 @@
 library;
 
-import 'package:arcane_jaspr_shadcn/arcane_jaspr_shadcn.dart';
-import 'package:jaspr_test/jaspr_test.dart';
+import 'package:arcane_jaspr/arcane_jaspr.dart';
+import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
+import 'package:jaspr_test/server_test.dart';
 
 void main() {
-  group('scaffold', () {
-    test('ShadcnTheme.midnight has correct dark background', () {
-      const ShadcnTheme theme = ShadcnTheme.midnight;
-      expect(theme.darkBackground, equals(0xFF050505));
-    });
+  testServer('Ascii shell renders without remote fonts', (
+    ServerTester tester,
+  ) async {
+    tester.pumpComponent(
+      const ArcaneApp(stylesheet: AsciiStylesheet(), home: Text('React Web')),
+    );
 
-    test('ShadcnStylesheet id is shadcn', () {
-      const ShadcnStylesheet stylesheet = ShadcnStylesheet();
-      expect(stylesheet.id, equals('shadcn'));
-    });
-
-    test('reactor app uses the midnight ShadcnStylesheet', () {
-      const ShadcnStylesheet stylesheet = ShadcnStylesheet(
-        theme: ShadcnTheme.midnight,
-      );
-      expect(stylesheet.theme, equals(ShadcnTheme.midnight));
-    });
+    final DocumentResponse response = await tester.request('/');
+    expect(response.statusCode, 200);
+    expect(response.body, contains('arcane-theme-ascii'));
+    expect(response.body, contains('React Web'));
+    expect(response.body, isNot(contains('fonts.googleapis.com')));
   });
 }

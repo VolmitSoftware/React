@@ -175,7 +175,7 @@ class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
           size: ComponentSize.sm,
           options: options,
           value: _selectedTag,
-          onChange: (String v) => setState(() => _selectedTag = v),
+          onChanged: (String v) => setState(() => _selectedTag = v),
         ),
       ],
     );

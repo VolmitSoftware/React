@@ -271,7 +271,7 @@ class _PluginApiPacksScreenState extends State<PluginApiPacksScreen> {
           value: _draft,
           rows: 22,
           minHeight: '28rem',
-          onChange: (String value) => setState(() {
+          onChanged: (String value) => setState(() {
             _draft = value;
             _validation = null;
           }),
