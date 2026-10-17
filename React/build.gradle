@@ -40,7 +40,7 @@ plugins {
 apply plugin: 'art.arcane.volmit-packaging'
 
 
-version = '2.2.2'
+version = '2.2.3'
 ext.bukkitMinecraftRange = providers.gradleProperty('bukkitMinecraftRange').getOrElse('26.1.2-26.3')
 def apiVersion = '26.1'
 def spigotApiVersion = '26.2-R0.1-SNAPSHOT'
