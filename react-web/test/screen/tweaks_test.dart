@@ -129,6 +129,8 @@ void main() {
         isTrue,
         reason: 'Fast Snow tweak name must appear',
       );
+      expect(res.body, contains('aria-label="Fast Fluids"'));
+      expect(res.body, contains('aria-label="Fast Snow"'));
     });
 
     testServer('renders knob label Rate in accordion customContent', (

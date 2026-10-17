@@ -870,19 +870,22 @@ class _ReactorShellState extends State<ReactorShell> {
     required Widget icon,
   }) {
     final bool open = _drawer == drawer;
-    return dom.button(
-      classes: open
-          ? 'reactor-bar-button reactor-drawer-toggle is-active'
-          : 'reactor-bar-button reactor-drawer-toggle',
-      attributes: <String, String>{
-        'type': 'button',
-        'aria-label': open ? closeLabel : openLabel,
-        'title': open ? closeLabel : openLabel,
-        'aria-controls': controls,
-        'aria-expanded': open.toString(),
-      },
-      events: <String, EventCallback>{'click': (_) => _toggleDrawer(drawer)},
-      <Widget>[icon],
+    return ArcaneTooltip(
+      text: open ? closeLabel : openLabel,
+      position: FloatingPosition.bottom,
+      child: dom.button(
+        classes: open
+            ? 'reactor-bar-button reactor-drawer-toggle is-active'
+            : 'reactor-bar-button reactor-drawer-toggle',
+        attributes: <String, String>{
+          'type': 'button',
+          'aria-label': open ? closeLabel : openLabel,
+          'aria-controls': controls,
+          'aria-expanded': open.toString(),
+        },
+        events: <String, EventCallback>{'click': (_) => _toggleDrawer(drawer)},
+        <Widget>[icon],
+      ),
     );
   }
 
@@ -921,18 +924,21 @@ class _ReactorShellState extends State<ReactorShell> {
     required VoidCallback onPressed,
     bool compact = false,
   }) {
-    return dom.button(
-      classes: compact ? 'reactor-bar-button is-compact' : 'reactor-bar-button',
-      attributes: <String, String>{
-        'type': 'button',
-        'aria-label': label,
-        'title': label,
-      },
-      events: <String, EventCallback>{'click': (_) => onPressed()},
-      <Widget>[
-        icon,
-        if (!compact) dom.span(<Widget>[Component.text(label)]),
-      ],
+    return ArcaneTooltip(
+      text: label,
+      position: FloatingPosition.bottom,
+      child: dom.button(
+        classes: compact ? 'reactor-bar-button is-compact' : 'reactor-bar-button',
+        attributes: <String, String>{
+          'type': 'button',
+          'aria-label': label,
+        },
+        events: <String, EventCallback>{'click': (_) => onPressed()},
+        <Widget>[
+          icon,
+          if (!compact) dom.span(<Widget>[Component.text(label)]),
+        ],
+      ),
     );
   }
 

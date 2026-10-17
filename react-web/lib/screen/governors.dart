@@ -176,6 +176,7 @@ class GovernorDashboardView extends StatelessWidget {
                     ReactorStatus.neutral,
                   ),
             ArcaneToggleSwitch(
+              ariaLabel: governor.name,
               value: governor.enabled,
               disabled: onToggle == null,
               onChanged: onToggle == null

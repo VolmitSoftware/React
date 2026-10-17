@@ -217,6 +217,7 @@ class _FeatureCard extends StatelessWidget {
                         ReactorStatus.neutral,
                       ),
                 ArcaneToggleSwitch(
+                  ariaLabel: item.name,
                   value: enabled,
                   disabled: readOnly,
                   onChanged: readOnly

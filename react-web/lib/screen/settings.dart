@@ -612,6 +612,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       TextInput(
         value: value,
         type: TextInputType.number,
+        attributes: <String, String>{'aria-label': label},
         onChanged: onChanged,
         fullWidth: true,
       ),

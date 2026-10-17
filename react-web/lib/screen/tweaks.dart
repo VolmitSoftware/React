@@ -132,6 +132,7 @@ class TweaksListView extends StatelessWidget {
                         ReactorStatus.neutral,
                       ),
                 ArcaneToggleSwitch(
+                  ariaLabel: tweak.name,
                   value: tweak.enabled,
                   disabled: readOnly,
                   onChanged: readOnly

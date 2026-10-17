@@ -208,6 +208,17 @@ void main() {
         isTrue,
         reason: 'default tpsWarn=18.0 must appear in threshold inputs',
       );
+      for (final ReactorText label in <ReactorText>[
+        ReactorText.settingsTpsWarn,
+        ReactorText.settingsTpsCritical,
+        ReactorText.settingsMsptWarn,
+        ReactorText.settingsIncidentScoreWarn,
+        ReactorText.settingsGcPercentWarn,
+        ReactorText.settingsPingP95Warn,
+        ReactorText.settingsMemoryPressureWarn,
+      ]) {
+        expect(res.body, contains('aria-label="${label.english}"'));
+      }
     });
 
     testServer('renders default tpsCrit value 10', (ServerTester tester) async {

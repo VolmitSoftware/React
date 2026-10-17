@@ -159,6 +159,8 @@ void main() {
         isTrue,
         reason: 'Fast Leaf Decay feature name must appear',
       );
+      expect(res.body, contains('aria-label="Mob Stacking"'));
+      expect(res.body, contains('aria-label="Fast Leaf Decay"'));
     });
 
     testServer('renders enabled summary 1 / 2 enabled', (

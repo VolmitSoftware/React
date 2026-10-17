@@ -152,6 +152,8 @@ void main() {
           reason:
               'governor name Pathfinder Budget must appear in rendered HTML',
         );
+        expect(res.body, contains('aria-label="Incident Mode"'));
+        expect(res.body, contains('aria-label="Pathfinder Budget"'));
         expect(
           res.body.contains('Enabled'),
           isTrue,

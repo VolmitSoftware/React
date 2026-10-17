@@ -130,15 +130,36 @@ void main() {
       },
     );
 
-    testServer('ReactorShell exposes the light theme command', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrap(const ReactorShell()));
-      final DocumentResponse response = await tester.request('/');
+    for (final Brightness brightness in Brightness.values) {
+      testServer('ReactorShell names the next theme in $brightness', (
+        ServerTester tester,
+      ) async {
+        final String command = brightness == Brightness.dark
+            ? 'Switch to light theme'
+            : 'Switch to dark theme';
+        tester.pumpComponent(
+          ArcaneThemeProvider(
+            stylesheet: _sheet,
+            child: ReactorThemeScope(
+              brightness: brightness,
+              onChanged: (Brightness _) {},
+              child: const ReactorShell(),
+            ),
+          ),
+        );
+        final DocumentResponse response = await tester.request('/');
 
-      expect(response.statusCode, 200);
-      expect(response.body, contains('aria-label="Switch to light theme"'));
-    });
+        expect(response.statusCode, 200);
+        expect(response.body, contains('aria-label="$command"'));
+        expect(response.body, isNot(contains('title="$command"')));
+        expect(
+          response.document!
+              .querySelectorAll('[role="tooltip"]')
+              .map((element) => element.text),
+          contains(command),
+        );
+      });
+    }
 
     testServer('ReactorShell exposes every supported language at top right', (
       ServerTester tester,
