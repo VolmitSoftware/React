@@ -1,62 +1,72 @@
-name: React Bug Report
-description: File a bug report for React
-labels: [ bug ]
+name: Bug report
+description: Something in React isn't working.
+labels: [bug]
+type: Bug
+assignees: [SwiftSwamp]
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for taking the time to fill this out!
-        If this does not work for you, feel free to use the [blank](https://github.com/VolmitSoftware/React/issues/new) format.
+        Make sure you're on the [latest release](https://github.com/VolmitSoftware/React/releases/latest) and that it hasn't [already been reported](https://github.com/VolmitSoftware/React/issues?q=is%3Aissue).
+
+        React supports Minecraft 26.1.2 through 26.3 on Paper, Purpur, and Folia, with Java 25. Folia 26.3 is not validated yet.
   - type: textarea
-    id: how
+    id: issue
     attributes:
-      label: Problem
-      description: Please give a text description of how you reached the problem
-      value: |
-        1. Install React...
-        2. Do this...
-        3. Do that...
-        4. Observe the error...
+      label: What issue are you having?
+      description: Include any error message you saw.
     validations:
       required: true
   - type: textarea
-    id: what
+    id: steps
     attributes:
-      label: Solution (if any)
-      description: Explain where you think the problem comes from (optional)
-      placeholder: The code to place a is missing b and c...
+      label: Steps to reproduce
+      placeholder: |
+        1. Start a server with React installed
+        2. Change ... in the config
+        3. Run /react ...
+        4. ... happens instead of ...
     validations:
-      required: false
+      required: true
+  - type: input
+    id: diagnostics
+    attributes:
+      label: Debug dump or latest log file
+      description: Run `/react debug dump upload=true` and paste the link. If React won't start, upload `logs/latest.log` to [mclo.gs](https://mclo.gs) and paste that link instead.
+      placeholder: https://mclo.gs/...
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: "React version"
+      description: Run `/react debug version`.
+    validations:
+      required: true
   - type: dropdown
-    id: mcversion
+    id: platform
     attributes:
-      label: Minecraft Version
-      description: What version of Minecraft is the server on?
+      label: Server software
       options:
-        - 1.18
-        - 1.19
-        - 1.20
-        - 1.21
-        - 1.22
+        - "Paper"
+        - "Purpur"
+        - "Folia"
+        - Other (unsupported)
     validations:
       required: true
-  - type: input
-    id: Reactversion
+  - type: dropdown
+    id: minecraft
     attributes:
-      label: React Version
-      description: What version of React are you running?
-      placeholder: DO NOT SAY "LATEST"
+      label: Minecraft version
+      options:
+        - "26.3"
+        - "26.2"
+        - "26.1.2"
+        - Other (unsupported)
     validations:
       required: true
-  - type: input
-    id: logs
+  - type: textarea
+    id: extra
     attributes:
-      label: Log
-      description: Paste a full log. Always use [mclogs](https://mclo.gs) Or [Pastebin](https://pastebin.com/). Must not be a crash report. Must be a full log. Must not be a screenshot of a log.
-      placeholder: https://mslog.gs/...
-    validations:
-      required: true
-  - type: markdown
-    id: thanks
-    attributes:
-      value: "Thank you for filling out the form! We will be with you soon. Please do not ask support to review your report."
+      label: Anything else?
+      description: Other plugins involved, screenshots, or videos.
