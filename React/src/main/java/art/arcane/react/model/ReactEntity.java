@@ -353,6 +353,24 @@ public class ReactEntity {
     }
   }
 
+  public static void releaseManagedState(Entity entity) {
+    if (!(entity instanceof LivingEntity living)) {
+      return;
+    }
+
+    UUID entityId = entity.getUniqueId();
+    pauseByEntity.compute(entityId, (ignored, current) -> {
+      if ((current != null && current.aiOwned) || isPaused(living)) {
+        releaseAi(living);
+      }
+      return null;
+    });
+    if (entity instanceof Mob mob) {
+      releaseDoze(mob);
+    }
+    scratchByEntity.remove(entityId);
+  }
+
   public static void sweepScratch() {
     if (!scratchByEntity.isEmpty()) {
       long cutoff = System.currentTimeMillis() - SCRATCH_RETENTION_MS;

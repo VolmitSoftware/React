@@ -111,6 +111,87 @@ class ReactEntityPauseOwnershipTest {
   }
 
   @Test
+  void unloadRestoresAllOwnersBeforeEntityStateIsSaved() {
+    AtomicBoolean ai = new AtomicBoolean(true);
+    AtomicBoolean aware = new AtomicBoolean(true);
+    Map<NamespacedKey, Byte> markers = new ConcurrentHashMap<>();
+    Mob mob = managedMob(UUID.randomUUID(), ai, aware, markers);
+
+    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
+    ReactEntity.requestDoze(mob);
+    ReactEntity.releaseManagedState(mob);
+
+    Assertions.assertTrue(ai.get());
+    Assertions.assertTrue(aware.get());
+    Assertions.assertTrue(markers.isEmpty());
+    Assertions.assertFalse(ReactEntity.isPausedBy(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
+    Assertions.assertFalse(ReactEntity.isPausedBy(mob, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE));
+  }
+
+  @Test
+  void unloadPreservesAiAndAwarenessDisabledBeforeReactClaimedThem() {
+    AtomicBoolean ai = new AtomicBoolean(false);
+    AtomicBoolean aware = new AtomicBoolean(false);
+    Map<NamespacedKey, Byte> markers = new ConcurrentHashMap<>();
+    Mob mob = managedMob(UUID.randomUUID(), ai, aware, markers);
+
+    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestDoze(mob);
+    ReactEntity.releaseManagedState(mob);
+
+    Assertions.assertFalse(ai.get());
+    Assertions.assertFalse(aware.get());
+    Assertions.assertTrue(markers.isEmpty());
+    Mockito.verify(mob, Mockito.never()).setAI(Mockito.anyBoolean());
+    Mockito.verify(mob, Mockito.never()).setAware(Mockito.anyBoolean());
+  }
+
+  @Test
+  void unloadRestoresPersistedClaimsWithoutRuntimeOwnership() {
+    AtomicBoolean ai = new AtomicBoolean(false);
+    AtomicBoolean aware = new AtomicBoolean(false);
+    Map<NamespacedKey, Byte> markers = new ConcurrentHashMap<>();
+    markers.put(new NamespacedKey("react", "react-paused"), (byte) 1);
+    markers.put(new NamespacedKey("react", "react-dozing"), (byte) 1);
+    Mob mob = managedMob(UUID.randomUUID(), ai, aware, markers);
+
+    ReactEntity.releaseManagedState(mob);
+
+    Assertions.assertTrue(ai.get());
+    Assertions.assertTrue(aware.get());
+    Assertions.assertTrue(markers.isEmpty());
+  }
+
+  @Test
+  void queuedCleanupCannotReleaseClaimsFromReloadedEntity() {
+    UUID entityId = UUID.randomUUID();
+    AtomicBoolean ai = new AtomicBoolean(true);
+    AtomicBoolean aware = new AtomicBoolean(true);
+    Map<NamespacedKey, Byte> markers = new ConcurrentHashMap<>();
+    Mob mob = managedMob(entityId, ai, aware, markers);
+    ArrayList<Runnable> queued = new ArrayList<>();
+    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestDoze(mob);
+
+    try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      queueOwnedCleanup(scheduling, mob, queued, true);
+      ReactEntity.releaseAllManagedState();
+      ReactEntity.releaseManagedState(mob);
+      Mob reloaded = managedMob(entityId, ai, aware, markers);
+      ReactEntity.requestPause(reloaded, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+      ReactEntity.requestDoze(reloaded);
+      queued.forEach(Runnable::run);
+
+      Assertions.assertFalse(ai.get());
+      Assertions.assertFalse(aware.get());
+      Assertions.assertTrue(ReactEntity.isPausedBy(reloaded, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
+      Assertions.assertTrue(ReactEntity.isDozing(reloaded));
+      ReactEntity.releaseManagedState(reloaded);
+    }
+  }
+
+  @Test
   void delayedOwnerReleaseCannotRemoveAReacquiredClaim() {
     AtomicBoolean ai = new AtomicBoolean(true);
     AtomicReference<Byte> marker = new AtomicReference<>();

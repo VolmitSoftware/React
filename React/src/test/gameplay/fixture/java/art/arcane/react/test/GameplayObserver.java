@@ -29,6 +29,7 @@ public final class GameplayObserver extends JavaPlugin implements Listener {
     private AsyncPrewarmFixture prewarm;
     private DistanceBudgetFixture distance;
     private TelemetryFixture telemetry;
+    private EntityLifecycleFixture lifecycle;
     private long breaks;
     private long placements;
     private long moves;
@@ -47,6 +48,7 @@ public final class GameplayObserver extends JavaPlugin implements Listener {
             prewarm = new AsyncPrewarmFixture(this);
             distance = new DistanceBudgetFixture(this);
             telemetry = new TelemetryFixture(this);
+            lifecycle = new EntityLifecycleFixture(this);
         } catch (Exception failure) {
             getLogger().log(Level.SEVERE, "Gameplay observer refused startup", failure);
             Bukkit.getPluginManager().disablePlugin(this);
@@ -86,6 +88,7 @@ public final class GameplayObserver extends JavaPlugin implements Listener {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player) || !player.isOp()) return false;
         if (args.length > 1 && args[0].equals("telemetry")) return telemetry.execute(player, args);
+        if (args.length > 1 && args[0].equals("lifecycle")) return lifecycle.execute(player, args);
         if (args.length > 1 && args[0].equals("prewarm")) return prewarm.execute(player, args);
         if (args.length > 1 && args[0].equals("distance")) return distance.execute(player, args);
         if (args.length > 1 && args[0].equals("profile")) return profiles.execute(player, args);

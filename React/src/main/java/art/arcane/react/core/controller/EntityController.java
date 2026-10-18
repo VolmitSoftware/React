@@ -42,6 +42,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -59,6 +60,7 @@ import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
+import org.bukkit.event.world.EntitiesUnloadEvent;
 
 import java.util.List;
 import java.util.Map;
@@ -300,6 +302,17 @@ public class EntityController implements IController, Listener {
       ProtectionGuards.hydrate(entity);
       EntityKiller.reconcile(entity);
       ReactEntity.reconcileManagedState(entity);
+    }
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void on(EntitiesUnloadEvent event) {
+    for (Entity entity : event.getEntities()) {
+      try {
+        ReactEntity.releaseManagedState(entity);
+      } catch (RuntimeException exception) {
+        React.reportError(exception);
+      }
     }
   }
 

@@ -13,6 +13,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
+import org.bukkit.event.world.EntitiesUnloadEvent;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,6 +55,23 @@ class EntityControllerManagedStateLifecycleTest {
       protection.verify(() -> ProtectionGuards.hydrate(entity));
       killers.verify(() -> EntityKiller.reconcile(entity));
       managed.verify(() -> ReactEntity.reconcileManagedState(entity));
+    }
+  }
+
+  @Test
+  void unloadingEntitiesRestoreManagedStateBeforeTheEventReturns() {
+    Entity entity = Mockito.mock(Entity.class);
+    EntitiesUnloadEvent event = Mockito.mock(EntitiesUnloadEvent.class);
+    Mockito.when(event.getEntities()).thenReturn(List.of(entity));
+
+    try (MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      scheduling.when(J::isFoliaThreading).thenReturn(true);
+
+      new EntityController().on(event);
+
+      managed.verify(() -> ReactEntity.releaseManagedState(entity));
+      scheduling.verifyNoInteractions();
     }
   }
 
