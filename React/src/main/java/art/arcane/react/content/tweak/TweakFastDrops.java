@@ -21,6 +21,8 @@ package art.arcane.react.content.tweak;
 
 import art.arcane.react.React;
 import art.arcane.react.api.tweak.ReactTweak;
+import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.util.bukkit.BukkitExperience;
 import art.arcane.volmlib.util.math.RNG;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
@@ -64,7 +66,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
     super(ID);
   }
 
-  @EventHandler(priority = EventPriority.HIGHEST)
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void on(EntityDeathEvent e) {
     if (!teleportEntityXP && !teleportEntityDrops) {
       return;
@@ -73,6 +75,10 @@ public class TweakFastDrops extends ReactTweak implements Listener {
     Player p = e.getEntity().getKiller();
 
     if (p != null) {
+      if (J.isFoliaThreading() && !J.isOwnedByCurrentRegion(p)) {
+        return;
+      }
+
       if (p.getGameMode().equals(GameMode.CREATIVE)) {
         return;
       }
@@ -86,7 +92,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
         e.setDroppedExp(0);
 
         if (xp > 0) {
-          p.giveExp(xp);
+          BukkitExperience.award(p, xp);
           // audience delivery: spigot Player has no playSound(net.kyori Sound)
           React.audiences().player(p).playSound(Sound.sound(
               Key.key("minecraft:entity.experience_orb.pickup"),
@@ -171,7 +177,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
     e.setExpToDrop(0);
 
     if (xp > 0) {
-      e.getPlayer().giveExp(xp);
+      BukkitExperience.award(e.getPlayer(), xp);
       React.audiences().player(e.getPlayer()).playSound(Sound.sound(
           Key.key("minecraft:entity.experience_orb.pickup"),
           Sound.Source.PLAYER,
@@ -188,7 +194,7 @@ public class TweakFastDrops extends ReactTweak implements Listener {
     }
 
     if (isEnabled()) {
-      player.giveExp(xp);
+      BukkitExperience.award(player, xp);
       React.audiences().player(player).playSound(Sound.sound(
           Key.key("minecraft:entity.experience_orb.pickup"),
           Sound.Source.PLAYER,

@@ -1,7 +1,9 @@
 package art.arcane.react.content.tweak;
 
+import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -13,11 +15,14 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.plugin.PluginManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.mockito.MockedStatic;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -170,10 +175,94 @@ public class TweakFastDropsTest {
     Mockito.when(event.getExpToDrop()).thenReturn(7);
     Mockito.when(player.getGameMode()).thenReturn(GameMode.SURVIVAL);
 
+    PluginManager events = experienceEvents(player);
     tweak.on(event);
 
     Mockito.verify(event).setExpToDrop(0);
+    Mockito.verify(events).callEvent(Mockito.any(PlayerExpChangeEvent.class));
     Mockito.verify(player).giveExp(7);
+  }
+
+  @Test
+  public void blockExperienceHonorsListenerChangesWithoutRestoringOrbs() {
+    TweakFastDrops tweak = new TweakFastDrops();
+    BlockBreakEvent event = Mockito.mock(BlockBreakEvent.class);
+    Player player = Mockito.mock(Player.class);
+    Mockito.when(event.getPlayer()).thenReturn(player);
+    Mockito.when(event.getExpToDrop()).thenReturn(7);
+    Mockito.when(player.getGameMode()).thenReturn(GameMode.SURVIVAL);
+    PluginManager events = experienceEvents(player);
+    Mockito.doAnswer(invocation -> {
+      PlayerExpChangeEvent experience = invocation.getArgument(0);
+      Assertions.assertEquals(7, experience.getAmount());
+      experience.setAmount(3);
+      return null;
+    }).when(events).callEvent(Mockito.any(PlayerExpChangeEvent.class));
+
+    tweak.on(event);
+
+    Mockito.verify(events).callEvent(Mockito.any(PlayerExpChangeEvent.class));
+    Mockito.verify(player).giveExp(3);
+    Mockito.verify(event).setExpToDrop(0);
+    Mockito.verify(event, Mockito.never()).setExpToDrop(7);
+  }
+
+  @Test
+  public void entityExperienceHonorsZeroedRewards() throws Exception {
+    TweakFastDrops tweak = new TweakFastDrops();
+    setBoolean(tweak, "teleportEntityDrops", false);
+    EntityDeathEvent event = Mockito.mock(EntityDeathEvent.class);
+    LivingEntity victim = Mockito.mock(LivingEntity.class);
+    Player player = Mockito.mock(Player.class);
+    Location at = Mockito.mock(Location.class);
+    Mockito.when(event.getEntity()).thenReturn(victim);
+    Mockito.when(event.getDroppedExp()).thenReturn(7);
+    Mockito.when(victim.getKiller()).thenReturn(player);
+    Mockito.when(victim.getLocation()).thenReturn(at);
+    Mockito.when(player.getLocation()).thenReturn(at);
+    Mockito.when(player.getGameMode()).thenReturn(GameMode.SURVIVAL);
+    PluginManager events = experienceEvents(player);
+    Mockito.doAnswer(invocation -> {
+      invocation.<PlayerExpChangeEvent>getArgument(0).setAmount(0);
+      return null;
+    }).when(events).callEvent(Mockito.any(PlayerExpChangeEvent.class));
+
+    tweak.on(event);
+
+    Mockito.verify(events).callEvent(Mockito.any(PlayerExpChangeEvent.class));
+    Mockito.verify(player, Mockito.never()).giveExp(Mockito.anyInt());
+    Mockito.verify(event).setDroppedExp(0);
+  }
+
+  @Test
+  public void foreignRegionKillerKeepsNaturalDropsAndExperience() {
+    TweakFastDrops tweak = new TweakFastDrops();
+    EntityDeathEvent event = Mockito.mock(EntityDeathEvent.class);
+    LivingEntity victim = Mockito.mock(LivingEntity.class);
+    Player player = Mockito.mock(Player.class);
+    Mockito.when(event.getEntity()).thenReturn(victim);
+    Mockito.when(victim.getKiller()).thenReturn(player);
+
+    try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      scheduling.when(J::isFoliaThreading).thenReturn(true);
+      scheduling.when(() -> J.isOwnedByCurrentRegion(player)).thenReturn(false);
+
+      tweak.on(event);
+
+      Mockito.verify(player, Mockito.never()).getLocation();
+      Mockito.verify(player, Mockito.never()).getInventory();
+      Mockito.verify(player, Mockito.never()).giveExp(Mockito.anyInt());
+      Mockito.verify(event, Mockito.never()).getDrops();
+      Mockito.verify(event, Mockito.never()).setDroppedExp(Mockito.anyInt());
+    }
+  }
+
+  private static PluginManager experienceEvents(Player player) {
+    Server server = Mockito.mock(Server.class);
+    PluginManager events = Mockito.mock(PluginManager.class);
+    Mockito.when(player.getServer()).thenReturn(server);
+    Mockito.when(server.getPluginManager()).thenReturn(events);
+    return events;
   }
 
   private static void setBoolean(TweakFastDrops tweak, String name, boolean value) throws Exception {
