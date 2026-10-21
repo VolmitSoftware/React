@@ -60,55 +60,6 @@ tasks.withType(org.gradle.api.tasks.bundling.Jar).configureEach {
     exclude('languages/**')
 }
 
-void registerCustomOutputTask(String name, String path) {
-    if (!System.getProperty('os.name').toLowerCase().contains('windows')) {
-        return
-    }
-    createOutputTask(name, path)
-}
-
-void registerCustomOutputTaskUnix(String name, String path) {
-    if (System.getProperty('os.name').toLowerCase().contains('windows')) {
-        return
-    }
-    createOutputTask(name, path)
-}
-
-void createOutputTask(String name, String path) {
-    tasks.register("build${name}", Copy) {
-        group = 'development'
-        outputs.upToDateWhen { false }
-        dependsOn('packedJar')
-        from({ tasks.named('packedJar').get().outputJar })
-        into(file(path))
-        rename { String ignored -> 'React.jar' }
-        if (name == 'PsychoLT') {
-            doLast {
-                project.copy {
-                    from(tasks.named('packedJar').get().outputJar.get().asFile)
-                    into(project.file('../../PluginOuts'))
-                    rename { String fileName -> "React v${project.version} [CraftBukkit] ${project.bukkitMinecraftRange}.jar" }
-                }
-            }
-        }
-    }
-}
-
-// ADD YOURSELF AS A NEW LINE IF YOU WANT YOUR OWN BUILD TASK GENERATED
-// ======================== WINDOWS =============================
-registerCustomOutputTask('Cyberpwn', 'C://Users/cyberpwn/Documents/development/server/plugins')
-registerCustomOutputTask('Psycho', 'C://Dan/MinecraftDevelopment/server/plugins')
-registerCustomOutputTask('ArcaneArts', 'C://Users/arcane/Documents/development/server/plugins')
-registerCustomOutputTask('Vatuu', 'D://Minecraft/Servers/1.19/plugins')
-registerCustomOutputTask('Nowhere', 'E://Desktop/server/plugins')
-registerCustomOutputTask('Pixel', 'C://Users//repix//Iris Dimension Engine//1.20.4 - Development/plugins')
-registerCustomOutputTask('CrazyDev22', 'C:\\Users\\Julian\\Desktop\\server\\plugins')
-registerCustomOutputTask('SwiftSwamp', 'C://VolmitSoftware/BUILDS')
-// ========================== UNIX ==============================
-registerCustomOutputTaskUnix('CyberpwnLT', '/Users/danielmills/development/server/plugins')
-registerCustomOutputTaskUnix('PsychoLT', '/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]/consumers/plugin-consumers/dropins/plugins')
-// ==============================================================
-
 /**
  * Expand properties into plugin yml
  */
@@ -419,3 +370,5 @@ tasks.register('gameplayContractTest', Exec) {
 tasks.named('check').configure {
     dependsOn('gameplayObserverJar', 'gameplayContractTest')
 }
+
+apply from: 'gradle/multiplexor.gradle'

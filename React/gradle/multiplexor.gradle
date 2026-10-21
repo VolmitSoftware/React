@@ -1,0 +1,28 @@
+afterEvaluate {
+    Jar distribution = tasks.named('shadowJar', Jar).get()
+    File packedArchive = new File(distribution.destinationDirectory.get().asFile,
+            distribution.archiveFileName.get().replaceFirst(/\.jar$/, '-packed.jar'))
+    rootProject.ext.multiplexor = [
+        schema: 1,
+        id: 'react',
+        name: 'React',
+        sandbox: 'per-target',
+        parallelTargets: true,
+        sourceDependencies: ['volmlib'],
+        targets: [[
+            id: 'bukkit',
+            tasks: ['build'],
+            arguments: [],
+            java: 25,
+            memoryMiB: 6144,
+            workers: 2,
+            dependsOn: [],
+            artifacts: [[
+                path: relativePath(packedArchive),
+                role: 'runtime',
+                platforms: ['plugin'],
+                minecraftVersions: [bukkitMinecraftRange.toString()]
+            ]]
+        ]]
+    ]
+}
