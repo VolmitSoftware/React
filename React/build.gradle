@@ -40,7 +40,7 @@ plugins {
 apply plugin: 'art.arcane.volmit-packaging'
 
 
-version = '2.2.3'
+version = '2.2.4'
 ext.bukkitMinecraftRange = providers.gradleProperty('bukkitMinecraftRange').getOrElse('26.1.2-26.3')
 def apiVersion = '26.1'
 def spigotApiVersion = '26.2-R0.1-SNAPSHOT'
@@ -247,6 +247,7 @@ tasks.named('shadowJar', ShadowJar).configure {
     from(sourceSets.main.output)
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveClassifier.set('')
+    archiveFileName.set("React v${project.version} [CraftBukkit] ${bukkitMinecraftRange}.jar")
     relocate('io.github.slimjar', "${lib}.slimjar")
     relocate('art.arcane.chrono', "${lib}.chrono")
     relocate('art.arcane.curse', "${lib}.curse")

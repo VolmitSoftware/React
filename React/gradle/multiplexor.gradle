@@ -1,7 +1,5 @@
 afterEvaluate {
-    Jar distribution = tasks.named('shadowJar', Jar).get()
-    File packedArchive = new File(distribution.destinationDirectory.get().asFile,
-            distribution.archiveFileName.get().replaceFirst(/\.jar$/, '-packed.jar'))
+    File packedArchive = tasks.named('packedJar').get().outputJar.get().asFile
     rootProject.ext.multiplexor = [
         schema: 1,
         id: 'react',
