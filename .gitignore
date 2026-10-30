@@ -3,6 +3,7 @@
 .DS_Store
 
 React/libs/
+React/AGENTS.md
 
 .codegraph/
 .perf/
@@ -26,6 +27,6 @@ build-lt.sh
 BUILDS/
 .run/
 
-React/AGENTS.md
+AGENTS.md
 
 React/bin/

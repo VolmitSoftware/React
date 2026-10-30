@@ -80,7 +80,7 @@ class NaughtyRegisteredListenerTest {
   @Test
   void nestedHandlerTimeIsChargedOnlyToTheInnerHandler() throws EventException {
     long innerParkNanos = TimeUnit.MILLISECONDS.toNanos(20);
-    NaughtyRegisteredListener inner = listener((ignored, event) -> LockSupport.parkNanos(innerParkNanos));
+    NaughtyRegisteredListener inner = listener((ignored, event) -> parkAtLeast(innerParkNanos));
     Event nested = Mockito.mock(Event.class);
     NaughtyRegisteredListener outer = listener((ignored, event) -> inner.callEvent(nested));
 
@@ -98,14 +98,14 @@ class NaughtyRegisteredListenerTest {
   @Test
   void nestingAccumulatorResetsBetweenTopLevelCalls() throws EventException {
     long parkNanos = TimeUnit.MILLISECONDS.toNanos(5);
-    NaughtyRegisteredListener inner = listener((ignored, event) -> LockSupport.parkNanos(parkNanos));
+    NaughtyRegisteredListener inner = listener((ignored, event) -> parkAtLeast(parkNanos));
     Event nested = Mockito.mock(Event.class);
     NaughtyRegisteredListener outer = listener((ignored, event) -> inner.callEvent(nested));
 
     outer.callEvent(Mockito.mock(Event.class));
     inner.callEvent(nested);
     inner.drainCounters();
-    NaughtyRegisteredListener second = listener((ignored, event) -> LockSupport.parkNanos(parkNanos));
+    NaughtyRegisteredListener second = listener((ignored, event) -> parkAtLeast(parkNanos));
     second.callEvent(Mockito.mock(Event.class));
 
     Assertions.assertTrue(second.drainCounters().timeNanos() >= parkNanos);
@@ -243,6 +243,15 @@ class NaughtyRegisteredListenerTest {
     Mockito.when(plugin.isEnabled()).thenReturn(true);
     Mockito.when(plugin.getName()).thenReturn("MeasuredPlugin");
     return plugin;
+  }
+
+  private static void parkAtLeast(long nanos) {
+    long deadline = System.nanoTime() + nanos;
+    long remaining = nanos;
+    while (remaining > 0L) {
+      LockSupport.parkNanos(remaining);
+      remaining = deadline - System.nanoTime();
+    }
   }
 
   private static void await(CountDownLatch latch) {
