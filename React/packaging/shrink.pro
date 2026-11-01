@@ -7,3 +7,4 @@
 -keep class art.arcane.react.util.arcane.volmlib.nativelib.** { *; }
 
 -keep class art.arcane.volmlib.nativelib.**.scoreboard.NativeScoreboardPackets { public <init>(); }
+-keepclassmembers class * implements art.arcane.react.util.project.registry.Registered { !static <fields>; }
