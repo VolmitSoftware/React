@@ -459,4 +459,14 @@ tasks.named('check').configure {
     dependsOn('gameplayObserverJar', 'gameplayContractTest')
 }
 
+tasks.register('buildSwiftSwamp', Copy) {
+    group = 'development'
+    description = 'Builds, verifies, and stages React in the workspace BUILDS directory.'
+    dependsOn('check', 'shadowJar')
+    outputs.upToDateWhen { false }
+    from(tasks.named('shadowJar', ShadowJar).flatMap { ShadowJar archive -> archive.archiveFile })
+    into(providers.gradleProperty('buildsDirectory').orElse('../../BUILDS'))
+    rename { String ignored -> 'React.jar' }
+}
+
 apply from: 'gradle/multiplexor.gradle'
