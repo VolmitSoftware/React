@@ -1,7 +1,7 @@
 package art.arcane.react.localization;
 
 import art.arcane.volmlib.util.localization.LanguageFileHeader;
-
+import art.arcane.volmlib.util.localization.LanguageMeta;
 import art.arcane.volmlib.util.localization.LanguageReferenceRenderer;
 
 import java.util.List;
@@ -12,7 +12,12 @@ final class ReactLanguageReference {
   }
 
   static String englishCatalog() {
-    return LanguageReferenceRenderer.render(ReactMessages.catalog(), header(ReactMessages.catalog().englishLocale()));
+    return EnglishReference.CONTENT;
+  }
+
+  static String customCatalog(String locale) {
+    return LanguageReferenceRenderer.render(ReactMessages.catalog(), header(locale),
+        LanguageMeta.of(locale, ReactMessages.catalog().englishLocale()));
   }
 
   static List<String> header(String locale) {
@@ -37,7 +42,7 @@ final class ReactLanguageReference {
                       Map.entry("actions", "Queued action count or list of excluded action names"),
                       Map.entry("active", "Number of active features or tweaks"),
                       Map.entry("actor", "Web user who made a change"),
-                      Map.entry("added", "Whether a feature rejoined the active registry after activation"),
+                      Map.entry("added", "Feature registry rejoin state or messages added by a language update"),
                       Map.entry("after", "Configuration value, language message, or heap usage after a change"),
                       Map.entry("age", "Age of integration data in seconds"),
                       Map.entry("amount", "Number of items to give"),
@@ -86,13 +91,14 @@ final class ReactLanguageReference {
                       Map.entry("height", "Test canvas height in pixels"),
                       Map.entry("hoppers", "Number of hoppers normalized"),
                       Map.entry("id", "Bridge handle, sampler, map, action, pack, or token identifier"),
-                      Map.entry("impact", "Configuration effect description or plugin cost in ms/s"),
+                      Map.entry("impact", "Configuration effect description"),
                       Map.entry("incident", "Identifier of the recursive incident action excluded from the dev suite"),
                       Map.entry("index", "Current dev-suite step number"),
                       Map.entry("invalid", "Number of samplers with invalid readings"),
                       Map.entry("issued_at", "Web token creation time"),
                       Map.entry("item", "Item name or identifier"),
                       Map.entry("items", "Number of item entities merged"),
+                      Map.entry("kept", "Local edits kept by a language update"),
                       Map.entry("key", "Command parameter key, configuration key, or language message ID"),
                       Map.entry("label", "Benchmark, metric, setting, command, or web token label"),
                       Map.entry("line", "Line number being edited in a multi-line message"),
@@ -112,14 +118,13 @@ final class ReactLanguageReference {
                       Map.entry("name", "Benchmark, module, renderer, or test check name"),
                       Map.entry("note", "Reason the server log was not scanned"),
                       Map.entry("offenders", "Number of samplers returning non-finite values"),
-                      Map.entry("operations", "Ability callback operations per minute"),
                       Map.entry("options", "Accepted configuration values"),
                       Map.entry("p95", "95th-percentile tick time during a load test, in ms"),
                       Map.entry("parameter", "Command parameter name"),
                       Map.entry("parameters", "Command parameters that were ignored"),
                       Map.entry("pass", "Number of passed checks"),
                       Map.entry("path", "Configuration key path or report file path"),
-                      Map.entry("percent", "Color adjustment percentage or plugin impact share"),
+                      Map.entry("percent", "Color adjustment percentage"),
                       Map.entry("permission", "Required permission node"),
                       Map.entry("personal", "Player's selected language code"),
                       Map.entry("phase", "Feature lifecycle phase being tested"),
@@ -131,13 +136,14 @@ final class ReactLanguageReference {
                       Map.entry("processors", "Number of available CPU processors"),
                       Map.entry("profile", "React configuration profile name"),
                       Map.entry("protocol", "Integration protocol version"),
-                      Map.entry("radius", "Chunk radius for a map or dev-suite action"),
+                      Map.entry("radius", "Chunk radius for a dev-suite action"),
                       Map.entry("range", "Accepted view, simulation, or send distance range in chunks"),
                       Map.entry("rate", "Configured crop fast-forward rate"),
                       Map.entry("rating", "Formatted benchmark rating"),
                       Map.entry("react_errors", "Number of React error lines found in the server log"),
                       Map.entry("reason", "Failure, rejection, or unavailable-state explanation"),
                       Map.entry("registered", "Number of registered modules"),
+                      Map.entry("remaining", "Time until the next language check is allowed"),
                       Map.entry("removed_first", "Whether initial deactivation removed a feature from the active registry"),
                       Map.entry("removed_second", "Whether repeated deactivation removed a feature from the active registry"),
                       Map.entry("renderer", "Map renderer name or identifier"),
@@ -175,6 +181,7 @@ final class ReactLanguageReference {
                       Map.entry("unknown", "Identifier of the unknown action excluded from the dev suite"),
                       Map.entry("unreadable", "Number of samplers that could not be read"),
                       Map.entry("uptime", "Host operating-system uptime"),
+                      Map.entry("updated", "Messages changed by a language update"),
                       Map.entry("url", "Uploaded diagnostic report URL"),
                       Map.entry("usage", "Command usage syntax"),
                       Map.entry("used", "Used physical memory, virtual memory, or heap"),
@@ -182,12 +189,16 @@ final class ReactLanguageReference {
                       Map.entry("values", "Sampled values listed in a dev-suite report"),
                       Map.entry("variables", "Placeholder names accepted by the message being edited"),
                       Map.entry("vendor", "Java vendor"),
-                      Map.entry("verdict", "Overall test verdict"),
                       Map.entry("version", "React, Java, or platform version"),
                       Map.entry("warmed", "Number of chunks prewarmed"),
                       Map.entry("warn", "Number of checks with warnings"),
                       Map.entry("width", "Test canvas width in pixels"),
                       Map.entry("world", "Minecraft world name")
               )));
+  }
+
+  private static final class EnglishReference {
+    private static final String CONTENT = LanguageReferenceRenderer.render(ReactMessages.catalog(),
+        header(ReactMessages.catalog().englishLocale()));
   }
 }

@@ -392,10 +392,8 @@ public final class MapMessages {
   public static final TextKey COLUMN_COST = render("column_cost", "Cost");
   public static final TextKey COLUMN_CALLS = render("column_calls", "Calls");
   public static final TextKey COLUMN_OPS = render("column_ops", "Ops");
-  public static final TextKey COLUMN_COUNT = render("column_count", "Count");
   public static final TextKey ROWS_SHOWN = render("rows_shown", "{shown}/{total}");
   public static final TextKey TOTAL_COST = render("total_cost", "{value} ms/s");
-  public static final TextKey SCALE_CHUNKS = render("scale_chunks", "{radius} chunk radius");
   public static final TextKey MORE_ITEMS = render("more_items", "+{count} more");
   public static final TextKey MEGAMAP_ZOOMED = megamap("zoomed", "{grid} zoom");
   public static final TextKey MEGAMAP_CAPPED = megamap("capped", "{grid} capped");
@@ -446,10 +444,8 @@ public final class MapMessages {
     builder.add(COLUMN_COST);
     builder.add(COLUMN_CALLS);
     builder.add(COLUMN_OPS);
-    builder.add(COLUMN_COUNT);
     builder.add(ROWS_SHOWN);
     builder.add(TOTAL_COST);
-    builder.add(SCALE_CHUNKS);
     builder.add(MORE_ITEMS);
     builder.add(MEGAMAP_ZOOMED);
     builder.add(MEGAMAP_CAPPED);

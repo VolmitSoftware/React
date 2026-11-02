@@ -9,7 +9,6 @@ import art.arcane.volmlib.util.localization.LocalizationSnapshot;
 import art.arcane.volmlib.util.localization.PluginLanguageEditor;
 import art.arcane.volmlib.util.localization.PluginLanguageService;
 import art.arcane.volmlib.util.localization.PluralSelector;
-import art.arcane.volmlib.util.localization.RemoteLanguageCatalog;
 import art.arcane.volmlib.util.localization.TextValue;
 import art.arcane.volmlib.util.localization.TomlLanguageEditor;
 import art.arcane.volmlib.util.localization.VolmitLocales;
@@ -20,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.lang.reflect.Field;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
@@ -49,8 +47,6 @@ class ReactLanguageEditorTest {
   Path directory;
 
   private React previous;
-  private RemoteLanguageCatalog previousRemote;
-  private RemoteLanguageCatalog remote;
   private PluginLanguageService languages;
   private PluginLanguageService previousLanguages;
   private String previousActiveLocale;
@@ -71,14 +67,6 @@ class ReactLanguageEditorTest {
     React plugin = mock(React.class);
     when(plugin.getDataFolder()).thenReturn(directory.toFile());
     React.instance = plugin;
-    Field field = ReactLanguage.class.getDeclaredField("remoteCatalog");
-    field.setAccessible(true);
-    previousRemote = (RemoteLanguageCatalog) field.get(null);
-    remote = RemoteLanguageCatalog.load(new RemoteLanguageCatalog.Options(
-        "React", URI.create("https://raw.githubusercontent.com/VolmitSoftware/React/"),
-        "React/src/main/resources/languages", ".toml", "language-source.properties",
-        ReactLanguage.class.getClassLoader()));
-    field.set(null, remote);
     Files.createDirectories(directory.resolve("languages"));
     Files.write(directory.resolve("languages/fr_FR.toml"), frenchLocale);
     PluginLanguageEditor.Options options = ReactLanguage.editorOptions();
@@ -100,10 +88,6 @@ class ReactLanguageEditorTest {
   void closeEditor() throws Exception {
     editor.close();
     languages.close();
-    remote.close();
-    Field field = ReactLanguage.class.getDeclaredField("remoteCatalog");
-    field.setAccessible(true);
-    field.set(null, previousRemote);
     Field serviceField = ReactLanguage.class.getDeclaredField("languageService");
     serviceField.setAccessible(true);
     serviceField.set(null, previousLanguages);

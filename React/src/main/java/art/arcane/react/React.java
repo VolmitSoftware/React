@@ -87,6 +87,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -118,6 +119,7 @@ public class React extends VolmitPlugin implements ReloadAware {
   private static final int REPORTED_ERROR_HISTORY = 1024;
   // bstats.org plugin id
   private static final int BSTATS_PLUGIN_ID = 24219;
+  private static final Set<String> PENDING_LANGUAGE_INSTALLS = ConcurrentHashMap.newKeySet();
   private static final java.util.concurrent.atomic.AtomicInteger reportedErrorCounter = new java.util.concurrent.atomic.AtomicInteger();
   private static final java.util.ArrayDeque<Long> reportedErrorTimestamps = new java.util.ArrayDeque<Long>();
   private List<Runnable> startupTasks;
@@ -462,7 +464,8 @@ public class React extends VolmitPlugin implements ReloadAware {
   }
 
   private DebugDumpContributor.Report captureDebugState() {
-    String state = "Ready: " + ready + "\nMonitoring only: " + monitoringOnly + "\nReported errors: " + reportedErrorCounter.get();
+    String state = "Ready: " + ready + "\nMonitoring only: " + monitoringOnly + "\nReported errors: " + reportedErrorCounter.get()
+        + "\nLanguage: " + ReactLanguage.activeLocale() + "\nLanguage source: " + ReactLanguage.sourceState();
     return () -> state;
   }
 
@@ -544,6 +547,33 @@ public class React extends VolmitPlugin implements ReloadAware {
     React.info("React Started in " + Form.duration(psw.getMilliseconds(), 0));
     registerPapiExpansion();
     refreshRuntimeSettings(ReactConfiguration.get());
+    ReactLanguage.startUpstreamCheck();
+    requestConfiguredLanguage();
+  }
+
+  public void requestLanguageInstall(String locale) {
+    if (!PENDING_LANGUAGE_INSTALLS.add(locale)) {
+      return;
+    }
+    ReactLanguage.requestInstall(locale).whenComplete((content, failure) -> {
+      PENDING_LANGUAGE_INSTALLS.remove(locale);
+      if (failure != null) {
+        warn("Unable to install React language " + locale + "; " + ReactLanguage.activeLocale()
+            + " remains active", failure);
+        return;
+      }
+      if (!isEnabled() || !locale.equalsIgnoreCase(ReactConfiguration.get().getLanguage())) {
+        return;
+      }
+      J.s(ReactLanguage::reload);
+    });
+  }
+
+  private void requestConfiguredLanguage() {
+    String locale = ReactConfiguration.get().getLanguage();
+    if (ReactLanguage.needsInstall(locale)) {
+      requestLanguageInstall(locale);
+    }
   }
 
   public void refreshRuntimeSettings(ReactConfiguration configuration) {
@@ -643,6 +673,7 @@ public class React extends VolmitPlugin implements ReloadAware {
       debugDump = null;
     }
     ReactLanguage.close();
+    PENDING_LANGUAGE_INSTALLS.clear();
     closeAudienceProvider();
     synchronized (runtimeSettingsLock) {
       if (updates != null) {
