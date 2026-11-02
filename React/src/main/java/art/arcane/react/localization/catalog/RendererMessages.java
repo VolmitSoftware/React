@@ -194,11 +194,9 @@ public final class RendererMessages {
   public static final TextKey ADAPT_GUARD_ONLY = key("adapt.guard_only", "Adapt reports guard checks only");
   public static final TextKey ADAPT_NO_ACTIVITY = key("adapt.no_activity", "No Adapt ability activity");
   public static final TextKey ADAPT_USE_ABILITIES = key("adapt.use_abilities", "Use abilities to populate this chart");
-  public static final TextKey ADAPT_CALLBACK_VALUE = key("adapt.callback_value", "{timing}ms/m {operations}cb/m");
   public static final TextKey ADAPT_TOP_VALUE = key("adapt.top_value", "TOP {timing} ms/m");
   public static final TextKey PLUGIN_NO_IMPACT = key("plugin.no_impact", "No plugin event impact data");
   public static final TextKey PLUGIN_WAIT_FOR_DATA = key("plugin.wait_for_data", "Open this map for a few seconds");
-  public static final TextKey PLUGIN_IMPACT_VALUE = key("plugin.impact_value", "{percent}%  {impact} ms/s");
   public static final TextKey SAMPLER_LOW_VALUE = key("sampler.low_value", "L {value}");
   public static final TextKey SAMPLER_HIGH_VALUE = key("sampler.high_value", "H {value}");
 
@@ -242,7 +240,7 @@ public final class RendererMessages {
       UNKNOWN_RESELECT_COMMAND, UNKNOWN_RESELECT, HEATMAP_NO_ACTIVITY, HEATMAP_QUIET,
       PIE_VIEWER_UNAVAILABLE, PIE_NO_DATA, PIE_TOTAL, PIE_UNIT_CHUNKS, PIE_UNIT_IMPACT, PIE_UNKNOWN,
       PIE_OTHER, ADAPT_MEASURED_UNAVAILABLE, ADAPT_GUARD_ONLY, ADAPT_NO_ACTIVITY, ADAPT_USE_ABILITIES,
-      ADAPT_CALLBACK_VALUE, ADAPT_TOP_VALUE, PLUGIN_NO_IMPACT, PLUGIN_WAIT_FOR_DATA, PLUGIN_IMPACT_VALUE,
+      ADAPT_TOP_VALUE, PLUGIN_NO_IMPACT, PLUGIN_WAIT_FOR_DATA,
       SAMPLER_LOW_VALUE, SAMPLER_HIGH_VALUE
   );
   private static final Map<String, TextKey> HEALTH_KEYS = Map.ofEntries(

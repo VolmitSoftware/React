@@ -141,7 +141,6 @@ public final class CommandMessages {
   public static final TextKey TEST_THREADING_FOLIA = TextKey.of("command.runtime.test.threading_folia", "(Folia region-threaded)");
   public static final TextKey TEST_THREADING_STANDARD = TextKey.of("command.runtime.test.threading_standard", "");
   public static final TextKey TEST_REPORT_FAILED = TextKey.of("command.runtime.test.report_failed", "&cFailed to write report: &f{reason}&r");
-  public static final TextKey TEST_SUMMARY = TextKey.of("command.runtime.test.summary", "&bReact test:&r {verdict} &7pass={pass} fail={fail} warn={warn} skip={skip}&r");
   public static final TextKey TEST_SUMMARY_PASS = TextKey.of("command.runtime.test.summary_pass", "&bReact test:&r &aPASS&r &7pass={pass} fail={fail} warn={warn} skip={skip}&r");
   public static final TextKey TEST_SUMMARY_FAIL = TextKey.of("command.runtime.test.summary_fail", "&bReact test:&r &cFAIL&r &7pass={pass} fail={fail} warn={warn} skip={skip}&r");
   public static final TextKey TEST_REPORT_PATH = TextKey.of("command.runtime.test.report_path", "&bReport:&r {path}");
@@ -150,7 +149,6 @@ public final class CommandMessages {
   public static final TextKey LOAD_NO_WORLDS = TextKey.of("command.runtime.test.load_no_worlds", "&cRefused: no worlds are loaded.&r");
   public static final TextKey LOAD_START = TextKey.of("command.runtime.test.load_start", "&bLoad test starting&r - platform={platform} players={players} duration={duration}s x2 passes");
   public static final TextKey LOAD_REPORT_FAILED = TextKey.of("command.runtime.test.load_report_failed", "&cFailed to write load-test report: &f{reason}&r");
-  public static final TextKey LOAD_SUMMARY = TextKey.of("command.runtime.test.load_summary", "&bLoad test:&r {verdict}");
   public static final TextKey LOAD_SUMMARY_PASS = TextKey.of("command.runtime.test.load_summary_pass", "&bLoad test:&r &aPASS&r");
   public static final TextKey LOAD_SUMMARY_FAIL = TextKey.of("command.runtime.test.load_summary_fail", "&bLoad test:&r &cFAIL&r");
 
@@ -295,7 +293,6 @@ public final class CommandMessages {
     builder.add(TEST_THREADING_FOLIA);
     builder.add(TEST_THREADING_STANDARD);
     builder.add(TEST_REPORT_FAILED);
-    builder.add(TEST_SUMMARY);
     builder.add(TEST_SUMMARY_PASS);
     builder.add(TEST_SUMMARY_FAIL);
     builder.add(TEST_REPORT_PATH);
@@ -304,7 +301,6 @@ public final class CommandMessages {
     builder.add(LOAD_NO_WORLDS);
     builder.add(LOAD_START);
     builder.add(LOAD_REPORT_FAILED);
-    builder.add(LOAD_SUMMARY);
     builder.add(LOAD_SUMMARY_PASS);
     builder.add(LOAD_SUMMARY_FAIL);
   }

@@ -1203,7 +1203,9 @@ public final class ReactConfigGUI {
               ? ReactLanguage.plain(GuiMessages.CONFIG_VALUE_ENABLED)
               : ReactLanguage.plain(GuiMessages.CONFIG_VALUE_DISABLED);
       case SECTION -> "";
-      default -> summarizeValue(entry.value());
+      default -> isLanguageEntry(entry)
+          ? entry.value() + " - " + ReactLanguage.localeDisplayName(String.valueOf(entry.value()))
+          : summarizeValue(entry.value());
     };
     UIElement element = new UIElement("cfg-" + entry.path())
         .setMaterial(new MaterialBlock(material))
@@ -1235,7 +1237,7 @@ public final class ReactConfigGUI {
       }
       case NUMBER, STRING -> {
         element.onLeftClick((e) -> {
-          if (entry.field().getDeclaringClass() == ReactConfiguration.class && entry.field().getName().equals("language")) {
+          if (isLanguageEntry(entry)) {
             player.closeInventory();
             ReactLanguage.switcher().command(player, new String[]{"server"});
             return;
@@ -2273,6 +2275,10 @@ public final class ReactConfigGUI {
       return key;
     }
     return Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
+  }
+
+  private static boolean isLanguageEntry(FieldEntry entry) {
+    return entry.field().getDeclaringClass() == ReactConfiguration.class && entry.field().getName().equals("language");
   }
 
   private static String summarizeValue(Object value) {

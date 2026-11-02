@@ -13,8 +13,14 @@ import art.arcane.volmlib.util.localization.PluginLanguageService;
 import art.arcane.volmlib.util.localization.PluginLanguageEditor;
 import art.arcane.volmlib.util.localization.LanguageFileEditor;
 import art.arcane.volmlib.util.localization.TomlLanguageEditor;
-import art.arcane.volmlib.util.localization.RemoteLanguageCatalog;
 import art.arcane.volmlib.util.localization.BukkitLanguageSwitcher;
+import art.arcane.volmlib.util.localization.GitHubLanguageSource;
+import art.arcane.volmlib.util.localization.LanguageCatalogMerge;
+import art.arcane.volmlib.util.localization.LanguageDirectory;
+import art.arcane.volmlib.util.localization.LanguageMeta;
+import art.arcane.volmlib.util.localization.LanguageSourceManifest;
+import art.arcane.volmlib.util.localization.LanguageUpstreamStore;
+import art.arcane.volmlib.util.localization.LanguageUpstreamSync;
 import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.localization.VolmitLocales;
 import art.arcane.volmlib.util.localization.LinesKey;
@@ -59,23 +65,31 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 
 import static art.arcane.volmlib.util.config.TomlCodec.toJsonElement;
 
 public final class ReactLanguage {
+  public static final String MANIFEST_RESOURCE = "react-language-source.properties";
   private static final Object SNAPSHOT_LOCK = new Object();
-  private static final long MAX_LOCALE_BYTES = 2L * 1024L * 1024L;
+  private static final long MAX_LOCALE_BYTES = LanguageDirectory.MAXIMUM_BYTES;
+  private static final int MAX_BASE_DEPTH = 4;
   private static final int MAX_REPORTED_ISSUES = 12;
   private static final int MAX_NORMALIZED_TEMPLATES = 4096;
   private static final Map<String, String> NORMALIZED_TEMPLATES = new ConcurrentHashMap<>();
-  private static final Pattern LOCALE_NAME = Pattern.compile("[A-Za-z0-9_-]+");
+  private static final Map<Path, CachedMeta> META_CACHE = new ConcurrentHashMap<>();
   private static final String LEGACY_CODES = "0123456789abcdefklmnorx";
   private static final String ENGLISH_FALLBACK_SOURCE = "code-owned-English:";
   private static final MessageCatalog CATALOG = ReactMessages.catalog();
@@ -86,7 +100,11 @@ public final class ReactLanguage {
       LocalizationCandidate.english(CATALOG, PluralSelector.oneOther())
   );
   private static volatile String activeLocale = CATALOG.englishLocale();
-  private static RemoteLanguageCatalog remoteCatalog;
+  private static volatile LanguageSourceManifest manifest;
+  private static volatile LanguageUpstreamSync sync;
+  private static volatile Throwable sourceFailure;
+  private static volatile List<String> availableLocales = List.of(CATALOG.englishLocale());
+  private static volatile Map<String, LanguageMeta> metas = Map.of();
   private static PluginLanguageService languageService;
   private static BukkitLanguageSwitcher languageSwitcher;
 
@@ -99,19 +117,18 @@ public final class ReactLanguage {
 
   public static boolean initialize() {
     close();
-    remoteCatalog = RemoteLanguageCatalog.load(new RemoteLanguageCatalog.Options(
-        "React", URI.create("https://raw.githubusercontent.com/VolmitSoftware/React/"),
-        "React/src/main/resources/languages", ".toml", "language-source.properties",
-        ReactLanguage.class.getClassLoader()));
+    openUpstream(GitHubLanguageSource.API_ROOT, GitHubLanguageSource.RAW_ROOT,
+        LanguageUpstreamSync.MINIMUM_CHECK_INTERVAL);
     boolean loaded = reload();
     languageService = new PluginLanguageService(new PluginLanguageService.Options(
-        languageFolder().toPath().resolve("language-preferences.properties"), VolmitLocales::all,
+        languageFolder().toPath().resolve("language-preferences.properties"), ReactLanguage::availableLocales,
         () -> ReactConfiguration.get().getLanguage(), MANAGER::snapshot,
-        locale -> LocalizationSnapshot.create(loadCandidate(locale, null)), ReactLanguage::selectDefault,
+        ReactLanguage::loadSelectionSnapshot, ReactLanguage::selectDefault,
         React.instance.getLogger()));
     languageSwitcher = BukkitLanguageSwitcher.register(React.instance, languageService,
         new BukkitLanguageSwitcher.Options("react", "react.use",
-            DirectorMiniMenu.Theme.reactBlue(), directorResolver(), editorOptions()));
+            DirectorMiniMenu.Theme.reactBlue(), directorResolver(), editorOptions(), null,
+            updateAction(), displayNames()));
     return loaded;
   }
 
@@ -125,10 +142,7 @@ public final class ReactLanguage {
       languageService.close();
       languageService = null;
     }
-    if (remoteCatalog != null) {
-      remoteCatalog.close();
-      remoteCatalog = null;
-    }
+    closeUpstream();
   }
 
   public static BukkitLanguageSwitcher switcher() {
@@ -140,8 +154,211 @@ public final class ReactLanguage {
   }
 
   public static PluginLanguageEditor.Options editorOptions() {
-    return new PluginLanguageEditor.Options(
-        locale -> LocalizationSnapshot.create(loadCandidate(locale, null)), ReactLanguage::writeMessage);
+    return new PluginLanguageEditor.Options(ReactLanguage::loadSelectionSnapshot, ReactLanguage::writeMessage);
+  }
+
+  public static BukkitLanguageSwitcher.LanguageUpdateAction updateAction() {
+    return ReactLanguage::startUpstreamCheck;
+  }
+
+  public static BukkitLanguageSwitcher.LocaleDisplayNames displayNames() {
+    return locale -> metas.getOrDefault(locale, LanguageMeta.empty()).name().orElse(null);
+  }
+
+  public static String localeDisplayName(String locale) {
+    String normalized = locale == null ? "" : locale.trim();
+    return metas.getOrDefault(normalized, LanguageMeta.empty()).name()
+        .or(() -> VolmitLocales.displayName(normalized))
+        .orElse(normalized);
+  }
+
+  public static CompletableFuture<LanguageUpstreamSync.SyncReport> startUpstreamCheck() {
+    LanguageUpstreamSync activeSync = sync;
+    if (activeSync == null) {
+      return CompletableFuture.completedFuture(LanguageUpstreamSync.SyncReport.failed(
+          sourceDescription(), System.currentTimeMillis()));
+    }
+    return activeSync.checkAsync().thenApply(ReactLanguage::logUpstreamReport);
+  }
+
+  public static boolean needsInstall(String locale) {
+    String requiredLocale;
+    try {
+      requiredLocale = canonicalLocale(locale);
+    } catch (IllegalArgumentException invalid) {
+      return false;
+    }
+    return isRepositoryLocale(requiredLocale) && !languageFile(requiredLocale).isFile();
+  }
+
+  public static CompletableFuture<String> requestInstall(String locale) {
+    String requiredLocale = canonicalLocale(locale);
+    File file = languageFile(requiredLocale);
+    if (file.isFile()) {
+      try {
+        return CompletableFuture.completedFuture(LanguageDirectory.readContent(file.toPath()));
+      } catch (IOException failure) {
+        return CompletableFuture.failedFuture(failure);
+      }
+    }
+    LanguageUpstreamSync activeSync = sync;
+    if (activeSync == null || !isRepositoryLocale(requiredLocale)) {
+      return CompletableFuture.failedFuture(new IOException("Language " + requiredLocale
+          + " is not available from " + sourceDescription()));
+    }
+    React.info("Installing React language " + requiredLocale + " from " + sourceDescription() + "...");
+    return activeSync.installAsync(requiredLocale);
+  }
+
+  public static boolean isRepositoryLocale(String locale) {
+    LanguageSourceManifest activeManifest = manifest;
+    return activeManifest != null && activeManifest.contains(locale);
+  }
+
+  public static List<String> availableLocales() {
+    return availableLocales;
+  }
+
+  public static String sourceDescription() {
+    LanguageSourceManifest activeManifest = manifest;
+    return activeManifest == null ? "unavailable" : activeManifest.repository() + "@" + activeManifest.branch();
+  }
+
+  public static Optional<LanguageUpstreamSync.Status> upstreamStatus() {
+    LanguageUpstreamSync activeSync = sync;
+    return activeSync == null ? Optional.empty() : Optional.of(activeSync.status());
+  }
+
+  public static String sourceState() {
+    Throwable failure = sourceFailure;
+    if (failure != null) {
+      return "unavailable (" + failure.getClass().getSimpleName() + ")";
+    }
+    Optional<LanguageUpstreamSync.Status> status = upstreamStatus();
+    if (status.isEmpty()) {
+      return "unavailable";
+    }
+    LanguageUpstreamSync.Status current = status.get();
+    StringBuilder state = new StringBuilder(sourceDescription());
+    state.append(", ").append(current.revision().map(sha -> "revision " + sha.substring(0, 7)).orElse("not checked"));
+    if (current.checkedMillis() > 0L) {
+      state.append(", checked ").append(Instant.ofEpochMilli(current.checkedMillis()));
+    }
+    current.lastError().ifPresent(error -> state.append(", last error: ").append(error));
+    return state.toString();
+  }
+
+  private static void openUpstream(URI apiRoot, URI rawRoot, Duration minimumCheckInterval) {
+    closeUpstream();
+    LanguageDirectory directory = directory();
+    LanguageSourceManifest loadedManifest = null;
+    LanguageUpstreamSync loadedSync = null;
+    Throwable failure = null;
+    try {
+      loadedManifest = LanguageSourceManifest.load(ReactLanguage.class.getClassLoader(), MANIFEST_RESOURCE);
+      GitHubLanguageSource source = new GitHubLanguageSource(loadedManifest, "React", apiRoot, rawRoot);
+      LanguageUpstreamStore store = new LanguageUpstreamStore(directory, loadedManifest);
+      loadedSync = new LanguageUpstreamSync(new LanguageUpstreamSync.Options(
+          "React", CATALOG, directory, loadedManifest, source, store,
+          ReactLanguageReference::englishCatalog, ReactLanguage::validateContent, ReactLanguage::commitUpstream,
+          (file, content) -> ConfigFileSupport.noteSelfWrite(file.toFile(), content), ReactLanguage::applyUpstream,
+          React.instance.getLogger()), minimumCheckInterval);
+    } catch (RuntimeException exception) {
+      failure = exception;
+      React.warn("Language source is unavailable; code-owned English and installed language files remain active",
+          exception);
+    }
+    manifest = loadedManifest;
+    sync = loadedSync;
+    sourceFailure = failure;
+    try {
+      refreshAvailableLocales();
+    } catch (IOException exception) {
+      React.warn("Could not scan React language files in " + languageFolder(), exception);
+    }
+  }
+
+  private static void closeUpstream() {
+    LanguageUpstreamSync activeSync = sync;
+    sync = null;
+    manifest = null;
+    sourceFailure = null;
+    if (activeSync != null) {
+      activeSync.close();
+    }
+  }
+
+  private static <T> T commitUpstream(LanguageUpstreamSync.CommitAction<T> action) throws IOException {
+    PluginLanguageService service = languageService;
+    if (service == null) {
+      return action.apply();
+    }
+    return service.commitUpdate(action::apply);
+  }
+
+  private static void applyUpstream(String locale, String content, LanguageCatalogMerge.MergeResult result)
+      throws Exception {
+    File file = languageFile(locale);
+    LocalizationSnapshot snapshot = LocalizationSnapshot.create(
+        loadCandidate(locale, new LanguageHotloadSnapshot(normalizedPath(file), content)));
+    PluginLanguageService service = languageService;
+    if (service != null) {
+      service.cache(locale, snapshot);
+    }
+    synchronized (SNAPSHOT_LOCK) {
+      if (locale.equals(activeLocale)) {
+        MANAGER.install(snapshot);
+      }
+      NORMALIZED_TEMPLATES.clear();
+    }
+  }
+
+  private static void validateContent(String locale, String content) throws IOException {
+    if (content.getBytes(StandardCharsets.UTF_8).length > MAX_LOCALE_BYTES) {
+      throw new IOException("Language file exceeds the 2 MiB safety limit: " + locale);
+    }
+    try {
+      LocaleOverlay overlay = LocalizationValidator.validValues(CATALOG,
+          parseOverlay("upstream:" + locale, locale, content, true));
+      LocalizationSnapshot.create(new LocalizationCandidate(CATALOG, List.of(overlay), PluralSelector.oneOther()));
+    } catch (RuntimeException invalid) {
+      throw new IOException("Language content is invalid: " + locale, invalid);
+    }
+  }
+
+  private static LanguageUpstreamSync.SyncReport logUpstreamReport(LanguageUpstreamSync.SyncReport report) {
+    String revision = report.revision().map(sha -> sha.substring(0, 7)).orElse("unknown");
+    for (String locale : report.changedLocales()) {
+      LanguageCatalogMerge.MergeResult result = report.merged().get(locale);
+      String source = locale.equals(CATALOG.englishLocale())
+          ? "the built-in catalog"
+          : sourceDescription() + " (" + revision + ")";
+      React.info("Updated React language " + locale + " from " + source + ": " + result.summary() + ".");
+    }
+    if (report.coolingDown()) {
+      React.info("React language source " + sourceDescription()
+          + " was checked recently; the next check is allowed in " + report.cooldownRemaining() + ".");
+    } else if (report.failure().isEmpty() && report.changedLocales().isEmpty() && report.failures().isEmpty()
+        && report.revision().isPresent()) {
+      React.info("React languages match " + sourceDescription() + " (" + revision + ").");
+    }
+    return report;
+  }
+
+  private static LocalizationSnapshot loadSelectionSnapshot(String locale) throws Exception {
+    String requiredLocale = canonicalLocale(locale);
+    File target = languageFile(requiredLocale);
+    if (!target.exists() && isRepositoryLocale(requiredLocale)) {
+      LanguageUpstreamSync activeSync = sync;
+      if (activeSync == null) {
+        throw new IOException("Language " + requiredLocale + " is not installed and the language source is "
+            + sourceDescription());
+      }
+      React.info("Installing React language " + requiredLocale + " from " + sourceDescription() + "...");
+      activeSync.install(requiredLocale);
+      React.info("Installed React language " + requiredLocale + " to " + normalizedPath(target) + ".");
+    }
+    return LocalizationSnapshot.create(loadCandidate(requiredLocale, null));
   }
 
   private static LocalizationSnapshot writeMessage(PluginLanguageEditor.Edit edit) throws IOException {
@@ -152,7 +369,7 @@ public final class ReactLanguage {
     } else if (edit.value() instanceof LinesValue lines) {
       validateLines(edit.key(), edit.key(), lines.lines());
     }
-    File file = new File(languageFolder(), edit.locale() + ".toml");
+    File file = languageFile(edit.locale());
     SavedLanguage saved = LanguageFileEditor.update(file.toPath(), raw -> {
       LocalizationSnapshot current = editorSnapshot(edit.locale(), file, raw);
       if (!current.value(CATALOG.require(edit.key())).equals(edit.expected())) {
@@ -218,15 +435,16 @@ public final class ReactLanguage {
       String rawContent,
       String configuredLocale
   ) throws Exception {
-    String normalizedLocale = normalizeLocale(configuredLocale);
+    String normalizedLocale = canonicalLocale(configuredLocale);
     boolean serverDefault = languageFile == null;
     if (!serverDefault && rawContent == null) {
       if (!isLanguageFile(languageFile)) {
         throw new IllegalArgumentException("Not a React language file: " + languageFile);
       }
-      String deletedLocale = normalizeLocale(languageFile.getName().substring(0, languageFile.getName().length() - 5));
+      String deletedLocale = canonicalLocale(languageFile.getName().substring(0, languageFile.getName().length() - 5));
       LocalizationSnapshot english = LocalizationSnapshot.create(
           LocalizationCandidate.english(CATALOG, PluralSelector.oneOther()));
+      refreshAvailableLocales();
       return new PreparedReload(english, deletedLocale, deletedLocale, false, false);
     }
     LanguageHotloadSnapshot hotloadSnapshot = serverDefault
@@ -236,16 +454,22 @@ public final class ReactLanguage {
       if (!isLanguageFile(languageFile)) {
         throw new IllegalArgumentException("Not a React language file: " + languageFile);
       }
-      normalizedLocale = normalizeLocale(languageFile.getName().substring(0, languageFile.getName().length() - 5));
+      normalizedLocale = canonicalLocale(languageFile.getName().substring(0, languageFile.getName().length() - 5));
     } else {
-      createEnglishLanguageIfMissing();
+      ensureEnglish();
+      if (needsInstall(normalizedLocale)) {
+        React.instance.requestLanguageInstall(normalizedLocale);
+        synchronized (SNAPSHOT_LOCK) {
+          return new PreparedReload(MANAGER.snapshot(), normalizedLocale, activeLocale, true, true);
+        }
+      }
       if (languageService != null) {
         synchronized (SNAPSHOT_LOCK) {
           if (normalizedLocale.equals(activeLocale)) {
             return new PreparedReload(MANAGER.snapshot(), normalizedLocale, normalizedLocale, true, true);
           }
         }
-        File selectedFile = new File(languageFolder(), normalizedLocale + ".toml");
+        File selectedFile = languageFile(normalizedLocale);
         if (selectedFile.isFile()) {
           if (selectedFile.length() > MAX_LOCALE_BYTES) {
             throw new IllegalArgumentException("Locale file is too large: " + selectedFile.getPath());
@@ -305,12 +529,12 @@ public final class ReactLanguage {
     return new File(React.instance.getDataFolder(), "languages");
   }
 
+  public static File languageFile(String locale) {
+    return directory().languageFile(locale).toFile();
+  }
+
   public static boolean isLanguageFile(File file) {
-    if (file == null || !file.getName().toLowerCase(Locale.ROOT).endsWith(".toml")) {
-      return false;
-    }
-    File parent = file.getParentFile();
-    return parent != null && normalizedPath(parent).equals(normalizedPath(languageFolder()));
+    return directory().isLanguageFile(file);
   }
 
   public static Component component(MessageKey key) {
@@ -450,24 +674,31 @@ public final class ReactLanguage {
       String locale,
       LanguageHotloadSnapshot hotloadSnapshot
   ) throws Exception {
+    File languageFile = languageFile(locale);
     if (hotloadSnapshot == null) {
-      createEnglishLanguageIfMissing();
+      ensureEnglish();
+      if (!languageFile.exists() && !CATALOG.englishLocale().equalsIgnoreCase(locale) && !isRepositoryLocale(locale)) {
+        createCustomLanguageIfMissing(locale);
+      }
     }
-    List<LocaleOverlay> overlays = new ArrayList<>(2);
-    File languageFile = new File(languageFolder(), locale + ".toml");
+    List<LocaleOverlay> overlays = new ArrayList<>(MAX_BASE_DEPTH + 2);
+    String raw = null;
     if (hotloadSnapshot != null && hotloadSnapshot.path().equals(normalizedPath(languageFile))) {
-      overlays.add(loadSnapshotOverlay(languageFile, locale, hotloadSnapshot.rawContent()));
+      raw = hotloadSnapshot.rawContent();
+      overlays.add(loadSnapshotOverlay(languageFile, locale, raw));
     } else if (languageFile.exists()) {
-      overlays.add(loadFileOverlay(languageFile, locale));
-    } else if (!CATALOG.englishLocale().equalsIgnoreCase(locale)) {
-      overlays.add(loadDownloadedOverlay(locale));
+      raw = readLanguageFile(languageFile);
+      overlays.add(parseRuntimeOverlay(languageFile.getPath(), locale, raw));
     }
+    if (raw != null) {
+      overlays.addAll(baseOverlays(locale, raw));
+    }
+    refreshAvailableLocales();
     if (!CATALOG.englishLocale().equalsIgnoreCase(locale) && !overlays.isEmpty()) {
-      LocaleOverlay selected = overlays.getFirst();
       LocaleOverlay.Builder englishFallback = LocaleOverlay.builder(ENGLISH_FALLBACK_SOURCE + locale, locale);
       boolean missingMessages = false;
       for (MessageKey key : CATALOG.keys()) {
-        if (selected.value(key.id()) == null) {
+        if (!hasValue(overlays, key.id())) {
           englishFallback.put(key.id(), key.englishValue());
           missingMessages = true;
         }
@@ -479,7 +710,28 @@ public final class ReactLanguage {
     return new LocalizationCandidate(CATALOG, overlays, PluralSelector.oneOther());
   }
 
-  private static void createEnglishLanguageIfMissing() throws IOException {
+  private static boolean hasValue(List<LocaleOverlay> overlays, String key) {
+    for (LocaleOverlay overlay : overlays) {
+      if (overlay.value(key) != null) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static void ensureEnglish() throws IOException {
+    LanguageUpstreamSync activeSync = sync;
+    if (activeSync != null) {
+      try {
+        activeSync.mergeEnglish().ifPresent(result -> React.info("Updated React language "
+            + CATALOG.englishLocale() + " from the built-in catalog: " + result.summary() + "."));
+        return;
+      } catch (IOException failure) {
+        throw failure;
+      } catch (Exception failure) {
+        throw new IOException("Could not refresh the English language file", failure);
+      }
+    }
     Path english = languageFolder().toPath().resolve(CATALOG.englishLocale() + ".toml");
     if (Files.exists(english)) {
       return;
@@ -489,14 +741,110 @@ public final class ReactLanguage {
     ConfigFileSupport.noteSelfWrite(english.toFile(), raw);
   }
 
-  private static LocaleOverlay loadFileOverlay(File file, String locale) throws Exception {
-    if (!file.isFile()) {
+  private static void createCustomLanguageIfMissing(String locale) throws IOException {
+    File target = languageFile(locale);
+    if (target.exists()) {
+      return;
+    }
+    String raw = ReactLanguageReference.customCatalog(locale);
+    AtomicFileIO.writeString(target.toPath(), raw);
+    ConfigFileSupport.noteSelfWrite(target, raw);
+  }
+
+  private static String readLanguageFile(File file) throws IOException {
+    if (!file.isFile() || Files.isSymbolicLink(file.toPath())) {
       throw new IllegalArgumentException("Locale file is not a regular file: " + file.getPath());
     }
     if (file.length() > MAX_LOCALE_BYTES) {
       throw new IllegalArgumentException("Locale file is too large: " + file.getPath());
     }
-    return parseRuntimeOverlay(file.getPath(), locale, Files.readString(file.toPath()));
+    return Files.readString(file.toPath());
+  }
+
+  private static List<LocaleOverlay> baseOverlays(String locale, String raw) throws IOException {
+    List<LocaleOverlay> overlays = new ArrayList<>(MAX_BASE_DEPTH);
+    Set<String> visited = new HashSet<>();
+    visited.add(foldedLocale(locale));
+    LanguageMeta meta = metaFromContent(locale, raw);
+    while (meta.base().isPresent() && overlays.size() < MAX_BASE_DEPTH) {
+      String base;
+      try {
+        base = canonicalLocale(meta.base().get());
+      } catch (IllegalArgumentException invalid) {
+        break;
+      }
+      if (!visited.add(foldedLocale(base)) || LanguageDirectory.sameLocale(base, CATALOG.englishLocale())) {
+        break;
+      }
+      File baseFile = languageFile(base);
+      if (!baseFile.isFile()) {
+        break;
+      }
+      String baseRaw = readLanguageFile(baseFile);
+      overlays.add(parseRuntimeOverlay(baseFile.getPath(), base, baseRaw));
+      meta = metaFromContent(base, baseRaw);
+    }
+    return overlays;
+  }
+
+  private static LanguageMeta metaFromContent(String locale, String raw) {
+    try {
+      return LanguageMeta.parse(raw).withoutSelfBase(locale);
+    } catch (IOException | RuntimeException unreadable) {
+      return LanguageMeta.empty();
+    }
+  }
+
+  private static void refreshAvailableLocales() throws IOException {
+    LanguageDirectory directory = directory();
+    Set<String> choices = new LinkedHashSet<>();
+    choices.add(CATALOG.englishLocale());
+    LanguageSourceManifest activeManifest = manifest;
+    if (activeManifest != null) {
+      choices.addAll(activeManifest.locales());
+    }
+    List<String> installed = directory.scan();
+    choices.addAll(installed);
+    Map<String, LanguageMeta> discovered = new LinkedHashMap<>();
+    Set<Path> scanned = new HashSet<>(installed.size());
+    for (String locale : installed) {
+      Path file = directory.languageFile(locale).toAbsolutePath().normalize();
+      scanned.add(file);
+      try {
+        LanguageMeta meta = cachedMeta(directory, locale, file);
+        if (!meta.isEmpty()) {
+          discovered.put(locale, meta);
+        }
+      } catch (IOException | RuntimeException unreadable) {
+        React.verbose("Could not read language metadata for " + locale, unreadable);
+      }
+    }
+    META_CACHE.keySet().removeIf(path -> path.startsWith(directory.root().toAbsolutePath().normalize())
+        && !scanned.contains(path));
+    List<String> sorted = new ArrayList<>(choices);
+    sorted.sort(String.CASE_INSENSITIVE_ORDER);
+    metas = Map.copyOf(discovered);
+    availableLocales = List.copyOf(sorted);
+  }
+
+  private static LanguageMeta cachedMeta(LanguageDirectory directory, String locale, Path file) throws IOException {
+    long modified = Files.getLastModifiedTime(file).toMillis();
+    long size = Files.size(file);
+    CachedMeta cached = META_CACHE.get(file);
+    if (cached != null && cached.modified() == modified && cached.size() == size) {
+      return cached.meta();
+    }
+    LanguageMeta meta = directory.meta(locale);
+    META_CACHE.put(file, new CachedMeta(modified, size, meta));
+    return meta;
+  }
+
+  private static LanguageDirectory directory() {
+    return new LanguageDirectory(languageFolder());
+  }
+
+  private static String foldedLocale(String locale) {
+    return locale.replace('-', '_').toLowerCase(Locale.ROOT);
   }
 
   private static LocaleOverlay loadSnapshotOverlay(File file, String locale, String rawContent) {
@@ -508,16 +856,6 @@ public final class ReactLanguage {
 
   private static String normalizedPath(File file) {
     return file.toPath().toAbsolutePath().normalize().toString();
-  }
-
-  private static LocaleOverlay loadDownloadedOverlay(String locale) throws Exception {
-    Path file = languageFolder().toPath().resolve(locale + ".toml");
-    String raw = remoteCatalog.readOrInstall(locale, file, (selectedLocale, content) ->
-        LocalizationSnapshot.create(new LocalizationCandidate(CATALOG,
-            List.of(parseRuntimeOverlay(file.toString(), selectedLocale, content)), PluralSelector.oneOther())));
-    LocaleOverlay overlay = parseRuntimeOverlay(file.toString(), locale, raw);
-    ConfigFileSupport.noteSelfWrite(file.toFile(), raw);
-    return overlay;
   }
 
   static LocaleOverlay parseOverlay(String source, String locale, String raw) {
@@ -582,6 +920,9 @@ public final class ReactLanguage {
   }
 
   private record LanguageHotloadSnapshot(String path, String rawContent) {
+  }
+
+  private record CachedMeta(long modified, long size, LanguageMeta meta) {
   }
 
   private record SavedLanguage(String rawContent, LocalizationSnapshot snapshot) {
@@ -701,10 +1042,14 @@ public final class ReactLanguage {
     return builder.build();
   }
 
-  private static String normalizeLocale(String locale) {
-    String value = locale == null || locale.isBlank() ? CATALOG.englishLocale() : locale.trim();
-    if (!LOCALE_NAME.matcher(value).matches()) {
-      throw new IllegalArgumentException("Invalid locale name: " + value);
+  private static String canonicalLocale(String locale) {
+    String value = LanguageDirectory.requireLocale(locale == null || locale.isBlank() ? CATALOG.englishLocale() : locale);
+    if (CATALOG.englishLocale().equalsIgnoreCase(value)) {
+      return CATALOG.englishLocale();
+    }
+    LanguageSourceManifest activeManifest = manifest;
+    if (activeManifest != null && activeManifest.contains(value)) {
+      return activeManifest.canonical(value);
     }
     return value;
   }

@@ -17,10 +17,11 @@ import art.arcane.volmlib.util.localization.LocalizationSnapshot;
 import art.arcane.volmlib.util.localization.PluginLanguageEditor;
 import art.arcane.volmlib.util.localization.PluginLanguageService;
 import art.arcane.volmlib.util.localization.PluralSelector;
-import art.arcane.volmlib.util.localization.RemoteLanguageCatalog;
 import art.arcane.volmlib.util.localization.TextValue;
 import art.arcane.volmlib.util.localization.TomlLanguageEditor;
 import art.arcane.volmlib.util.localization.VolmitLocales;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.AfterEach;
@@ -34,9 +35,12 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -57,8 +61,6 @@ import java.util.logging.Logger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -69,7 +71,7 @@ class LanguageInstallHotloadTest {
   Path directory;
 
   private React previousPlugin;
-  private RemoteLanguageCatalog previousRemote;
+  private HttpServer server;
   private String previousActiveLocale;
   private HotloadController controller;
   private ConfigHotloadEngine engine;
@@ -83,7 +85,6 @@ class LanguageInstallHotloadTest {
   @BeforeEach
   void prepareLanguageInstallAndHotloadQueue() throws Exception {
     previousPlugin = React.instance;
-    previousRemote = (RemoteLanguageCatalog) field(ReactLanguage.class, "remoteCatalog").get(null);
     previousActiveLocale = ReactLanguage.activeLocale();
     field(ReactLanguage.class, "activeLocale").set(null, "en_US");
     germanSource = Files.readString(Path.of("src/main/resources/languages/de_DE.toml"), StandardCharsets.UTF_8);
@@ -91,18 +92,17 @@ class LanguageInstallHotloadTest {
     React plugin = mock(React.class);
     when(plugin.getDataFolder()).thenReturn(directory.toFile());
     when(plugin.getTicker()).thenReturn(mock(Ticker.class));
+    when(plugin.getLogger()).thenReturn(Logger.getLogger("LanguageInstallHotloadTest"));
     React.instance = plugin;
 
-    RemoteLanguageCatalog remote = mock(RemoteLanguageCatalog.class);
-    when(remote.readOrInstall(eq("de_DE"), any(Path.class), any(RemoteLanguageCatalog.ContentValidator.class)))
-        .thenAnswer(invocation -> {
-          Path destination = invocation.getArgument(1);
-          RemoteLanguageCatalog.ContentValidator validator = invocation.getArgument(2);
-          validator.validate("de_DE", germanSource);
-          Files.writeString(destination, germanSource, StandardCharsets.UTF_8);
-          return germanSource;
-        });
-    field(ReactLanguage.class, "remoteCatalog").set(null, remote);
+    server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server.createContext("/api/", this::serveRevision);
+    server.createContext("/raw/", this::serveGerman);
+    server.start();
+    URI root = URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/");
+    Method open = ReactLanguage.class.getDeclaredMethod("openUpstream", URI.class, URI.class, Duration.class);
+    open.setAccessible(true);
+    open.invoke(null, root.resolve("api/"), root.resolve("raw/"), Duration.ZERO);
 
     controller = new HotloadController();
     field(HotloadController.class, "dataFolder").set(controller, directory.toFile());
@@ -141,7 +141,12 @@ class LanguageInstallHotloadTest {
     if (engine != null) {
       engine.clear();
     }
-    field(ReactLanguage.class, "remoteCatalog").set(null, previousRemote);
+    Method close = ReactLanguage.class.getDeclaredMethod("closeUpstream");
+    close.setAccessible(true);
+    close.invoke(null);
+    if (server != null) {
+      server.stop(0);
+    }
     field(ReactLanguage.class, "activeLocale").set(null, previousActiveLocale);
     React.instance = previousPlugin;
   }
@@ -162,16 +167,16 @@ class LanguageInstallHotloadTest {
   void languageSelectionAcknowledgesInstalledCatalogsBeforeDelayedWatcherEvents() throws Exception {
     UUID player = UUID.randomUUID();
 
-    languages.selectPlayer(player, "de_DE").get(5, TimeUnit.SECONDS);
+    languages.selectPlayer(player, "de_DE").get(30, TimeUnit.SECONDS);
 
     Path german = languageFile("de_DE");
     Path english = languageFile("en_US");
     assertEquals("de_DE", languages.playerLocale(player).orElseThrow());
-    assertEquals(germanSource, Files.readString(german));
+    assertEquals(germanSource, Files.readString(directory.resolve("languages/.upstream/de_DE.toml")));
     assertTrue(Files.isRegularFile(english));
     assertTrue(prepareChanges(english, german).isEmpty(),
         "Installing catalogs must not prepare <missing>-to-template operator diffs");
-    assertEquals(ConfigFileSupport.normalize(germanSource), appliedContents.get(german.toString()));
+    assertEquals(ConfigFileSupport.normalize(Files.readString(german)), appliedContents.get(german.toString()));
     assertEquals(ConfigFileSupport.normalize(Files.readString(english)), appliedContents.get(english.toString()));
   }
 
@@ -193,7 +198,7 @@ class LanguageInstallHotloadTest {
         () -> ReactConfiguration.get().getLanguage(), manager::snapshot, ReactLanguage.editorOptions().loader()::load,
         (locale, snapshot) -> selectDefault.invoke(null, locale, snapshot),
         Logger.getLogger("ServerLanguageInstallHotloadTest")))) {
-      serverLanguages.selectDefault("de_DE").get(5, TimeUnit.SECONDS);
+      serverLanguages.selectDefault("de_DE").get(30, TimeUnit.SECONDS);
 
       assertEquals("de_DE", serverLanguages.defaultLocale());
       assertEquals("de_DE", ReactConfiguration.get().getLanguage());
@@ -208,7 +213,7 @@ class LanguageInstallHotloadTest {
 
   @Test
   void manualEditBeforeInstallAcknowledgementIsDrainedStillPreparesOneChange() throws Exception {
-    languages.selectPlayer(UUID.randomUUID(), "de_DE").get(5, TimeUnit.SECONDS);
+    languages.selectPlayer(UUID.randomUUID(), "de_DE").get(30, TimeUnit.SECONDS);
     Path german = languageFile("de_DE");
     String edited = editVersion(german, "Angepasste React-Version {version}");
 
@@ -219,7 +224,7 @@ class LanguageInstallHotloadTest {
 
   @Test
   void loadingAnExistingLocaleDoesNotHideAnUnprocessedManualEdit() throws Exception {
-    languages.selectPlayer(UUID.randomUUID(), "de_DE").get(5, TimeUnit.SECONDS);
+    languages.selectPlayer(UUID.randomUUID(), "de_DE").get(30, TimeUnit.SECONDS);
     Path german = languageFile("de_DE");
     assertTrue(prepareChanges(languageFile("en_US"), german).isEmpty());
     String edited = editVersion(german, "Meine React-Version {version}");
@@ -232,16 +237,16 @@ class LanguageInstallHotloadTest {
 
   @Test
   void savingInTheLanguageEditorDoesNotPrepareDuplicateOperatorDiffs() throws Exception {
-    languages.selectPlayer(UUID.randomUUID(), "de_DE").get(5, TimeUnit.SECONDS);
+    languages.selectPlayer(UUID.randomUUID(), "de_DE").get(30, TimeUnit.SECONDS);
     Path german = languageFile("de_DE");
     assertTrue(prepareChanges(languageFile("en_US"), german).isEmpty());
-    PluginLanguageEditor.Document original = editor.load("de_DE").get(5, TimeUnit.SECONDS);
+    PluginLanguageEditor.Document original = editor.load("de_DE").get(30, TimeUnit.SECONDS);
     TextValue updated = new TextValue("Bearbeitete React-Version {version}");
 
     editor.save(new PluginLanguageEditor.Edit("de_DE", EnvironmentMessages.REACT_VERSION.id(),
-        original.snapshot().value(EnvironmentMessages.REACT_VERSION), updated)).get(5, TimeUnit.SECONDS);
+        original.snapshot().value(EnvironmentMessages.REACT_VERSION), updated)).get(30, TimeUnit.SECONDS);
 
-    assertEquals(updated, editor.load("de_DE").get(5, TimeUnit.SECONDS).snapshot().value(EnvironmentMessages.REACT_VERSION));
+    assertEquals(updated, editor.load("de_DE").get(30, TimeUnit.SECONDS).snapshot().value(EnvironmentMessages.REACT_VERSION));
     assertTrue(prepareChanges(german).isEmpty(),
         "The editor already confirms its own save; watcher events must not repeat the template diff");
   }
@@ -259,11 +264,11 @@ class LanguageInstallHotloadTest {
       String english = PLAIN.serialize((Component) invoke(notice, "render"));
 
       UUID player = UUID.randomUUID();
-      languages.selectPlayer(player, "de_DE").get(5, TimeUnit.SECONDS);
-      PluginLanguageEditor.Document original = editor.load("de_DE").get(5, TimeUnit.SECONDS);
+      languages.selectPlayer(player, "de_DE").get(30, TimeUnit.SECONDS);
+      PluginLanguageEditor.Document original = editor.load("de_DE").get(30, TimeUnit.SECONDS);
       TextValue updated = new TextValue("Neu geladen [{file}] [{key}] [{before} -> {after}]");
       editor.save(new PluginLanguageEditor.Edit("de_DE", RuntimeMessages.HOTLOAD_DIFF.id(),
-          original.snapshot().value(RuntimeMessages.HOTLOAD_DIFF), updated)).get(5, TimeUnit.SECONDS);
+          original.snapshot().value(RuntimeMessages.HOTLOAD_DIFF), updated)).get(30, TimeUnit.SECONDS);
 
       AtomicReference<String> german = new AtomicReference<>();
       LanguageAudience.run(player, () -> german.set(PLAIN.serialize((Component) invoke(notice, "render"))));
@@ -284,7 +289,7 @@ class LanguageInstallHotloadTest {
     serviceField.set(null, languages);
     try {
       UUID player = UUID.randomUUID();
-      languages.selectPlayer(player, "de_DE").get(5, TimeUnit.SECONDS);
+      languages.selectPlayer(player, "de_DE").get(30, TimeUnit.SECONDS);
       Path german = languageFile("de_DE");
       assertTrue(prepareChanges(languageFile("en_US"), german).isEmpty());
       LocalizationSnapshot translated = languages.snapshot(player);
@@ -328,7 +333,7 @@ class LanguageInstallHotloadTest {
     CountDownLatch releaseCommit = new CountDownLatch(1);
     ExecutorService workers = Executors.newFixedThreadPool(3);
     try {
-      languages.selectPlayer(UUID.randomUUID(), "de_DE").get(5, TimeUnit.SECONDS);
+      languages.selectPlayer(UUID.randomUUID(), "de_DE").get(30, TimeUnit.SECONDS);
       Files.writeString(mainConfig, "language = \"de_DE\"\n");
       List<Object> changes = prepareChanges(mainConfig);
       assertEquals(1, changes.size());
@@ -375,6 +380,26 @@ class LanguageInstallHotloadTest {
       configurationField.set(null, previousConfiguration);
       manager.install(previousSnapshot);
     }
+  }
+
+  private void serveRevision(HttpExchange exchange) throws IOException {
+    byte[] response = "[{\"sha\":\"1111111111111111111111111111111111111111\"}]".getBytes(StandardCharsets.UTF_8);
+    exchange.getResponseHeaders().set("ETag", "\"one\"");
+    exchange.sendResponseHeaders(200, response.length);
+    exchange.getResponseBody().write(response);
+    exchange.close();
+  }
+
+  private void serveGerman(HttpExchange exchange) throws IOException {
+    if (!exchange.getRequestURI().getPath().endsWith("/de_DE.toml")) {
+      exchange.sendResponseHeaders(404, -1);
+      exchange.close();
+      return;
+    }
+    byte[] response = germanSource.getBytes(StandardCharsets.UTF_8);
+    exchange.sendResponseHeaders(200, response.length);
+    exchange.getResponseBody().write(response);
+    exchange.close();
   }
 
   private static void awaitRelease(CountDownLatch release) throws IOException {
