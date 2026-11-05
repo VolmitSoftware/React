@@ -954,6 +954,15 @@ summary = "תקופת חסד לאחר ההפעלה לפני שמדרגת העו�
 impact = "ערכים נמוכים יותר מזהים שחקנים לא פעילים מוקדם יותר; ערכים גבוהים יותר מפחיתים תקורה."
 summary = "מרווח ההערכה הראשי של הקטנת טווח הראייה לשחקנים לא פעילים באלפיות שנייה."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimuscostsharepiemap]
+description = "תצורה של תכונת מפת העוגה של חלוקת העלות של Animus."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusnetworklistmap]
+description = "תצורה של תכונת מפת רשימת הרשת של Animus."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusruntimepressureoverlay]
+description = "תצורה של תכונת שכבת העומס בזמן ריצה של Animus. התכונה הזו עוקבת ברציפות אחר התנהגות השרת ומחילה אמצעי הגנה בזמן ריצה."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase]
 description = "תצורה של תכונת בסיס מפת החום של צ'אנקים. התכונה הזו עוקבת ברציפות אחר התנהגות השרת ומחילה אמצעי הגנה בזמן ריצה."
 
@@ -3504,6 +3513,9 @@ sampler = "גרף חי עם ערכים נוכחיים, מזעריים ומרבי
 adapt_ability_impact_list_map = "השורות מדורגות לפי עלות הקריאות החוזרות הנמדדת ב-60 השניות האחרונות; cb/m סופר הרצות של קריאות חוזרות מכוסות, ואילו עבודת רקע שתוזמנה ישירות נמצאת מחוץ למפה זו."
 adapt_metrics = "ניטור: עומס הפעלות, תפוקת יכולות, השהיית מדיניות."
 adapt_runtime_pressure_overlay = "צבעים חמים יותר מצביעים על עומס רב יותר בצ'אנק שנדגם."
+animus_cost_share_pie_map = "כל פרוסה היא זמן תהליכון השרת המתגלגל של תת-מערכת אחת, ב-ms לשנייה, כפי ש-Animus מדווח."
+animus_network_list_map = "השורות מדרגות סוגי חבילות לפי בתים לשנייה; הכותרת התחתונה מציגה את סך החבילות לשנייה ואת השחקן העמוס ביותר."
+animus_runtime_pressure_overlay = "צבעים חמים יותר מצביעים על עומס רב יותר בצ'אנק שנדגם."
 chunk_load_gen_cost_map = "צבעים חמים יותר מצביעים על עומס רב יותר בצ'אנק שנדגם."
 chunk_sampler_map = "צבעים חמים יותר מצביעים על עומס רב יותר בצ'אנק שנדגם."
 entity_pressure_heatmap = "צבעים חמים יותר מצביעים על עומס רב יותר בצ'אנק שנדגם."
@@ -3703,6 +3715,7 @@ wormholes_wire_in = "תעבורה נכנסת של Wormholes"
 wormholes_wire_out = "תעבורה יוצאת של Wormholes"
 
 [gui.map.render]
+column_bandwidth = "B/s"
 column_calls = "קריאות"
 column_cost = "עלות"
 column_name = "שם"
@@ -3714,6 +3727,7 @@ total_cost = "{value} ms/s"
 
 [gui.map.scope_tag]
 adapt = "ADAPT"
+animus = "ANIMUS"
 biletools = "BILETOOLS"
 core = "ליבה"
 gloss = "GLOSS"
@@ -3728,6 +3742,9 @@ adapt_ability_impact_list_map = "מדרגת יכולות Adapt לפי זמן ב�
 adapt_fallback = "מרנדר אינטגרציה של Adapt עבור {name}."
 adapt_metrics = "לוח אינטגרציה של Adapt לעומס הפעלות, פעולות יכולת לדקה והשהיית מדיניות עולם."
 adapt_runtime_pressure_overlay = "שכבת לחץ של Adapt המשתמשת בעומס ההפעלה ובתקציב התזמון הנמדד של בדיקות ההגנה."
+animus_cost_share_pie_map = "תרשים עוגה המציג את חלקה של כל תת-מערכת של Animus בעלות ה-NPC הנמדדת בתהליכון השרת."
+animus_network_list_map = "מדרג את סוגי חבילות ה-NPC של Animus לפי רוחב פס יוצא."
+animus_runtime_pressure_overlay = "שכבת עומס של Animus המבוססת על עומס תת-המערכות ועל עלות ה-NPC הנמדדת בתהליכון השרת."
 chunk_load_gen_cost_map = "מפת חום של צ'אנקים לעלות טעינה ויצירה לפי קצב טעינה ויצירה ועומס ב-ms."
 chunk_sampler_map = "מפת חום של צ'אנקים לעלות הצופים של React סביב מיקומך הנוכחי."
 entity_pressure_heatmap = "מפת חום של צ'אנקים לעומס ישויות; צ'אנקים חמים יותר נושאים עומס כבד יותר של יצורים או פריטים."
@@ -3969,6 +3986,15 @@ no_activity = "אין פעילות של יכולות Adapt"
 top_value = "מוביל {timing} ms/m"
 use_abilities = "השתמש ביכולות כדי למלא את התרשים"
 
+[renderer.animus]
+bandwidth = "{value} B/s"
+no_traffic = "אין תעבורת NPC של Animus"
+packet_rate = "{value} pk/s"
+player_peak = "מקסימום {value} B/s לשחקן"
+traffic_hint = "התעבורה מופיעה כששחקנים רואים NPC"
+unavailable = "מדדי Animus אינם זמינים"
+update_hint = "עדכנו את Animus כדי לפרסם מדדי React"
+
 [renderer.heatmap]
 no_activity = "אין פעילות בקרבת מקום"
 quiet = "שקט"
@@ -4090,6 +4116,7 @@ viewer_unavailable = "הצופה אינו זמין"
 [renderer.pie.unit]
 chunks = "צ'אנקים"
 impact = "השפעה"
+ms_per_second = "ms/s"
 
 [renderer.plugin]
 no_impact = "אין נתוני השפעת אירועי תוספים"
@@ -4122,6 +4149,9 @@ warn = "אזהרה"
 adapt_callback_cost = "עלות קריאות חוזרות Adapt"
 adapt_metrics = "מדדי Adapt"
 adapt_pressure = "עומס Adapt"
+animus_cost_share = "חלוקת העלות של Animus"
+animus_network = "רשת Animus"
+animus_pressure = "עומס Animus"
 biletools_metrics = "מדדי BileTools"
 biome_chunk_share = "חלוקת צ'אנקים לפי ביום"
 chunk_cost_heat = "חום עלות צ'אנקים"
@@ -4230,6 +4260,7 @@ world = "עולם ובלוקים"
 
 [taxonomy.group]
 adapt = "אינטגרציית Adapt"
+animus = "אינטגרציית Animus"
 biletools = "אינטגרציית BileTools"
 chunks = "צ'אנקים ועולם"
 core = "ליבת React"

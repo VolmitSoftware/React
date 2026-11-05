@@ -14,6 +14,7 @@ import '../widget/stat_tile.dart';
 
 const Map<String, String> _kIntegrations = <String, String>{
   'adapt-': 'Adapt',
+  'animus-': 'Animus',
   'biletools-': 'BileTools',
   'gloss-': 'Gloss',
   'hiddenore-': 'HiddenOre',

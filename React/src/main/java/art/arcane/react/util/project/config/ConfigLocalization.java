@@ -21,6 +21,9 @@ import art.arcane.react.content.feature.FeatureAdaptRuntimePressureOverlay;
 import art.arcane.react.content.feature.FeatureAdaptRuntimeSurgeGuard;
 import art.arcane.react.content.feature.FeatureAdaptiveEntitySleep;
 import art.arcane.react.content.feature.FeatureAfkViewShedding;
+import art.arcane.react.content.feature.FeatureAnimusCostSharePieMap;
+import art.arcane.react.content.feature.FeatureAnimusNetworkListMap;
+import art.arcane.react.content.feature.FeatureAnimusRuntimePressureOverlay;
 import art.arcane.react.content.feature.FeatureChunkLoadGenCostMap;
 import art.arcane.react.content.feature.FeatureChunkQuarantine;
 import art.arcane.react.content.feature.FeatureChunkSamplerMap;
@@ -196,6 +199,9 @@ public final class ConfigLocalization {
         FeatureAdaptRuntimeSurgeGuard.class,
         FeatureAdaptiveEntitySleep.class,
         FeatureAfkViewShedding.class,
+        FeatureAnimusCostSharePieMap.class,
+        FeatureAnimusNetworkListMap.class,
+        FeatureAnimusRuntimePressureOverlay.class,
         FeatureChunkLoadGenCostMap.class,
         FeatureChunkQuarantine.class,
         FeatureChunkSamplerMap.class,

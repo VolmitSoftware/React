@@ -20,6 +20,9 @@ public final class MapMessages {
       rendererSummaryEntry("iris-generation-pressure-overlay", "Iris-aware pressure overlay using pregen queue and chunk stream latency."),
       rendererSummaryEntry("adapt-runtime-pressure-overlay", "Adapt-aware pressure overlay using session load and measured guard-check timing budget."),
       rendererSummaryEntry("adapt-ability-impact-list-map", "Ranks Adapt abilities by measured event, tick, and guarded-callback execution time."),
+      rendererSummaryEntry("animus-runtime-pressure-overlay", "Animus-aware pressure overlay using subsystem pressure and measured NPC server-thread cost."),
+      rendererSummaryEntry("animus-cost-share-pie-map", "Pie chart showing each Animus subsystem's share of measured NPC server-thread cost."),
+      rendererSummaryEntry("animus-network-list-map", "Ranks Animus NPC packet kinds by outgoing bandwidth."),
       rendererSummaryEntry("iris-world-chunk-share-pie-map", "Pie chart showing loaded chunk share across Iris-managed worlds."),
       rendererSummaryEntry("iris-biome-chunk-share-pie-map", "Pie chart showing chunk-share distribution across biomes in the map world."),
       rendererSummaryEntry("plugin-event-impact-pie-map", "Pie chart showing rolling plugin event-impact share over time."),
@@ -39,6 +42,9 @@ public final class MapMessages {
       rendererDetail("tick-spike-origin-replay-map", "Hotter colors indicate more pressure in the sampled chunk."),
       rendererDetail("iris-generation-pressure-overlay", "Hotter colors indicate more pressure in the sampled chunk."),
       rendererDetail("adapt-runtime-pressure-overlay", "Hotter colors indicate more pressure in the sampled chunk."),
+      rendererDetail("animus-runtime-pressure-overlay", "Hotter colors indicate more pressure in the sampled chunk."),
+      rendererDetail("animus-cost-share-pie-map", "Each slice is one subsystem's rolling server-thread time in ms per second, as reported by Animus."),
+      rendererDetail("animus-network-list-map", "Rows rank packet kinds by bytes per second; the footer shows total packets per second and the busiest player."),
       rendererDetail("iris-metrics", "Monitors: managed worlds, live engines, loaded chunks, entities, generation rate, and failures."),
       rendererDetail("adapt-metrics", "Monitors: session load, ability throughput, policy latency."),
       rendererDetail("react-metrics", "Monitors: TPS, tick ms, incident score, jobs queue, scheduler backlog."),
@@ -392,6 +398,7 @@ public final class MapMessages {
   public static final TextKey COLUMN_COST = render("column_cost", "Cost");
   public static final TextKey COLUMN_CALLS = render("column_calls", "Calls");
   public static final TextKey COLUMN_OPS = render("column_ops", "Ops");
+  public static final TextKey COLUMN_BANDWIDTH = render("column_bandwidth", "B/s");
   public static final TextKey ROWS_SHOWN = render("rows_shown", "{shown}/{total}");
   public static final TextKey TOTAL_COST = render("total_cost", "{value} ms/s");
   public static final TextKey MORE_ITEMS = render("more_items", "+{count} more");
@@ -444,6 +451,7 @@ public final class MapMessages {
     builder.add(COLUMN_COST);
     builder.add(COLUMN_CALLS);
     builder.add(COLUMN_OPS);
+    builder.add(COLUMN_BANDWIDTH);
     builder.add(ROWS_SHOWN);
     builder.add(TOTAL_COST);
     builder.add(MORE_ITEMS);

@@ -24,6 +24,7 @@ public final class TaxonomyMessages {
   public static final TextKey GROUP_GLOSS = TextKey.of("taxonomy.group.gloss", "Gloss Integration");
   public static final TextKey GROUP_HIDDENORE = TextKey.of("taxonomy.group.hiddenore", "HiddenOre Integration");
   public static final TextKey GROUP_BILETOOLS = TextKey.of("taxonomy.group.biletools", "BileTools Integration");
+  public static final TextKey GROUP_ANIMUS = TextKey.of("taxonomy.group.animus", "Animus Integration");
   public static final TextKey GROUP_PLUGINS = TextKey.of("taxonomy.group.plugins", "Plugin Costs");
   public static final TextKey GROUP_REACT = TextKey.of("taxonomy.group.react", "React Integration");
   public static final TextKey GROUP_CORE = TextKey.of("taxonomy.group.core", "React Core");
@@ -68,6 +69,7 @@ public final class TaxonomyMessages {
     builder.add(GROUP_GLOSS);
     builder.add(GROUP_HIDDENORE);
     builder.add(GROUP_BILETOOLS);
+    builder.add(GROUP_ANIMUS);
     builder.add(GROUP_PLUGINS);
     builder.add(GROUP_REACT);
     builder.add(GROUP_CORE);

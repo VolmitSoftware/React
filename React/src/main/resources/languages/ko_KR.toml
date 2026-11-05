@@ -954,6 +954,15 @@ summary = "활성화 후 부하 제한이 작동할 수 있기까지의 유예 �
 impact = "값이 낮을수록 유휴 플레이어를 더 빨리 감지하고, 높을수록 오버헤드가 줄어듭니다."
 summary = "AFK 시야 축소의 주 평가 간격(밀리초)."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimuscostsharepiemap]
+description = "Animus 비용 비율 원형 지도 기능 설정."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusnetworklistmap]
+description = "Animus 네트워크 목록 지도 기능 설정."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusruntimepressureoverlay]
+description = "Animus 런타임 부하 오버레이 기능 설정. 이 기능은 서버 동작을 지속적으로 모니터링하고 실행 중에 보호 장치를 적용합니다."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase]
 description = "청크 히트맵 기반 기능 설정. 이 기능은 서버 동작을 지속적으로 모니터링하고 실행 중에 보호 장치를 적용합니다."
 
@@ -3504,6 +3513,9 @@ sampler = "현재, 최소, 최대 값을 보여주는 실시간 그래프."
 adapt_ability_impact_list_map = "행은 최근 60초 동안 측정한 콜백 비용 순으로 정렬됩니다. cb/m은 집계된 콜백 실행 횟수이며, 직접 예약된 백그라운드 작업은 이 지도에 포함되지 않습니다."
 adapt_metrics = "모니터: 세션 부하, 능력 처리량, 정책 지연."
 adapt_runtime_pressure_overlay = "더 뜨거운 색상은 측정된 청크에 더 많은 압력을 나타냅니다."
+animus_cost_share_pie_map = "각 조각은 Animus가 보고한 한 하위 시스템의 최근 서버 스레드 시간(초당 ms)입니다."
+animus_network_list_map = "행은 초당 바이트 수로 패킷 종류를 정렬합니다. 바닥글에는 초당 총 패킷 수와 가장 바쁜 플레이어가 표시됩니다."
+animus_runtime_pressure_overlay = "더 뜨거운 색상은 측정된 청크에 더 많은 압력을 나타냅니다."
 chunk_load_gen_cost_map = "더 뜨거운 색상은 측정된 청크에 더 많은 압력을 나타냅니다."
 chunk_sampler_map = "더 뜨거운 색상은 측정된 청크에 더 많은 압력을 나타냅니다."
 entity_pressure_heatmap = "더 뜨거운 색상은 측정된 청크에 더 많은 압력을 나타냅니다."
@@ -3703,6 +3715,7 @@ wormholes_wire_in = "Wormholes 와이어 수신"
 wormholes_wire_out = "Wormholes 와이어 송신"
 
 [gui.map.render]
+column_bandwidth = "B/s"
 column_calls = "호출"
 column_cost = "비용"
 column_name = "이름"
@@ -3714,6 +3727,7 @@ total_cost = "{value} ms/s"
 
 [gui.map.scope_tag]
 adapt = "ADAPT"
+animus = "ANIMUS"
 biletools = "BILETOOLS"
 core = "CORE"
 gloss = "GLOSS"
@@ -3728,6 +3742,9 @@ adapt_ability_impact_list_map = "측정된 이벤트, 틱, 보호된 콜백 실�
 adapt_fallback = "{name}용 Adapt 통합 렌더러."
 adapt_metrics = "세션 부하, 분당 능력 작업 수, 월드 정책 지연에 대한 Adapt 통합 패널."
 adapt_runtime_pressure_overlay = "세션 부하와 가드 검사의 실측 시간 예산을 사용하는 Adapt 압력 오버레이입니다."
+animus_cost_share_pie_map = "측정된 NPC 서버 스레드 비용에서 각 Animus 하위 시스템이 차지하는 비율을 보여 주는 원형 차트입니다."
+animus_network_list_map = "Animus NPC 패킷 종류를 송신 대역폭 순으로 정렬합니다."
+animus_runtime_pressure_overlay = "하위 시스템 부하와 측정된 NPC 서버 스레드 비용을 사용하는 Animus 부하 오버레이입니다."
 chunk_load_gen_cost_map = "로드/생성 속도와 ms 부하를 이용한 로드 및 생성 비용 청크 히트맵."
 chunk_sampler_map = "현재 위치 주변 React 관찰 비용의 청크 히트맵."
 entity_pressure_heatmap = "엔티티 부하의 청크 히트맵. 더 뜨거운 청크일수록 몹이나 아이템 부하가 더 큽니다."
@@ -3969,6 +3986,15 @@ no_activity = "Adapt 능력 활동 없음"
 top_value = "TOP {timing} ms/m"
 use_abilities = "능력을 사용하면 차트가 채워집니다"
 
+[renderer.animus]
+bandwidth = "{value} B/s"
+no_traffic = "Animus NPC 트래픽 없음"
+packet_rate = "{value} pk/s"
+player_peak = "플레이어당 최대 {value} B/s"
+traffic_hint = "플레이어가 NPC를 보는 동안 트래픽이 표시됩니다"
+unavailable = "Animus 지표를 사용할 수 없음"
+update_hint = "React 지표를 게시하려면 Animus를 업데이트하세요"
+
 [renderer.heatmap]
 no_activity = "근처에 활동 없음"
 quiet = "한산"
@@ -4090,6 +4116,7 @@ viewer_unavailable = "뷰어 사용 불가"
 [renderer.pie.unit]
 chunks = "청크"
 impact = "영향"
+ms_per_second = "ms/s"
 
 [renderer.plugin]
 no_impact = "플러그인 이벤트 영향 데이터 없음"
@@ -4122,6 +4149,9 @@ warn = "경고"
 adapt_callback_cost = "Adapt 콜백 비용"
 adapt_metrics = "Adapt 지표"
 adapt_pressure = "Adapt 부하"
+animus_cost_share = "Animus 비용 비율"
+animus_network = "Animus 네트워크"
+animus_pressure = "Animus 부하"
 biletools_metrics = "BileTools 지표"
 biome_chunk_share = "바이옴 청크 점유"
 chunk_cost_heat = "청크 비용 열"
@@ -4230,6 +4260,7 @@ world = "월드 및 블록"
 
 [taxonomy.group]
 adapt = "Adapt 통합"
+animus = "Animus 통합"
 biletools = "BileTools 통합"
 chunks = "청크 & 월드"
 core = "React 코어"

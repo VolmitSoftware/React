@@ -573,6 +573,9 @@ public final class ReactMapGUI {
     if (normalizedId.startsWith("biletools-")) {
       return ReactLanguage.plain(TaxonomyMessages.GROUP_BILETOOLS);
     }
+    if (normalizedId.startsWith("animus-")) {
+      return ReactLanguage.plain(TaxonomyMessages.GROUP_ANIMUS);
+    }
     if (normalizedId.startsWith("react-")) {
       return ReactLanguage.plain(TaxonomyMessages.GROUP_REACT);
     }
@@ -600,6 +603,9 @@ public final class ReactMapGUI {
     }
     if (normalizedId.startsWith("biletools-")) {
       return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_BILETOOLS);
+    }
+    if (normalizedId.startsWith("animus-")) {
+      return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_ANIMUS);
     }
     if (normalizedId.startsWith("react-")) {
       return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_REACT);
@@ -631,6 +637,9 @@ public final class ReactMapGUI {
     }
     if (normalizedId.startsWith("biletools-")) {
       return rendererGroup(6, TaxonomyMessages.GROUP_BILETOOLS, Material.LIME_DYE);
+    }
+    if (normalizedId.startsWith("animus-")) {
+      return rendererGroup(7, TaxonomyMessages.GROUP_ANIMUS, Material.ARMOR_STAND);
     }
 
     if (containsAny(normalizedId, "tick", "tps", "mspt", "incident", "spike")) {

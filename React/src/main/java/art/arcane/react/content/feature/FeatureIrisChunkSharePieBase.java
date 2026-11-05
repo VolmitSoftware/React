@@ -510,7 +510,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
     return slices.isEmpty() ? null : slices.get(slices.size() - 1);
   }
 
-  private String compact(long value) {
+  protected String compact(long value) {
     if (value >= 1_000_000L) {
       return Form.f(value / 1_000_000D, 1) + "m";
     }
