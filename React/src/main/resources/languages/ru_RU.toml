@@ -954,6 +954,15 @@ summary = "Льготный период после активации, до к�
 impact = "Более низкие значения обнаруживают простаивающих игроков раньше; более высокие значения уменьшают накладные расходы."
 summary = "Основной интервал оценки для сброса дальности неактивных игроков в миллисекундах."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimuscostsharepiemap]
+description = "Конфигурация функции «Круговая карта доли затрат Animus»."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusnetworklistmap]
+description = "Конфигурация функции «Карта списка сети Animus»."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusruntimepressureoverlay]
+description = "Конфигурация функции «Оверлей нагрузки времени выполнения Animus». Эта функция постоянно отслеживает поведение сервера и применяет ограничения во время работы."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase]
 description = "Конфигурация функции «Базовая тепловая карта чанков». Эта функция постоянно отслеживает поведение сервера и применяет ограничения во время работы."
 
@@ -3504,6 +3513,9 @@ sampler = "Живой график с текущими, минимальными
 adapt_ability_impact_list_map = "Строки ранжируются по измеренной за последние 60 секунд стоимости обратных вызовов; cb/m — число выполненных учтённых обратных вызовов, а напрямую запланированная фоновая работа в эту карту не входит."
 adapt_metrics = "Мониторы: загрузка сеанса, пропускная способность способностей, задержка политик."
 adapt_runtime_pressure_overlay = "Более тёплые цвета означают большую нагрузку в измеренном чанке."
+animus_cost_share_pie_map = "Каждый сектор — скользящее время серверного потока одной подсистемы в мс в секунду по данным Animus."
+animus_network_list_map = "Строки ранжируют типы пакетов по байтам в секунду; в нижней строке показаны общее число пакетов в секунду и самый нагруженный игрок."
+animus_runtime_pressure_overlay = "Более тёплые цвета означают большую нагрузку в измеренном чанке."
 chunk_load_gen_cost_map = "Более тёплые цвета означают большую нагрузку в измеренном чанке."
 chunk_sampler_map = "Более тёплые цвета означают большую нагрузку в измеренном чанке."
 entity_pressure_heatmap = "Более тёплые цвета означают большую нагрузку в измеренном чанке."
@@ -3703,6 +3715,7 @@ wormholes_wire_in = "Wormholes Входящий трафик"
 wormholes_wire_out = "Wormholes Исходящий трафик"
 
 [gui.map.render]
+column_bandwidth = "Б/с"
 column_calls = "Вызовы"
 column_cost = "Затраты"
 column_name = "Имя"
@@ -3714,6 +3727,7 @@ total_cost = "{value} мс/с"
 
 [gui.map.scope_tag]
 adapt = "ADAPT"
+animus = "ANIMUS"
 biletools = "BILETOOLS"
 core = "ЯДРО"
 gloss = "GLOSS"
@@ -3728,6 +3742,9 @@ adapt_ability_impact_list_map = "Ранжирует способности Adapt
 adapt_fallback = "Интеграционное средство отрисовки Adapt для {name}."
 adapt_metrics = "Интеграционная панель Adapt: загрузка сеансов, операции способностей в минуту и задержка мировой политики."
 adapt_runtime_pressure_overlay = "Слой нагрузки с учётом Adapt, использующий загрузку сеансов и измеренный бюджет времени защитных проверок."
+animus_cost_share_pie_map = "Круговая диаграмма доли каждой подсистемы Animus в измеренной стоимости NPC в серверном потоке."
+animus_network_list_map = "Ранжирует типы пакетов NPC Animus по исходящей пропускной способности."
+animus_runtime_pressure_overlay = "Оверлей нагрузки Animus на основе нагрузки подсистем и измеренной стоимости NPC в серверном потоке."
 chunk_load_gen_cost_map = "Тепловая карта чанков по стоимости загрузки и генерации с учётом скорости загрузки/генерации и нагрузки в мс."
 chunk_sampler_map = "Тепловая карта чанков по стоимости наблюдателя React вокруг вашей текущей позиции."
 entity_pressure_heatmap = "Тепловая карта нагрузки сущностей по чанкам; более тёплые чанки несут более тяжёлую нагрузку от мобов или предметов."
@@ -3969,6 +3986,15 @@ no_activity = "Нет активности способностей Adapt"
 top_value = "ТОП {timing} мс/м"
 use_abilities = "Используйте способности для заполнения этой диаграммы"
 
+[renderer.animus]
+bandwidth = "{value} Б/с"
+no_traffic = "Нет трафика NPC Animus"
+packet_rate = "{value} пак/с"
+player_peak = "Макс. {value} Б/с на игрока"
+traffic_hint = "Трафик появляется, пока игроки видят NPC"
+unavailable = "Метрики Animus недоступны"
+update_hint = "Обновите Animus, чтобы публиковать метрики React"
+
 [renderer.heatmap]
 no_activity = "Нет активности поблизости"
 quiet = "тихо"
@@ -4090,6 +4116,7 @@ viewer_unavailable = "Зритель недоступен"
 [renderer.pie.unit]
 chunks = "чанков"
 impact = "влияние"
+ms_per_second = "мс/с"
 
 [renderer.plugin]
 no_impact = "Нет данных о влиянии событий плагинов"
@@ -4122,6 +4149,9 @@ warn = "ВНИМАНИЕ"
 adapt_callback_cost = "Adapt Стоимость обратных вызовов"
 adapt_metrics = "Adapt Метрики"
 adapt_pressure = "Adapt Давление"
+animus_cost_share = "Доля затрат Animus"
+animus_network = "Сеть Animus"
+animus_pressure = "Animus Давление"
 biletools_metrics = "BileTools Метрики"
 biome_chunk_share = "Доля чанков по биомам"
 chunk_cost_heat = "Тепло стоимости чанков"
@@ -4230,6 +4260,7 @@ world = "Мир и блоки"
 
 [taxonomy.group]
 adapt = "Интеграция с Adapt"
+animus = "Интеграция с Animus"
 biletools = "Интеграция с BileTools"
 chunks = "Чанки и мир"
 core = "Ядро React"

@@ -11,8 +11,10 @@ import java.util.Locale;
 
 public final class IntegrationCapabilitySupport {
   private static final List<String> INTEGRATION_PLUGIN_IDS = List.of(
-      "iris", "adapt", "wormholes", "gloss", "hiddenore", "biletools"
+      "iris", "adapt", "wormholes", "gloss", "hiddenore", "biletools", "animus"
   );
+  // Integrations that report only through the public ReactMetricSource API: present once the source is declared.
+  private static final List<String> PUBLISHED_SOURCE_PLUGIN_IDS = List.of("animus");
 
   private IntegrationCapabilitySupport() {
   }
@@ -38,6 +40,9 @@ public final class IntegrationCapabilitySupport {
   }
 
   public static boolean isCapabilityPresent(IntegrationController controller, String capability) {
+    if (PUBLISHED_SOURCE_PLUGIN_IDS.contains(normalize(capability))) {
+      return hasCapability(controller, capability);
+    }
     return hasCapability(controller, capability) || isPluginInstalled(capability);
   }
 
@@ -49,6 +54,10 @@ public final class IntegrationCapabilitySupport {
 
     if (ReactMetrics.accepting(normalized)) {
       return true;
+    }
+
+    if (PUBLISHED_SOURCE_PLUGIN_IDS.contains(normalized)) {
+      return false;
     }
 
     if (controller != null) {

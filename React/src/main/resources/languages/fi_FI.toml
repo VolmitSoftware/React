@@ -954,6 +954,15 @@ summary = "Aktivoinnin jälkeinen lisäaika, ennen kuin paineportaikko voi kytke
 impact = "Pienemmät arvot havaitsevat joutilaat pelaajat nopeammin; suuremmat arvot vähentävät kuormaa."
 summary = "afk view shedding: pääarviointiväli millisekunteina."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimuscostsharepiemap]
+description = "Animus Cost Share Pie Map -ominaisuuden asetukset."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusnetworklistmap]
+description = "Animus Network List Map -ominaisuuden asetukset."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusruntimepressureoverlay]
+description = "Ominaisuuden Animus Runtime Pressure Overlay asetukset. Tämä ominaisuus seuraa palvelimen toimintaa jatkuvasti ja soveltaa suojarajoituksia ajon aikana."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase]
 description = "Ominaisuuden Chunk Heatmap Base asetukset. Tämä ominaisuus seuraa palvelimen toimintaa jatkuvasti ja soveltaa suojarajoituksia ajon aikana."
 
@@ -3504,6 +3513,9 @@ sampler = "Reaaliaikainen kaavio nykyisillä, pienimmillä ja suurimmilla arvoil
 adapt_ability_impact_list_map = "Rivit järjestetään viimeisen 60 sekunnin mitatun takaisinkutsukustannuksen mukaan; cb/m laskee katetut takaisinkutsujen suoritukset, ja suoraan ajoitettu taustatyö on tämän kartan ulkopuolella."
 adapt_metrics = "Seuraa: istuntokuormaa, kykyjen läpimenoa ja käytäntöviivettä."
 adapt_runtime_pressure_overlay = "Kuumemmat värit osoittavat suurempaa painetta mitatussa chunkissa."
+animus_cost_share_pie_map = "Jokainen sektori on yhden alijärjestelmän liukuva palvelinsäikeen aika millisekunteina sekunnissa Animus-lisäosan ilmoittamana."
+animus_network_list_map = "Rivit järjestävät pakettityypit tavujen mukaan sekunnissa; alatunniste näyttää pakettien kokonaismäärän sekunnissa ja kuormittavimman pelaajan."
+animus_runtime_pressure_overlay = "Kuumemmat värit osoittavat suurempaa painetta mitatussa chunkissa."
 chunk_load_gen_cost_map = "Kuumemmat värit osoittavat suurempaa painetta mitatussa chunkissa."
 chunk_sampler_map = "Kuumemmat värit osoittavat suurempaa painetta mitatussa chunkissa."
 entity_pressure_heatmap = "Kuumemmat värit osoittavat suurempaa painetta mitatussa chunkissa."
@@ -3703,6 +3715,7 @@ wormholes_wire_in = "Wormholes Saapuva liikenne"
 wormholes_wire_out = "Wormholes Lähtevä liikenne"
 
 [gui.map.render]
+column_bandwidth = "B/s"
 column_calls = "Kutsut"
 column_cost = "Kustannus"
 column_name = "Nimi"
@@ -3714,6 +3727,7 @@ total_cost = "{value} ms/s"
 
 [gui.map.scope_tag]
 adapt = "ADAPT"
+animus = "ANIMUS"
 biletools = "BILETOOLS"
 core = "YDIN"
 gloss = "GLOSS"
@@ -3728,6 +3742,9 @@ adapt_ability_impact_list_map = "Järjestää Adapt-kyvyt mitatun tapahtuman, ti
 adapt_fallback = "Adapt-integraation renderöijä: {name}."
 adapt_metrics = "Adapt-integraatiopaneeli istuntokuormalle, kykytoiminnoille/min ja maailmakäytännön viiveelle."
 adapt_runtime_pressure_overlay = "Adapt-painepeite, joka käyttää istuntokuormaa ja suojatarkistusten mitattua ajoitusbudjettia."
+animus_cost_share_pie_map = "Ympyräkaavio, joka näyttää kunkin Animus-alijärjestelmän osuuden NPC-hahmojen mitatusta palvelinsäikeen kustannuksesta."
+animus_network_list_map = "Järjestää Animus-NPC-pakettityypit lähtevän kaistanleveyden mukaan."
+animus_runtime_pressure_overlay = "Animus-tietoinen painepeite, joka käyttää alijärjestelmien painetta ja NPC-hahmojen mitattua palvelinsäikeen kustannusta."
 chunk_load_gen_cost_map = "Chunk-lämpökartta lataus- ja generointikustannuksista lataus-/generointinopeuden ja ms-paineen perusteella."
 chunk_sampler_map = "Chunk-lämpökartta Reactin tarkkailijakustannuksesta nykyisen sijaintisi ympärillä."
 entity_pressure_heatmap = "Chunk-lämpökartta entiteettipaineesta; kuumemmissa chunkeissa on raskaampi mobi- tai esinekuorma."
@@ -3969,6 +3986,15 @@ no_activity = "Ei Adapt-kykyaktiivisuutta"
 top_value = "TOP {timing} ms/m"
 use_abilities = "Käytä kykyjä täyttääksesi tämän kaavion"
 
+[renderer.animus]
+bandwidth = "{value} B/s"
+no_traffic = "Ei Animus-NPC-liikennettä"
+packet_rate = "{value} pk/s"
+player_peak = "Enintään {value} B/s pelaajaa kohden"
+traffic_hint = "Liikenne näkyy, kun pelaajat katsovat NPC-hahmoja"
+unavailable = "Animus-mittarit eivät ole saatavilla"
+update_hint = "Päivitä Animus, jotta se julkaisee React-mittarit"
+
 [renderer.heatmap]
 no_activity = "Ei toimintaa lähistöllä"
 quiet = "hiljaista"
@@ -4090,6 +4116,7 @@ viewer_unavailable = "Näyttö ei saatavilla"
 [renderer.pie.unit]
 chunks = "chunkit"
 impact = "vaikutus"
+ms_per_second = "ms/s"
 
 [renderer.plugin]
 no_impact = "Ei lisäosan tapahtumavaikutustietoja"
@@ -4122,6 +4149,9 @@ warn = "VAROIT."
 adapt_callback_cost = "Adapt: takaisinkutsukulu"
 adapt_metrics = "Adapt-mittarit"
 adapt_pressure = "Adapt Paine"
+animus_cost_share = "Animus-kustannusosuus"
+animus_network = "Animus-verkko"
+animus_pressure = "Animus Paine"
 biletools_metrics = "BileTools Mittarit"
 biome_chunk_share = "Biomin chunk-osuus"
 chunk_cost_heat = "Chunk-kustannuslämpö"
@@ -4230,6 +4260,7 @@ world = "Maailma ja lohkot"
 
 [taxonomy.group]
 adapt = "Adapt-integraatio"
+animus = "Animus-integraatio"
 biletools = "BileTools-integraatio"
 chunks = "Chunkit ja maailma"
 core = "React-ydin"

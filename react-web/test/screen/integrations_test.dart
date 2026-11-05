@@ -39,6 +39,7 @@ ServerSnapshot _fakeSnapshotWithIntegrations() {
     _sample('adapt-ability-ops', 7.0),
     _sample('adapt-session-load', 0.3),
     _sample('adapt-world-policy-latency', 2.1),
+    _sample('animus-npcs-active', 25.0, name: 'Active NPCs'),
     _sample('biletools-reloads', 3.0, name: 'Reloads'),
     _sample('gloss-holograms', 8.0, name: 'Holograms'),
     _sample('hiddenore-drops', 4.0, name: 'Drops'),
@@ -94,6 +95,7 @@ void main() {
           groups.keys,
           orderedEquals(<String>[
             'Adapt',
+            'Animus',
             'BileTools',
             'Gloss',
             'HiddenOre',

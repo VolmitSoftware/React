@@ -69,6 +69,9 @@ public final class RendererMessages {
   public static final TextKey TITLE_IRIS_PRESSURE = title("iris_pressure", "Iris Pressure");
   public static final TextKey TITLE_HOPPER_THROUGHPUT = title("hopper_throughput", "Hopper Throughput");
   public static final TextKey TITLE_CHUNK_LOAD_GEN_COST = title("chunk_load_gen_cost", "Chunk Load/Gen Cost");
+  public static final TextKey TITLE_ANIMUS_COST_SHARE = title("animus_cost_share", "Animus Cost Share");
+  public static final TextKey TITLE_ANIMUS_NETWORK = title("animus_network", "Animus Network");
+  public static final TextKey TITLE_ANIMUS_PRESSURE = title("animus_pressure", "Animus Pressure");
 
   public static final TextKey METRIC_TPS = metric("tps", "TPS");
   public static final TextKey METRIC_TICK = metric("tick", "Tick");
@@ -188,6 +191,7 @@ public final class RendererMessages {
   public static final TextKey PIE_TOTAL = key("pie.total", "Total: {total} {unit}");
   public static final TextKey PIE_UNIT_CHUNKS = key("pie.unit.chunks", "chunks");
   public static final TextKey PIE_UNIT_IMPACT = key("pie.unit.impact", "impact");
+  public static final TextKey PIE_UNIT_MS_PER_SECOND = key("pie.unit.ms_per_second", "ms/s");
   public static final TextKey PIE_UNKNOWN = key("pie.unknown", "Unknown");
   public static final TextKey PIE_OTHER = key("pie.other", "Other");
   public static final TextKey ADAPT_MEASURED_UNAVAILABLE = key("adapt.measured_unavailable", "Measured callback data unavailable");
@@ -195,6 +199,13 @@ public final class RendererMessages {
   public static final TextKey ADAPT_NO_ACTIVITY = key("adapt.no_activity", "No Adapt ability activity");
   public static final TextKey ADAPT_USE_ABILITIES = key("adapt.use_abilities", "Use abilities to populate this chart");
   public static final TextKey ADAPT_TOP_VALUE = key("adapt.top_value", "TOP {timing} ms/m");
+  public static final TextKey ANIMUS_UNAVAILABLE = key("animus.unavailable", "Animus metrics unavailable");
+  public static final TextKey ANIMUS_UPDATE_HINT = key("animus.update_hint", "Update Animus to publish React metrics");
+  public static final TextKey ANIMUS_NO_TRAFFIC = key("animus.no_traffic", "No Animus NPC traffic");
+  public static final TextKey ANIMUS_TRAFFIC_HINT = key("animus.traffic_hint", "Traffic appears while players view NPCs");
+  public static final TextKey ANIMUS_BANDWIDTH = key("animus.bandwidth", "{value} B/s");
+  public static final TextKey ANIMUS_PACKET_RATE = key("animus.packet_rate", "{value} pk/s");
+  public static final TextKey ANIMUS_PLAYER_PEAK = key("animus.player_peak", "Max {value} B/s per player");
   public static final TextKey PLUGIN_NO_IMPACT = key("plugin.no_impact", "No plugin event impact data");
   public static final TextKey PLUGIN_WAIT_FOR_DATA = key("plugin.wait_for_data", "Open this map for a few seconds");
   public static final TextKey SAMPLER_LOW_VALUE = key("sampler.low_value", "L {value}");
@@ -215,7 +226,8 @@ public final class RendererMessages {
       TITLE_PLUGIN_IMPACT, TITLE_WORLD_CHUNK_SHARE, TITLE_PLUGIN_IMPACT_SHARE, TITLE_BIOME_CHUNK_SHARE,
       TITLE_CHUNK_COST_HEAT, TITLE_ADAPT_PRESSURE, TITLE_REDSTONE_ACTIVITY, TITLE_ENTITY_PRESSURE,
       TITLE_PLAYER_IMPACT, TITLE_TICK_SPIKE_REPLAY, TITLE_IRIS_PRESSURE, TITLE_HOPPER_THROUGHPUT,
-      TITLE_CHUNK_LOAD_GEN_COST, METRIC_TPS, METRIC_TICK, METRIC_INCIDENT, METRIC_JOBS, METRIC_BACKLOG,
+      TITLE_CHUNK_LOAD_GEN_COST, TITLE_ANIMUS_COST_SHARE, TITLE_ANIMUS_NETWORK, TITLE_ANIMUS_PRESSURE,
+      METRIC_TPS, METRIC_TICK, METRIC_INCIDENT, METRIC_JOBS, METRIC_BACKLOG,
       METRIC_SESSION, METRIC_ABILITY_MODE, METRIC_ALL_PER_TICK, METRIC_POLICY, METRIC_PORTALS,
       METRIC_PROJECTING, METRIC_OBSERVERS, METRIC_RENDER, METRIC_TRAFFIC, METRIC_ENTITIES, METRIC_TRAVEL,
       METRIC_WORLDS, METRIC_ACTIVE, METRIC_CHUNKS, METRIC_CHUNK_RATE, METRIC_GENERATED, METRIC_FAILED,
@@ -238,9 +250,10 @@ public final class RendererMessages {
       METRIC_WATCHED_JARS, METRIC_DIRTY_PLUGINS, METRIC_RELOADS, METRIC_LAST_RELOAD, METRIC_REMOTE_SLAVE,
       UNKNOWN_RENDERER_UNAVAILABLE, UNKNOWN_MAP_WAS, UNKNOWN_BOUND, UNKNOWN_MISSING,
       UNKNOWN_RESELECT_COMMAND, UNKNOWN_RESELECT, HEATMAP_NO_ACTIVITY, HEATMAP_QUIET,
-      PIE_VIEWER_UNAVAILABLE, PIE_NO_DATA, PIE_TOTAL, PIE_UNIT_CHUNKS, PIE_UNIT_IMPACT, PIE_UNKNOWN,
-      PIE_OTHER, ADAPT_MEASURED_UNAVAILABLE, ADAPT_GUARD_ONLY, ADAPT_NO_ACTIVITY, ADAPT_USE_ABILITIES,
-      ADAPT_TOP_VALUE, PLUGIN_NO_IMPACT, PLUGIN_WAIT_FOR_DATA,
+      PIE_VIEWER_UNAVAILABLE, PIE_NO_DATA, PIE_TOTAL, PIE_UNIT_CHUNKS, PIE_UNIT_IMPACT, PIE_UNIT_MS_PER_SECOND,
+      PIE_UNKNOWN, PIE_OTHER, ADAPT_MEASURED_UNAVAILABLE, ADAPT_GUARD_ONLY, ADAPT_NO_ACTIVITY, ADAPT_USE_ABILITIES,
+      ADAPT_TOP_VALUE, ANIMUS_UNAVAILABLE, ANIMUS_UPDATE_HINT, ANIMUS_NO_TRAFFIC, ANIMUS_TRAFFIC_HINT,
+      ANIMUS_BANDWIDTH, ANIMUS_PACKET_RATE, ANIMUS_PLAYER_PEAK, PLUGIN_NO_IMPACT, PLUGIN_WAIT_FOR_DATA,
       SAMPLER_LOW_VALUE, SAMPLER_HIGH_VALUE
   );
   private static final Map<String, TextKey> HEALTH_KEYS = Map.ofEntries(
@@ -294,7 +307,10 @@ public final class RendererMessages {
       Map.entry("tick-spike-origin-replay-map", TITLE_TICK_SPIKE_REPLAY),
       Map.entry("iris-generation-pressure-overlay", TITLE_IRIS_PRESSURE),
       Map.entry("hopper-container-throughput-map", TITLE_HOPPER_THROUGHPUT),
-      Map.entry("chunk-load-gen-cost-map", TITLE_CHUNK_LOAD_GEN_COST)
+      Map.entry("chunk-load-gen-cost-map", TITLE_CHUNK_LOAD_GEN_COST),
+      Map.entry("animus-cost-share-pie-map", TITLE_ANIMUS_COST_SHARE),
+      Map.entry("animus-network-list-map", TITLE_ANIMUS_NETWORK),
+      Map.entry("animus-runtime-pressure-overlay", TITLE_ANIMUS_PRESSURE)
   );
 
   private RendererMessages() {

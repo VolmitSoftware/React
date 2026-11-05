@@ -954,6 +954,15 @@ summary = "Etkinleştirmeden sonra baskı kademesinin devreye girebilmesi için 
 impact = "Düşük değerler boştaki oyuncuları daha erken algılar; yüksek değerler yükü azaltır."
 summary = "AFK görüş mesafesi azaltma için milisaniye cinsinden ana değerlendirme aralığı."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimuscostsharepiemap]
+description = "Animus Maliyet Payı Pasta Haritası özelliği için yapılandırma."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusnetworklistmap]
+description = "Animus Ağ Listesi Haritası özelliği için yapılandırma."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusruntimepressureoverlay]
+description = "Animus Çalışma Zamanı Baskı Katmanı özelliği için yapılandırma. Bu özellik sunucu davranışını sürekli izler ve çalışma sırasında korumalar uygular."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase]
 description = "Chunk Isı Haritası Tabanı özelliği için yapılandırma. Bu özellik sunucu davranışını sürekli izler ve çalışma sırasında korumalar uygular."
 
@@ -3504,6 +3513,9 @@ sampler = "Geçerli, asgari ve azami değerlerle canlı grafik."
 adapt_ability_impact_list_map = "Satırlar, 60 saniyelik kayan ölçülmüş geri çağrı maliyetine göre sıralanır; cb/m kapsanan geri çağrı yürütmelerini sayar, doğrudan zamanlanan arka plan işleri bu haritanın dışındadır."
 adapt_metrics = "Monitörler: oturum yükü, yetenek işleme hacmi, politika gecikmesi."
 adapt_runtime_pressure_overlay = "Daha sıcak renkler, ölçülen chunk'ta daha fazla baskı olduğunu gösterir."
+animus_cost_share_pie_map = "Her dilim, Animus'un bildirdiği şekilde bir alt sistemin saniye başına ms cinsinden kayan sunucu iş parçacığı süresidir."
+animus_network_list_map = "Satırlar paket türlerini saniye başına bayta göre sıralar; alt bilgi saniye başına toplam paketi ve en yoğun oyuncuyu gösterir."
+animus_runtime_pressure_overlay = "Daha sıcak renkler, ölçülen chunk'ta daha fazla baskı olduğunu gösterir."
 chunk_load_gen_cost_map = "Daha sıcak renkler, ölçülen chunk'ta daha fazla baskı olduğunu gösterir."
 chunk_sampler_map = "Daha sıcak renkler, ölçülen chunk'ta daha fazla baskı olduğunu gösterir."
 entity_pressure_heatmap = "Daha sıcak renkler, ölçülen chunk'ta daha fazla baskı olduğunu gösterir."
@@ -3703,6 +3715,7 @@ wormholes_wire_in = "Wormholes Gelen Trafik"
 wormholes_wire_out = "Wormholes Giden Trafik"
 
 [gui.map.render]
+column_bandwidth = "B/s"
 column_calls = "Çağrılar"
 column_cost = "Maliyet"
 column_name = "Ad"
@@ -3714,6 +3727,7 @@ total_cost = "{value} ms/s"
 
 [gui.map.scope_tag]
 adapt = "ADAPT"
+animus = "ANIMUS"
 biletools = "BILETOOLS"
 core = "CORE"
 gloss = "GLOSS"
@@ -3728,6 +3742,9 @@ adapt_ability_impact_list_map = "Adapt yeteneklerini ölçülen olay, tik ve kor
 adapt_fallback = "{name} için Adapt entegrasyon çizicisi."
 adapt_metrics = "Oturum yükü, dakikadaki yetenek işlemleri ve dünya politikası gecikmesi için Adapt entegrasyon paneli."
 adapt_runtime_pressure_overlay = "Oturum yükünü ve koruma denetimlerinin ölçülmüş zaman bütçesini kullanan Adapt baskı katmanı."
+animus_cost_share_pie_map = "Her Animus alt sisteminin NPC'lerin ölçülen sunucu iş parçacığı maliyetindeki payını gösteren pasta grafik."
+animus_network_list_map = "Animus NPC paket türlerini giden bant genişliğine göre sıralar."
+animus_runtime_pressure_overlay = "Alt sistem baskısını ve NPC'lerin ölçülen sunucu iş parçacığı maliyetini kullanan Animus baskı katmanı."
 chunk_load_gen_cost_map = "Yükleme/üretim hızı ve ms baskısına dayalı yükleme ve üretim maliyetinin chunk ısı haritası."
 chunk_sampler_map = "Geçerli konumunuz çevresindeki React gözlemci maliyetinin chunk ısı haritası."
 entity_pressure_heatmap = "Varlık baskısının chunk ısı haritası; daha sıcak chunk'lar daha ağır mob veya eşya yükü taşır."
@@ -3969,6 +3986,15 @@ no_activity = "Adapt yetenek etkinliği yok"
 top_value = "EN ÇOK {timing} ms/dk"
 use_abilities = "Bu grafiği doldurmak için yetenekleri kullanın"
 
+[renderer.animus]
+bandwidth = "{value} B/s"
+no_traffic = "Animus NPC trafiği yok"
+packet_rate = "{value} pk/s"
+player_peak = "Oyuncu başına en fazla {value} B/s"
+traffic_hint = "Oyuncular NPC'leri gördüğünde trafik görünür"
+unavailable = "Animus metrikleri kullanılamıyor"
+update_hint = "React metriklerini yayınlamak için Animus'u güncelleyin"
+
 [renderer.heatmap]
 no_activity = "Yakınlarda faaliyet yok"
 quiet = "Sessiz"
@@ -4090,6 +4116,7 @@ viewer_unavailable = "Görüntüleyici kullanılamıyor"
 [renderer.pie.unit]
 chunks = "chunk'lar"
 impact = "etki"
+ms_per_second = "ms/s"
 
 [renderer.plugin]
 no_impact = "Eklenti olay etkisi verisi yok"
@@ -4122,6 +4149,9 @@ warn = "UYARI"
 adapt_callback_cost = "Adapt Geri Çağrı Maliyeti"
 adapt_metrics = "Adapt Ölçümleri"
 adapt_pressure = "Adapt Baskı"
+animus_cost_share = "Animus Maliyet Payı"
+animus_network = "Animus Ağı"
+animus_pressure = "Animus Baskı"
 biletools_metrics = "BileTools Ölçümleri"
 biome_chunk_share = "Biyom Chunk Payı"
 chunk_cost_heat = "Chunk Maliyet Isısı"
@@ -4230,6 +4260,7 @@ world = "Dünya ve Bloklar"
 
 [taxonomy.group]
 adapt = "Adapt Entegrasyonu"
+animus = "Animus Entegrasyonu"
 biletools = "BileTools Entegrasyonu"
 chunks = "Chunk'lar ve Dünya"
 core = "React Çekirdeği"

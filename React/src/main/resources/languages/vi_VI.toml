@@ -954,6 +954,15 @@ summary = "Khoảng thời gian châm chước sau khi kích hoạt, trước kh
 impact = "Giá trị thấp hơn phát hiện người chơi nhàn rỗi sớm hơn; giá trị cao hơn giảm chi phí."
 summary = "Khoảng thời gian đánh giá chính của giảm tầm nhìn khi AFK, tính bằng mili giây."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimuscostsharepiemap]
+description = "Cấu hình cho tính năng Bản đồ tròn tỷ trọng chi phí Animus."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusnetworklistmap]
+description = "Cấu hình cho tính năng Bản đồ danh sách mạng Animus."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusruntimepressureoverlay]
+description = "Cấu hình cho tính năng Lớp phủ áp lực thời gian chạy Animus. Tính năng này liên tục giám sát hành vi của máy chủ và áp dụng các rào chắn trong thời gian chạy."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase]
 description = "Cấu hình cho tính năng Nền bản đồ nhiệt chunk. Tính năng này liên tục giám sát hành vi của máy chủ và áp dụng các rào chắn trong thời gian chạy."
 
@@ -3504,6 +3513,9 @@ sampler = "Đồ thị trực tiếp với giá trị hiện tại, tối thiể
 adapt_ability_impact_list_map = "Các hàng xếp hạng chi phí callback đo được trong 60 giây gần nhất; cb/m đếm số lần thực thi callback được bao gồm, còn công việc nền được lên lịch trực tiếp nằm ngoài bản đồ này."
 adapt_metrics = "Giám sát: tải phiên, thông lượng khả năng, độ trễ chính sách."
 adapt_runtime_pressure_overlay = "Màu sắc nóng hơn cho thấy áp lực cao hơn trong chunk được đo."
+animus_cost_share_pie_map = "Mỗi lát là thời gian luồng máy chủ cuộn của một hệ thống con, tính bằng ms mỗi giây, theo báo cáo của Animus."
+animus_network_list_map = "Các hàng xếp hạng loại gói tin theo byte mỗi giây; chân trang hiển thị tổng số gói tin mỗi giây và người chơi bận nhất."
+animus_runtime_pressure_overlay = "Màu sắc nóng hơn cho thấy áp lực cao hơn trong chunk được đo."
 chunk_load_gen_cost_map = "Màu sắc nóng hơn cho thấy áp lực cao hơn trong chunk được đo."
 chunk_sampler_map = "Màu sắc nóng hơn cho thấy áp lực cao hơn trong chunk được đo."
 entity_pressure_heatmap = "Màu sắc nóng hơn cho thấy áp lực cao hơn trong chunk được đo."
@@ -3703,6 +3715,7 @@ wormholes_wire_in = "Wormholes Dữ liệu nhận về"
 wormholes_wire_out = "Wormholes Dữ liệu gửi đi"
 
 [gui.map.render]
+column_bandwidth = "B/s"
 column_calls = "Lượt gọi"
 column_cost = "Chi phí"
 column_name = "Tên"
@@ -3714,6 +3727,7 @@ total_cost = "{value} ms/s"
 
 [gui.map.scope_tag]
 adapt = "ADAPT"
+animus = "ANIMUS"
 biletools = "BILETOOLS"
 core = "CORE"
 gloss = "GLOSS"
@@ -3728,6 +3742,9 @@ adapt_ability_impact_list_map = "Xếp hạng khả năng Adapt theo thời gian
 adapt_fallback = "Bộ kết xuất tích hợp Adapt cho {name}."
 adapt_metrics = "Bảng tích hợp Adapt cho tải phiên, thao tác khả năng/phút và độ trễ chính sách thế giới."
 adapt_runtime_pressure_overlay = "Lớp phủ áp lực Adapt sử dụng tải phiên và ngân sách thời gian đo được của kiểm tra bảo vệ."
+animus_cost_share_pie_map = "Biểu đồ tròn cho thấy tỷ trọng của từng hệ thống con Animus trong chi phí luồng máy chủ đo được của NPC."
+animus_network_list_map = "Xếp hạng các loại gói tin NPC của Animus theo băng thông gửi đi."
+animus_runtime_pressure_overlay = "Lớp phủ áp lực Animus dùng áp lực của các hệ thống con và chi phí luồng máy chủ đo được của NPC."
 chunk_load_gen_cost_map = "Bản đồ nhiệt chunk về chi phí tải và tạo, dùng tốc độ tải/tạo và áp lực ms."
 chunk_sampler_map = "Bản đồ nhiệt chunk về chi phí quan sát của React quanh vị trí hiện tại của bạn."
 entity_pressure_heatmap = "Bản đồ nhiệt chunk về áp lực thực thể; chunk càng nóng càng nhiều quái hoặc vật phẩm."
@@ -3969,6 +3986,15 @@ no_activity = "Không có hoạt động khả năng Adapt"
 top_value = "TOP {timing} ms/m"
 use_abilities = "Dùng khả năng để có dữ liệu biểu đồ"
 
+[renderer.animus]
+bandwidth = "{value} B/s"
+no_traffic = "Không có lưu lượng NPC của Animus"
+packet_rate = "{value} pk/s"
+player_peak = "Tối đa {value} B/s mỗi người chơi"
+traffic_hint = "Lưu lượng xuất hiện khi người chơi nhìn thấy NPC"
+unavailable = "Không có số liệu Animus"
+update_hint = "Hãy cập nhật Animus để xuất bản số liệu React"
+
 [renderer.heatmap]
 no_activity = "Không có hoạt động gần đây"
 quiet = "yên lặng"
@@ -4090,6 +4116,7 @@ viewer_unavailable = "Bộ xem không sẵn sàng"
 [renderer.pie.unit]
 chunks = "chunk"
 impact = "tác động"
+ms_per_second = "ms/s"
 
 [renderer.plugin]
 no_impact = "Không có dữ liệu tác động sự kiện plugin"
@@ -4122,6 +4149,9 @@ warn = "WARN"
 adapt_callback_cost = "Adapt Chi phí gọi lại"
 adapt_metrics = "Adapt Chỉ số"
 adapt_pressure = "Adapt Áp lực"
+animus_cost_share = "Tỷ trọng chi phí Animus"
+animus_network = "Mạng Animus"
+animus_pressure = "Animus Áp lực"
 biletools_metrics = "BileTools Chỉ số"
 biome_chunk_share = "Chunk theo biome"
 chunk_cost_heat = "Nhiệt chi phí chunk"
@@ -4230,6 +4260,7 @@ world = "Thế giới & Khối"
 
 [taxonomy.group]
 adapt = "Tích hợp Adapt"
+animus = "Tích hợp Animus"
 biletools = "Tích hợp BileTools"
 chunks = "Chunk & Thế giới"
 core = "Lõi React"

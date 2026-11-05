@@ -954,6 +954,15 @@ summary = "激活后压力档才允许介入之前的宽限期（秒）。"
 impact = "值越低，越早检测到闲置玩家；值越高，开销越低。"
 summary = "Afk 视距削减的主要评估间隔（毫秒）。"
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimuscostsharepiemap]
+description = "Animus 开销占比饼图地图功能的配置。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusnetworklistmap]
+description = "Animus 网络列表地图功能的配置。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusruntimepressureoverlay]
+description = "Animus 运行时压力叠加层功能的配置。此功能会持续监控服务器行为，并在运行时应用保护限制。"
+
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase]
 description = "区块热力图基础功能的配置。此功能会持续监控服务器行为，并在运行时应用保护限制。"
 
@@ -3504,6 +3513,9 @@ sampler = "显示当前值、最小值和最大值的实时图表。"
 adapt_ability_impact_list_map = "各行按滚动 60 秒内测得的回调开销排名；cb/m 统计被覆盖的回调执行次数，而直接调度的后台工作不在此地图范围内。"
 adapt_metrics = "监控: 会话负载、能力吞吐量、策略延迟。"
 adapt_runtime_pressure_overlay = "颜色越热，表示已采样区块中的压力越大。"
+animus_cost_share_pie_map = "每个扇区表示 Animus 报告的单个子系统的滚动服务器线程时间（每秒毫秒数）。"
+animus_network_list_map = "各行按每秒字节数对数据包类型排序；页脚显示每秒数据包总数和流量最高的玩家。"
+animus_runtime_pressure_overlay = "颜色越热，表示已采样区块中的压力越大。"
 chunk_load_gen_cost_map = "颜色越热，表示已采样区块中的压力越大。"
 chunk_sampler_map = "颜色越热，表示已采样区块中的压力越大。"
 entity_pressure_heatmap = "颜色越热，表示已采样区块中的压力越大。"
@@ -3703,6 +3715,7 @@ wormholes_wire_in = "Wormholes 入站流量"
 wormholes_wire_out = "Wormholes 出站流量"
 
 [gui.map.render]
+column_bandwidth = "B/s"
 column_calls = "调用"
 column_cost = "开销"
 column_name = "名称"
@@ -3714,6 +3727,7 @@ total_cost = "{value} ms/s"
 
 [gui.map.scope_tag]
 adapt = "ADAPT"
+animus = "ANIMUS"
 biletools = "BILETOOLS"
 core = "核心"
 gloss = "GLOSS"
@@ -3728,6 +3742,9 @@ adapt_ability_impact_list_map = "按测得的事件、游戏刻和受保护回�
 adapt_fallback = "用于 {name} 的 Adapt 集成渲染器。"
 adapt_metrics = "Adapt 集成面板，显示会话负载、每分钟能力操作数和世界策略延迟。"
 adapt_runtime_pressure_overlay = "使用会话负载和守卫检查实测计时预算的 Adapt 压力叠加层。"
+animus_cost_share_pie_map = "饼图，显示每个 Animus 子系统在实测 NPC 服务器线程开销中的占比。"
+animus_network_list_map = "按出站带宽对 Animus NPC 数据包类型排序。"
+animus_runtime_pressure_overlay = "基于子系统压力和实测 NPC 服务器线程开销的 Animus 压力叠加层。"
 chunk_load_gen_cost_map = "区块热力图，使用加载/生成速率和毫秒压力显示加载与生成开销。"
 chunk_sampler_map = "当前位置周围 React 观察器开销的区块热力图。"
 entity_pressure_heatmap = "实体压力的区块热力图；颜色越热的区块，生物或物品负载越重。"
@@ -3969,6 +3986,15 @@ no_activity = "没有 Adapt 能力活动"
 top_value = "TOP {timing} ms/m"
 use_abilities = "使用能力以填充此图表"
 
+[renderer.animus]
+bandwidth = "{value} B/s"
+no_traffic = "没有 Animus NPC 流量"
+packet_rate = "{value} pk/s"
+player_peak = "每名玩家最高 {value} B/s"
+traffic_hint = "玩家看到 NPC 时会出现流量"
+unavailable = "Animus 指标不可用"
+update_hint = "请更新 Animus 以发布 React 指标"
+
 [renderer.heatmap]
 no_activity = "附近没有活动"
 quiet = "安静"
@@ -4090,6 +4116,7 @@ viewer_unavailable = "查看器不可用"
 [renderer.pie.unit]
 chunks = "区块"
 impact = "影响"
+ms_per_second = "ms/s"
 
 [renderer.plugin]
 no_impact = "没有插件事件影响数据"
@@ -4122,6 +4149,9 @@ warn = "警告"
 adapt_callback_cost = "Adapt 回调开销"
 adapt_metrics = "Adapt 指标"
 adapt_pressure = "Adapt 压力"
+animus_cost_share = "Animus 开销占比"
+animus_network = "Animus 网络"
+animus_pressure = "Animus 压力"
 biletools_metrics = "BileTools 指标"
 biome_chunk_share = "生物群系区块占比"
 chunk_cost_heat = "区块开销热度"
@@ -4230,6 +4260,7 @@ world = "世界与方块"
 
 [taxonomy.group]
 adapt = "Adapt 集成"
+animus = "Animus 集成"
 biletools = "BileTools 集成"
 chunks = "区块与世界"
 core = "React 核心"

@@ -110,7 +110,8 @@ public class MapController extends TickedObject implements IController, Listener
       "wormholes",
       "gloss",
       "hiddenore",
-      "biletools"
+      "biletools",
+      "animus"
   );
   private static final AtomicLong rendererPipeOwnerSequence = new AtomicLong();
   @ConfigDoc(value = "Main maintenance cadence for map repair logic in milliseconds.", impact = "Lower values repair inventories and item-frames sooner after reload; higher values reduce maintenance overhead.")
@@ -3076,6 +3077,9 @@ public class MapController extends TickedObject implements IController, Listener
     }
     if (normalizedRendererId.startsWith("biletools-")) {
       return "BileTools";
+    }
+    if (normalizedRendererId.startsWith("animus-")) {
+      return "Animus";
     }
     if (normalizedRendererId.startsWith("react-")) {
       return "React";

@@ -954,6 +954,15 @@ summary = "Atidėjimo laikotarpis po aktyvavimo, kol slėgio pakopa gali įsijun
 impact = "Mažesnės reikšmės greičiau aptinka neaktyvius žaidėjus; didesnės reikšmės sumažina apkrovą."
 summary = "Pagrindinis AFK matymo atstumo mažinimo vertinimo intervalas milisekundėmis."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimuscostsharepiemap]
+description = "Animus sąnaudų dalies skritulinio žemėlapio funkcijos konfigūracija."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusnetworklistmap]
+description = "Animus tinklo sąrašo žemėlapio funkcijos konfigūracija."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusruntimepressureoverlay]
+description = "Animus vykdymo apkrovos perdangos funkcijos konfigūracija. Ši funkcija nuolat stebi serverio elgseną ir vykdymo metu taiko apsaugas."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase]
 description = "Pasaulio segmentų šilumos žemėlapio pagrindo funkcijos konfigūracija. Ši funkcija nuolat stebi serverio elgseną ir vykdymo metu taiko apsaugas."
 
@@ -3504,6 +3513,9 @@ sampler = "Tiesioginis grafikas su dabartine, mažiausia ir didžiausia reikšm�
 adapt_ability_impact_list_map = "Eilutės reitinguojamos pagal slenkančių 60 sekundžių išmatuotas atgalinio iškvietimo sąnaudas; cb/m skaičiuoja apimtus atgalinių iškvietimų vykdymus, o tiesiogiai suplanuotas foninis darbas į šį žemėlapį nepatenka."
 adapt_metrics = "Stebima: sesijų apkrova, gebėjimų pralaidumas, politikos delsa."
 adapt_runtime_pressure_overlay = "Karštesnės spalvos rodo didesnę apkrovą išmatuotame pasaulio segmente."
+animus_cost_share_pie_map = "Kiekviena dalis yra vieno posistemio slenkantis serverio gijos laikas ms per sekundę, kaip praneša Animus."
+animus_network_list_map = "Eilutės rikiuoja paketų tipus pagal baitus per sekundę; poraštėje rodomas bendras paketų skaičius per sekundę ir labiausiai apkrautas žaidėjas."
+animus_runtime_pressure_overlay = "Karštesnės spalvos rodo didesnę apkrovą išmatuotame pasaulio segmente."
 chunk_load_gen_cost_map = "Karštesnės spalvos rodo didesnę apkrovą išmatuotame pasaulio segmente."
 chunk_sampler_map = "Karštesnės spalvos rodo didesnę apkrovą išmatuotame pasaulio segmente."
 entity_pressure_heatmap = "Karštesnės spalvos rodo didesnę apkrovą išmatuotame pasaulio segmente."
@@ -3703,6 +3715,7 @@ wormholes_wire_in = "Wormholes Gaunami duomenys"
 wormholes_wire_out = "Wormholes Siunčiami duomenys"
 
 [gui.map.render]
+column_bandwidth = "B/s"
 column_calls = "Iškvietimai"
 column_cost = "Kaina"
 column_name = "Pavadinimas"
@@ -3714,6 +3727,7 @@ total_cost = "{value} ms/s"
 
 [gui.map.scope_tag]
 adapt = "ADAPT"
+animus = "ANIMUS"
 biletools = "BILETOOLS"
 core = "CORE"
 gloss = "GLOSS"
@@ -3728,6 +3742,9 @@ adapt_ability_impact_list_map = "Reitinguoja Adapt gebėjimus pagal išmatuotą 
 adapt_fallback = "Adapt integracijos piešiklis: {name}."
 adapt_metrics = "Adapt integracijos skydelis: sesijų apkrova, gebėjimų operacijos per minutę ir pasaulio politikos delsa."
 adapt_runtime_pressure_overlay = "Adapt apkrovos perdanga, naudojanti sesijos apkrovą ir išmatuotą apsaugos patikrų laiko biudžetą."
+animus_cost_share_pie_map = "Skritulinė diagrama, rodanti kiekvieno Animus posistemio dalį išmatuotose NPC serverio gijos sąnaudose."
+animus_network_list_map = "Rikiuoja Animus NPC paketų tipus pagal išeinantį pralaidumą."
+animus_runtime_pressure_overlay = "Animus apkrovos perdanga, naudojanti posistemių apkrovą ir išmatuotas NPC serverio gijos sąnaudas."
 chunk_load_gen_cost_map = "Pasaulio segmentų šilumos žemėlapis, rodantis įkėlimo ir generavimo sąnaudas pagal įkėlimo/generavimo dažnį ir ms apkrovą."
 chunk_sampler_map = "Pasaulio segmentų šilumos žemėlapis, rodantis React stebėjimo sąnaudas aplink jūsų dabartinę padėtį."
 entity_pressure_heatmap = "Pasaulio segmentų šilumos žemėlapis, rodantis objektų apkrovą; karštesni pasaulio segmentai turi didesnę mobų ar daiktų apkrovą."
@@ -3969,6 +3986,15 @@ no_activity = "Nėra Adapt gebėjimų aktyvumo"
 top_value = "TOP {timing} ms/m"
 use_abilities = "Naudokite gebėjimus, kad ši diagrama užsipildytų"
 
+[renderer.animus]
+bandwidth = "{value} B/s"
+no_traffic = "Nėra Animus NPC srauto"
+packet_rate = "{value} pk/s"
+player_peak = "Daugiausia {value} B/s vienam žaidėjui"
+traffic_hint = "Srautas atsiranda, kai žaidėjai mato NPC"
+unavailable = "Animus metrikos nepasiekiamos"
+update_hint = "Atnaujinkite Animus, kad būtų skelbiamos React metrikos"
+
 [renderer.heatmap]
 no_activity = "Šalia nevykdoma jokia veikla"
 quiet = "ramu"
@@ -4090,6 +4116,7 @@ viewer_unavailable = "Peržiūra nepasiekiama"
 [renderer.pie.unit]
 chunks = "segmentai"
 impact = "poveikis"
+ms_per_second = "ms/s"
 
 [renderer.plugin]
 no_impact = "Nėra įskiepio įvykio poveikio duomenų"
@@ -4122,6 +4149,9 @@ warn = "WARN"
 adapt_callback_cost = "Adapt iškvietimų sąnaudos"
 adapt_metrics = "Adapt rodikliai"
 adapt_pressure = "Adapt apkrova"
+animus_cost_share = "Animus sąnaudų dalis"
+animus_network = "Animus tinklas"
+animus_pressure = "Animus apkrova"
 biletools_metrics = "BileTools rodikliai"
 biome_chunk_share = "Biomų segmentų dalys"
 chunk_cost_heat = "Segmentų sąnaudų šiluma"
@@ -4230,6 +4260,7 @@ world = "Pasaulis ir blokai"
 
 [taxonomy.group]
 adapt = "Adapt integracija"
+animus = "Animus integracija"
 biletools = "BileTools integracija"
 chunks = "Pasaulio segmentai ir pasaulis"
 core = "React branduolys"

@@ -74,6 +74,9 @@ public final class ReactGuiTaxonomy {
     if (normalizedId.startsWith("biletools-")) {
       return group(5, TaxonomyMessages.GROUP_BILETOOLS, Material.LIME_DYE);
     }
+    if (normalizedId.startsWith("animus-")) {
+      return group(7, TaxonomyMessages.GROUP_ANIMUS, Material.ARMOR_STAND);
+    }
     if (normalizedId.startsWith("plugin-")) {
       return group(6, TaxonomyMessages.GROUP_PLUGINS, Material.NOTE_BLOCK);
     }

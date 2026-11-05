@@ -954,6 +954,15 @@ summary = "Schonfrist nach der Aktivierung, bevor die Belastungsstufe einsetzen 
 impact = "Niedrigere Werte erkennen inaktive Spieler früher; höhere Werte verringern den Overhead."
 summary = "Hauptauswertungsintervall für Afk View Shedding in Millisekunden."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimuscostsharepiemap]
+description = "Konfiguration der Funktion Animus Cost Share Pie Map."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusnetworklistmap]
+description = "Konfiguration der Funktion Animus Network List Map."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusruntimepressureoverlay]
+description = "Konfiguration der Funktion Animus Runtime Pressure Overlay. Diese Funktion überwacht kontinuierlich das Verhalten des Servers und wendet während der Laufzeit Leitplanken an."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase]
 description = "Konfiguration der Funktion Chunk Heatmap Base. Diese Funktion überwacht kontinuierlich das Verhalten des Servers und wendet während der Laufzeit Leitplanken an."
 
@@ -3504,6 +3513,9 @@ sampler = "Live-Graph mit aktuellen, minimalen und maximalen Werten."
 adapt_ability_impact_list_map = "Zeilen reihen die gemessenen Callback-Kosten der gleitenden letzten 60 Sekunden; cb/m zählt erfasste Callback-Ausführungen, während direkt eingeplante Hintergrundarbeit nicht in dieser Karte enthalten ist."
 adapt_metrics = "Monitore: Sitzungslast, Fähigkeitsdurchsatz, Richtlinienlatenz."
 adapt_runtime_pressure_overlay = "Heißere Farben zeigen mehr Belastung im gemessenen Chunk an."
+animus_cost_share_pie_map = "Jedes Segment ist die gleitende Server-Thread-Zeit eines Subsystems in ms pro Sekunde, wie von Animus gemeldet."
+animus_network_list_map = "Zeilen reihen Pakettypen nach Bytes pro Sekunde; die Fußzeile zeigt die Gesamtpakete pro Sekunde und den aktivsten Spieler."
+animus_runtime_pressure_overlay = "Heißere Farben zeigen mehr Belastung im gemessenen Chunk an."
 chunk_load_gen_cost_map = "Heißere Farben zeigen mehr Belastung im gemessenen Chunk an."
 chunk_sampler_map = "Heißere Farben zeigen mehr Belastung im gemessenen Chunk an."
 entity_pressure_heatmap = "Heißere Farben zeigen mehr Belastung im gemessenen Chunk an."
@@ -3703,6 +3715,7 @@ wormholes_wire_in = "Wormholes Eingehender Verkehr"
 wormholes_wire_out = "Wormholes Ausgehender Verkehr"
 
 [gui.map.render]
+column_bandwidth = "B/s"
 column_calls = "Aufrufe"
 column_cost = "Kosten"
 column_name = "Name"
@@ -3714,6 +3727,7 @@ total_cost = "{value} ms/s"
 
 [gui.map.scope_tag]
 adapt = "ADAPT"
+animus = "ANIMUS"
 biletools = "BILETOOLS"
 core = "CORE"
 gloss = "GLOSS"
@@ -3728,6 +3742,9 @@ adapt_ability_impact_list_map = "Reiht Adapt-Fähigkeiten nach gemessener Ausfü
 adapt_fallback = "Adapt-Integrations-Renderer für {name}."
 adapt_metrics = "Adapt-Integrationspanel für Sitzungslast, Fähigkeits-Ops/Min und Welt-Richtlinienlatenz."
 adapt_runtime_pressure_overlay = "Adapt-bezogene Druckanzeige mit Sitzungslast und gemessenem Zeitbudget für Schutzprüfungen."
+animus_cost_share_pie_map = "Kreisdiagramm mit dem Anteil jedes Animus-Subsystems an den gemessenen NPC-Kosten im Server-Thread."
+animus_network_list_map = "Reiht Animus-NPC-Pakettypen nach ausgehender Bandbreite."
+animus_runtime_pressure_overlay = "Animus-bezogene Druckanzeige mit Subsystemdruck und gemessenen NPC-Kosten im Server-Thread."
 chunk_load_gen_cost_map = "Chunk-Heatmap der Lade- und Generierungskosten anhand von Lade-/Generierungsrate und ms-Belastung."
 chunk_sampler_map = "Chunk-Heatmap der React-Beobachterkosten rund um Ihre aktuelle Position."
 entity_pressure_heatmap = "Chunk-Heatmap der Entitätsbelastung; heißere Chunks tragen eine höhere Mob- oder Gegenstandslast."
@@ -3969,6 +3986,15 @@ no_activity = "Keine Adapt-Fähigkeitsaktivität"
 top_value = "TOP {timing} ms/m"
 use_abilities = "Verwenden Sie Fähigkeiten, um dieses Diagramm zu füllen"
 
+[renderer.animus]
+bandwidth = "{value} B/s"
+no_traffic = "Kein Animus-NPC-Datenverkehr"
+packet_rate = "{value} pk/s"
+player_peak = "Max. {value} B/s pro Spieler"
+traffic_hint = "Datenverkehr erscheint, während Spieler NPCs sehen"
+unavailable = "Animus-Metriken nicht verfügbar"
+update_hint = "Aktualisieren Sie Animus, damit es React-Metriken veröffentlicht"
+
 [renderer.heatmap]
 no_activity = "Keine Aktivität in der Nähe"
 quiet = "ruhig"
@@ -4090,6 +4116,7 @@ viewer_unavailable = "Viewer nicht verfügbar"
 [renderer.pie.unit]
 chunks = "Chunks"
 impact = "Auswirkungen"
+ms_per_second = "ms/s"
 
 [renderer.plugin]
 no_impact = "Keine Daten zum Plugin-Ereigniseinfluss"
@@ -4122,6 +4149,9 @@ warn = "WARN"
 adapt_callback_cost = "Adapt-Callback-Kosten"
 adapt_metrics = "Adapt Metriken"
 adapt_pressure = "Adapt Druck"
+animus_cost_share = "Animus-Kostenanteil"
+animus_network = "Animus-Netzwerk"
+animus_pressure = "Animus Druck"
 biletools_metrics = "BileTools Metriken"
 biome_chunk_share = "Chunk-Anteil pro Biom"
 chunk_cost_heat = "Chunk-Kostenhitze"
@@ -4230,6 +4260,7 @@ world = "Welt & Blöcke"
 
 [taxonomy.group]
 adapt = "Adapt-Integration"
+animus = "Animus-Integration"
 biletools = "BileTools-Integration"
 chunks = "Chunks & Welt"
 core = "React-Kern"

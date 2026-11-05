@@ -954,6 +954,15 @@ summary = "有効化後、負荷ノッチが作動できるようになるまで
 impact = "値を小さくするとアイドルプレイヤーをより早く検出し、大きくするとオーバーヘッドが減ります。"
 summary = "AFK ビューシェディングの主な評価間隔（ミリ秒）。"
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimuscostsharepiemap]
+description = "Animus コスト割合円グラフマップ機能の設定。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusnetworklistmap]
+description = "Animus ネットワークリストマップ機能の設定。"
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusruntimepressureoverlay]
+description = "Animus ランタイム負荷オーバーレイ機能の設定。この機能はサーバーの動作を継続的に監視し、実行中にガードレールを適用します。"
+
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase]
 description = "チャンクヒートマップベース機能の設定。この機能はサーバーの動作を継続的に監視し、実行中にガードレールを適用します。"
 
@@ -3504,6 +3513,9 @@ sampler = "現在値、最小値、最大値を表示するライブグラフ。
 adapt_ability_impact_list_map = "各行は直近 60 秒のローリング測定によるコールバックコストでランク付けします。cb/m は対象のコールバック実行回数で、直接スケジュールされたバックグラウンド処理はこのマップの対象外です。"
 adapt_metrics = "監視項目: セッション負荷、アビリティのスループット、ポリシーのレイテンシ。"
 adapt_runtime_pressure_overlay = "色が熱いほど、測定されたチャンクの負荷が高いことを示します。"
+animus_cost_share_pie_map = "各スライスは、Animus が報告する 1 つのサブシステムの直近のサーバースレッド時間 (ms/秒) です。"
+animus_network_list_map = "行はパケット種別を毎秒バイト数で並べます。フッターには毎秒の総パケット数と最も負荷の高いプレイヤーが表示されます。"
+animus_runtime_pressure_overlay = "色が熱いほど、測定されたチャンクの負荷が高いことを示します。"
 chunk_load_gen_cost_map = "色が熱いほど、測定されたチャンクの負荷が高いことを示します。"
 chunk_sampler_map = "色が熱いほど、測定されたチャンクの負荷が高いことを示します。"
 entity_pressure_heatmap = "色が熱いほど、測定されたチャンクの負荷が高いことを示します。"
@@ -3703,6 +3715,7 @@ wormholes_wire_in = "Wormholes ワイヤー受信"
 wormholes_wire_out = "Wormholes ワイヤー送信"
 
 [gui.map.render]
+column_bandwidth = "B/s"
 column_calls = "呼び出し"
 column_cost = "コスト"
 column_name = "名前"
@@ -3714,6 +3727,7 @@ total_cost = "{value} ms/s"
 
 [gui.map.scope_tag]
 adapt = "ADAPT"
+animus = "ANIMUS"
 biletools = "BILETOOLS"
 core = "CORE"
 gloss = "GLOSS"
@@ -3728,6 +3742,9 @@ adapt_ability_impact_list_map = "測定したイベント、ティック、保�
 adapt_fallback = "{name} 用の Adapt 統合レンダラー。"
 adapt_metrics = "セッション負荷、アビリティ操作数/分、ワールドポリシーのレイテンシを表示する Adapt 統合パネル。"
 adapt_runtime_pressure_overlay = "セッション負荷とガードチェックの実測時間予算を使用する Adapt 対応の負荷オーバーレイ。"
+animus_cost_share_pie_map = "測定された NPC のサーバースレッドコストに占める、各 Animus サブシステムの割合を示す円グラフ。"
+animus_network_list_map = "Animus の NPC パケット種別を送信帯域幅順に並べます。"
+animus_runtime_pressure_overlay = "サブシステムの負荷と、測定された NPC のサーバースレッドコストを使う Animus 負荷オーバーレイ。"
 chunk_load_gen_cost_map = "読み込み/生成レートと ms 負荷を使った、読み込みと生成コストのチャンクヒートマップ。"
 chunk_sampler_map = "現在位置の周囲における React の観測コストのチャンクヒートマップ。"
 entity_pressure_heatmap = "エンティティ負荷のチャンクヒートマップ。色が熱いチャンクほどモブやアイテムの負荷が重くなります。"
@@ -3969,6 +3986,15 @@ no_activity = "Adapt アビリティの活動なし"
 top_value = "TOP {timing} ms/分"
 use_abilities = "アビリティを使うとグラフに反映されます"
 
+[renderer.animus]
+bandwidth = "{value} B/s"
+no_traffic = "Animus の NPC 通信なし"
+packet_rate = "{value} pk/s"
+player_peak = "プレイヤーあたり最大 {value} B/s"
+traffic_hint = "プレイヤーが NPC を見ている間に通信が表示されます"
+unavailable = "Animus のメトリクスを利用できません"
+update_hint = "React メトリクスを公開するには Animus を更新してください"
+
 [renderer.heatmap]
 no_activity = "近隣のアクティビティなし"
 quiet = "静穏"
@@ -4090,6 +4116,7 @@ viewer_unavailable = "ビューア利用不可"
 [renderer.pie.unit]
 chunks = "チャンク"
 impact = "影響"
+ms_per_second = "ms/s"
 
 [renderer.plugin]
 no_impact = "プラグインイベントの影響データなし"
@@ -4122,6 +4149,9 @@ warn = "警告"
 adapt_callback_cost = "Adapt コールバックコスト"
 adapt_metrics = "Adapt メトリクス"
 adapt_pressure = "Adapt 負荷"
+animus_cost_share = "Animus コスト割合"
+animus_network = "Animus ネットワーク"
+animus_pressure = "Animus 負荷"
 biletools_metrics = "BileTools メトリクス"
 biome_chunk_share = "バイオーム別チャンク割合"
 chunk_cost_heat = "チャンクコストヒート"
@@ -4230,6 +4260,7 @@ world = "ワールド & ブロック"
 
 [taxonomy.group]
 adapt = "Adapt 統合"
+animus = "Animus 統合"
 biletools = "BileTools 統合"
 chunks = "チャンク & ワールド"
 core = "React コア"

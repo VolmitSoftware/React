@@ -954,6 +954,15 @@ summary = "Período de tolerância após a ativação antes de o limite de press
 impact = "Valores mais baixos detetam os jogadores inativos mais cedo; valores mais elevados reduzem a sobrecarga."
 summary = "Intervalo principal de avaliação da redução de visão AFK, em milissegundos."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimuscostsharepiemap]
+description = "Configuração da funcionalidade Mapa circular de partilha de custos do Animus."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusnetworklistmap]
+description = "Configuração da funcionalidade Mapa de lista de rede do Animus."
+
+[config.documentation.annotation.art.arcane.react.content.feature.featureanimusruntimepressureoverlay]
+description = "Configuração da funcionalidade Sobreposição de pressão de execução do Animus. Esta funcionalidade monitoriza continuamente o comportamento do servidor e aplica salvaguardas durante a execução."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase]
 description = "Configuração da funcionalidade Base do mapa de calor de chunks. Esta funcionalidade monitoriza continuamente o comportamento do servidor e aplica salvaguardas durante a execução."
 
@@ -3504,6 +3513,9 @@ sampler = "Gráfico em direto com os valores atual, mínimo e máximo."
 adapt_ability_impact_list_map = "As linhas classificam o custo de callbacks medido numa janela deslizante de 60 segundos; cb/m conta as execuções de callbacks cobertas, enquanto o trabalho em segundo plano agendado diretamente fica fora deste mapa."
 adapt_metrics = "Monitores: carga de sessão, rendimento da capacidade, latência da política."
 adapt_runtime_pressure_overlay = "As cores mais quentes indicam maior pressão no chunk amostrado."
+animus_cost_share_pie_map = "Cada fatia é o tempo móvel da thread do servidor de um subsistema, em ms por segundo, conforme reportado pelo Animus."
+animus_network_list_map = "As linhas classificam os tipos de pacotes por bytes por segundo; o rodapé mostra o total de pacotes por segundo e o jogador com mais tráfego."
+animus_runtime_pressure_overlay = "As cores mais quentes indicam maior pressão no chunk amostrado."
 chunk_load_gen_cost_map = "As cores mais quentes indicam maior pressão no chunk amostrado."
 chunk_sampler_map = "As cores mais quentes indicam maior pressão no chunk amostrado."
 entity_pressure_heatmap = "As cores mais quentes indicam maior pressão no chunk amostrado."
@@ -3703,6 +3715,7 @@ wormholes_wire_in = "Wormholes Entrada de Rede"
 wormholes_wire_out = "Wormholes Saída de Rede"
 
 [gui.map.render]
+column_bandwidth = "B/s"
 column_calls = "Chamadas"
 column_cost = "Custo"
 column_name = "Nome"
@@ -3714,6 +3727,7 @@ total_cost = "{value} ms/s"
 
 [gui.map.scope_tag]
 adapt = "ADAPT"
+animus = "ANIMUS"
 biletools = "BILETOOLS"
 core = "CORE"
 gloss = "GLOSS"
@@ -3728,6 +3742,9 @@ adapt_ability_impact_list_map = "Classifica as habilidades do Adapt pelo tempo d
 adapt_fallback = "Renderizador de integração do Adapt para {name}."
 adapt_metrics = "Painel de integração do Adapt para carga de sessão, operações de habilidades por minuto e latência da política do mundo."
 adapt_runtime_pressure_overlay = "Sobreposição de pressão do Adapt baseada na carga da sessão e no orçamento temporal medido das verificações de proteção."
+animus_cost_share_pie_map = "Gráfico circular com a parte de cada subsistema do Animus no custo medido dos NPC na thread do servidor."
+animus_network_list_map = "Classifica os tipos de pacotes de NPC do Animus por largura de banda de saída."
+animus_runtime_pressure_overlay = "Sobreposição de pressão do Animus que usa a pressão dos subsistemas e o custo medido dos NPC na thread do servidor."
 chunk_load_gen_cost_map = "Mapa de calor de chunks do custo de carga e geração, com base na taxa de carga/geração e na pressão em ms."
 chunk_sampler_map = "Mapa de calor de chunks do custo de observação do React em torno da sua posição atual."
 entity_pressure_heatmap = "Mapa de calor de chunks da pressão de entidades; chunks mais quentes têm maior carga de mobs ou itens."
@@ -3969,6 +3986,15 @@ no_activity = "Sem atividade de habilidades do Adapt"
 top_value = "TOP {timing} ms/m"
 use_abilities = "Usar habilidades para preencher este gráfico"
 
+[renderer.animus]
+bandwidth = "{value} B/s"
+no_traffic = "Sem tráfego de NPC do Animus"
+packet_rate = "{value} pk/s"
+player_peak = "Máx. {value} B/s por jogador"
+traffic_hint = "O tráfego aparece enquanto os jogadores veem NPC"
+unavailable = "Métricas do Animus indisponíveis"
+update_hint = "Atualize o Animus para publicar métricas do React"
+
 [renderer.heatmap]
 no_activity = "Nenhuma atividade próxima"
 quiet = "calmo"
@@ -4090,6 +4116,7 @@ viewer_unavailable = "Visualizador não disponível"
 [renderer.pie.unit]
 chunks = "chunks"
 impact = "impacto"
+ms_per_second = "ms/s"
 
 [renderer.plugin]
 no_impact = "Sem dados de impacto de eventos de plugins"
@@ -4122,6 +4149,9 @@ warn = "AVISO"
 adapt_callback_cost = "Adapt Custo de Retorno de Chamadas"
 adapt_metrics = "Adapt Métricas"
 adapt_pressure = "Adapt Pressão"
+animus_cost_share = "Partilha de custos do Animus"
+animus_network = "Rede do Animus"
+animus_pressure = "Animus Pressão"
 biletools_metrics = "BileTools Métricas"
 biome_chunk_share = "Partilha de chunks por bioma"
 chunk_cost_heat = "Calor de custo de chunks"
@@ -4230,6 +4260,7 @@ world = "Mundo e blocos"
 
 [taxonomy.group]
 adapt = "Adapt Integração"
+animus = "Animus Integração"
 biletools = "BileTools Integração"
 chunks = "Chunks e mundo"
 core = "Núcleo do React"
