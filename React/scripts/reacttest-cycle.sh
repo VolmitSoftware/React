@@ -6,9 +6,9 @@
 # only (never scrapes the console). Env overrides: PLAYERS, DURATION, RESULTS_DIR, BOT_SMOKE.
 set -uo pipefail
 
-MPX="/Users/brianfopiano/Developer/RemoteGit/[Minecraft Server]"
-REACT_JAR="/Users/brianfopiano/Developer/RemoteGit/VolmitSoftware/React/React/build/libs/React v2.2.4 [CraftBukkit] 26.1.2-26.3.jar"
-SMOKE="/Users/brianfopiano/Developer/react-sim/smoke-react.sh"
+MPX="/Users/creepshow/Developer/RemoteGit/VolmitSoftware/ServerMultiplexor"
+REACT_JAR="/Users/creepshow/Developer/RemoteGit/VolmitSoftware/React/React/build/libs/React v2.2.4 [CraftBukkit] 26.1.2-26.3.jar"
+SMOKE="/Users/creepshow/Developer/react-sim/smoke-react.sh"
 INSTANCE="reacttest"
 MC="26.2"
 PORT="25599"

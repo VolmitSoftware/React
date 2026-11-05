@@ -30,3 +30,5 @@ BUILDS/
 AGENTS.md
 
 React/bin/
+
+.claude/
