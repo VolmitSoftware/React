@@ -7,7 +7,7 @@
 set -uo pipefail
 
 MPX="/Users/creepshow/Developer/RemoteGit/VolmitSoftware/ServerMultiplexor"
-REACT_JAR="/Users/creepshow/Developer/RemoteGit/VolmitSoftware/React/React/build/libs/React v2.2.4 [CraftBukkit] 26.1.2-26.3.jar"
+REACT_JAR="/Users/creepshow/Developer/RemoteGit/VolmitSoftware/React/React/build/libs/React v2.2.5 [CraftBukkit] 26.1.2-26.3.jar"
 SMOKE="/Users/creepshow/Developer/react-sim/smoke-react.sh"
 INSTANCE="reacttest"
 MC="26.2"
