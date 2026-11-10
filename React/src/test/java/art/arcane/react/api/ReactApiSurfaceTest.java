@@ -30,8 +30,6 @@ class ReactApiSurfaceTest {
 
   private static final List<String> BANNED_PREFIXES = List.of(
       "art.arcane.volmlib",
-      "art.arcane.chrono",
-      "art.arcane.curse",
       "net.bytebuddy",
       "io.github.slimjar",
       "net.kyori",

@@ -19,7 +19,7 @@
 
 package art.arcane.react.content.tweak;
 
-import art.arcane.chrono.PrecisionStopwatch;
+import art.arcane.volmlib.util.scheduling.PrecisionStopwatch;
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.data.B;

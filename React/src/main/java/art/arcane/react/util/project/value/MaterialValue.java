@@ -19,7 +19,7 @@
 
 package art.arcane.react.util.project.value;
 
-import art.arcane.chrono.PrecisionStopwatch;
+import art.arcane.volmlib.util.scheduling.PrecisionStopwatch;
 import art.arcane.react.React;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.volmlib.util.format.Form;

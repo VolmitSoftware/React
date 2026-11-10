@@ -19,7 +19,7 @@
 
 package art.arcane.react.api.action;
 
-import art.arcane.chrono.PrecisionStopwatch;
+import art.arcane.volmlib.util.scheduling.PrecisionStopwatch;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.ActionController;
 import lombok.Data;

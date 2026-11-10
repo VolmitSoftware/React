@@ -1,6 +1,6 @@
 package art.arcane.react.core.controller;
 
-import art.arcane.chrono.ChronoLatch;
+import art.arcane.volmlib.util.scheduling.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.api.entity.EntityPriority;
 import art.arcane.react.model.ReactConfiguration;

@@ -19,7 +19,7 @@
 
 package art.arcane.react.api.sampler;
 
-import art.arcane.chrono.ChronoLatch;
+import art.arcane.volmlib.util.scheduling.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.util.common.scheduling.J;

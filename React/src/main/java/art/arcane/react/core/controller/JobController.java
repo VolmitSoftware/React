@@ -19,8 +19,8 @@
 
 package art.arcane.react.core.controller;
 
-import art.arcane.chrono.ChronoLatch;
-import art.arcane.chrono.PrecisionStopwatch;
+import art.arcane.volmlib.util.scheduling.ChronoLatch;
+import art.arcane.volmlib.util.scheduling.PrecisionStopwatch;
 import art.arcane.react.React;
 import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.util.common.scheduling.J;

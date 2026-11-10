@@ -103,7 +103,7 @@ class PublishedMetricSamplerTest {
   }
 
   @Test
-  void loadConfigurationIsANoOpSoCurseNeverRewritesThirdPartyMetrics() {
+  void loadConfigurationIsANoOpSoFieldCopyNeverRewritesThirdPartyMetrics() {
     PublishedMetricStore store = new PublishedMetricStore();
     PublishedMetricSampler sampler = sampler(store,
         ReactMetric.gauge(LIVE, "Live Pets", " pets").withIcon(Material.BONE));

@@ -19,7 +19,7 @@
 
 package art.arcane.react.content.sampler;
 
-import art.arcane.chrono.ChronoLatch;
+import art.arcane.volmlib.util.scheduling.ChronoLatch;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;

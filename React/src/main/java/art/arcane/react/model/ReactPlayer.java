@@ -19,7 +19,7 @@
 
 package art.arcane.react.model;
 
-import art.arcane.chrono.ChronoLatch;
+import art.arcane.volmlib.util.scheduling.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.api.monitor.ActionBarMonitor;
 import art.arcane.react.localization.ReactLanguage;

@@ -19,9 +19,6 @@
 
 package art.arcane.react.util.project.registry;
 
-import art.arcane.curse.Curse;
-import art.arcane.curse.model.CursedComponent;
-import art.arcane.curse.model.CursedField;
 import art.arcane.react.React;
 import art.arcane.react.util.project.config.ConfigFileSupport;
 import art.arcane.volmlib.util.format.Form;
@@ -101,15 +98,6 @@ public interface Registered {
   }
 
   private void copyConfigurationFields(Object loadedObject) {
-    CursedComponent loaded = Curse.on(loadedObject);
-    CursedComponent current = Curse.on(this);
-    current.instanceFields().filter(i -> !i.isFinal() && !i.isTransient()).forEach((self) -> {
-      CursedField from = loaded.field(self.field().getName());
-      Object oFrom = from.get();
-
-      if (oFrom != null) {
-        self.set(oFrom);
-      }
-    });
+    ConfigurationFields.copy(loadedObject, this);
   }
 }

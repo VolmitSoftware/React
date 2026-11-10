@@ -19,7 +19,7 @@
 
 package art.arcane.react.content.feature;
 
-import art.arcane.chrono.ChronoLatch;
+import art.arcane.volmlib.util.scheduling.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.feature.ReactFeature;
