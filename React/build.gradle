@@ -222,7 +222,22 @@ dependencies {
     testImplementation('it.unimi.dsi:fastutil:8.5.8')
 }
 
+// Included builds (a local VolmLib) rewrite their jars in place. A build of VolmLib from another
+// checkout during a test run makes the forked JVMs throw NoClassDefFoundError for classes they had
+// not loaded yet, so tests read private copies of those jars.
+Closure<Boolean> includedBuildJar = { File file ->
+    file.name.endsWith('.jar') &&
+            !file.toPath().startsWith(gradle.gradleUserHomeDir.toPath()) &&
+            !file.toPath().startsWith(projectDir.toPath())
+}
+TaskProvider<Sync> snapshotTestLibraries = tasks.register('snapshotTestLibraries', Sync) {
+    from(sourceSets.test.runtimeClasspath.filter(includedBuildJar))
+    into(layout.buildDirectory.dir('test-library-snapshot'))
+}
+
 tasks.named('test', Test).configure {
+    classpath = sourceSets.test.runtimeClasspath.filter { File file -> !includedBuildJar(file) } +
+            fileTree(layout.buildDirectory.dir('test-library-snapshot')) { include('*.jar') }.builtBy(snapshotTestLibraries)
     useJUnitPlatform {
         includeEngines('junit-jupiter', 'jqwik')
     }
