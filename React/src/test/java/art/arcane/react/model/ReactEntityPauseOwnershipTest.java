@@ -363,6 +363,50 @@ class ReactEntityPauseOwnershipTest {
     Assertions.assertTrue(ai.get());
   }
 
+  @Test
+  void stoppingReleaseAbandonsCleanupTheHaltedSchedulerNeverRuns() {
+    AtomicBoolean ai = new AtomicBoolean(true);
+    AtomicReference<Byte> marker = new AtomicReference<>();
+    LivingEntity entity = livingEntity(ai, marker);
+    ArrayList<Runnable> stranded = new ArrayList<>();
+    ReactEntity.requestPause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    Assertions.assertFalse(ai.get());
+
+    try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      scheduling.when(J::isFoliaThreading).thenReturn(true);
+      scheduling.when(() -> J.isOwnedByCurrentRegion(entity)).thenReturn(false);
+      scheduling.when(() -> J.runEntity(
+          Mockito.eq(entity),
+          Mockito.any(Runnable.class),
+          Mockito.eq(0),
+          Mockito.any(Runnable.class)
+      )).thenAnswer(invocation -> {
+        stranded.add(invocation.getArgument(1));
+        return true;
+      });
+      ReactEntity.releasePauseOwner(ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+      Assertions.assertEquals(1, stranded.size());
+      Assertions.assertFalse(ReactEntity.awaitManagedCleanup(0L));
+
+      scheduling.when(J::isServerStopping).thenReturn(true);
+      scheduling.when(() -> J.isOwnedByCurrentRegion(entity)).thenReturn(true);
+      long started = System.nanoTime();
+      ReactEntity.releaseAllManagedState();
+      boolean drained = ReactEntity.awaitManagedCleanup(30_000L);
+      long elapsedMillis = (System.nanoTime() - started) / 1_000_000L;
+
+      Assertions.assertTrue(drained);
+      Assertions.assertTrue(elapsedMillis < 1_000L, "stop waited " + elapsedMillis + "ms on a halted scheduler");
+      Assertions.assertTrue(ai.get());
+      Assertions.assertNull(marker.get());
+      Assertions.assertEquals(1, stranded.size());
+
+      stranded.forEach(Runnable::run);
+      Assertions.assertTrue(ReactEntity.awaitManagedCleanup(0L));
+      Assertions.assertTrue(ai.get());
+    }
+  }
+
   private LivingEntity livingEntity(AtomicBoolean ai, AtomicReference<Byte> marker) {
     PersistentDataContainer container = container(marker);
     LivingEntity entity = Mockito.mock(LivingEntity.class);

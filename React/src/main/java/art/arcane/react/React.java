@@ -629,9 +629,6 @@ public class React extends VolmitPlugin implements ReloadAware {
   private void attachConfiguredBytecodeAgent(boolean enabled) {
     if (enabled && !BytecodeAgent.isInstalled()) {
       BytecodeAgent.install();
-      if (BytecodeAgent.isInstalled()) {
-        info("Bytecode agent attached.");
-      }
     }
   }
 

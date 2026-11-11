@@ -29,6 +29,7 @@ import art.arcane.volmlib.nativelib.monitor.BrewingTickResult;
 import art.arcane.volmlib.nativelib.monitor.FurnaceTickHook;
 import art.arcane.volmlib.nativelib.monitor.FurnaceTickResult;
 import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
+import art.arcane.react.core.bridge.AgentHookSlot;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.core.controller.ObserverController.LoadedChunkTarget;
@@ -135,6 +136,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
   @Getter
   private transient volatile long lastBypassedByPlayer;
   private transient final PressureGate gate = new PressureGate();
+  private transient final AgentHookSlot hookSlot = new AgentHookSlot();
   @Getter
   private transient volatile boolean bridgeActive;
   private transient final AtomicLong skippedFurnaceTicks = new AtomicLong();
@@ -205,9 +207,9 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
   }
 
   private void installBridgeHooks() {
+    bridgeActive = false;
     NativeMonitor bridge = NmsBridges.get();
     if (bridge == null) {
-      bridgeActive = false;
       return;
     }
     FurnaceTickHook furnace = (World world, int x, int y, int z) -> {
@@ -226,9 +228,11 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
       skippedBrewingTicks.incrementAndGet();
       return BrewingTickResult.SKIP;
     };
-    boolean furnaceOk = bridge.installFurnaceTickHook(furnace);
-    boolean brewingOk = bridge.installBrewingTickHook(brewing);
-    bridgeActive = furnaceOk || brewingOk;
+    hookSlot.install(() -> {
+      boolean furnaceOk = bridge.installFurnaceTickHook(furnace);
+      boolean brewingOk = bridge.installBrewingTickHook(brewing);
+      bridgeActive = furnaceOk || brewingOk;
+    });
   }
 
   private boolean shouldRunVanilla(World world, int x, int y, int z) {
@@ -238,10 +242,12 @@ public class FeatureFurnaceBrewBatching extends ReactFeature implements Listener
 
   private void uninstallBridgeHooks() {
     NativeMonitor bridge = NmsBridges.get();
-    if (bridge != null) {
-      bridge.uninstallFurnaceTickHook();
-      bridge.uninstallBrewingTickHook();
-    }
+    hookSlot.release(() -> {
+      if (bridge != null) {
+        bridge.uninstallFurnaceTickHook();
+        bridge.uninstallBrewingTickHook();
+      }
+    });
     bridgeActive = false;
   }
 

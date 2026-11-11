@@ -51,6 +51,9 @@ String volmLibCoordinate = providers.gradleProperty('volmLibCoordinate')
         .orElse('com.github.VolmitSoftware:VolmLib:master-SNAPSHOT')
         .get()
 tasks.named('slimJar').get()
+tasks.named('slimJar') {
+    doFirst { new File(outputDirectory, 'slimjar-resolutions.dat').delete() }
+}
 String languageSourceRepository = providers.gradleProperty('languageSourceRepository').orElse('VolmitSoftware/React').get()
 String languageSourceBranch = providers.gradleProperty('languageSourceBranch').orElse(providers.provider {
     try {

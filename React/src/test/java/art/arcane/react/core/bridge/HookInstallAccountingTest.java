@@ -10,7 +10,9 @@ import art.arcane.volmlib.nativelib.monitor.HopperTickHook;
 import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
 import org.bukkit.World;
+import net.bytebuddy.agent.ByteBuddyAgent;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -20,6 +22,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 class HookInstallAccountingTest {
+
+  @BeforeAll
+  static void attachAgentThatFeatureHooksWaitFor() {
+    ByteBuddyAgent.install();
+  }
 
   @AfterEach
   void cleanupGlobalBridge() {

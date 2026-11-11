@@ -404,6 +404,225 @@ class FeaturePathfinderBudgetLifecycleTest {
     }
   }
 
+  @Test
+  void stoppingDeactivationAbandonsOwnerScansTheHaltedSchedulerNeverRuns() throws Throwable {
+    NavigationState navigation = new NavigationState();
+    FeaturePathfinderBudget feature = configuredFeature(navigation, 1L);
+    setInt(feature, "maxEntitiesSampledPerCycle", 3);
+    Sampler sampler = Mockito.mock(Sampler.class);
+    Mockito.when(sampler.sample()).thenReturn(100D);
+    List<Runnable> queued = new ArrayList<>();
+    for (int i = 0; i < 3; i++) {
+      indexMob(feature, managedMob(new AtomicBoolean(false)));
+    }
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.hasNearbyPlayer(Mockito.any(), Mockito.anyDouble())).thenReturn(false);
+      scheduling.when(J::isFoliaThreading).thenReturn(true);
+      scheduling.when(() -> J.runEntity(
+          Mockito.any(Mob.class),
+          Mockito.any(Runnable.class),
+          Mockito.eq(0),
+          Mockito.any(Runnable.class)
+      )).thenAnswer(invocation -> {
+        queued.add(invocation.getArgument(1));
+        return true;
+      });
+
+      feature.onTick();
+      Assertions.assertEquals(3, queued.size());
+      Assertions.assertEquals(3, ownerScans(feature).get());
+
+      scheduling.when(J::isServerStopping).thenReturn(true);
+      long started = System.nanoTime();
+      feature.onDeactivate();
+      long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+
+      Assertions.assertTrue(elapsedMillis < 1_000L, "stop waited " + elapsedMillis + "ms on a halted scheduler");
+      Assertions.assertEquals(0, ownerScans(feature).get());
+
+      scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Entity.class))).thenReturn(true);
+      queued.forEach(Runnable::run);
+      Assertions.assertEquals(0, ownerScans(feature).get());
+      Assertions.assertEquals(0, navigation.applied.get());
+      Assertions.assertTrue(trackedClaims(feature).isEmpty());
+    }
+  }
+
+  @Test
+  void stoppingDeactivationRestoresStrandedClaimOnTheStoppingThread() throws Throwable {
+    NavigationState navigation = new NavigationState();
+    FeaturePathfinderBudget feature = configuredFeature(navigation, 1L);
+    AtomicBoolean marker = new AtomicBoolean(false);
+    Mob mob = managedMob(marker);
+    List<Runnable> queued = new ArrayList<>();
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      react.when(() -> React.hasNearbyPlayer(Mockito.any(), Mockito.anyDouble())).thenReturn(false);
+      scheduling.when(J::isFoliaThreading).thenReturn(false);
+      manage(feature, mob, 1L);
+      Assertions.assertTrue(marker.get());
+
+      scheduling.when(J::isFoliaThreading).thenReturn(true);
+      scheduling.when(() -> J.isOwnedByCurrentRegion(mob)).thenReturn(false);
+      scheduling.when(() -> J.runEntity(
+          Mockito.eq(mob),
+          Mockito.any(Runnable.class),
+          Mockito.eq(0),
+          Mockito.any(Runnable.class)
+      )).thenAnswer(invocation -> {
+        queued.add(invocation.getArgument(1));
+        return true;
+      });
+      releaseGeneration(feature, 1L);
+      Assertions.assertEquals(1, queued.size());
+      Assertions.assertEquals(1, claimCleanupOperations(feature).get());
+
+      scheduling.when(J::isServerStopping).thenReturn(true);
+      scheduling.when(() -> J.isOwnedByCurrentRegion(mob)).thenReturn(true);
+      long started = System.nanoTime();
+      feature.onDeactivate();
+      long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+
+      Assertions.assertTrue(elapsedMillis < 1_000L, "stop waited " + elapsedMillis + "ms on a halted scheduler");
+      Assertions.assertEquals(1, queued.size());
+      Assertions.assertEquals(1, navigation.reset.get());
+      Assertions.assertFalse(marker.get());
+      Assertions.assertTrue(trackedClaims(feature).isEmpty());
+      Assertions.assertEquals(0, claimCleanupOperations(feature).get());
+
+      queued.forEach(Runnable::run);
+      Assertions.assertEquals(1, navigation.reset.get());
+      Assertions.assertEquals(0, claimCleanupOperations(feature).get());
+    }
+  }
+
+  @Test
+  void stoppingDeactivationForgetsClaimAnotherRegionOwns() throws Throwable {
+    NavigationState navigation = new NavigationState();
+    FeaturePathfinderBudget feature = configuredFeature(navigation, 1L);
+    AtomicBoolean marker = new AtomicBoolean(false);
+    Mob mob = managedMob(marker);
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      react.when(() -> React.hasNearbyPlayer(Mockito.any(), Mockito.anyDouble())).thenReturn(false);
+      scheduling.when(J::isFoliaThreading).thenReturn(false);
+      manage(feature, mob, 1L);
+
+      scheduling.when(J::isFoliaThreading).thenReturn(true);
+      scheduling.when(() -> J.isOwnedByCurrentRegion(mob)).thenReturn(false);
+      scheduling.when(J::isServerStopping).thenReturn(true);
+      long started = System.nanoTime();
+      feature.onDeactivate();
+      long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+
+      Assertions.assertTrue(elapsedMillis < 1_000L, "stop waited " + elapsedMillis + "ms on a halted scheduler");
+      Assertions.assertTrue(trackedClaims(feature).isEmpty());
+      Assertions.assertEquals(0, navigation.reset.get());
+      Assertions.assertTrue(marker.get());
+      scheduling.verify(() -> J.runEntity(
+          Mockito.any(Entity.class),
+          Mockito.any(Runnable.class),
+          Mockito.anyInt(),
+          Mockito.any(Runnable.class)
+      ), Mockito.never());
+    }
+  }
+
+  @Test
+  void runtimeDeactivationWaitsForQueuedOwnerScan() throws Throwable {
+    NavigationState navigation = new NavigationState();
+    FeaturePathfinderBudget feature = configuredFeature(navigation, 1L);
+    setInt(feature, "maxEntitiesSampledPerCycle", 1);
+    Mob mob = managedMob(new AtomicBoolean(false));
+    indexMob(feature, mob);
+    Sampler sampler = Mockito.mock(Sampler.class);
+    Mockito.when(sampler.sample()).thenReturn(100D);
+    AtomicReference<Runnable> operation = new AtomicReference<>();
+    AtomicBoolean ownerRan = new AtomicBoolean(false);
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      scheduling.when(J::isFoliaThreading).thenReturn(true);
+      scheduling.when(() -> J.runEntity(
+          Mockito.eq(mob),
+          Mockito.any(Runnable.class),
+          Mockito.eq(0),
+          Mockito.any(Runnable.class)
+      )).thenAnswer(invocation -> {
+        operation.set(invocation.getArgument(1));
+        return true;
+      });
+
+      feature.onTick();
+      Assertions.assertEquals(1, ownerScans(feature).get());
+      Runnable queued = operation.get();
+      CountDownLatch waiting = new CountDownLatch(1);
+      Thread owner = new Thread(() -> {
+        try {
+          waiting.await(2, TimeUnit.SECONDS);
+          TimeUnit.MILLISECONDS.sleep(100L);
+        } catch (InterruptedException exception) {
+          Thread.currentThread().interrupt();
+        }
+        ownerRan.set(true);
+        queued.run();
+      });
+      owner.start();
+
+      waiting.countDown();
+      feature.onDeactivate();
+
+      Assertions.assertTrue(ownerRan.get());
+      Assertions.assertEquals(0, ownerScans(feature).get());
+      owner.join(2_000L);
+    }
+  }
+
+  @Test
+  void retiredOwnerScanReleasesItsAccounting() throws Throwable {
+    NavigationState navigation = new NavigationState();
+    FeaturePathfinderBudget feature = configuredFeature(navigation, 1L);
+    setInt(feature, "maxEntitiesSampledPerCycle", 2);
+    Sampler sampler = Mockito.mock(Sampler.class);
+    Mockito.when(sampler.sample()).thenReturn(100D);
+    List<Runnable> retired = new ArrayList<>();
+    indexMob(feature, managedMob(new AtomicBoolean(false)));
+    indexMob(feature, managedMob(new AtomicBoolean(false)));
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      scheduling.when(J::isFoliaThreading).thenReturn(true);
+      scheduling.when(() -> J.runEntity(
+          Mockito.any(Mob.class),
+          Mockito.any(Runnable.class),
+          Mockito.eq(0),
+          Mockito.any(Runnable.class)
+      )).thenAnswer(invocation -> {
+        retired.add(invocation.getArgument(3));
+        return true;
+      });
+
+      feature.onTick();
+      Assertions.assertEquals(2, ownerScans(feature).get());
+
+      retired.forEach(Runnable::run);
+      retired.forEach(Runnable::run);
+      Assertions.assertEquals(0, ownerScans(feature).get());
+      Assertions.assertFalse(scanQueued(feature).get());
+
+      long started = System.nanoTime();
+      feature.onDeactivate();
+      Assertions.assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started) < 1_000L);
+    }
+  }
+
   private FeaturePathfinderBudget configuredFeature(NavigationState navigation, long generation) throws Exception {
     FeaturePathfinderBudget feature = new FeaturePathfinderBudget();
     NativeWorldAccess access = Mockito.mock(NativeWorldAccess.class);
@@ -465,6 +684,24 @@ class FeaturePathfinderBudgetLifecycleTest {
     Field field = FeaturePathfinderBudget.class.getDeclaredField("lifecycleGeneration");
     field.setAccessible(true);
     return (AtomicLong) field.get(feature);
+  }
+
+  private AtomicInteger ownerScans(FeaturePathfinderBudget feature) throws Exception {
+    Field field = FeaturePathfinderBudget.class.getDeclaredField("ownerScanOperations");
+    field.setAccessible(true);
+    return (AtomicInteger) field.get(feature);
+  }
+
+  private AtomicInteger claimCleanupOperations(FeaturePathfinderBudget feature) throws Exception {
+    Field field = FeaturePathfinderBudget.class.getDeclaredField("claimCleanupOperations");
+    field.setAccessible(true);
+    return (AtomicInteger) field.get(feature);
+  }
+
+  private void releaseGeneration(FeaturePathfinderBudget feature, long generation) throws Exception {
+    Method method = FeaturePathfinderBudget.class.getDeclaredMethod("releaseGeneration", long.class);
+    method.setAccessible(true);
+    method.invoke(feature, generation);
   }
 
   private AtomicBoolean scanQueued(FeaturePathfinderBudget feature) throws Exception {

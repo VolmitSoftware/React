@@ -62,4 +62,56 @@ class JEntitySchedulingTest {
       Mockito.verify(entity, Mockito.never()).getLocation();
     }
   }
+
+  @Test
+  void stoppingServerRetiresEntityTaskInsteadOfQueueingIt() {
+    Entity entity = Mockito.mock(Entity.class);
+    Server server = Mockito.mock(Server.class);
+    AtomicInteger operations = new AtomicInteger();
+    AtomicInteger retirements = new AtomicInteger();
+
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
+         MockedStatic<FoliaScheduler> folia = Mockito.mockStatic(FoliaScheduler.class)) {
+      bukkit.when(Bukkit::getServer).thenReturn(server);
+      folia.when(() -> FoliaScheduler.isFoliaThreading(server)).thenReturn(true);
+      folia.when(() -> FoliaScheduler.isStopping(server)).thenReturn(true);
+      folia.when(() -> FoliaScheduler.isOwnedByCurrentRegion(entity)).thenReturn(false);
+
+      boolean accepted = J.runEntity(entity, operations::incrementAndGet, 0, retirements::incrementAndGet);
+
+      Assertions.assertFalse(accepted);
+      Assertions.assertEquals(0, operations.get());
+      Assertions.assertEquals(1, retirements.get());
+      folia.verify(() -> FoliaScheduler.runEntity(
+          Mockito.any(),
+          Mockito.any(Entity.class),
+          Mockito.any(Runnable.class),
+          Mockito.anyLong(),
+          Mockito.any()
+      ), Mockito.never());
+    }
+  }
+
+  @Test
+  void stoppingThreadStillRunsTaskForEntityItOwns() {
+    Entity entity = Mockito.mock(Entity.class);
+    Server server = Mockito.mock(Server.class);
+    AtomicInteger operations = new AtomicInteger();
+    AtomicInteger retirements = new AtomicInteger();
+    Mockito.when(entity.isValid()).thenReturn(true);
+
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
+         MockedStatic<FoliaScheduler> folia = Mockito.mockStatic(FoliaScheduler.class)) {
+      bukkit.when(Bukkit::getServer).thenReturn(server);
+      folia.when(() -> FoliaScheduler.isFoliaThreading(server)).thenReturn(true);
+      folia.when(() -> FoliaScheduler.isStopping(server)).thenReturn(true);
+      folia.when(() -> FoliaScheduler.isOwnedByCurrentRegion(entity)).thenReturn(true);
+
+      boolean accepted = J.runEntity(entity, operations::incrementAndGet, 0, retirements::incrementAndGet);
+
+      Assertions.assertTrue(accepted);
+      Assertions.assertEquals(1, operations.get());
+      Assertions.assertEquals(0, retirements.get());
+    }
+  }
 }

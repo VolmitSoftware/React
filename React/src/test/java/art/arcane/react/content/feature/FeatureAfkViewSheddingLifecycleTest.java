@@ -177,6 +177,81 @@ class FeatureAfkViewSheddingLifecycleTest {
   }
 
   @Test
+  void stoppingDeactivationAbandonsRestoreTheHaltedSchedulerNeverRuns() throws Exception {
+    FeatureAfkViewShedding feature = new FeatureAfkViewShedding();
+    EntityController controller = Mockito.mock(EntityController.class);
+    Sampler sampler = Mockito.mock(Sampler.class);
+    Player player = Mockito.mock(Player.class);
+    PlayerMoveEvent moveEvent = Mockito.mock(PlayerMoveEvent.class);
+    UUID playerId = UUID.randomUUID();
+    AtomicInteger distance = new AtomicInteger(12);
+    List<Runnable> queued = new ArrayList<>();
+    List<Runnable> stranded = new ArrayList<>();
+    Mockito.when(controller.getFoliaPlayers()).thenReturn(new Player[]{player});
+    Mockito.when(sampler.sample()).thenReturn(0D);
+    Mockito.when(player.getUniqueId()).thenReturn(playerId);
+    Mockito.when(player.isOnline()).thenReturn(true);
+    Mockito.when(player.getSendViewDistance()).thenAnswer(invocation -> distance.get());
+    Mockito.when(moveEvent.getPlayer()).thenReturn(player);
+    Mockito.doAnswer(invocation -> {
+      distance.set(invocation.getArgument(0));
+      return null;
+    }).when(player).setSendViewDistance(Mockito.anyInt());
+
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
+      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      scheduling.when(() -> J.runEntity(Mockito.same(player), Mockito.any(Runnable.class)))
+          .thenAnswer(invocation -> {
+            queued.add(invocation.getArgument(1));
+            return true;
+          });
+      scheduling.when(() -> J.runEntity(
+          Mockito.same(player),
+          Mockito.any(Runnable.class),
+          Mockito.eq(0),
+          Mockito.any(Runnable.class)
+      )).thenAnswer(invocation -> {
+        stranded.add(invocation.getArgument(1));
+        return true;
+      });
+
+      feature.onActivate();
+      markIdle(feature, playerId);
+      feature.onTick();
+      queued.removeFirst().run();
+      Assertions.assertEquals(4, distance.get());
+      feature.on(moveEvent);
+      Assertions.assertEquals(1, stranded.size());
+      Assertions.assertEquals(1, pendingReconciliations(feature).get());
+
+      scheduling.when(J::isServerStopping).thenReturn(true);
+      scheduling.when(() -> J.runEntity(
+          Mockito.same(player),
+          Mockito.any(Runnable.class),
+          Mockito.eq(0),
+          Mockito.any(Runnable.class)
+      )).thenAnswer(invocation -> {
+        Runnable operation = invocation.getArgument(1);
+        operation.run();
+        return true;
+      });
+      long started = System.nanoTime();
+      feature.onDeactivate();
+      long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+
+      Assertions.assertTrue(elapsedMillis < 1_000L, "stop waited " + elapsedMillis + "ms on a halted scheduler");
+      Assertions.assertEquals(12, distance.get());
+      Assertions.assertEquals(0, pendingReconciliations(feature).get());
+
+      stranded.forEach(Runnable::run);
+      Assertions.assertEquals(12, distance.get());
+      Assertions.assertEquals(0, pendingReconciliations(feature).get());
+    }
+  }
+
+  @Test
   void retirementFollowedByRejectedSubmissionCompletesExactlyOnce() throws ReflectiveOperationException {
     FeatureAfkViewShedding feature = new FeatureAfkViewShedding();
     EntityController controller = Mockito.mock(EntityController.class);
@@ -222,6 +297,13 @@ class FeatureAfkViewSheddingLifecycleTest {
 
       Assertions.assertDoesNotThrow(feature::onDeactivate);
     }
+  }
+
+  private static AtomicInteger pendingReconciliations(FeatureAfkViewShedding feature)
+      throws ReflectiveOperationException {
+    Field field = FeatureAfkViewShedding.class.getDeclaredField("pendingReconciliations");
+    field.setAccessible(true);
+    return (AtomicInteger) field.get(feature);
   }
 
   @SuppressWarnings("unchecked")

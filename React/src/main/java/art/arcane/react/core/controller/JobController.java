@@ -45,7 +45,7 @@ public class JobController implements IController {
   private transient final AtomicInteger queueDepth;
   private double maxComputeTime = DEFAULT_MAX_COMPUTE_TIME_MS;
   private long maxSpikeInterval = 250;
-  private double currentComputeTarget = MIN_COMPUTE_TARGET_MS;
+  private transient double currentComputeTarget = MIN_COMPUTE_TARGET_MS;
   private double highUtilizationThresholdPercent = DEFAULT_HIGH_UTILIZATION;
   private double lowUtilizationThresholdPercent = DEFAULT_LOW_UTILIZATION;
   private transient ServerTickEvent ste = new ServerTickEvent();

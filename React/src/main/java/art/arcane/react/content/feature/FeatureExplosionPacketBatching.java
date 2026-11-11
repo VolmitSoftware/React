@@ -28,6 +28,7 @@ import art.arcane.volmlib.nativelib.monitor.ExplosionDecision;
 import art.arcane.volmlib.nativelib.monitor.ExplosionHook;
 import art.arcane.volmlib.nativelib.monitor.ExplosionPacketSuppressor;
 import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
+import art.arcane.react.core.bridge.AgentHookSlot;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.react.util.common.scheduling.J;
 import lombok.Getter;
@@ -106,6 +107,7 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
   @Getter
   private transient volatile boolean suppressorActive;
   private transient volatile boolean acceptingCandidates;
+  private transient final AgentHookSlot hookSlot = new AgentHookSlot();
   private transient final AtomicLong suppressedPackets = new AtomicLong(0L);
   private transient int broadcastTaskId;
 
@@ -131,10 +133,6 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
     suppressedPackets.set(0L);
     gate.reset();
     installBridgeHook();
-    if (suppressorActive) {
-      broadcastTaskId = J.sr(this::drainRetainedBroadcasts, 1);
-    }
-    acceptingCandidates = suppressorActive;
   }
 
   @Override
@@ -174,10 +172,10 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
   }
 
   private void installBridgeHook() {
+    bridgeActive = false;
+    suppressorActive = false;
     NativeMonitor bridge = NmsBridges.get();
     if (bridge == null) {
-      bridgeActive = false;
-      suppressorActive = false;
       return;
     }
     ExplosionHook hook = new ExplosionHook() {
@@ -191,11 +189,6 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
         return ExplosionDecision.BROADCAST;
       }
     };
-    bridgeActive = bridge.installExplosionHook(hook);
-    if (J.isFoliaThreading()) {
-      suppressorActive = false;
-      return;
-    }
     ExplosionPacketSuppressor suppressor = (World world, double x, double y, double z, float radius, int packetCount) -> {
       if (world == null || !acceptingCandidates) {
         return false;
@@ -203,15 +196,27 @@ public class FeatureExplosionPacketBatching extends ReactFeature implements List
       PendingWorldBuffer buffer = pending.get(world.getUID());
       return admitSuppression(buffer, x, y, z, packetCount);
     };
-    suppressorActive = bridge.installExplosionPacketSuppressor(suppressor);
+    hookSlot.install(() -> {
+      bridgeActive = bridge.installExplosionHook(hook);
+      if (J.isFoliaThreading()) {
+        return;
+      }
+      suppressorActive = bridge.installExplosionPacketSuppressor(suppressor);
+      if (suppressorActive) {
+        broadcastTaskId = J.sr(this::drainRetainedBroadcasts, 1);
+      }
+      acceptingCandidates = suppressorActive;
+    });
   }
 
   private void uninstallBridgeHook() {
     NativeMonitor bridge = NmsBridges.get();
-    if (bridge != null) {
-      bridge.uninstallExplosionHook();
-      bridge.uninstallExplosionPacketSuppressor();
-    }
+    hookSlot.release(() -> {
+      if (bridge != null) {
+        bridge.uninstallExplosionHook();
+        bridge.uninstallExplosionPacketSuppressor();
+      }
+    });
     bridgeActive = false;
     suppressorActive = false;
   }

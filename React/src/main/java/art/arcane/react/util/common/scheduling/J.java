@@ -128,6 +128,14 @@ public class J {
     return FoliaScheduler.isPrimaryThread();
   }
 
+  /**
+   * True once the server has begun stopping. Folia halts its region scheduler before it disables
+   * plugins, and Paper stops ticking, so work queued on a server scheduler from then on never runs.
+   */
+  public static boolean isServerStopping() {
+    return FoliaScheduler.isStopping(Bukkit.getServer());
+  }
+
   public static boolean isFoliaThreading() {
     return FoliaScheduler.isFoliaThreading(Bukkit.getServer());
   }
@@ -183,6 +191,13 @@ public class J {
     if (safeDelayTicks <= 0 && isOwnedByCurrentRegion(entity)) {
       guarded.run();
       return true;
+    }
+
+    if (isServerStopping()) {
+      if (scheduledRetired != null) {
+        scheduledRetired.run();
+      }
+      return false;
     }
 
     if (FoliaScheduler.runEntity(

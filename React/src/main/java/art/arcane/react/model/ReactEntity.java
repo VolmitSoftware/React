@@ -56,6 +56,7 @@ public class ReactEntity {
   private static final AtomicBoolean managedCleanupDraining = new AtomicBoolean(false);
   private static final AtomicInteger managedCleanupOperations = new AtomicInteger(0);
   private static final AtomicLong managedCleanupFailures = new AtomicLong(0L);
+  private static final AtomicLong managedCleanupEpoch = new AtomicLong(0L);
   private static final Object managedCleanupMonitor = new Object();
   private static final AtomicLong managedClaimSequence = new AtomicLong();
 
@@ -284,6 +285,9 @@ public class ReactEntity {
   }
 
   public static void releaseAllManagedState() {
+    if (J.isServerStopping()) {
+      abandonManagedCleanup();
+    }
     if (pauseByEntity.isEmpty() && dozeByEntity.isEmpty()) {
       return;
     }
@@ -602,6 +606,22 @@ public class ReactEntity {
     startManagedCleanupDrain();
   }
 
+  /**
+   * Forgets cleanup already handed to entity schedulers. A stopping server never runs or retires
+   * it, and a stuck batch would hold back the final release. Batches from before the call carry
+   * the old epoch, so a late completion cannot touch the reset counters.
+   */
+  private static void abandonManagedCleanup() {
+    synchronized (managedCleanupMonitor) {
+      managedCleanupEpoch.incrementAndGet();
+      managedCleanupSweeps.clear();
+      managedCleanupDraining.set(false);
+      managedCleanupOperations.set(0);
+      managedCleanupFailures.set(0L);
+      managedCleanupMonitor.notifyAll();
+    }
+  }
+
   private static void startManagedCleanupDrain() {
     if (managedCleanupSweeps.isEmpty() || !managedCleanupDraining.compareAndSet(false, true)) {
       return;
@@ -850,20 +870,31 @@ public class ReactEntity {
 
   private static final class ManagedCleanupBatch {
     private final AtomicInteger pending = new AtomicInteger(1);
+    private final long epoch = managedCleanupEpoch.get();
     private volatile boolean sealed;
 
     private void submit(Entity entity, Runnable operation, Runnable retired) {
+      synchronized (managedCleanupMonitor) {
+        if (epoch != managedCleanupEpoch.get()) {
+          return;
+        }
+        managedCleanupOperations.incrementAndGet();
+      }
       pending.incrementAndGet();
-      managedCleanupOperations.incrementAndGet();
       runOwned(entity, operation, retired, this::complete);
     }
 
     private void complete(boolean succeeded) {
-      if (!succeeded) {
-        managedCleanupFailures.incrementAndGet();
+      synchronized (managedCleanupMonitor) {
+        if (epoch != managedCleanupEpoch.get()) {
+          return;
+        }
+        if (!succeeded) {
+          managedCleanupFailures.incrementAndGet();
+        }
+        managedCleanupOperations.decrementAndGet();
+        managedCleanupMonitor.notifyAll();
       }
-      managedCleanupOperations.decrementAndGet();
-      signalManagedCleanup();
       if (pending.decrementAndGet() == 0 && sealed) {
         drainManagedCleanup();
       }

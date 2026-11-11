@@ -29,6 +29,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -341,6 +342,73 @@ class FeatureFastExplosionsTest {
         scheduled.getFirst().task().run();
         fastWorld.verify(() -> FastWorld.set(block, air, true), Mockito.times(1));
       }
+    }
+  }
+
+  @Test
+  void stoppingFoliaDeactivationRunsQueuedBatchOnTheStoppingThread() {
+    FeatureFastExplosions feature = new FeatureFastExplosions();
+    World world = Mockito.mock(World.class);
+    Block block = block(world, 0, 64, 0, Material.STONE);
+    List<Block> blocks = new ArrayList<>(List.of(block));
+    EntityExplodeEvent event = explosionEvent(EntityType.TNT, blocks, 0F);
+    List<ScheduledBatch> scheduled = new ArrayList<>();
+    BlockData air = Mockito.mock(BlockData.class);
+    Server server = Mockito.mock(Server.class);
+
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(() -> Bukkit.createBlockData(Material.AIR)).thenReturn(air);
+      bukkit.when(Bukkit::getServer).thenReturn(server);
+      try (MockedStatic<J> scheduler = Mockito.mockStatic(J.class);
+           MockedStatic<B> blockData = Mockito.mockStatic(B.class);
+           MockedStatic<FastWorld> fastWorld = Mockito.mockStatic(FastWorld.class)) {
+        captureScheduledBatches(scheduler, scheduled, true);
+        blockData.when(B::getAir).thenReturn(air);
+        feature.on(event);
+        Assertions.assertEquals(1, scheduled.size());
+        Assertions.assertTrue(blocks.isEmpty());
+
+        scheduler.when(J::isServerStopping).thenReturn(true);
+        scheduler.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Location.class))).thenReturn(true);
+        long started = System.nanoTime();
+        Assertions.assertDoesNotThrow(feature::onDeactivate);
+        long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+
+        Assertions.assertTrue(elapsedMillis < 1_000L, "stop waited " + elapsedMillis + "ms on a halted scheduler");
+        Assertions.assertEquals(1, scheduled.size());
+        fastWorld.verify(() -> FastWorld.set(block, air, true), Mockito.times(1));
+
+        scheduled.getFirst().task().run();
+        fastWorld.verify(() -> FastWorld.set(block, air, true), Mockito.times(1));
+      }
+    }
+  }
+
+  @Test
+  void stoppingFoliaDeactivationFailsAtOnceForBatchItCannotRun() {
+    FeatureFastExplosions feature = new FeatureFastExplosions();
+    World world = Mockito.mock(World.class);
+    Block block = block(world, 0, 64, 0, Material.STONE);
+    List<Block> blocks = new ArrayList<>(List.of(block));
+    EntityExplodeEvent event = explosionEvent(EntityType.TNT, blocks, 0F);
+    List<ScheduledBatch> scheduled = new ArrayList<>();
+    Server server = Mockito.mock(Server.class);
+
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
+         MockedStatic<J> scheduler = Mockito.mockStatic(J.class)) {
+      bukkit.when(Bukkit::getServer).thenReturn(server);
+      captureScheduledBatches(scheduler, scheduled, true);
+      feature.on(event);
+      Assertions.assertEquals(1, scheduled.size());
+
+      scheduler.when(J::isServerStopping).thenReturn(true);
+      scheduler.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Location.class))).thenReturn(false);
+      long started = System.nanoTime();
+      Assertions.assertThrows(IllegalStateException.class, feature::onDeactivate);
+      long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+
+      Assertions.assertTrue(elapsedMillis < 1_000L, "stop waited " + elapsedMillis + "ms on a halted scheduler");
+      Assertions.assertEquals(1, scheduled.size());
     }
   }
 

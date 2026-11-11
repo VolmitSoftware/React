@@ -3,6 +3,7 @@ package art.arcane.react.api.web;
 import art.arcane.react.api.web.dto.ControlItemDto;
 import art.arcane.react.api.web.dto.KnobDto;
 import art.arcane.react.util.project.registry.Registered;
+import io.javalin.http.BadRequestResponse;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -89,7 +90,7 @@ public class RegistryControlBackend<T extends Registered> implements ControlBack
         }
         for (String key : knobs.keySet()) {
             if (!originalValues.containsKey(key)) {
-                throw new IllegalArgumentException("Unknown web control value: " + pathPrefix + "." + id + "." + key);
+                throw new BadRequestResponse("Unknown web control value: " + pathPrefix + "." + id + "." + key);
             }
         }
 

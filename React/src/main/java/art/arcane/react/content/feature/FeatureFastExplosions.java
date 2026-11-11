@@ -112,18 +112,25 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
     boolean inlinePaperDrain = Bukkit.getServer() != null
         && !J.isFoliaThreading()
         && J.isPrimaryThread();
+    boolean haltedScheduler = J.isFoliaThreading() && J.isServerStopping();
     long timeoutMillis = Math.max(0L, shutdownDrainTimeoutMS);
     long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
     while (!pendingBatches.isEmpty()) {
+      boolean stalled = false;
       if (inlinePaperDrain) {
         drainPendingPaperBatches(MAX_RETRY_BATCHES_PER_TICK);
+      } else if (haltedScheduler) {
+        stalled = !drainBatchesOwnedByThisThread(MAX_RETRY_BATCHES_PER_TICK);
       } else {
         retryPendingBatches(MAX_RETRY_BATCHES_PER_TICK);
       }
       if (pendingBatches.isEmpty()) {
         return;
       }
-      long remaining = deadline - System.nanoTime();
+      if (haltedScheduler && !stalled) {
+        continue;
+      }
+      long remaining = stalled ? 0L : deadline - System.nanoTime();
       if (remaining <= 0L) {
         for (ExplosionChunkBatch batch : pendingBatches.values()) {
           batch.scheduled.set(false);
@@ -420,6 +427,29 @@ public class FeatureFastExplosions extends ReactFeature implements Listener {
       }
       executeBatch(batch);
     }
+  }
+
+  /**
+   * Runs batches whose chunk this thread may touch, for a stopping server where queued chunk
+   * tasks never run. Returns whether any batch got shorter, so a caller can stop retrying.
+   */
+  private boolean drainBatchesOwnedByThisThread(int maximum) {
+    boolean progressed = false;
+    int remaining = Math.max(0, maximum);
+    for (ExplosionChunkBatch batch : pendingBatches.values()) {
+      if (remaining <= 0) {
+        break;
+      }
+      if (!J.isOwnedByCurrentRegion(batch.anchor)) {
+        continue;
+      }
+
+      remaining--;
+      int queued = batch.work.size();
+      executeBatch(batch);
+      progressed |= batch.work.size() < queued;
+    }
+    return progressed;
   }
 
   private void signalPendingChange() {

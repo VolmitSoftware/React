@@ -377,6 +377,79 @@ class PdcWriteBatcherTest {
   }
 
   @Test
+  void stoppingStopAppliesWritesTheHaltedSchedulerNeverRuns() {
+    UUID worldId = UUID.randomUUID();
+    World world = mockWorld(worldId);
+    BlockState stranded = mockState(world, 1, 64, 1);
+    BlockState pending = mockState(world, 40, 64, 1);
+    PdcWriteBatcher batcher = deferredBatcher();
+    AtomicReference<Runnable> scheduled = new AtomicReference<>();
+
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
+        MockedStatic<J> scheduler = Mockito.mockStatic(J.class)) {
+      bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
+      scheduler.when(J::isFoliaThreading).thenReturn(true);
+      scheduler.when(() -> J.runChunk(
+              Mockito.same(world), Mockito.anyInt(), Mockito.anyInt(), Mockito.any(Runnable.class)))
+          .thenAnswer(invocation -> {
+            scheduled.set(invocation.getArgument(3));
+            return true;
+          });
+
+      batcher.enqueue(stranded, false, false);
+      batcher.flushAll();
+      Assertions.assertNotNull(scheduled.get());
+      batcher.enqueue(pending, false, false);
+
+      scheduler.when(J::isServerStopping).thenReturn(true);
+      scheduler.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Location.class))).thenReturn(true);
+      long startedNanos = System.nanoTime();
+      Assertions.assertDoesNotThrow(batcher::stop);
+      long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
+
+      Assertions.assertTrue(elapsedMillis < 1_000L, "stop waited " + elapsedMillis + "ms on a halted scheduler");
+      Mockito.verify(stranded).update(false, false);
+      Mockito.verify(pending).update(false, false);
+      Assertions.assertEquals(2L, batcher.getFlushedCount());
+
+      scheduled.get().run();
+      Mockito.verify(stranded, Mockito.times(1)).update(false, false);
+      Assertions.assertEquals(2L, batcher.getFlushedCount());
+    }
+  }
+
+  @Test
+  void stoppingStopFailsAtOnceForWritesAnotherRegionOwns() {
+    UUID worldId = UUID.randomUUID();
+    World world = mockWorld(worldId);
+    BlockState state = mockState(world, 1, 64, 1);
+    PdcWriteBatcher batcher = deferredBatcher();
+
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
+        MockedStatic<J> scheduler = Mockito.mockStatic(J.class);
+        MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+      bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
+      scheduler.when(J::isFoliaThreading).thenReturn(true);
+      scheduler.when(() -> J.runChunk(
+              Mockito.same(world), Mockito.anyInt(), Mockito.anyInt(), Mockito.any(Runnable.class)))
+          .thenReturn(true);
+
+      batcher.enqueue(state, false, false);
+      batcher.flushAll();
+
+      scheduler.when(J::isServerStopping).thenReturn(true);
+      scheduler.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Location.class))).thenReturn(false);
+      long startedNanos = System.nanoTime();
+      IllegalStateException failure = Assertions.assertThrows(IllegalStateException.class, batcher::stop);
+      long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
+
+      Assertions.assertTrue(elapsedMillis < 1_000L, "stop waited " + elapsedMillis + "ms on a halted scheduler");
+      Assertions.assertTrue(failure.getMessage().contains("inFlight=1"));
+      Mockito.verify(state, Mockito.never()).update(Mockito.anyBoolean(), Mockito.anyBoolean());
+    }
+  }
+
+  @Test
   void timedOutStopReportsContextAndRetainsFlightForLateAcknowledgement() {
     UUID worldId = UUID.randomUUID();
     World world = mockWorld(worldId);

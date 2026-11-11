@@ -87,6 +87,7 @@ import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigFileSupport;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.javalin.Javalin;
 import io.javalin.http.HttpResponseException;
 import io.javalin.http.NotFoundResponse;
@@ -614,6 +615,8 @@ public class WebController implements IController {
                     String msg = e.getMessage() == null ? defaultMessageFor(e.getStatus()) : e.getMessage();
                     ctx.status(e.getStatus()).json(new ErrorEnvelope(new ErrorEnvelope.Message(msg)));
                 });
+                javalin.exception(JsonProcessingException.class, (e, ctx) ->
+                    ctx.status(400).json(new ErrorEnvelope(new ErrorEnvelope.Message("Malformed request body"))));
                 javalin.exception(Exception.class, (e, ctx) -> {
                     React.warn("Unhandled web exception: " + e.getMessage(), e);
                     ctx.status(500).json(new ErrorEnvelope(new ErrorEnvelope.Message("Internal server error")));

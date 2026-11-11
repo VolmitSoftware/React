@@ -207,6 +207,51 @@ class EntityKillerOwnershipTest {
   }
 
   @Test
+  void stoppingStopAllFinishesCleanupTheHaltedSchedulerNeverRuns() {
+    Entity owned = entity(UUID.randomUUID());
+    Entity foreign = entity(UUID.randomUUID());
+    PersistentDataContainer container = Mockito.mock(PersistentDataContainer.class);
+    Mockito.when(owned.getPersistentDataContainer()).thenReturn(container);
+    Mockito.when(foreign.getPersistentDataContainer()).thenReturn(Mockito.mock(PersistentDataContainer.class));
+    List<Runnable> stranded = new ArrayList<>();
+
+    try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+      scheduling.when(() -> J.sr(Mockito.any(Runnable.class), Mockito.eq(20))).thenReturn(13);
+      scheduling.when(() -> J.runEntity(
+          Mockito.any(Entity.class),
+          Mockito.any(Runnable.class),
+          Mockito.eq(0),
+          Mockito.any(Runnable.class)
+      )).thenAnswer(invocation -> {
+        stranded.add(invocation.getArgument(1));
+        return true;
+      });
+      new EntityKiller(owned, 10).stop();
+      new EntityKiller(foreign, 10).stop();
+      Assertions.assertEquals(2, stranded.size());
+      Assertions.assertEquals(2, EntityKiller.cleanupInFlightCount());
+
+      scheduling.when(J::isServerStopping).thenReturn(true);
+      scheduling.when(J::isFoliaThreading).thenReturn(true);
+      scheduling.when(() -> J.isOwnedByCurrentRegion(owned)).thenReturn(true);
+      scheduling.when(() -> J.isOwnedByCurrentRegion(foreign)).thenReturn(false);
+      long started = System.nanoTime();
+      boolean drained = EntityKiller.stopAll(30_000L);
+      long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+
+      Assertions.assertTrue(drained);
+      Assertions.assertTrue(elapsedMillis < 1_000L, "stop waited " + elapsedMillis + "ms on a halted scheduler");
+      Assertions.assertEquals(0, EntityKiller.activeCount());
+      Assertions.assertEquals(0, EntityKiller.cleanupInFlightCount());
+      Mockito.verify(container).remove(Mockito.any(NamespacedKey.class));
+      Mockito.verify(foreign, Mockito.never()).getPersistentDataContainer();
+
+      stranded.forEach(Runnable::run);
+      Assertions.assertEquals(0, EntityKiller.cleanupInFlightCount());
+    }
+  }
+
+  @Test
   void rejectedCleanupRetiresWithoutTouchingForeignEntityState() {
     Entity entity = entity(UUID.randomUUID());
 

@@ -31,6 +31,9 @@ public final class WebAuth implements Handler {
     if ("OPTIONS".equals(ctx.method().name())) {
       return;
     }
+    if (ctx.attribute("token") != null) {
+      return;
+    }
     String authorization = ctx.header("Authorization");
     if (authorization == null || !authorization.startsWith("Bearer ")) {
       throw new UnauthorizedResponse("Missing or invalid Authorization header");

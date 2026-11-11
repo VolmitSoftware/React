@@ -28,6 +28,7 @@ import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.core.controller.ObserverController.LoadedChunkTarget;
 import art.arcane.volmlib.nativelib.monitor.HopperTickHook;
 import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
+import art.arcane.react.core.bridge.AgentHookSlot;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.volmlib.nativelib.monitor.TickDecision;
 import art.arcane.react.util.common.scheduling.J;
@@ -184,6 +185,7 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
   private transient volatile boolean engaged;
   private transient volatile boolean active;
   private transient volatile FeatureHopperTokenBucket hopperTokenBucket;
+  private transient final AgentHookSlot hookSlot = new AgentHookSlot();
   @Getter
   private transient volatile boolean bridgeActive;
   private transient final AtomicLong skippedHopperTicks = new AtomicLong(0L);
@@ -278,13 +280,12 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
   }
 
   private void installBridgeHook() {
+    bridgeActive = false;
     if (!featureActMode) {
-      bridgeActive = false;
       return;
     }
     NativeMonitor bridge = NmsBridges.get();
     if (bridge == null) {
-      bridgeActive = false;
       return;
     }
     HopperTickHook hook = (World world, int x, int y, int z) -> {
@@ -318,14 +319,16 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
       skippedHopperTicks.incrementAndGet();
       return TickDecision.SKIP;
     };
-    bridgeActive = bridge.installHopperTickHook(hook);
+    hookSlot.install(() -> bridgeActive = bridge.installHopperTickHook(hook));
   }
 
   private void uninstallBridgeHook() {
     NativeMonitor bridge = NmsBridges.get();
-    if (bridge != null) {
-      bridge.uninstallHopperTickHook();
-    }
+    hookSlot.release(() -> {
+      if (bridge != null) {
+        bridge.uninstallHopperTickHook();
+      }
+    });
     bridgeActive = false;
   }
 

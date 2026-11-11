@@ -13,11 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class RuntimeDiagnosticsController extends TickedObject implements IController {
-  private final List<String> registeredIds = new ArrayList<>();
-  private volatile Snapshot snapshot = new Snapshot(0L, 0L, new double[Metric.values().length]);
-  private Totals previous;
-  private long previousNanos;
-  private volatile boolean active;
+  private transient final List<String> registeredIds = new ArrayList<>();
+  private transient volatile Snapshot snapshot = new Snapshot(0L, 0L, new double[Metric.values().length]);
+  private transient Totals previous;
+  private transient long previousNanos;
+  private transient volatile boolean active;
 
   public RuntimeDiagnosticsController() {
     super("react", "runtime-diagnostics", 1_000L);

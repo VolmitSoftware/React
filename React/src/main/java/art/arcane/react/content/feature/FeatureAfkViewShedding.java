@@ -129,6 +129,9 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
       activity.clear();
     }
 
+    if (J.isServerStopping()) {
+      abandonReconcileFlights();
+    }
     long failureBaseline = reconciliationFailures.get();
     releaseGeneration(generation, indexPlayers(playerSnapshot()));
     if (!awaitReconciliations(RECONCILE_TIMEOUT_MS)
@@ -448,6 +451,23 @@ public class FeatureAfkViewShedding extends ReactFeature implements Listener {
       failRuntime(e);
       return false;
     }
+  }
+
+  /**
+   * Detaches restores already queued on player schedulers. A stopping server never runs or
+   * retires them, and while one is attached the release below cannot dispatch its own restore.
+   */
+  private void abandonReconcileFlights() {
+    for (ViewDistanceState state : distanceStates.values()) {
+      synchronized (state) {
+        if (state.reconcileFlight == null) {
+          continue;
+        }
+        state.reconcileFlight = null;
+      }
+      pendingReconciliations.decrementAndGet();
+    }
+    signalReconciliations();
   }
 
   private boolean awaitReconciliations(long timeoutMillis) {

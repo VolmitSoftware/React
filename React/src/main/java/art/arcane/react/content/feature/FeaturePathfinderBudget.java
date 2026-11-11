@@ -80,8 +80,9 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
   private transient final AtomicBoolean claimCleanupDraining = new AtomicBoolean(false);
   private transient final AtomicInteger claimCleanupOperations = new AtomicInteger(0);
   private transient final AtomicLong claimCleanupFailures = new AtomicLong(0L);
+  private transient final AtomicLong claimCleanupEpoch = new AtomicLong(0L);
   private transient final Object claimCleanupMonitor = new Object();
-  private transient final AtomicInteger ownerScanOperations = new AtomicInteger(0);
+  private transient volatile AtomicInteger ownerScanOperations = new AtomicInteger(0);
   private transient final Object ownerScanMonitor = new Object();
   private transient final Object lifecycleMutationLock = new Object();
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for pathfinder budget in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
@@ -150,6 +151,13 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
     }
     indexedMobs.clear();
     indexedMobOrder.clear();
+    if (J.isServerStopping()) {
+      abandonOwnerScans();
+      abandonClaimCleanup();
+      releaseClaimsOnStoppingThread();
+      return;
+    }
+
     if (!awaitOwnerScans(CLAIM_CLEANUP_TIMEOUT_MS)) {
       throw new IllegalStateException(
           "Pathfinder owner scans did not drain within " + CLAIM_CLEANUP_TIMEOUT_MS + "ms"
@@ -261,6 +269,7 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
 
     int budget = Math.max(1, maxEntitiesSampledPerCycle);
     AtomicInteger pending = new AtomicInteger(1);
+    AtomicInteger ownerScans = ownerScanOperations;
     for (int i = 0; i < budget; i++) {
       UUID entityId = indexedMobOrder.poll();
       if (entityId == null) {
@@ -283,11 +292,11 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
 
       indexedMobOrder.offer(entityId);
       pending.incrementAndGet();
-      ownerScanOperations.incrementAndGet();
+      ownerScans.incrementAndGet();
       AtomicBoolean completionClaimed = new AtomicBoolean(false);
       Runnable completed = () -> {
         if (completionClaimed.compareAndSet(false, true)) {
-          completeOwnerScan();
+          completeOwnerScan(ownerScans);
           finishFoliaCandidate(pending, generation);
         }
       };
@@ -467,6 +476,38 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
       }
     }
     return claimCleanupFailures.get() == 0L;
+  }
+
+  /**
+   * Forgets claim releases already handed to entity schedulers. Batches from before the call
+   * carry the old epoch, so a late completion cannot touch the reset counters.
+   */
+  private void abandonClaimCleanup() {
+    synchronized (claimCleanupMonitor) {
+      claimCleanupEpoch.incrementAndGet();
+      claimReleaseSweeps.clear();
+      claimCleanupDraining.set(false);
+      claimCleanupOperations.set(0);
+      claimCleanupFailures.set(0L);
+      claimCleanupMonitor.notifyAll();
+    }
+  }
+
+  /**
+   * Restores every budget this thread may touch and forgets the rest. The thread that stops the
+   * server owns all regions on Folia and is the main thread elsewhere. A mob left budgeted keeps
+   * its marker, which resets the budget when the mob loads again.
+   */
+  private void releaseClaimsOnStoppingThread() {
+    drainStaleClaims();
+    boolean folia = J.isFoliaThreading();
+    for (BudgetClaim claim : budgetedMobs.values()) {
+      Mob mob = claim.mobReference.get();
+      if (mob != null && (folia ? J.isOwnedByCurrentRegion(mob) : J.isPrimaryThread())) {
+        releaseClaim(claim, mob);
+      }
+      budgetedMobs.remove(claim.mobReference.entityId, claim);
+    }
   }
 
   private void startClaimCleanupDrain() {
@@ -697,9 +738,20 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
     }
   }
 
-  private void completeOwnerScan() {
-    ownerScanOperations.decrementAndGet();
+  private void completeOwnerScan(AtomicInteger ownerScans) {
+    ownerScans.decrementAndGet();
     synchronized (ownerScanMonitor) {
+      ownerScanMonitor.notifyAll();
+    }
+  }
+
+  /**
+   * Drops the count of scans queued on entity schedulers. A stopping server never runs or retires
+   * them, and a scan that does finish later settles against the counter it started with.
+   */
+  private void abandonOwnerScans() {
+    synchronized (ownerScanMonitor) {
+      ownerScanOperations = new AtomicInteger(0);
       ownerScanMonitor.notifyAll();
     }
   }
@@ -808,20 +860,31 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
 
   private final class ClaimCleanupBatch {
     private final AtomicInteger pending = new AtomicInteger(1);
+    private final long epoch = claimCleanupEpoch.get();
     private volatile boolean sealed;
 
     private void submit(BudgetClaim claim) {
+      synchronized (claimCleanupMonitor) {
+        if (epoch != claimCleanupEpoch.get()) {
+          return;
+        }
+        claimCleanupOperations.incrementAndGet();
+      }
       pending.incrementAndGet();
-      claimCleanupOperations.incrementAndGet();
       scheduleClaimRelease(claim, this::complete);
     }
 
     private void complete(boolean succeeded) {
-      if (!succeeded) {
-        claimCleanupFailures.incrementAndGet();
+      synchronized (claimCleanupMonitor) {
+        if (epoch != claimCleanupEpoch.get()) {
+          return;
+        }
+        if (!succeeded) {
+          claimCleanupFailures.incrementAndGet();
+        }
+        claimCleanupOperations.decrementAndGet();
+        claimCleanupMonitor.notifyAll();
       }
-      claimCleanupOperations.decrementAndGet();
-      signalClaimCleanup();
       if (pending.decrementAndGet() == 0 && sealed) {
         drainClaimCleanup();
       }

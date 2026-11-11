@@ -26,6 +26,7 @@ import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.volmlib.nativelib.monitor.FallingBlockTickHook;
 import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
+import art.arcane.react.core.bridge.AgentHookSlot;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.volmlib.nativelib.monitor.TickDecision;
 import art.arcane.react.util.project.config.ConfigDescription;
@@ -86,6 +87,7 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
   private transient final AtomicLong invalidated = new AtomicLong(0L);
   private transient final AtomicLong skippedFallingTicks = new AtomicLong(0L);
   private transient final PressureGate gate = new PressureGate();
+  private transient final AgentHookSlot hookSlot = new AgentHookSlot();
   @Getter
   private transient volatile boolean bridgeActive;
 
@@ -123,9 +125,9 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
   }
 
   private void installBridgeHook() {
+    bridgeActive = false;
     NativeMonitor bridge = NmsBridges.get();
     if (bridge == null) {
-      bridgeActive = false;
       return;
     }
     FallingBlockTickHook hook = (FallingBlock falling) -> {
@@ -149,14 +151,16 @@ public class FeatureLazyGravity extends ReactFeature implements Listener {
       skippedFallingTicks.incrementAndGet();
       return TickDecision.SKIP;
     };
-    bridgeActive = bridge.installFallingBlockTickHook(hook);
+    hookSlot.install(() -> bridgeActive = bridge.installFallingBlockTickHook(hook));
   }
 
   private void uninstallBridgeHook() {
     NativeMonitor bridge = NmsBridges.get();
-    if (bridge != null) {
-      bridge.uninstallFallingBlockTickHook();
-    }
+    hookSlot.release(() -> {
+      if (bridge != null) {
+        bridge.uninstallFallingBlockTickHook();
+      }
+    });
     bridgeActive = false;
   }
 

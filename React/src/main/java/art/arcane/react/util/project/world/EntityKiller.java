@@ -125,9 +125,13 @@ public class EntityKiller {
       active = new ArrayList<>(ACTIVE.values());
     }
 
+    boolean serverStopping = J.isServerStopping();
     for (EntityKiller killer : active) {
       try {
         killer.stop();
+        if (serverStopping) {
+          killer.finishStrandedCleanup();
+        }
       } catch (Throwable throwable) {
         React.reportError(throwable);
         killer.completeCleanup();
@@ -206,6 +210,23 @@ public class EntityKiller {
       throw throwable;
     }
 
+    completeCleanup();
+  }
+
+  /**
+   * Finishes a cleanup that an earlier stop queued on the entity scheduler. A stopping server
+   * never runs or retires it. The entity is restored only when this thread may touch it; the
+   * countdown marker left behind otherwise is reconciled when the entity loads again.
+   */
+  private void finishStrandedCleanup() {
+    if (cleanupComplete.get()) {
+      return;
+    }
+
+    if (J.isFoliaThreading() ? J.isOwnedByCurrentRegion(entity) : J.isPrimaryThread()) {
+      cleanupOwned();
+      return;
+    }
     completeCleanup();
   }
 

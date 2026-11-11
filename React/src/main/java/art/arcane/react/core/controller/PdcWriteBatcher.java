@@ -104,8 +104,13 @@ public class PdcWriteBatcher implements IController, Listener {
       repeatingTaskId = 0;
     }
 
+    boolean haltedScheduler = J.isFoliaThreading() && J.isServerStopping();
+    if (haltedScheduler) {
+      drainChunksOwnedByThisThread();
+    }
+
     try {
-      boolean drained = awaitDrain(stopDrainTimeoutMillis);
+      boolean drained = awaitDrain(haltedScheduler ? 0L : stopDrainTimeoutMillis);
       long retiredUnavailable = retiredUnavailableWriteCount.get();
       if (drained && retiredUnavailable == 0L) {
         queuesByWorld.clear();
@@ -118,6 +123,8 @@ public class PdcWriteBatcher implements IController, Listener {
       } else if (retiredUnavailable > 0L) {
         reason = "retired " + retiredUnavailable
             + " writes with disposition=FAILED_WORLD_UNAVAILABLE";
+      } else if (haltedScheduler) {
+        reason = "could not run on the stopping server";
       } else {
         reason = "timed out after " + stopDrainTimeoutMillis + "ms";
       }
@@ -538,6 +545,35 @@ public class PdcWriteBatcher implements IController, Listener {
           worldId,
           chunkKey,
           failed)));
+    }
+  }
+
+  /**
+   * Applies queued and accepted writes for every chunk this thread may touch. A stopping Folia
+   * server never runs the chunk tasks that would apply them; the thread that stops it owns all
+   * regions.
+   */
+  private void drainChunksOwnedByThisThread() {
+    for (Map.Entry<UUID, WorldQueue> worldEntry : queuesByWorld.entrySet()) {
+      UUID worldId = worldEntry.getKey();
+      WorldQueue worldQueue = worldEntry.getValue();
+      World world = Bukkit.getWorld(worldId);
+      if (world == null) {
+        continue;
+      }
+
+      long[] chunkKeys;
+      synchronized (worldQueue) {
+        chunkKeys = worldQueue.chunks.keySet().toLongArray();
+      }
+      for (long chunkKey : chunkKeys) {
+        int chunkX = (int) (chunkKey >> 32);
+        int chunkZ = (int) chunkKey;
+        Location anchor = new Location(world, (chunkX << 4) + 8.0, 64.0, (chunkZ << 4) + 8.0);
+        if (J.isOwnedByCurrentRegion(anchor)) {
+          drainChunkOnOwner(worldId, chunkKey);
+        }
+      }
     }
   }
 
