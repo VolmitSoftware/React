@@ -1,14 +1,14 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
+import 'package:react_web/theme/reactor_stylesheet.dart';
 import 'package:jaspr_test/server_test.dart';
 import 'package:jaspr/jaspr.dart' show Component, DomComponent;
 
 import 'package:react_web/model/heatmap.dart';
 import 'package:react_web/widget/heatmap_grid_view.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+const ReactorStylesheet _sheet = ReactorStylesheet();
 
 Widget _wrap(Widget child) =>
     ArcaneThemeProvider(stylesheet: _sheet, child: child);
@@ -100,15 +100,89 @@ void main() {
       final DocumentResponse response = await tester.request('/');
 
       expect(response.statusCode, equals(200));
-      expect(response.body, contains('Entity Pressure'));
-      expect(response.body, contains('minecraft:world_nether'));
+      expect(response.body, contains('Entity Pressure, north-up'));
       expect(response.body, contains('repeat(3,'));
       expect(response.body, contains('data-origin-x="-1"'));
       expect(response.body, contains('data-origin-z="-1"'));
       expect(response.body, contains('data-axis-x="-1"'));
       expect(response.body, contains('data-axis-z="1"'));
-      expect(response.body, contains('N −Z'));
-      expect(response.body, contains('E +X'));
+      expect(response.body, contains('North −Z'));
+      expect(response.body, contains('East +X'));
+      expect(response.body, contains('South +Z'));
+      expect(response.body, contains('West −X'));
+    });
+
+    testServer('zero is the muted colour, the top of the scale is red, and '
+        'a legend whose cells pass the scale says so', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(
+          HeatmapGridView(
+            grid: _grid(
+              cells: const <HeatmapCell>[
+                HeatmapCell(
+                  x: -1,
+                  z: -1,
+                  sizeChunks: 1,
+                  score: 0,
+                  averageScore: 0,
+                  samples: 3,
+                ),
+                HeatmapCell(
+                  x: 1,
+                  z: 1,
+                  sizeChunks: 1,
+                  score: 14,
+                  averageScore: 9,
+                  samples: 3,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+      expect(
+        body,
+        contains('color-mix(in oklab, var(--destructive) 0%, var(--muted))'),
+      );
+      expect(
+        body,
+        contains('color-mix(in oklab, var(--destructive) 100%, var(--muted))'),
+      );
+      expect(body, contains('High 10+'));
+    });
+
+    testServer('labels scores only on grids small enough to read them', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(
+          HeatmapGridView(grid: _grid(cells: const <HeatmapCell>[_sample])),
+        ),
+      );
+      final String small = (await tester.request('/')).body;
+      expect(small, contains('data-labels="s"'));
+      expect(small, contains('reactor-heatmap-cell-label'));
+      expect(small, contains('>7<'));
+
+      tester.pumpComponent(
+        _wrap(
+          HeatmapGridView(
+            grid: _grid(
+              originChunkX: -9,
+              originChunkZ: -9,
+              width: 19,
+              height: 19,
+              cells: const <HeatmapCell>[_sample],
+            ),
+          ),
+        ),
+      );
+      final String large = (await tester.request('/')).body;
+      expect(large, isNot(contains('data-labels=')));
+      expect(large, isNot(contains('reactor-heatmap-cell-label')));
     });
 
     testServer('renders peak, average, samples, and explicit sparse no-data', (
@@ -124,11 +198,9 @@ void main() {
       expect(response.body, contains('data-score="7'));
       expect(response.body, contains('data-average-score="4.5"'));
       expect(response.body, contains('data-samples="12"'));
-      expect(response.body, contains('Peak 7.00'));
-      expect(response.body, contains('Average 4.50'));
-      expect(response.body, contains('12 samples'));
+      expect(response.body, contains('Peak 7.00 · Average 4.50 · 12 samples'));
       expect('is-empty'.allMatches(response.body).length, equals(8));
-      expect(response.body, contains('No data'));
+      expect(response.body, contains('No currently loaded samples'));
     });
 
     testServer('uses one grid tab stop and a complete selected-cell ring', (
@@ -145,9 +217,8 @@ void main() {
       expect(response.body, contains('role="grid"'));
       expect(response.body, contains('aria-activedescendant='));
       expect(
-        RegExp(
-          r'class="[^"]*reactor-heatmap-cell[^"]*is-selected',
-        ).hasMatch(response.body),
+        RegExp(r'class="[^"]*reactor-heatmap-cell[^"]*is-selected')
+            .hasMatch(response.body),
         isTrue,
       );
       expect(response.body, contains('aria-selected="true"'));
@@ -175,7 +246,6 @@ void main() {
       expect(response.body, contains('data-region-z="-2"'));
       expect(response.body, contains('is-region-west'));
       expect(response.body, contains('is-region-north'));
-      expect(response.body, contains('MCA r.0.0'));
     });
 
     testServer('renders four actual world-border edges when fitted', (
@@ -232,12 +302,18 @@ void main() {
       expect(response.body, isNot(contains('reactor-heatmap-world-border')));
     });
 
-    testServer('renders negative selected chunk and block ranges correctly', (
+    testServer('details a negative cell: chunks, blocks, region, samples', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
         _wrap(
-          HeatmapGridView(
+          HeatmapCellDetails(
+            target: const HeatmapTarget(
+              world: 'minecraft:world_nether',
+              originChunkX: -8,
+              originChunkZ: -16,
+              sizeChunks: 8,
+            ),
             grid: _grid(
               originChunkX: -8,
               originChunkZ: -16,
@@ -263,7 +339,30 @@ void main() {
       final DocumentResponse response = await tester.request('/');
 
       expect(response.body, contains('Chunks X -8…-1 · Z -16…-9'));
-      expect(response.body, contains('Blocks X -128…-1 · Z -256…-129'));
+      expect(
+        response.body,
+        contains('Blocks X -128…-1 · Z -256…-129 · MCA r.-1.-1'),
+      );
+      expect(response.body, contains('Peak 5.00 · Average 3.00 · 9 samples'));
+    });
+
+    testServer('details a cell without samples', (ServerTester tester) async {
+      tester.pumpComponent(
+        _wrap(
+          HeatmapCellDetails(
+            grid: _grid(),
+            target: const HeatmapTarget(
+              world: 'minecraft:world_nether',
+              originChunkX: 1,
+              originChunkZ: 1,
+              sizeChunks: 1,
+            ),
+          ),
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+      expect(body, contains('Chunk 1, 1'));
+      expect(body, contains('No currently loaded samples'));
     });
   });
 }

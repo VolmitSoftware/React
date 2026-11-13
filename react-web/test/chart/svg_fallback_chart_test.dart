@@ -5,6 +5,19 @@ import 'package:jaspr_test/jaspr_test.dart';
 import 'package:react_web/chart/svg_fallback_chart.dart';
 import 'package:react_web/chart/timeseries_chart.dart';
 
+Finder _byClass(String name) => find.byComponentPredicate(
+  (Component component) =>
+      component is DomComponent &&
+      (component.classes?.split(' ').contains(name) ?? false),
+);
+
+Finder _sampleTarget(int index) => find.byComponentPredicate(
+  (Component component) =>
+      component is DomComponent &&
+      component.tag == 'rect' &&
+      component.attributes?['data-sample'] == '$index',
+);
+
 void main() {
   group('SvgFallbackChart', () {
     testComponents(
@@ -31,22 +44,13 @@ void main() {
             .evaluate()
             .single
             .component;
-        tester.dispatchEvent(
-          find.byComponentPredicate(
-            (Component component) =>
-                component is DomComponent &&
-                component.tag == 'rect' &&
-                (component.attributes?['aria-label']?.startsWith('Sample 2:') ??
-                    false),
-          ),
-          'mouseenter',
-        );
+        tester.dispatchEvent(_sampleTarget(1), 'mouseenter');
         await tester.pump();
         expect(
           identical(find.tag('polyline').evaluate().single.component, original),
           isTrue,
         );
-        expect(find.text('15.00'), findsOneComponent);
+        expect(find.text('15.0'), findsOneComponent);
         rebuild(
           () => series = <(String, List<double>)>[
             ('TPS', <double>[20, 10, 15]),
@@ -57,124 +61,120 @@ void main() {
           identical(find.tag('polyline').evaluate().single.component, original),
           isFalse,
         );
-        expect(find.text('10.00'), findsOneComponent);
+        expect(find.text('10.0'), findsOneComponent);
       },
     );
 
-    testComponents('renders a polyline element for a 5-element series', (
-      ComponentTester tester,
-    ) async {
-      tester.pumpComponent(
-        SvgFallbackChart(
-          series: [
-            ('y', [1.0, 2.0, 3.0, 2.0, 1.0]),
-          ],
-        ),
-      );
-
-      expect(find.tag('polyline'), findsOneComponent);
-
-      final Finder fivePointPolyline = find.byComponentPredicate((Component c) {
-        if (c is! DomComponent || c.tag != 'polyline') return false;
-        final String? pts = c.attributes?['points'];
-        if (pts == null || pts.trim().isEmpty) return false;
-        return pts.trim().split(RegExp(r'\s+')).length == 5;
-      }, description: 'polyline with 5 coordinate pairs');
-      expect(fivePointPolyline, findsOneComponent);
-    });
-
-    testComponents('renders an accessible hit target for each sample', (
+    testComponents('the plot is one tab stop; samples are not', (
       ComponentTester tester,
     ) async {
       tester.pumpComponent(
         SvgFallbackChart(
           series: <(String, List<double>)>[
-            ('TPS', <double>[19.7, 19.9, 20.0]),
+            ('y', <double>[1.0, 2.0, 3.0, 2.0, 1.0]),
           ],
         ),
       );
-
       expect(
-        find.byComponentPredicate((Component component) {
-          return component is DomComponent &&
-              component.classes?.contains('reactor-chart-hit-target') == true;
-        }),
-        findsNComponents(3),
+        find.byComponentPredicate(
+          (Component c) =>
+              c is DomComponent && c.attributes?['tabindex'] != null,
+        ),
+        findsOneComponent,
       );
+      expect(
+        find.byComponentPredicate(
+          (Component c) =>
+              c is DomComponent &&
+              c.tag == 'svg' &&
+              c.attributes?['role'] == 'img' &&
+              c.attributes?['tabindex'] == '0',
+        ),
+        findsOneComponent,
+      );
+      expect(_byClass('reactor-chart-hit-target'), findsNComponents(5));
     });
 
-    testComponents('bounds hit targets for long history series', (
+    testComponents('focus reads out the newest sample', (
+      ComponentTester tester,
+    ) async {
+      tester.pumpComponent(
+        TimeseriesChart(
+          series: <(String, List<double>)>[
+            ('TPS', <double>[19.7, 18.2]),
+          ],
+        ),
+      );
+      tester.dispatchEvent(find.tag('svg'), 'focus');
+      await tester.pump();
+      expect(find.text('18.2'), findsOneComponent);
+      tester.dispatchEvent(find.tag('svg'), 'blur');
+      await tester.pump();
+      expect(_byClass('reactor-chart-tooltip'), findsNothing);
+    });
+
+    testComponents('bounds hover targets for long series', (
       ComponentTester tester,
     ) async {
       tester.pumpComponent(
         SvgFallbackChart(
           series: <(String, List<double>)>[
             (
-              'TPS',
-              List<double>.generate(1200, (int index) => index.toDouble()),
+              'long',
+              List<double>.generate(500, (int index) => index.toDouble()),
             ),
           ],
         ),
       );
-
       expect(
-        find.byComponentPredicate((Component component) {
-          return component is DomComponent &&
-              component.classes?.contains('reactor-chart-hit-target') == true;
-        }),
-        findsNComponents(160),
+        _byClass('reactor-chart-hit-target'),
+        findsNComponents(kChartHoverTargets),
       );
     });
 
-    testComponents('renders the active sample guide and tooltip values', (
+    testComponents('ticks carry the unit and the read-out too', (
       ComponentTester tester,
     ) async {
       tester.pumpComponent(
         SvgFallbackChart(
           series: <(String, List<double>)>[
-            ('TPS', <double>[19.7, 19.9]),
+            ('Tick time', <double>[12, 30]),
           ],
+          unit: 'ms',
           activeSample: 1,
         ),
       );
-
-      expect(find.text('Sample 2'), findsOneComponent);
-      expect(find.text('19.90'), findsOneComponent);
-      expect(
-        find.byComponentPredicate((Component component) {
-          return component is DomComponent &&
-              component.classes?.contains('reactor-chart-crosshair') == true;
-        }),
-        findsOneComponent,
-      );
+      expect(find.text('0 ms'), findsOneComponent);
+      expect(find.text('30.0 ms'), findsOneComponent);
+      expect(_byClass('reactor-chart-crosshair'), findsOneComponent);
     });
 
-    testComponents('uses the supplied value formatter for hover details', (
+    testComponents('uses the supplied value formatter', (
       ComponentTester tester,
     ) async {
       tester.pumpComponent(
         SvgFallbackChart(
           series: <(String, List<double>)>[
-            ('Read /s', <double>[1024]),
+            ('Read', <double>[1024, 2048]),
           ],
           activeSample: 0,
           valueFormatter: (double value) => 'rate:${value.toStringAsFixed(0)}',
         ),
       );
-
       expect(find.text('rate:1024'), findsOneComponent);
     });
+  });
 
-    testComponents('uses wall-clock positions and splits long gaps', (
+  group('TimeseriesChart', () {
+    testComponents('uses wall-clock positions, splits gaps, labels time', (
       ComponentTester tester,
     ) async {
-      final DateTime start = DateTime.utc(2026, 1, 1);
+      final DateTime start = DateTime(2026, 1, 1, 10);
       tester.pumpComponent(
         TimeseriesChart(
           series: <(String, List<double>)>[
             ('TPS', <double>[20, 19, 20, 18]),
           ],
-          sampleLabels: const <String>['00:00', '00:01', '00:02', '00:20'],
           sampleTimestamps: <DateTime>[
             start,
             start.add(const Duration(minutes: 1)),
@@ -183,112 +183,55 @@ void main() {
           ],
         ),
       );
-
       expect(find.tag('polyline'), findsNComponents(2));
-      expect(find.text('00:00'), findsOneComponent);
-      expect(find.text('00:20'), findsOneComponent);
+      expect(find.text('10:00'), findsOneComponent);
+      expect(find.text('10:20'), findsOneComponent);
     });
-  });
 
-  group('TimeseriesChart', () {
-    testComponents(
-      'renders a polyline via SvgFallbackChart when not on web (kIsWeb=false)',
-      (ComponentTester tester) async {
-        tester.pumpComponent(
-          TimeseriesChart(
-            series: [
-              ('cpu', [10.0, 20.0, 15.0]),
-            ],
-            height: 120,
-          ),
-        );
-
-        expect(find.tag('polyline'), findsOneComponent);
-      },
-    );
-
-    testComponents('renders polylines for multiple series when not on web', (
+    testComponents('a constant series says its value instead of a line', (
       ComponentTester tester,
     ) async {
       tester.pumpComponent(
         TimeseriesChart(
-          series: [
-            ('cpu', [1.0, 2.0, 3.0]),
-            ('mem', [4.0, 5.0, 6.0]),
-          ],
-        ),
-      );
-
-      expect(find.tag('polyline'), findsNComponents(2));
-      expect(
-        find.byComponentPredicate((Component component) {
-          return component is DomComponent &&
-              component.tag == 'polyline' &&
-              component.attributes?['fill'] == 'none' &&
-              component.attributes?['stroke'] == 'var(--reactor-chart-1)';
-        }),
-        findsOneComponent,
-      );
-      expect(
-        find.byComponentPredicate((Component component) {
-          return component is DomComponent &&
-              component.tag == 'polyline' &&
-              component.attributes?['fill'] == 'none' &&
-              component.attributes?['stroke'] == 'var(--reactor-chart-2)';
-        }),
-        findsOneComponent,
-      );
-      expect(find.tag('line'), findsNComponents(5));
-    });
-
-    testComponents('keeps constant series finite and centered', (
-      ComponentTester tester,
-    ) async {
-      tester.pumpComponent(
-        SvgFallbackChart(
           series: <(String, List<double>)>[
-            ('constant', <double>[4.0, 4.0, 4.0]),
+            ('Players', <double>[40, 40, 40]),
           ],
         ),
       );
-
-      final Finder finitePolyline = find.byComponentPredicate((
-        Component component,
-      ) {
-        if (component is! DomComponent || component.tag != 'polyline') {
-          return false;
-        }
-        final String points = component.attributes?['points'] ?? '';
-        return points.isNotEmpty &&
-            !points.contains('NaN') &&
-            !points.contains('Infinity');
-      });
-      expect(finitePolyline, findsOneComponent);
+      expect(find.tag('svg'), findsNothing);
+      expect(find.text('Steady at 40'), findsOneComponent);
     });
 
-    testComponents('cycles legend swatches through the six chart colors', (
+    testComponents('one sample is not a line either', (
       ComponentTester tester,
     ) async {
       tester.pumpComponent(
         TimeseriesChart(
-          series: List<(String, List<double>)>.generate(
-            7,
-            (int index) => ('server-$index', <double>[index.toDouble()]),
-          ),
+          series: <(String, List<double>)>[
+            ('Tick time', <double>[12]),
+          ],
+          unit: 'ms',
         ),
       );
+      expect(find.tag('svg'), findsNothing);
+      expect(find.text('Steady at 12 ms'), findsOneComponent);
+    });
 
-      expect(
-        find.byComponentPredicate((Component component) {
-          if (component is! DomComponent || component.tag != 'span') {
-            return false;
-          }
-          return component.classes?.contains('reactor-chart-legend-line') ==
-                  true &&
-              component.classes?.contains('reactor-chart-series-0') == true;
-        }),
-        findsNComponents(2),
+    testComponents('two series get a plain legend, no buttons', (
+      ComponentTester tester,
+    ) async {
+      tester.pumpComponent(
+        TimeseriesChart(
+          series: <(String, List<double>)>[
+            ('cpu', <double>[1.0, 2.0, 3.0]),
+            ('mem', <double>[4.0, 5.0, 6.0]),
+          ],
+        ),
       );
+      expect(find.tag('polyline'), findsNComponents(2));
+      expect(find.tag('li'), findsNComponents(2));
+      expect(find.tag('button'), findsNothing);
+      expect(_byClass('reactor-chart-series-1'), findsNComponents(2));
     });
   });
 }

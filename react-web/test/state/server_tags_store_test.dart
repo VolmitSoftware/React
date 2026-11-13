@@ -35,15 +35,6 @@ void main() {
       expect(store.allTags(), equals(<String>['eu', 'prod', 'staging', 'us']));
     });
 
-    test('serverIdsWithTag returns servers tagged with given tag', () {
-      final FleetStorage storage = InMemoryFleetStorage();
-      final ServerTagsStore store = ServerTagsStore(storage);
-      store.setTags('s1', <String>['prod', 'eu']);
-      store.setTags('s2', <String>['staging']);
-
-      expect(store.serverIdsWithTag('prod'), equals(<String>['s1']));
-    });
-
     test('setTags with empty list removes the entry', () {
       final FleetStorage storage = InMemoryFleetStorage();
       final ServerTagsStore store = ServerTagsStore(storage);

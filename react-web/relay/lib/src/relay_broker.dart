@@ -9,6 +9,11 @@ import 'package:react_web_relay/src/relay_frame.dart';
 import 'package:react_web_relay/src/relay_limits.dart';
 import 'package:react_web_relay/src/relay_sink.dart';
 
+const Set<String> _coalescedMetricsPaths = <String>{
+  '/api/v1/metrics',
+  '/api/v1/metrics?compact=1',
+};
+
 final class RelayBroker {
   final RelayLimits limits;
   final Map<String, RelaySink> _servers = <String, RelaySink>{};
@@ -30,17 +35,20 @@ final class RelayBroker {
 
   void registerServer(String serverId, RelaySink agent) {
     final RelaySink? existing = _servers[serverId];
-    if (existing != null && !identical(existing, agent)) {
+    if (identical(existing, agent)) return;
+    if (existing != null) {
       _failPendingForServer(serverId, 'server connection was replaced');
       existing.closeWithError('replaced by new registration');
     }
     _servers[serverId] = agent;
+    _broadcastStatus(serverId, true);
   }
 
   void unregisterServer(String serverId, RelaySink agent) {
     if (!identical(_servers[serverId], agent)) return;
     _servers.remove(serverId);
     _failPendingForServer(serverId, 'server disconnected');
+    _broadcastStatus(serverId, false);
   }
 
   void subscribeApp(String serverId, RelaySink app) {
@@ -53,12 +61,17 @@ final class RelayBroker {
       _apps[app] = registration;
       _appsByServer.putIfAbsent(serverId, () => <RelaySink>{}).add(app);
     }
-    if (!_servers.containsKey(serverId)) {
+    final bool online = _servers.containsKey(serverId);
+    app.send(_statusFrame(serverId, online));
+    if (!online) {
       app.send(
         RelayFrame(
           type: RelayFrameType.error,
           serverId: serverId,
-          payload: <String, dynamic>{'message': 'server offline'},
+          payload: <String, dynamic>{
+            'code': 'server_offline',
+            'message': 'server offline',
+          },
         ),
       );
     }
@@ -75,6 +88,17 @@ final class RelayBroker {
     if (registration != null) _removeApp(app, registration);
   }
 
+  void rejectRateLimited(String serverId, RelaySink app, String requestId) {
+    _sendFailure(
+      app,
+      serverId,
+      requestId,
+      429,
+      'relay_rate_limited',
+      'relay rate limit exceeded',
+    );
+  }
+
   bool routeFromApp(String serverId, RelaySink app, RelayFrame frame) {
     final String? clientRequestId = frame.requestId;
     final _AppRegistration? registration = _apps[app];
@@ -84,6 +108,7 @@ final class RelayBroker {
         serverId,
         clientRequestId,
         400,
+        'bad_request',
         'app is not subscribed to this server',
       );
       return false;
@@ -94,13 +119,21 @@ final class RelayBroker {
         serverId,
         clientRequestId,
         400,
+        'bad_request',
         'route frame requires a requestId',
       );
       return false;
     }
     final String? payloadError = _validateRoutePayload(frame.payload);
     if (payloadError != null) {
-      _sendFailure(app, serverId, clientRequestId, 400, payloadError);
+      _sendFailure(
+        app,
+        serverId,
+        clientRequestId,
+        400,
+        'bad_request',
+        payloadError,
+      );
       return false;
     }
     if (registration.pendingByClientId.containsKey(clientRequestId)) {
@@ -109,6 +142,7 @@ final class RelayBroker {
         serverId,
         clientRequestId,
         409,
+        'conflict',
         'requestId is already pending',
       );
       return false;
@@ -120,6 +154,7 @@ final class RelayBroker {
         serverId,
         clientRequestId,
         429,
+        'relay_rate_limited',
         'too many pending requests for this app connection',
       );
       return false;
@@ -130,13 +165,21 @@ final class RelayBroker {
         serverId,
         clientRequestId,
         503,
+        'relay_busy',
         'relay pending request capacity reached',
       );
       return false;
     }
     final RelaySink? agent = _servers[serverId];
     if (agent == null) {
-      _sendFailure(app, serverId, clientRequestId, 503, 'server offline');
+      _sendFailure(
+        app,
+        serverId,
+        clientRequestId,
+        503,
+        'server_offline',
+        'server offline',
+      );
       return false;
     }
 
@@ -213,6 +256,7 @@ final class RelayBroker {
           serverId,
           completed.clientRequestId,
           502,
+          'bad_gateway',
           responseError,
         );
       } else {
@@ -230,8 +274,9 @@ final class RelayBroker {
   }
 
   String? _metricsKey(String serverId, Map<String, dynamic> payload) {
+    final Object? path = payload['path'];
     if (payload['method'] != 'GET' ||
-        payload['path'] != '/api/v1/metrics' ||
+        !_coalescedMetricsPaths.contains(path) ||
         (payload['body'] != null && payload['body'] != '')) {
       return null;
     }
@@ -247,6 +292,7 @@ final class RelayBroker {
     final List<String> names = headers.keys.toList()..sort();
     return jsonEncode(<Object?>[
       serverId,
+      path,
       for (final String name in names) <Object?>[name, headers[name]],
     ]);
   }
@@ -258,6 +304,22 @@ final class RelayBroker {
   int get appSessionCount => _apps.length;
 
   int get pendingRequestCount => _pending.length;
+
+  void _broadcastStatus(String serverId, bool online) {
+    final Set<RelaySink>? subscribers = _appsByServer[serverId];
+    if (subscribers == null) return;
+    final RelayFrame frame = _statusFrame(serverId, online);
+    for (final RelaySink app in List<RelaySink>.of(subscribers)) {
+      app.send(frame);
+    }
+  }
+
+  static RelayFrame _statusFrame(String serverId, bool online) => RelayFrame(
+    type: RelayFrameType.status,
+    serverId: serverId,
+    online: online,
+    payload: <String, dynamic>{'online': online},
+  );
 
   void _removeApp(RelaySink app, _AppRegistration registration) {
     _apps.remove(app);
@@ -287,6 +349,7 @@ final class RelayBroker {
           pending.serverId,
           pending.clientRequestId,
           503,
+          'server_offline',
           message,
         );
       }
@@ -301,6 +364,7 @@ final class RelayBroker {
       pending.serverId,
       pending.clientRequestId,
       504,
+      'relay_timeout',
       'relay request timed out',
     );
   }
@@ -322,11 +386,14 @@ final class RelayBroker {
     return pending;
   }
 
+  /// A refused route: `{"error": {"code", "message"}}` with [status], the
+  /// shape the server's own refusals have.
   void _sendFailure(
     RelaySink app,
     String serverId,
     String? requestId,
     int status,
+    String code,
     String message,
   ) {
     if (requestId == null) {
@@ -334,7 +401,7 @@ final class RelayBroker {
         RelayFrame(
           type: RelayFrameType.error,
           serverId: serverId,
-          payload: <String, dynamic>{'message': message},
+          payload: <String, dynamic>{'code': code, 'message': message},
         ),
       );
       return;
@@ -347,7 +414,7 @@ final class RelayBroker {
         payload: <String, dynamic>{
           'status': status,
           'body': <String, dynamic>{
-            'error': <String, dynamic>{'message': message},
+            'error': <String, dynamic>{'code': code, 'message': message},
           },
         },
       ),

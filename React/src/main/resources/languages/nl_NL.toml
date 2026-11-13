@@ -23,6 +23,7 @@
 #
 # === Variabelen ===
 # Behoud de namen van variabelen en gebruik alleen de variabelen die bij het bericht horen.
+#   {access}  Rol of rechten van een React Web-koppeling
 #   {action}  Actienaam of richting van de kleuraanpassing
 #   {actions}  Aantal acties in de wachtrij of lijst met uitgesloten actienamen
 #   {active}  Aantal actieve functies of aanpassingen
@@ -41,7 +42,7 @@
 #   {before}  Configuratiewaarde, taalbericht of heapgebruik vóór een wijziging
 #   {checked}  Aantal gecontroleerde samplers
 #   {chunks}  Aantal chunks waarop een actie van invloed is
-#   {code}  Webkoppelcode
+#   {client}  Browsernaam waarvandaan een React Web-koppeling is gemaakt
 #   {command}  Commandopad
 #   {count}  Aantal vermeldingen, modules, wijzigingen of testbevindingen
 #   {current}  Huidig paginanummer
@@ -57,6 +58,7 @@
 #   {entities}  Aantal entiteiten waarop een actie van invloed is
 #   {entry}  Vermelding in de integratietijdlijn
 #   {exceptions}  React-excepties die tijdens een belastingtestronde zijn vastgelegd
+#   {expires}  Wanneer een React Web-koppeling zonder gebruik eindigt
 #   {fail}  Aantal mislukte controles
 #   {file}  Bestandsnaam van een configuratie, taal of plugin-API
 #   {fingerprint}  Vingerafdruk van de server of het webtoken
@@ -80,14 +82,17 @@
 #   {incident}  Identificatie van de recursieve incidentactie die van de ontwikkeltests is uitgesloten
 #   {index}  Nummer van de huidige stap in de ontwikkeltests
 #   {invalid}  Aantal samplers met ongeldige metingen
-#   {issued_at}  Aanmaaktijd van het webtoken
 #   {item}  Naam of identificatie van het voorwerp
 #   {items}  Aantal samengevoegde voorwerpentiteiten
 #   {kept}  Lokale bewerkingen behouden door een taalupdate
 #   {key}  Commandoparametersleutel, configuratiesleutel of ID van een taalbericht
 #   {label}  Label van een benchmark, meetwaarde, instelling, commando of webtoken
+#   {lifetime}  Hoe lang een React Web-koppeling zonder gebruik geldt
 #   {line}  Nummer van de regel die wordt bewerkt in een bericht met meerdere regels
 #   {lines}  Aantal doorzochte regels in het serverlogboek
+#   {link}  React Web-koppellink
+#   {links}  Aantal nog niet geopende React Web-koppellinks
+#   {listener}  Adres waaraan de React Web-listener is gebonden
 #   {loaded}  Aantal chunks dat tijdens het voorladen nieuw is geladen
 #   {locale}  Taalcode die wordt weergegeven, geselecteerd of bewerkt
 #   {matched}  Werelden waarvan de automatische opslagstatus overeenkomt met de testreferentie
@@ -105,6 +110,7 @@
 #   {offenders}  Aantal samplers dat niet-eindige waarden teruggeeft
 #   {options}  Geaccepteerde configuratiewaarden
 #   {p95}  95e percentiel van de ticktijd tijdens een belastingtest, in ms
+#   {origin}  Browseroorsprong van een verzoek
 #   {parameter}  Naam van de commandoparameter
 #   {parameters}  Genegeerde commandoparameters
 #   {pass}  Aantal geslaagde controles
@@ -128,6 +134,7 @@
 #   {react_errors}  Aantal React-foutregels dat in het serverlogboek is gevonden
 #   {reason}  Uitleg van een fout, afwijzing of onbeschikbare toestand
 #   {registered}  Aantal geregistreerde modules
+#   {relay}  Status van de React Web-relay
 #   {remaining}  Resterende tijd tot de volgende taalcontrole
 #   {removed_first}  Of de eerste deactivering een functie uit het actieve register heeft verwijderd
 #   {removed_second}  Of herhaalde deactivering een functie uit het actieve register heeft verwijderd
@@ -137,6 +144,7 @@
 #   {sampler}  Naam of identificatie van de sampler
 #   {samplers}  Lijst met integratiesamplers of falende samplers
 #   {scope}  Toepassingsgebied van de kaart of afstandsinstelling
+#   {scopes}  Rechten van een React Web-koppeling
 #   {score}  Score van de benchmark
 #   {seconds}  Afteltijd of duur van de belastingtest in seconden
 #   {section}  Configuratieonderdeel of onderdeel van de taaleditor
@@ -145,6 +153,7 @@
 #   {since_run}  Fouten die sinds het begin van de huidige test zijn gemeld
 #   {size}  Maximale of actieve afmetingen van de kaartenwand
 #   {skip}  Aantal overgeslagen controles
+#   {sockets}  Aantal open React Web-sockets
 #   {spawn_y}  Hoogte waarop het blok voor de zwaartekrachttest is geplaatst
 #   {state}  Status van de actie of het plugin-API-pakket
 #   {status}  Label voor de integratiestatus of configuratietoestand
@@ -159,6 +168,7 @@
 #   {tier}  Ernstniveau van het incidentdraaiboek
 #   {timing}  Callbacktijd voor vaardigheden in milliseconden per minuut
 #   {to}  Nummer van de laatste vermelding op de huidige pagina
+#   {tokens}  Aantal gekoppelde React Web-browsers
 #   {total}  Totaal aan vermeldingen, modules, werelden, controles of geheugen in het bericht
 #   {type}  Type commandoparameter, configuratiewaarde, kaart of afstand
 #   {unavailable}  Aantal niet-beschikbare NMS-brugverwijzingen
@@ -225,12 +235,12 @@ root = "Het hoofdcommando van React"
 test = "React-validatie- en belastingtests uitvoeren"
 "test.load" = "Een synthetische belastingtest met twee rondes uitvoeren"
 "test.run" = "De React-validatiesuite uitvoeren"
-version = "De React-versie tonen"
 distance = "Stel de zicht-, simulatie- of verzendafstand in voor de server, een wereld of een speler"
 web = "React WebUI-toegangstokens beheren"
-"web.list" = "Actieve WebUI-tokens tonen"
-"web.pair" = "Een WebUI-koppeltoken aanmaken"
-"web.revoke" = "Een WebUI-token intrekken"
+"web.pair" = "Een eenmalige React Web-koppellink maken"
+"web.revoke" = "Een token intrekken of een nog niet geopende link annuleren"
+"web.status" = "De listener, relay en vingerafdruk tonen"
+"web.tokens" = "Gekoppelde browsers weergeven"
 language = "Kies je eigen taal of de servertaal"
 
 [command.parameter]
@@ -267,9 +277,11 @@ target = "Doelwereld of -speler; gebruikt standaard de context van de afzender v
 value = "Afstand in chunks; gebruik -1 waar overnemen van de instelling wordt ondersteund"
 
 [command.parameter.web]
-id = "ID van het in te trekken token"
+expires = "Hoe lang de koppeling zonder gebruik geldt, zoals 7d"
+id = "Token-ID, of all"
 label = "Menselijk leesbaar label voor dit token"
 role = "Rol voor dit token: viewer, operator of admin"
+scopes = "Rechten in plaats van een rol, zoals read,op:execute"
 
 [command.runtime]
 chunk_not_sampled = "&cDeze chunk is nog niet gemeten; controleer over een seconde opnieuw.&r"
@@ -347,21 +359,39 @@ threading_folia = "(Folia met regiothreads)"
 threading_standard = ""
 
 [command.runtime.web]
+fingerprint_copy_hover = "De vingerafdruk kopiëren"
+invalid_expires = "&cexpires= neemt een getal met d, h of m, van 1m tot 365d, zoals 7d.&r"
+invalid_label = "&cEen label heeft hoogstens 64 tekens.&r"
 invalid_role = "&cOngeldige rol: &f{role}&c. Verwacht: viewer, operator of admin.&r"
+invalid_scope = "&cOnbekend recht &f{scope}&c. Rechten zijn {scopes}.&r"
+link_copy = "&b&n[Kopiëren]&r"
+link_copy_hover = "De link kopiëren"
+link_details = "&7Rechten {scopes}; eindigt na {lifetime} zonder gebruik; token {id}&r"
+link_open = "&b&n[React Web openen]&r"
+link_open_hover = "In je browser openen"
+link_ready = "&aLink klaar. Open hem binnen 10 minuten&r"
+link_ready_console = "&aLink klaar. Open hem binnen 10 minuten:&r {link}"
+link_revoke = "&c&n[Intrekken]&r"
+link_revoke_hover = "Deze link annuleren, of de koppeling beëindigen die hij maakte"
 mutation_notice = "&eWebwijziging door &f{actor}&e: &b{target}&e — &f{detail}&e.&r"
-pair_unavailable = "&cWebkoppeling is niet beschikbaar: &f{reason}&r"
+never = "nooit"
 no_tokens = "&bGeen actieve tokens.&r"
-pairing_code = "&bKoppelcode:&r {code}"
-pairing_copy = "&bKoppelcode:&r &e&nKlik om te kopiëren&r"
-pairing_copy_hover = "Volledige koppelcode kopiëren"
-persist_failed = "&cOpslaan van het token is mislukt: &f{reason}&r"
+off = "uit"
+pair_refused = "&e{label} kon niet koppelen: &f{reason}&r"
+pair_unavailable = "&cWebkoppeling is niet beschikbaar: &f{reason}&r"
+refused_expired = "de link is verlopen; maak een nieuwe"
+refused_origin = "oorsprong {origin} staat niet in allowedOrigins in web.toml"
+relay_connecting = "{url} verbindt"
+relay_registered = "{url} geregistreerd"
+relay_waiting = "wacht op de eerste koppeling"
 revoked = "&bIngetrokken token:&r {id}"
-role = "&bRol:&r {role}"
-server_fingerprint = "&bServerafdruk:&r {fingerprint}"
-token_entry = "&7  {id} | {label} | issuedAt={issued_at}&r"
-token_fingerprint = "&bTokenvingerafdruk:&r {fingerprint}"
+role_and_scopes = "&cGebruik role= of scopes=, niet allebei.&r"
+scopes_need_read = "&cscopes= moet read bevatten.&r"
+state_ready = "klaar"
+status = "&bReact Web&r {state} | listener {listener} | relay {relay} | {tokens} tokens, {links} open links | {sockets} sockets"
+status_fingerprint = "&7Vingerafdruk&r {fingerprint}"
+token_entry = "&7  {id} | {label} | {access} | verloopt {expires} | laatst gebruikt {used} | {client} | {sockets} sockets&r"
 token_header = "&bActieve tokens ({count}):&r"
-token_id = "&bToken-ID:&r {id}"
 token_not_found = "&cToken niet gevonden: &f{id}&r"
 update_failed = "&cBijwerken van de tokenopslag is mislukt: &f{reason}&r"
 
@@ -469,13 +499,17 @@ description = "Configuratie van de ingebouwde HTTP/WebSocket-beheer-API van Reac
 impact = "Stel de HTTPS-URL van een reverse proxy in als de listener buiten localhost bereikbaar is. De ingebouwde listener van React blijft uitsluitend HTTP ondersteunen. Wijzigingen worden automatisch toegepast wanneer web.toml wordt opgeslagen."
 summary = "Openbare basis-URL die aan rechtstreekse API-clients wordt doorgegeven."
 
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.allowedorigins]
+impact = "Elke vermelding is een oorsprong: schema, host en poort, zonder pad; gewone http alleen op loopback. Een pagina van een andere oorsprong wordt geweigerd met origin_not_allowed. Verzoeken zonder Origin, zoals die van de relay, veranderen niet."
+summary = "Browseroorsprongen die de directe listener mogen gebruiken."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.appurl]
+impact = "Wijzig het naar een React Web die je zelf host en voeg de oorsprong ervan toe aan allowedOrigins."
+summary = "Adres van React Web dat koppellinks openen."
+
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenaddress]
 impact = "Het standaardadres :: accepteert IPv6- en IPv4-gemapt verkeer voor toegang via LAN, containers en poortdoorsturing. Gebruik een loopbackadres alleen achter een reverse proxy of relay op dezelfde host."
 summary = "IP-adres waaraan de weblistener wordt gebonden."
-
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.corsorigins]
-impact = "Een lege lijst staat alle origins toe. Voeg specifieke origins toe om toegang tussen verschillende origins te beperken."
-summary = "Lijst met toegestane CORS-origins voor de HTTP-API."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React opent standaard de API met authenticatie. Stel false in om geen HTTP- of WebSocket-listener te openen."
@@ -486,8 +520,8 @@ impact = "Als deze poort bezet is, probeert React de volgende 99 poorten in volg
 summary = "Voorkeurs-TCP-poort voor de webserver."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayenabled]
-impact = "Als dit waar is, verbindt React met de relaybroker op relayUrl, zodat de companion-app servers achter NAT kan bereiken zonder poortdoorsturing."
-summary = "Schakelt de uitgaande cloud-relayclient in voor NAT-traversal."
+impact = "React verbindt met relayUrl bij de eerste /react web pair en bij elke start zolang er een koppeling is. Koppellinks bevatten dan ook het relay-adres."
+summary = "Schakelt de uitgaande relay-client in zodat browsers deze server zonder open poort bereiken."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayurl]
 impact = "Wordt alleen gelezen wanneer relayEnabled waar is. Laat leeg wanneer de relay is uitgeschakeld."
@@ -497,9 +531,13 @@ summary = "Basis-WSS-URL van de relaybroker, bijv. wss://relay.arcane.art; het p
 impact = "Wanneer waar, worden niet-geverifieerde GET-verzoeken met 401 afgewezen. Zet dit alleen op false in volledig vertrouwde netwerkomgevingen."
 summary = "Vereist een geldig authenticatietoken voor alleen-lezen HTTP-eindpunten."
 
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.wspushhz]
-impact = "Hogere waarden verhogen de pushnauwkeurigheid, maar ook de netwerk- en CPU-belasting."
-summary = "Doelfrequentie (Hz) waarmee sampler-updates via WebSocket-verbindingen worden gepusht."
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.servername]
+impact = "Leeg gebruikt de eerste regel van de MOTD, of de naam van de servermap als de MOTD de vanilla-standaard is."
+summary = "Naam die React Web voor deze server toont."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
+impact = "Elk gebruik start de tijd opnieuw. /react web pair expires= overschrijft dit voor één link. 1 tot 365."
+summary = "Dagen dat een koppeling zonder gebruik geldt."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Configuratie voor de actie Collect Garbage. Vraagt JVM-garbagecollection aan en meldt het direct vrijgemaakte heapgeheugen."

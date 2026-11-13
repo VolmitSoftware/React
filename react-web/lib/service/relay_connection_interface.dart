@@ -4,6 +4,10 @@ import 'dart:async';
 
 import '../model/relay_frame.dart';
 
+/// The close code a relay sends to every socket when it restarts (1012's
+/// meaning, in the range the Dart WebSocket library sends).
+const int relayRestartCloseCode = 4012;
+
 abstract interface class IRelayConnection {
   Future<RelayResponse> request({
     required String method,
@@ -14,8 +18,11 @@ abstract interface class IRelayConnection {
   Future<void> close();
 }
 
-typedef RelayConnectionFactory =
-    IRelayConnection Function(String relayUrl, String serverId);
+/// A transport that learns when the server behind it comes and goes (relay
+/// `status` frames). `true` means the server just became reachable.
+abstract interface class IServerPresence {
+  Stream<bool> get serverOnline;
+}
 
 class RelayRpcMux {
   final String _serverId;
@@ -27,11 +34,7 @@ class RelayRpcMux {
 
   bool isPending(String? id) => id != null && _pending.containsKey(id);
 
-  RelayRpcMux({
-    required String serverId,
-    required void Function(RelayFrame) sendFrame,
-  }) : _serverId = serverId,
-       _sendFrame = sendFrame;
+  RelayRpcMux({required this._serverId, required this._sendFrame});
 
   Future<RelayResponse> request({
     required String method,

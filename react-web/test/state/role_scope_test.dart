@@ -1,7 +1,7 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
+import 'package:react_web/theme/reactor_stylesheet.dart';
 import 'package:jaspr/jaspr.dart' show Component;
 import 'package:jaspr_test/server_test.dart';
 
@@ -34,7 +34,7 @@ class _Probe extends StatelessWidget {
   }
 }
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+const ReactorStylesheet _sheet = ReactorStylesheet();
 
 Widget _wrap(Widget child) =>
     ArcaneThemeProvider(stylesheet: _sheet, child: child);

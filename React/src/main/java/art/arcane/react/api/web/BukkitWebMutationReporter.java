@@ -1,5 +1,6 @@
 package art.arcane.react.api.web;
 
+import art.arcane.react.api.web.pairing.WebToken;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.util.common.scheduling.J;
@@ -22,8 +23,8 @@ public final class BukkitWebMutationReporter implements WebMutationReporter {
 
   @Override
   public void report(Context context, WebMutation mutation) {
-    PairingToken token = context.attribute("token");
-    String actorId = token == null ? "web" : "web:" + token.tokenId();
+    WebToken token = context.attribute("token");
+    String actorId = token == null ? "web" : "web:" + token.id();
     String actorDisplay = displayActor(token);
     String operation = sanitize(mutation.operation());
     String target = sanitize(mutation.target());
@@ -51,12 +52,12 @@ public final class BukkitWebMutationReporter implements WebMutationReporter {
     }
   }
 
-  static String displayActor(PairingToken token) {
+  static String displayActor(WebToken token) {
     if (token == null) {
       return "web";
     }
-    String label = token.label() == null || token.label().isBlank() ? token.tokenId() : token.label();
-    return label + " (" + token.role() + ", " + token.tokenId() + ")";
+    String label = token.label() == null || token.label().isBlank() ? token.id() : token.label();
+    return label + " (" + token.role() + ", " + token.id() + ")";
   }
 
   private static String sanitize(String value) {

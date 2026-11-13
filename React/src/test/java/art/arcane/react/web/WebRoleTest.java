@@ -1,15 +1,16 @@
 package art.arcane.react.web;
 
 import art.arcane.react.api.web.WebRole;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Set;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class WebRoleTest {
 
@@ -26,17 +27,9 @@ public class WebRoleTest {
 
     static Stream<Arguments> roleScopes() {
         return Stream.of(
-            Arguments.of(WebRole.VIEWER, Set.of("read")),
-            Arguments.of(WebRole.OPERATOR, Set.of("read", "op:execute")),
-            Arguments.of(WebRole.ADMIN, Set.of("read", "op:execute", "admin", "console:read", "console:execute"))
-        );
-    }
-
-    static Stream<Arguments> scopesForCases() {
-        return Stream.of(
-            Arguments.of(null, WebRole.VIEWER.scopes()),
-            Arguments.of("operator", WebRole.OPERATOR.scopes()),
-            Arguments.of("bogus", Set.of())
+            Arguments.of(WebRole.VIEWER, List.of("read")),
+            Arguments.of(WebRole.OPERATOR, List.of("read", "op:execute")),
+            Arguments.of(WebRole.ADMIN, List.of("read", "op:execute", "admin", "console:read", "console:execute"))
         );
     }
 
@@ -50,22 +43,21 @@ public class WebRoleTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("roleScopes")
-    void roleScopesGrantExactlyTheAuthorityForThatRole(WebRole role, Set<String> expectedScopes) {
+    void roleScopesGrantExactlyTheAuthorityForThatRole(WebRole role, List<String> expectedScopes) {
         assertEquals(expectedScopes, role.scopes());
+        assertEquals(role.id(), WebRole.roleOf(expectedScopes));
     }
 
-    @ParameterizedTest(name = "scopesFor({0})")
-    @MethodSource("scopesForCases")
-    void scopesForFallsBackToViewerForNullAndYieldsNothingForUnknownIds(String id, Set<String> expectedScopes) {
-        assertEquals(expectedScopes, WebRole.scopesFor(id));
+    @Test
+    void theDefaultPairingLeavesOutAdminAndTheConsole() {
+        assertEquals(List.of("read", "op:execute"), WebRole.DEFAULT.scopes());
     }
 
-    @ParameterizedTest(name = "resolveRoleId({0})")
-    @CsvSource(value = {
-        "NIL, viewer",
-        "viewer, viewer"
-    }, nullValues = "NIL")
-    void resolveRoleIdDefaultsToViewerAndEchoesKnownIds(String id, String expected) {
-        assertEquals(expected, WebRole.resolveRoleId(id));
+    @Test
+    void scopesParseInListOrderAndUnknownOnesAreNamed() {
+        assertEquals(List.of("read", "console:read"), WebRole.parseScopes(" console:read , READ,read"));
+        assertEquals("custom", WebRole.roleOf(List.of("read", "console:read")));
+        IllegalArgumentException unknown = assertThrows(IllegalArgumentException.class, () -> WebRole.parseScopes("read,shell"));
+        assertEquals("shell", unknown.getMessage());
     }
 }

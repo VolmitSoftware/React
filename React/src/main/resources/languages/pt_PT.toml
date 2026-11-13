@@ -23,6 +23,7 @@
 #
 # === Variáveis ===
 # Mantenha os nomes das variáveis e use apenas as que pertencem a cada mensagem.
+#   {access}  Função ou permissões de um emparelhamento React Web
 #   {action}  Nome da ação ou sentido do ajuste de cor
 #   {actions}  Número de ações em fila ou lista dos nomes de ações excluídas
 #   {active}  Número de funcionalidades ou ajustes ativos
@@ -41,7 +42,7 @@
 #   {before}  Valor de configuração, mensagem de idioma ou utilização da memória heap antes de uma alteração
 #   {checked}  Número de amostradores verificados
 #   {chunks}  Número de chunks afetados por uma ação
-#   {code}  Código de emparelhamento web
+#   {client}  Nome do navegador de onde veio um emparelhamento React Web
 #   {command}  Caminho do comando
 #   {count}  Número de entradas, módulos, alterações ou resultados de testes
 #   {current}  Número da página atual
@@ -57,6 +58,7 @@
 #   {entities}  Número de entidades afetadas por uma ação
 #   {entry}  Entrada da cronologia da integração
 #   {exceptions}  Exceções do React registadas durante uma passagem do teste de carga
+#   {expires}  Quando um emparelhamento React Web termina sem uso
 #   {fail}  Número de verificações falhadas
 #   {file}  Nome do ficheiro de configuração, idioma ou API de plugins
 #   {fingerprint}  Impressão digital do servidor ou do token web
@@ -80,14 +82,17 @@
 #   {incident}  Identificador da ação recursiva de incidentes excluída dos testes de desenvolvimento
 #   {index}  Número do passo atual dos testes de desenvolvimento
 #   {invalid}  Número de amostradores com leituras inválidas
-#   {issued_at}  Data e hora de criação do token web
 #   {item}  Nome ou identificador do objeto
 #   {items}  Número de entidades de objetos fundidas
 #   {kept}  Edições locais mantidas por uma atualização de idioma
 #   {key}  Chave do parâmetro de comando, chave de configuração ou ID da mensagem de idioma
 #   {label}  Rótulo do teste de desempenho, métrica, definição, comando ou token web
+#   {lifetime}  Quanto tempo um emparelhamento React Web dura sem uso
 #   {line}  Número da linha em edição numa mensagem com várias linhas
 #   {lines}  Número de linhas do registo do servidor examinadas
+#   {link}  Ligação de emparelhamento React Web
+#   {links}  Número de ligações de emparelhamento React Web ainda não abertas
+#   {listener}  Endereço a que o listener do React Web está associado
 #   {loaded}  Número de chunks carregados pela primeira vez durante o pré-carregamento
 #   {locale}  Código de idioma apresentado, selecionado ou editado
 #   {matched}  Mundos cujo estado de gravação automática corresponde à referência do teste
@@ -105,6 +110,7 @@
 #   {offenders}  Número de amostradores que devolvem valores não finitos
 #   {options}  Valores de configuração aceites
 #   {p95}  Percentil 95 do tempo dos ticks durante um teste de carga, em ms
+#   {origin}  Origem do navegador de um pedido
 #   {parameter}  Nome do parâmetro de comando
 #   {parameters}  Parâmetros de comando ignorados
 #   {pass}  Número de verificações aprovadas
@@ -128,6 +134,7 @@
 #   {react_errors}  Número de linhas de erro do React encontradas no registo do servidor
 #   {reason}  Explicação da falha, rejeição ou estado indisponível
 #   {registered}  Número de módulos registados
+#   {relay}  Estado do relay do React Web
 #   {remaining}  Tempo restante até à próxima verificação de idiomas
 #   {removed_first}  Indica se a primeira desativação removeu uma funcionalidade do registo ativo
 #   {removed_second}  Indica se uma desativação repetida removeu uma funcionalidade do registo ativo
@@ -137,6 +144,7 @@
 #   {sampler}  Nome ou identificador do amostrador
 #   {samplers}  Lista de amostradores de integração ou com falhas
 #   {scope}  Âmbito do mapa ou da definição de distância
+#   {scopes}  Permissões de um emparelhamento React Web
 #   {score}  Pontuação do teste de desempenho
 #   {seconds}  Contagem decrescente ou duração do teste de carga em segundos
 #   {section}  Secção da configuração ou do editor de idiomas
@@ -145,6 +153,7 @@
 #   {since_run}  Erros comunicados desde o início do teste atual
 #   {size}  Dimensões máximas ou ativas da parede de mapas
 #   {skip}  Número de verificações ignoradas
+#   {sockets}  Número de sockets React Web abertos
 #   {spawn_y}  Altura a que o bloco do teste de gravidade foi gerado
 #   {state}  Estado da ação ou do pacote de API de plugins
 #   {status}  Rótulo do estado da integração ou da configuração
@@ -159,6 +168,7 @@
 #   {tier}  Nível de gravidade do procedimento de incidentes
 #   {timing}  Tempo de callbacks de habilidades em milissegundos por minuto
 #   {to}  Número da última entrada na página atual
+#   {tokens}  Número de navegadores emparelhados com o React Web
 #   {total}  Total de entradas, módulos, mundos, verificações ou memória da mensagem
 #   {type}  Tipo do parâmetro de comando, valor de configuração, mapa ou distância
 #   {unavailable}  Número de referências indisponíveis da ponte NMS
@@ -225,12 +235,12 @@ root = "O comando raiz do React"
 test = "Executar os testes de validação e de carga do React"
 "test.load" = "Executar um teste de carga sintética de duas passagens"
 "test.run" = "Executar o conjunto de validação do React"
-version = "Mostrar a versão do React"
 distance = "Definir a distância de visão, simulação ou envio para o servidor, mundo ou jogador"
 web = "Gerir os tokens de acesso à WebUI do React"
-"web.list" = "Listar os tokens ativos da WebUI"
-"web.pair" = "Criar um token de emparelhamento da WebUI"
-"web.revoke" = "Revogar um token da WebUI"
+"web.pair" = "Criar uma ligação de emparelhamento React Web de utilização única"
+"web.revoke" = "Revogar um token ou cancelar uma ligação ainda não aberta"
+"web.status" = "Mostrar o listener, o relay e a impressão digital"
+"web.tokens" = "Listar os navegadores emparelhados"
 language = "Escolha o seu idioma ou o idioma do servidor"
 
 [command.parameter]
@@ -267,9 +277,11 @@ target = "Mundo ou jogador de destino; por predefinição, usa o contexto de que
 value = "Distância em chunks; use -1 onde for suportada a herança da definição"
 
 [command.parameter.web]
-id = "ID do token a revogar"
+expires = "Quanto tempo o emparelhamento dura sem uso, como 7d"
+id = "ID do token, ou all"
 label = "Rótulo legível para este token"
 role = "Função deste token: viewer, operator ou admin"
+scopes = "Permissões em vez de uma função, como read,op:execute"
 
 [command.runtime]
 chunk_not_sampled = "&cEste chunk ainda não foi amostrado; verifique novamente dentro de um segundo.&r"
@@ -347,21 +359,39 @@ threading_folia = "(Folia com threads por região)"
 threading_standard = ""
 
 [command.runtime.web]
+fingerprint_copy_hover = "Copiar a impressão digital"
+invalid_expires = "&cexpires= aceita um número com d, h ou m, de 1m a 365d, como 7d.&r"
+invalid_label = "&cUma etiqueta tem no máximo 64 caracteres.&r"
 invalid_role = "&cFunção inválida: &f{role}&c. Esperava-se viewer, operator ou admin.&r"
+invalid_scope = "&cPermissão desconhecida &f{scope}&c. As permissões são {scopes}.&r"
+link_copy = "&b&n[Copiar]&r"
+link_copy_hover = "Copiar a ligação"
+link_details = "&7Permissões {scopes}; termina após {lifetime} sem uso; token {id}&r"
+link_open = "&b&n[Abrir React Web]&r"
+link_open_hover = "Abrir no navegador"
+link_ready = "&aLigação pronta. Abra-a dentro de 10 minutos&r"
+link_ready_console = "&aLigação pronta. Abra-a dentro de 10 minutos:&r {link}"
+link_revoke = "&c&n[Revogar]&r"
+link_revoke_hover = "Cancelar esta ligação ou terminar o emparelhamento que criou"
 mutation_notice = "&eAlteração web por &f{actor}&e: &b{target}&e — &f{detail}&e.&r"
-pair_unavailable = "&cO emparelhamento web não está disponível: &f{reason}&r"
+never = "nunca"
 no_tokens = "&bSem tokens ativos.&r"
-pairing_code = "&bCódigo de emparelhamento:&r {code}"
-pairing_copy = "&bCódigo de emparelhamento:&r &e&nClique para copiar&r"
-pairing_copy_hover = "Copiar o código de emparelhamento completo"
-persist_failed = "&cFalha ao guardar o token: &f{reason}&r"
+off = "desligado"
+pair_refused = "&e{label} não conseguiu emparelhar: &f{reason}&r"
+pair_unavailable = "&cO emparelhamento web não está disponível: &f{reason}&r"
+refused_expired = "a ligação expirou; crie uma nova"
+refused_origin = "a origem {origin} não está em allowedOrigins no web.toml"
+relay_connecting = "{url} a ligar"
+relay_registered = "{url} registado"
+relay_waiting = "aguarda o primeiro emparelhamento"
 revoked = "&bToken revogado:&r {id}"
-role = "&bFunção:&r {role}"
-server_fingerprint = "&bImpressão digital do servidor:&r {fingerprint}"
-token_entry = "&7  {id} | {label} | issuedAt={issued_at}&r"
-token_fingerprint = "&bImpressão digital do token:&r {fingerprint}"
+role_and_scopes = "&cUse role= ou scopes=, não ambos.&r"
+scopes_need_read = "&cscopes= tem de incluir read.&r"
+state_ready = "pronto"
+status = "&bReact Web&r {state} | listener {listener} | relay {relay} | {tokens} tokens, {links} ligações abertas | {sockets} sockets"
+status_fingerprint = "&7Impressão digital&r {fingerprint}"
+token_entry = "&7  {id} | {label} | {access} | expira {expires} | último uso {used} | {client} | {sockets} sockets&r"
 token_header = "&bTokens ativos ({count}):&r"
-token_id = "&bID do token:&r {id}"
 token_not_found = "&cToken não encontrado: &f{id}&r"
 update_failed = "&cFalha ao atualizar o armazenamento de tokens: &f{reason}&r"
 
@@ -469,13 +499,17 @@ description = "Configuração da API de gestão HTTP/WebSocket integrada no Reac
 impact = "Defina o URL HTTPS de um proxy inverso se o serviço de escuta estiver acessível fora de localhost. O serviço integrado do React continua a suportar apenas HTTP. As alterações são aplicadas automaticamente ao guardar web.toml."
 summary = "URL de base público anunciado aos clientes diretos da API."
 
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.allowedorigins]
+impact = "Cada entrada é uma origem: esquema, anfitrião e porta, sem caminho; http simples apenas em loopback. Uma página de qualquer outra origem é recusada com origin_not_allowed. Pedidos sem Origin, como os do relay, não são afetados."
+summary = "Origens de navegador que podem usar o listener direto."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.appurl]
+impact = "Altere-o para um React Web alojado por si e adicione a origem dele a allowedOrigins."
+summary = "Endereço do React Web que as ligações de emparelhamento abrem."
+
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenaddress]
 impact = "O endereço predefinido :: aceita tráfego IPv6 e IPv4 mapeado para acesso por LAN, contentores e reencaminhamento de portas. Use um endereço de loopback apenas atrás de um proxy inverso ou retransmissor na mesma máquina."
 summary = "Endereço IP ao qual o serviço de escuta web se associa."
-
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.corsorigins]
-impact = "Uma lista vazia permite todas as origens. Adicione origens específicas para restringir o acesso entre origens."
-summary = "Lista de origens CORS permitidas para a API HTTP."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "O React abre a API autenticada por predefinição. Defina false para não abrir qualquer serviço de escuta HTTP ou WebSocket."
@@ -486,8 +520,8 @@ impact = "Se esta porta estiver ocupada, o React tenta as 99 portas seguintes po
 summary = "Porta TCP preferida para o servidor web."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayenabled]
-impact = "Quando true, o React liga-se ao broker de relay em relayUrl para que a aplicação companheira consiga chegar a servidores atrás de NAT sem reencaminhamento de portas."
-summary = "Ativa o cliente de relay na nuvem, de saída, para atravessar NAT."
+impact = "O React liga-se ao relayUrl no primeiro /react web pair e em cada arranque enquanto existir um emparelhamento. As ligações de emparelhamento passam a incluir também o endereço do relay."
+summary = "Ativa o cliente de relay de saída para que os navegadores cheguem a este servidor sem uma porta aberta."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayurl]
 impact = "Só é lido quando relayEnabled é true. Deixe vazio quando o relay estiver desativado."
@@ -497,9 +531,13 @@ summary = "URL WSS base do broker de relay, p. ex. wss://relay.arcane.art; o cam
 impact = "Quando true, os pedidos GET não autenticados são rejeitados com 401. Defina como false apenas em ambientes de rede totalmente fiáveis."
 summary = "Exige um token de autenticação válido para os endpoints HTTP só de leitura."
 
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.wspushhz]
-impact = "Valores mais elevados aumentam a fidelidade das atualizações enviadas, mas também a carga de rede e de CPU."
-summary = "Frequência alvo (Hz) com que as atualizações dos amostradores são enviadas pelas ligações WebSocket."
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.servername]
+impact = "Vazio usa a primeira linha do MOTD, ou o nome da pasta do servidor quando o MOTD é o predefinido do vanilla."
+summary = "Nome que o React Web mostra para este servidor."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
+impact = "Cada uso recomeça a contagem. /react web pair expires= substitui o valor para uma ligação. De 1 a 365."
+summary = "Dias que um emparelhamento dura sem uso."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Configuração da ação Recolher lixo. Pede a recolha de lixo da JVM e indica o heap recuperado de imediato."

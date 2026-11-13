@@ -12,6 +12,7 @@ import 'package:react_web/model/server_capabilities.dart';
 import 'package:react_web/model/server_credential.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/model/identity_info.dart';
+import 'package:react_web/model/range_history.dart';
 import 'package:react_web/service/react_client.dart';
 import 'package:react_web/service/react_exceptions.dart';
 
@@ -216,11 +217,51 @@ void main() {
     });
   });
 
+  group('ReactClient.metricRange()', () {
+    test('GETs one stored range of the chart samplers', () async {
+      final MockClient mock = MockClient((http.Request req) async {
+        expect(req.url.path, equals('/api/v1/metrics/range'));
+        expect(req.url.queryParameters['range'], equals('6h'));
+        expect(req.url.queryParameters['ids'], equals('tick-time,memory-used'));
+        expect(req.headers['authorization'], equals('Bearer tok-abc'));
+        return http.Response(
+          jsonEncode(<String, dynamic>{
+            'data': <String, dynamic>{
+              'range': '6h',
+              'stepMs': 60000,
+              'fromMs': 0,
+              'toMs': 21600000,
+              'series': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'id': 'tick-time',
+                  'values': <double?>[...List<double?>.filled(359, null), 12.5],
+                },
+              ],
+            },
+          }),
+          200,
+          headers: <String, String>{'content-type': 'application/json'},
+        );
+      });
+
+      final ReactClient client = ReactClient(cred, client: mock);
+      final RangeHistory range = await client.metricRange(
+        ChartRange.sixHours,
+        ids: const <String>['tick-time', 'memory-used'],
+      );
+
+      expect(range.range, ChartRange.sixHours);
+      expect(range.to, DateTime.fromMillisecondsSinceEpoch(21600000));
+      final RangeView view = range.view(const <String>['tick-time']);
+      expect(view.times.single, DateTime.fromMillisecondsSinceEpoch(21540000));
+      expect(view.values['tick-time'], <double>[12.5]);
+    });
+  });
+
   group('ReactClient.identity()', () {
     test('GETs /identity and decodes the data envelope', () async {
       final Map<String, dynamic> body = <String, dynamic>{
         'data': <String, dynamic>{
-          'version': '1.2.3',
           'serverName': 'TestServer',
           'folia': true,
           'serverId': '127.0.0.1:9696',
@@ -240,7 +281,6 @@ void main() {
       final ReactClient client = ReactClient(cred, client: mock);
       final IdentityInfo info = await client.identity();
 
-      expect(info.version, equals('1.2.3'));
       expect(info.serverName, equals('TestServer'));
       expect(info.folia, isTrue);
       expect(info.serverId, equals('127.0.0.1:9696'));
@@ -448,7 +488,6 @@ void main() {
         return http.Response(
           jsonEncode(<String, dynamic>{
             'data': <String, dynamic>{
-              'version': '1.0.0',
               'serverName': 'Proxy',
               'folia': false,
               'serverId': 'proxy',
@@ -506,20 +545,16 @@ void main() {
       await expectLater(client.metrics(), throwsA(isA<ReactUnavailable>()));
     });
 
-    test(
-      'timeout throws ReactUnavailable',
-      () async {
-        final MockClient mock = MockClient((http.Request req) async {
-          await Future<void>.delayed(const Duration(seconds: 3));
-          return http.Response('', 200);
-        });
+    test('timeout throws ReactUnavailable', () async {
+      final MockClient mock = MockClient((http.Request req) async {
+        await Future<void>.delayed(const Duration(seconds: 3));
+        return http.Response('', 200);
+      });
 
-        final ReactClient client = ReactClient(cred, client: mock);
+      final ReactClient client = ReactClient(cred, client: mock);
 
-        await expectLater(client.metrics(), throwsA(isA<ReactUnavailable>()));
-      },
-      timeout: const Timeout(Duration(seconds: 10)),
-    );
+      await expectLater(client.metrics(), throwsA(isA<ReactUnavailable>()));
+    }, timeout: const Timeout(Duration(seconds: 10)));
   });
 
   group('ReactClient.heatmaps()', () {
@@ -679,7 +714,7 @@ void main() {
       );
     });
 
-    test('404 throws ReactUnavailable', () async {
+    test('404 throws ReactNotFound', () async {
       final MockClient mock = MockClient((http.Request req) async {
         return http.Response('{"error":"not found"}', 404);
       });
@@ -688,7 +723,7 @@ void main() {
 
       await expectLater(
         client.heatmap('nonexistent-heatmap'),
-        throwsA(isA<ReactUnavailable>()),
+        throwsA(isA<ReactNotFound>()),
       );
     });
 

@@ -1,3 +1,6 @@
+/// Performance > Host: the machine and JVM the server runs on. Memory, disk
+/// capacity and throughput for everyone; device lists and the raw key/value
+/// sections in Advanced. React's own facts (its version) are never shown.
 library;
 
 import 'dart:async' show Timer;
@@ -6,29 +9,41 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
+import '../chart/range_chart.dart';
 import '../chart/timeseries_chart.dart';
-import '../model/environment_info.dart';
-import '../model/ring_buffer.dart';
-import '../model/sampler_sample.dart';
-import '../model/server_snapshot.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
+import '../model/environment_info.dart';
+import '../model/ring_buffer.dart';
+import '../model/health.dart';
+import '../model/sampler_sample.dart';
+import '../model/server_snapshot.dart';
+import '../model/units.dart';
 import '../service/react_client.dart';
 import '../state/connection_manager.dart';
-import '../state/operate_scope.dart';
 import '../state/server_scope.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/section_card.dart' show statGrid;
-import '../widget/stat_tile.dart';
+import '../state/server_session_scope.dart';
+import '../ui/kit/action_row.dart';
+import '../ui/kit/alert.dart';
+import '../ui/kit/card.dart';
+import '../ui/kit/health_badge.dart';
+import '../ui/kit/data_list.dart';
+import '../ui/kit/metric_tile.dart';
+import '../ui/kit/mode.dart';
+import '../ui/kit/page.dart';
+import '../ui/kit/states.dart';
+import '../ui/error_text.dart';
+import 'monitor_parts.dart';
 
-const List<String> _kHostTelemetryIds = <String>[
+/// Host samplers shown to everyone.
+const List<String> kHostEverydayIds = <String>[
   'physical-memory-used',
   'physical-memory-free',
   'disk-usable',
-  'disk-read-rate',
-  'disk-write-rate',
-  'network-receive-rate',
-  'network-send-rate',
+];
+
+/// Host samplers shown when they are above zero, or always in Advanced.
+const List<String> kHostProblemIds = <String>[
   'network-receive-drops',
   'network-receive-errors',
   'network-send-errors',
@@ -41,29 +56,28 @@ const List<String> _kPreferredOrder = <String>[
   'server',
 ];
 
+/// Disk use from which a mount reads as nearly full, then full.
+const (double, double) kMountLevels = (0.8, 0.9);
+
 final RegExp _kSectionCode = RegExp('§.');
+
+/// Whether a raw entry is about React itself rather than the server or JVM.
+bool isReactFact(String key) => key.toLowerCase().contains('react');
 
 String _sectionLabel(String key) {
   if (key == 'cpu' || key == 'jvm') return key.toUpperCase();
+  if (key == 'memory') return reactorText(ReactorText.memoryTitle);
+  if (key == 'server') return reactorText(ReactorText.commonServer);
   if (key.isEmpty) return key;
   return key[0].toUpperCase() + key.substring(1);
 }
 
-String _humanBytes(double bytes) {
-  const List<String> units = <String>['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
-  double v = bytes.abs();
-  int i = 0;
-  while (v >= 1024.0 && i < units.length - 1) {
-    v /= 1024.0;
-    i++;
-  }
-  final String text = i == 0
-      ? v.toStringAsFixed(0)
-      : v.toStringAsFixed(v >= 100.0 ? 0 : 1);
-  return '$text ${units[i]}';
-}
+String _humanRate(double bytesPerSecond) => '${humanBytes(bytesPerSecond)}/s';
 
-String _humanRate(double bytesPerSecond) => '${_humanBytes(bytesPerSecond)}/s';
+/// A rate history worth drawing: one reading draws no line, so the chart
+/// waits for the second.
+List<double> _drawable(List<double> history) =>
+    history.length < 2 ? const <double>[] : history;
 
 bool _looksLikeBytes(String section, String key) {
   final String k = key.toLowerCase().replaceAll(' ', '');
@@ -85,13 +99,15 @@ bool _looksLikeBytes(String section, String key) {
   if (!byteSection) return false;
   if (k.startsWith('physical') ||
       k.startsWith('virtual') ||
-      k.startsWith('swap')) {
+      k.startsWith('swap') ||
+      k.startsWith('heap')) {
     return true;
   }
   if (k.contains('vram')) return true;
   return k.endsWith('total') ||
       k.endsWith('free') ||
       k.endsWith('used') ||
+      k.endsWith('max') ||
       k.endsWith('size') ||
       k.endsWith('capacity');
 }
@@ -99,8 +115,9 @@ bool _looksLikeBytes(String section, String key) {
 String _formatEnvValue(String section, String key, Object? value) {
   if (value == null) return '';
   if (value is num && _looksLikeBytes(section, key)) {
-    return _humanBytes(value.toDouble());
+    return humanBytes(value.toDouble());
   }
+  if (value is List) return value.join(', ');
   return value.toString().replaceAll(_kSectionCode, '');
 }
 
@@ -125,246 +142,274 @@ class EnvironmentView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
-    final List<SamplerSample> hostTelemetry = _kHostTelemetryIds
-        .map((String id) => snapshot?.sampler(id))
-        .whereType<SamplerSample>()
-        .toList(growable: false);
-    final List<String> ordered = <String>[];
-    for (final String k in _kPreferredOrder) {
-      if (info.sectionNames.contains(k)) ordered.add(k);
-    }
-    for (final String k in info.sectionNames) {
-      if (!ordered.contains(k)) ordered.add(k);
-    }
+    final bool advanced = ModeScope.advanced(context);
+    final ServerSnapshot? snap = snapshot;
+    // The disk and network rates are the charts' (no tile repeats them);
+    // with mounts listed, their tiles say what "disk usable" would.
+    final bool mountTiles = info.mounts.any(
+      (EnvironmentMount mount) => !mount.isSystem,
+    );
+    final List<SamplerSample> hostSamples = snap == null
+        ? const <SamplerSample>[]
+        : <SamplerSample>[
+            for (final SamplerSample sample in samplersOf(
+              snap,
+              kHostEverydayIds,
+            ))
+              if (!(mountTiles && sample.id == 'disk-usable')) sample,
+            for (final SamplerSample sample in samplersOf(
+              snap,
+              kHostProblemIds,
+            ))
+              if (advanced || sample.value > 0) sample,
+          ];
+    // System and read-only pseudo mounts stay out of the tiles: they are
+    // near full by design. Advanced lists them, folded, without a state.
+    final List<EnvironmentMount> systemMounts = <EnvironmentMount>[
+      for (final EnvironmentMount mount in info.mounts)
+        if (mount.isSystem) mount,
+    ];
+    final List<Widget> tiles = <Widget>[
+      ...namedTiles(hostSamples),
+      for (final EnvironmentMount mount in info.mounts)
+        if (!mount.isSystem) _mountTile(mount),
+    ];
 
-    return Collection(
-      gap: 0,
+    return PageStack(
       children: <Widget>[
-        if (hostTelemetry.isNotEmpty) _hostTelemetryPanel(hostTelemetry),
-        for (final String section in ordered)
-          SectionPanel(
-            label: _sectionLabel(section),
-            flush: true,
-            child: info.entriesOf(section).isEmpty
-                ? ReactorEmptyState(
-                    title: reactorText(ReactorText.environmentNoValues),
-                    description: reactorText(
-                      ReactorText.environmentEmptySection,
-                    ),
-                  )
-                : dom.div(
-                    styles: const dom.Styles(
-                      raw: <String, String>{
-                        'display': 'flex',
-                        'flex-direction': 'column',
-                      },
-                    ),
-                    <Widget>[
-                      for (final MapEntry<String, Object?> entry
-                          in info.entriesOf(section))
-                        dom.div(
-                          styles: const dom.Styles(
-                            raw: <String, String>{
-                              'display': 'flex',
-                              'justify-content': 'space-between',
-                              'align-items': 'center',
-                              'gap': '1rem',
-                              'padding': '0.5rem 0.75rem',
-                              'border-bottom': '1px solid $kReactorHairline',
-                            },
-                          ),
-                          <Widget>[
-                            dom.span(
-                              styles: const dom.Styles(
-                                raw: <String, String>{
-                                  'color': 'var(--muted-foreground)',
-                                  'font-size': '0.78rem',
-                                },
-                              ),
-                              <Widget>[Component.text(entry.key)],
-                            ),
-                            dom.code(
-                              styles: const dom.Styles(
-                                raw: <String, String>{
-                                  'font-size': '0.74rem',
-                                  'font-weight': '500',
-                                  'color': 'var(--foreground)',
-                                  'font-variant-numeric': 'tabular-nums',
-                                  'text-align': 'end',
-                                },
-                              ),
-                              <Widget>[
-                                Component.text(
-                                  _formatEnvValue(
-                                    section,
-                                    entry.key,
-                                    entry.value,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-          ),
-        if (info.disks.isNotEmpty || info.mounts.isNotEmpty) _diskPanel(),
-        if (info.network.isNotEmpty) _networkPanel(),
-      ],
-    );
-  }
-
-  Widget _diskPanel() {
-    final List<double> readHistory =
-        snapshot?.sampler('disk-read-rate')?.history ?? diskReadHistory;
-    final List<double> writeHistory =
-        snapshot?.sampler('disk-write-rate')?.history ?? diskWriteHistory;
-    return SectionPanel(
-      label: 'Disk',
-      flush: true,
-      child: dom.div(classes: 'reactor-environment-section', <Widget>[
-        dom.div(classes: 'reactor-environment-chart', <Widget>[
-          dom.div(classes: 'reactor-subsection-heading', <Widget>[
-            reactorEyebrow('Read / write throughput'),
-          ]),
-          TimeseriesChart(
-            series: <(String, List<double>)>[
-              ('Read /s', readHistory),
-              ('Write /s', writeHistory),
+        if (tiles.isNotEmpty) MetricGrid(children: tiles),
+        if (info.disks.isNotEmpty || info.mounts.isNotEmpty) _diskChart(),
+        if (info.network.isNotEmpty) _networkChart(),
+        ModeGate(
+          child: PageStack(
+            children: <Widget>[
+              if (info.disks.isNotEmpty) _diskList(),
+              if (info.network.isNotEmpty) _networkList(),
+              if (systemMounts.isNotEmpty) _systemMounts(systemMounts),
+              for (final String section in _orderedSections())
+                _section(section),
             ],
-            height: 180,
-            valueFormatter: _humanRate,
           ),
-        ]),
-        if (info.mounts.isNotEmpty)
-          dom.div(classes: 'reactor-environment-capacity-list', <Widget>[
-            for (final EnvironmentMount mount in info.mounts)
-              _mountCapacity(mount),
-          ]),
-        if (info.disks.isNotEmpty)
-          dom.div(classes: 'reactor-environment-device-grid', <Widget>[
-            for (final EnvironmentDisk disk in info.disks)
-              _deviceCard(
-                title: disk.name,
-                subtitle: disk.model,
-                values: <String>[
-                  'Capacity ${_humanBytes(disk.sizeBytes.toDouble())}',
-                  'Read ${_humanBytes(disk.readBytes.toDouble())}',
-                  'Written ${_humanBytes(disk.writeBytes.toDouble())}',
-                ],
-              ),
-          ]),
-      ]),
-    );
-  }
-
-  Widget _networkPanel() {
-    final List<double> receiveHistory =
-        snapshot?.sampler('network-receive-rate')?.history ??
-        networkReceiveHistory;
-    final List<double> sendHistory =
-        snapshot?.sampler('network-send-rate')?.history ?? networkSendHistory;
-    return SectionPanel(
-      label: 'Network',
-      flush: true,
-      child: dom.div(classes: 'reactor-environment-section', <Widget>[
-        dom.div(classes: 'reactor-environment-chart', <Widget>[
-          dom.div(classes: 'reactor-subsection-heading', <Widget>[
-            reactorEyebrow('Receive / send throughput'),
-          ]),
-          TimeseriesChart(
-            series: <(String, List<double>)>[
-              ('Received /s', receiveHistory),
-              ('Sent /s', sendHistory),
-            ],
-            height: 180,
-            valueFormatter: _humanRate,
-          ),
-        ]),
-        dom.div(classes: 'reactor-environment-device-grid', <Widget>[
-          for (final EnvironmentNetworkInterface item in info.network)
-            _deviceCard(
-              title: item.displayName.isEmpty ? item.name : item.displayName,
-              subtitle: item.displayName.isEmpty ? '' : item.name,
-              values: <String>[
-                'MTU ${item.mtu}',
-                if (item.speedBitsPerSecond > 0)
-                  'Link ${_humanRate(item.speedBitsPerSecond / 8)}',
-                'Received ${_humanBytes(item.receivedBytes.toDouble())}',
-                'Sent ${_humanBytes(item.sentBytes.toDouble())}',
-              ],
-            ),
-        ]),
-      ]),
-    );
-  }
-
-  Widget _hostTelemetryPanel(List<SamplerSample> samples) {
-    return SectionPanel(
-      label: reactorText(ReactorText.environmentPersistentHostTelemetry),
-      flush: true,
-      child: statGrid(
-        samples
-            .map((SamplerSample sample) {
-              return StatTile(label: sample.name, sample: sample);
-            })
-            .toList(growable: false),
-      ),
-    );
-  }
-
-  Widget _mountCapacity(EnvironmentMount mount) {
-    final String label = mount.mount.isEmpty ? mount.name : mount.mount;
-    final String details =
-        '${_humanBytes(mount.usedBytes.toDouble())} used · '
-        '${_humanBytes(mount.freeBytes.toDouble())} free · '
-        '${_humanBytes(mount.totalBytes.toDouble())} total';
-    return dom.div(
-      classes: 'reactor-environment-capacity',
-      attributes: <String, String>{'title': '$label — $details'},
-      <Widget>[
-        dom.div(classes: 'reactor-environment-capacity-label', <Widget>[
-          dom.strong(<Widget>[Component.text(label)]),
-          dom.span(<Widget>[Component.text(details)]),
-        ]),
-        dom.div(
-          classes: 'reactor-environment-capacity-track',
-          attributes: <String, String>{
-            'role': 'img',
-            'aria-label': '$label — $details',
-          },
-          <Widget>[
-            dom.span(
-              classes: 'reactor-environment-capacity-used',
-              styles: dom.Styles(
-                raw: <String, String>{
-                  'width': '${(mount.usedFraction * 100).toStringAsFixed(2)}%',
-                },
-              ),
-              const <Widget>[],
-            ),
-          ],
         ),
       ],
     );
   }
 
-  Widget _deviceCard({
-    required String title,
-    required String subtitle,
-    required List<String> values,
-  }) {
-    final String details = values.join(' · ');
-    return dom.div(
-      classes: 'reactor-environment-device',
-      attributes: <String, String>{'title': details},
-      <Widget>[
-        dom.strong(<Widget>[Component.text(title)]),
-        if (subtitle.isNotEmpty)
-          dom.span(classes: 'reactor-environment-device-subtitle', <Widget>[
-            Component.text(subtitle),
-          ]),
-        dom.code(<Widget>[Component.text(details)]),
+  List<String> _orderedSections() {
+    final List<String> ordered = <String>[
+      for (final String key in _kPreferredOrder)
+        if (info.sectionNames.contains(key)) key,
+    ];
+    for (final String key in info.sectionNames) {
+      if (!ordered.contains(key) && !isReactFact(key)) ordered.add(key);
+    }
+    return ordered;
+  }
+
+  /// A mount as "92%" used, its path and size in a muted line (paths are
+  /// case-sensitive, so not the tile's label), the state as a badge.
+  Widget _mountTile(EnvironmentMount mount) {
+    final String path = mount.mount.isEmpty ? mount.name : mount.mount;
+    final double used = mount.usedFraction;
+    final HealthLevel level = used >= kMountLevels.$2
+        ? HealthLevel.critical
+        : used >= kMountLevels.$1
+        ? HealthLevel.warning
+        : HealthLevel.healthy;
+    return MetricTile(
+      label: reactorText(ReactorText.environmentDisk),
+      value: (used * 100).toStringAsFixed(0),
+      unit: '%',
+      note:
+          '$path · ${humanBytes(mount.usedBytes.toDouble())} '
+          '${reactorText(ReactorText.environmentOfTotal, <String, Object?>{'total': humanBytes(mount.totalBytes.toDouble())})}',
+      caption: levelWord(level),
+      tone: levelTone(level),
+      meter: used,
+    );
+  }
+
+  /// System mounts, folded: path and use, never coloured.
+  Widget _systemMounts(List<EnvironmentMount> mounts) {
+    final String title = reactorText(ReactorText.environmentSystemMounts);
+    return ArcaneDisclosure.minimal(
+      showTreeLines: false,
+      summary: dom.span(classes: 'ui-summary', <Widget>[
+        Component.text('$title (${mounts.length})'),
+      ]),
+      child: DataList<EnvironmentMount>(
+        label: title,
+        items: mounts,
+        columns: <ListColumn<EnvironmentMount>>[
+          ListColumn<EnvironmentMount>.text(
+            reactorText(ReactorText.environmentDisk),
+            (EnvironmentMount mount) =>
+                mount.mount.isEmpty ? mount.name : mount.mount,
+            width: 'minmax(0, 3fr)',
+          ),
+          ListColumn<EnvironmentMount>(
+            reactorText(ReactorText.memoryUsed),
+            (EnvironmentMount mount) => Component.text(
+              '${(mount.usedFraction * 100).toStringAsFixed(0)}% '
+              '${reactorText(ReactorText.environmentOfTotal, <String, Object?>{'total': humanBytes(mount.totalBytes.toDouble())})}',
+            ),
+            numeric: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _diskChart() => _rateChart(
+    reactorText(ReactorText.environmentDisk),
+    (
+      reactorText(ReactorText.environmentRead),
+      'disk-read-rate',
+      diskReadHistory,
+    ),
+    (
+      reactorText(ReactorText.environmentWrite),
+      'disk-write-rate',
+      diskWriteHistory,
+    ),
+  );
+
+  Widget _networkChart() => _rateChart(
+    reactorText(ReactorText.environmentNetwork),
+    (
+      reactorText(ReactorText.environmentReceived),
+      'network-receive-rate',
+      networkReceiveHistory,
+    ),
+    (
+      reactorText(ReactorText.environmentSent),
+      'network-send-rate',
+      networkSendHistory,
+    ),
+  );
+
+  /// Two rates in one unit (the larger reading's: "KB/s"), so the axis
+  /// reads round steps in that unit, on the server's chart range; histories
+  /// the page keeps itself stand in, live only, while the snapshot has no
+  /// sampler.
+  Widget _rateChart(
+    String title,
+    (String, String, List<double>) first,
+    (String, String, List<double>) second,
+  ) {
+    final (String firstName, String aId, List<double> aKept) = first;
+    final (String secondName, String bId, List<double> bKept) = second;
+    final SamplerSample? a = snapshot?.sampler(aId);
+    final SamplerSample? b = snapshot?.sampler(bId);
+    if (a == null && b == null) {
+      return ChartCard(
+        title: title,
+        child: TimeseriesChart(
+          series: <(String, List<double>)>[
+            (firstName, _drawable(aKept)),
+            (secondName, _drawable(bKept)),
+          ],
+          valueFormatter: _humanRate,
+        ),
+      );
+    }
+    return RangeChartCard(
+      title: title,
+      sizes: true,
+      series: <RangeSeries>[
+        RangeSeries(firstName, aId, a),
+        RangeSeries(secondName, bId, b),
+      ],
+    );
+  }
+
+  Widget _diskList() {
+    final String title = reactorText(ReactorText.environmentDisk);
+    return DataList<EnvironmentDisk>(
+      label: title,
+      title: title,
+      items: info.disks,
+      columns: <ListColumn<EnvironmentDisk>>[
+        ListColumn<EnvironmentDisk>(
+          title,
+          (EnvironmentDisk disk) => Component.text(
+            disk.model.isEmpty ? disk.name : '${disk.name} (${disk.model})',
+          ),
+          width: 'minmax(0, 2fr)',
+        ),
+        ListColumn<EnvironmentDisk>(
+          reactorText(ReactorText.environmentRead),
+          (EnvironmentDisk disk) =>
+              Component.text(humanBytes(disk.readBytes.toDouble())),
+          numeric: true,
+        ),
+        ListColumn<EnvironmentDisk>(
+          reactorText(ReactorText.environmentWrite),
+          (EnvironmentDisk disk) =>
+              Component.text(humanBytes(disk.writeBytes.toDouble())),
+          numeric: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _networkList() {
+    final String title = reactorText(ReactorText.environmentNetwork);
+    return DataList<EnvironmentNetworkInterface>(
+      label: title,
+      title: title,
+      items: info.network,
+      columns: <ListColumn<EnvironmentNetworkInterface>>[
+        ListColumn<EnvironmentNetworkInterface>(
+          title,
+          (EnvironmentNetworkInterface item) => Component.text(
+            item.displayName.isEmpty
+                ? item.name
+                : '${item.displayName} (${item.name})',
+          ),
+          width: 'minmax(0, 2fr)',
+        ),
+        ListColumn<EnvironmentNetworkInterface>(
+          reactorText(ReactorText.environmentReceived),
+          (EnvironmentNetworkInterface item) =>
+              Component.text(humanBytes(item.receivedBytes.toDouble())),
+          numeric: true,
+        ),
+        ListColumn<EnvironmentNetworkInterface>(
+          reactorText(ReactorText.environmentSent),
+          (EnvironmentNetworkInterface item) =>
+              Component.text(humanBytes(item.sentBytes.toDouble())),
+          numeric: true,
+        ),
+      ],
+    );
+  }
+
+  /// A raw section as rows, without React's own entries; nothing when it
+  /// has none left.
+  Widget _section(String section) {
+    final List<MapEntry<String, Object?>> entries = <MapEntry<String, Object?>>[
+      for (final MapEntry<String, Object?> entry in info.entriesOf(section))
+        if (!isReactFact(entry.key)) entry,
+    ];
+    if (entries.isEmpty) return const Component.fragment(<Widget>[]);
+    final String title = _sectionLabel(section);
+    return DataList<MapEntry<String, Object?>>(
+      label: title,
+      title: title,
+      items: entries,
+      columns: <ListColumn<MapEntry<String, Object?>>>[
+        ListColumn<MapEntry<String, Object?>>.text(
+          reactorText(ReactorText.environmentField),
+          (MapEntry<String, Object?> entry) => entry.key,
+        ),
+        ListColumn<MapEntry<String, Object?>>.text(
+          reactorText(ReactorText.environmentValue),
+          (MapEntry<String, Object?> entry) =>
+              _formatEnvValue(section, entry.key, entry.value),
+          numeric: true,
+          width: 'minmax(0, 2fr)',
+        ),
       ],
     );
   }
@@ -379,32 +424,46 @@ class EnvironmentScreen extends StatefulWidget {
 
 class _EnvironmentScreenState extends State<EnvironmentScreen> {
   static const Duration _pollInterval = Duration(seconds: 5);
+  static const int _historyLength = 48;
 
   IEnvironmentClient? _client;
   EnvironmentInfo? _info;
   Timer? _pollTimer;
-  final RingBuffer _diskReadHistory = RingBuffer(48);
-  final RingBuffer _diskWriteHistory = RingBuffer(48);
-  final RingBuffer _networkReceiveHistory = RingBuffer(48);
-  final RingBuffer _networkSendHistory = RingBuffer(48);
+  RingBuffer _diskReadHistory = RingBuffer(_historyLength);
+  RingBuffer _diskWriteHistory = RingBuffer(_historyLength);
+  RingBuffer _networkReceiveHistory = RingBuffer(_historyLength);
+  RingBuffer _networkSendHistory = RingBuffer(_historyLength);
   int? _previousDiskReadBytes;
   int? _previousDiskWriteBytes;
   int? _previousNetworkReceiveBytes;
   int? _previousNetworkSendBytes;
   int? _previousSampleMillis;
   Object? _error;
-  bool _loading = false;
   bool _requesting = false;
 
+  /// Each server gets its own readings: a new session (another server, a
+  /// re-pair) starts from nothing instead of showing the last one's host.
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final IEnvironmentClient? client = OperateScope.of(context)?.client;
-    if (client == _client) {
-      return;
-    }
+    final IEnvironmentClient? client = ServerSessionScope.of(context)
+        ?.clientAs<IEnvironmentClient>();
+    if (identical(client, _client)) return;
     _pollTimer?.cancel();
+    _pollTimer = null;
     _client = client;
+    _info = null;
+    _error = null;
+    _requesting = false;
+    _previousDiskReadBytes = null;
+    _previousDiskWriteBytes = null;
+    _previousNetworkReceiveBytes = null;
+    _previousNetworkSendBytes = null;
+    _previousSampleMillis = null;
+    _diskReadHistory = RingBuffer(_historyLength);
+    _diskWriteHistory = RingBuffer(_historyLength);
+    _networkReceiveHistory = RingBuffer(_historyLength);
+    _networkSendHistory = RingBuffer(_historyLength);
     if (client != null) {
       _load(client);
       _pollTimer = Timer.periodic(_pollInterval, (Timer _) {
@@ -416,29 +475,20 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
   Future<void> _load(IEnvironmentClient client, {bool announce = true}) async {
     if (_requesting) return;
     _requesting = true;
-    if (announce) {
-      setState(() {
-        _loading = true;
-        _error = null;
-      });
-    }
+    if (announce && _error != null) setState(() => _error = null);
     try {
       final EnvironmentInfo info = await client.environment();
-      if (!mounted || client != _client) return;
+      if (!mounted || !identical(client, _client)) return;
       _recordSample(info);
       setState(() {
         _info = info;
         _error = null;
-        _loading = false;
       });
     } on Object catch (error) {
-      if (!mounted || client != _client) return;
-      setState(() {
-        _error = error;
-        _loading = false;
-      });
+      if (!mounted || !identical(client, _client)) return;
+      setState(() => _error = error);
     } finally {
-      _requesting = false;
+      if (identical(client, _client)) _requesting = false;
     }
   }
 
@@ -479,17 +529,15 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
     _previousSampleMillis = now;
   }
 
+  /// The first reading only sets the baseline: a rate needs two.
   void _appendRate(
     RingBuffer history,
     int current,
     int? previous,
     double seconds,
   ) {
-    if (previous == null || seconds <= 0 || current < previous) {
-      history.add(0);
-      return;
-    }
-    history.add((current - previous) / seconds);
+    if (previous == null || seconds <= 0) return;
+    history.add(current < previous ? 0 : (current - previous) / seconds);
   }
 
   void _refresh() {
@@ -507,84 +555,54 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
     final ServerScope? server = ServerScope.of(context);
-    final IEnvironmentClient? client = OperateScope.of(context)?.client;
+    final IEnvironmentClient? client = _client;
 
-    if (server?.state == ConnState.connecting && client == null) {
-      return _statePage(
-        ReactorLoadingState(label: reactorText(ReactorText.environmentLoading)),
-      );
-    }
     if (client == null) {
-      return _statePage(
-        ReactorNotice(
-          title: reactorText(ReactorText.environmentUnavailable),
-          message: reactorText(ReactorText.environmentLiveRequired),
-          status: ReactorStatus.critical,
-        ),
-      );
-    }
-
-    if (_loading && _info == null) {
-      return _statePage(
-        ReactorLoadingState(label: reactorText(ReactorText.environmentLoading)),
-      );
-    }
-
-    final Object? error = _error;
-    if (error != null && _info == null) {
-      return _statePage(
-        ReactorNotice(
-          title: reactorText(ReactorText.environmentNoData),
-          message: localizedReactorError(error),
-          status: ReactorStatus.critical,
-          action: Button.secondary(
-            label: reactorText(ReactorText.commonRetry),
-            size: ButtonSize.small,
-            onPressed: _refresh,
-          ),
-        ),
+      if (server?.state == ConnState.connecting) {
+        return LoadingState(label: reactorText(ReactorText.environmentLoading));
+      }
+      return EmptyState(
+        message: reactorText(ReactorText.environmentUnavailable),
+        description: reactorText(ReactorText.environmentLiveRequired),
       );
     }
 
     final EnvironmentInfo? info = _info;
-    if (info == null || info.sectionNames.isEmpty) {
-      return _statePage(
-        ReactorEmptyState(
+    final Object? error = _error;
+    if (info == null) {
+      if (error != null) {
+        return ErrorState(
           title: reactorText(ReactorText.environmentNoData),
-          description: reactorText(ReactorText.environmentNoRuntimeData),
-          icon: ArcaneIcon.serverCog(size: IconSize.sm),
-        ),
+          message: localizedReactorError(error),
+          onRetry: _refresh,
+        );
+      }
+      return LoadingState(label: reactorText(ReactorText.environmentLoading));
+    }
+    if (info.sectionNames.isEmpty &&
+        info.mounts.isEmpty &&
+        info.disks.isEmpty &&
+        info.network.isEmpty) {
+      return EmptyState(
+        message: reactorText(ReactorText.environmentNoData),
+        description: reactorText(ReactorText.environmentNoRuntimeData),
+        icon: ArcaneIcon.serverCog(size: IconSize.sm),
       );
     }
 
-    return ReactorPage(
-      title: reactorText(ReactorText.environmentTitle),
-      subtitle: reactorText(ReactorText.environmentSubtitle),
-      actions: Button.secondary(
-        label: _loading
-            ? reactorText(ReactorText.environmentLoading)
-            : reactorText(ReactorText.environmentRefresh),
-        size: ButtonSize.small,
-        disabled: _loading,
-        onPressed: _loading ? null : _refresh,
-      ),
+    return PageStack(
       children: <Widget>[
         if (error != null)
-          ReactorNotice(
+          AppAlert(
+            tone: AlertTone.warning,
             title: reactorText(ReactorText.environmentRefreshFailed),
             message: localizedReactorError(error),
-            status: ReactorStatus.warning,
-            action: Button.secondary(
-              label: reactorText(ReactorText.commonRetry),
-              size: ButtonSize.small,
-              onPressed: _refresh,
+            action: ActionRow.footer(
+              dense: true,
+              secondary: <RowAction>[
+                RowAction(reactorText(ReactorText.commonRetry), _refresh),
+              ],
             ),
-          )
-        else if (_loading)
-          ReactorNotice(
-            title: reactorText(ReactorText.environmentRefreshing),
-            message: reactorText(ReactorText.environmentRefreshingDescription),
-            status: ReactorStatus.info,
           ),
         EnvironmentView(
           info: info,
@@ -595,14 +613,6 @@ class _EnvironmentScreenState extends State<EnvironmentScreen> {
           networkSendHistory: _networkSendHistory.toList(),
         ),
       ],
-    );
-  }
-
-  Widget _statePage(Widget state) {
-    return ReactorPage(
-      title: reactorText(ReactorText.environmentTitle),
-      subtitle: reactorText(ReactorText.environmentSubtitle),
-      children: <Widget>[state],
     );
   }
 }

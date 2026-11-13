@@ -23,6 +23,7 @@
 #
 # === 変数 ===
 # 変数名を変更せず、各メッセージに元からある変数だけを使用してください。
+#   {access}  React Web ペアリングのロールまたは権限
 #   {action}  アクション名または色調整の方向
 #   {actions}  待機中のアクション数または除外されたアクション名の一覧
 #   {active}  有効な機能または調整項目の数
@@ -41,7 +42,7 @@
 #   {before}  変更前の設定値、言語メッセージ、またはヒープ使用量
 #   {checked}  確認したサンプラー数
 #   {chunks}  アクションの影響を受けたチャンク数
-#   {code}  Web ペアリングコード
+#   {client}  React Web ペアリングを作ったブラウザーの名前
 #   {command}  コマンドパス
 #   {count}  項目、モジュール、変更、またはテスト結果の数
 #   {current}  現在のページ番号
@@ -57,6 +58,7 @@
 #   {entities}  アクションの影響を受けたエンティティ数
 #   {entry}  連携タイムラインの項目
 #   {exceptions}  負荷テストの各試行中に記録された React の例外
+#   {expires}  使われない場合に React Web ペアリングが終わる時刻
 #   {fail}  失敗したチェック数
 #   {file}  設定、言語、またはプラグイン API のファイル名
 #   {fingerprint}  サーバーまたは Web トークンのフィンガープリント
@@ -80,14 +82,17 @@
 #   {incident}  開発テスト一式から除外された再帰的インシデントアクションの識別子
 #   {index}  開発テスト一式の現在のステップ番号
 #   {invalid}  無効な測定値を返すサンプラー数
-#   {issued_at}  Web トークンの作成時刻
 #   {item}  アイテム名または識別子
 #   {items}  統合したアイテムエンティティ数
 #   {kept}  言語更新で保持されたローカル編集
 #   {key}  コマンドパラメーターキー、設定キー、または言語メッセージ ID
 #   {label}  ベンチマーク、指標、設定、コマンド、または Web トークンのラベル
+#   {lifetime}  使われない状態で React Web ペアリングが続く期間
 #   {line}  複数行メッセージで編集中の行番号
 #   {lines}  走査したサーバーログの行数
+#   {link}  React Web のペアリングリンク
+#   {links}  まだ開かれていない React Web ペアリングリンクの数
+#   {listener}  React Web リスナーがバインドしているアドレス
 #   {loaded}  事前読み込み中に新たに読み込んだチャンク数
 #   {locale}  表示、選択、または編集中の言語コード
 #   {matched}  自動保存状態がテストのベースラインと一致するワールド
@@ -105,6 +110,7 @@
 #   {offenders}  非有限値を返すサンプラー数
 #   {options}  受け付ける設定値
 #   {p95}  負荷テスト中のティック時間の 95 パーセンタイル（ms）
+#   {origin}  リクエスト元のブラウザーのオリジン
 #   {parameter}  コマンドパラメーター名
 #   {parameters}  無視されたコマンドパラメーター
 #   {pass}  合格したチェック数
@@ -128,6 +134,7 @@
 #   {react_errors}  サーバーログで見つかった React エラーの行数
 #   {reason}  失敗、拒否、または利用不可状態の理由
 #   {registered}  登録済みモジュール数
+#   {relay}  React Web リレーの状態
 #   {remaining}  次回の言語確認が可能になるまでの時間
 #   {removed_first}  最初の無効化で機能がアクティブレジストリから削除されたか
 #   {removed_second}  繰り返しの無効化で機能がアクティブレジストリから削除されたか
@@ -137,6 +144,7 @@
 #   {sampler}  サンプラー名または識別子
 #   {samplers}  連携サンプラーまたは失敗したサンプラーの一覧
 #   {scope}  マップの適用範囲または距離設定の適用範囲
+#   {scopes}  React Web ペアリングの権限
 #   {score}  ベンチマークスコア
 #   {seconds}  カウントダウンまたは負荷テストの時間（秒）
 #   {section}  設定または言語エディターのセクション
@@ -145,6 +153,7 @@
 #   {since_run}  現在のテスト開始以降に報告されたエラー
 #   {size}  マップウォールの最大寸法または使用中の寸法
 #   {skip}  スキップしたチェック数
+#   {sockets}  開いている React Web ソケットの数
 #   {spawn_y}  重力テストのブロックを生成した高さ
 #   {state}  アクションまたはプラグイン API パックの状態
 #   {status}  連携の状態または設定状態のラベル
@@ -159,6 +168,7 @@
 #   {tier}  インシデント対応手順の重大度レベル
 #   {timing}  1 分あたりのアビリティのコールバック時間（ミリ秒）
 #   {to}  現在のページの最後の項目番号
+#   {tokens}  ペアリング済みの React Web ブラウザーの数
 #   {total}  メッセージ内の項目、モジュール、ワールド、チェック、またはメモリの合計
 #   {type}  コマンドパラメーター、設定値、マップ、または距離の種類
 #   {unavailable}  利用不可の NMS ブリッジハンドル数
@@ -225,12 +235,12 @@ root = "React のルートコマンド"
 test = "React の検証と負荷テストを実行する"
 "test.load" = "2パス合成負荷テストを実行します"
 "test.run" = "React の検証スイートを実行する"
-version = "React のバージョンを表示"
 distance = "サーバー、ワールド、またはプレイヤーの描画・シミュレーション・送信距離を設定"
 web = "React WebUI のアクセストークンを管理する"
-"web.list" = "有効な WebUI トークンを一覧表示"
-"web.pair" = "WebUI ペアリングトークンを作成"
-"web.revoke" = "WebUI トークンを失効させる"
+"web.pair" = "一度だけ使える React Web のペアリングリンクを作成"
+"web.revoke" = "トークンを失効させるか、まだ開かれていないリンクを取り消す"
+"web.status" = "リスナー、リレー、フィンガープリントを表示"
+"web.tokens" = "ペアリング済みのブラウザーを一覧表示"
 language = "自分の言語またはサーバーの言語を選択"
 
 [command.parameter]
@@ -267,9 +277,11 @@ target = "対象のワールドまたはプレイヤー。既定ではコマン�
 value = "チャンク単位の距離。設定の継承に対応している場合は -1 を指定"
 
 [command.parameter.web]
-id = "失効させるトークン ID"
+expires = "使われない状態でペアリングが続く期間 (例: 7d)"
+id = "トークン ID、または all"
 label = "このトークンの分かりやすいラベル"
 role = "このトークンのロール: viewer、operator、admin"
+scopes = "ロールの代わりの権限 (例: read,op:execute)"
 
 [command.runtime]
 chunk_not_sampled = "&cこのチャンクはまだ測定されていません。しばらくしてからもう一度確認してください。&r"
@@ -347,21 +359,39 @@ threading_folia = "(Folia リージョンスレッド)"
 threading_standard = ""
 
 [command.runtime.web]
+fingerprint_copy_hover = "フィンガープリントをコピー"
+invalid_expires = "&cexpires= には d、h、m 付きの数値を 1m から 365d の範囲で指定します (例: 7d)。&r"
+invalid_label = "&cラベルは 64 文字までです。&r"
 invalid_role = "&c無効なロール: &f{role}&c。viewer、operator、admin のいずれかを指定してください。&r"
+invalid_scope = "&c不明な権限 &f{scope}&c。権限は {scopes} です。&r"
+link_copy = "&b&n[コピー]&r"
+link_copy_hover = "リンクをコピー"
+link_details = "&7権限 {scopes}; 使われないまま {lifetime} で終了; トークン {id}&r"
+link_open = "&b&n[React Web を開く]&r"
+link_open_hover = "ブラウザーで開く"
+link_ready = "&aリンクの準備ができました。10 分以内に開いてください&r"
+link_ready_console = "&aリンクの準備ができました。10 分以内に開いてください:&r {link}"
+link_revoke = "&c&n[取り消し]&r"
+link_revoke_hover = "このリンクを取り消すか、このリンクで作ったペアリングを終了"
 mutation_notice = "&eWeb 変更者 &f{actor}&e: &b{target}&e — &f{detail}&e。&r"
-pair_unavailable = "&cWeb ペアリングを利用できません: &f{reason}&r"
+never = "なし"
 no_tokens = "&bアクティブなトークンはありません。&r"
-pairing_code = "&bペアリングコード:&r {code}"
-pairing_copy = "&bペアリングコード:&r &e&nクリックしてコピー&r"
-pairing_copy_hover = "完全なペアリングコードをコピー"
-persist_failed = "&cトークンの保存に失敗しました: &f{reason}&r"
+off = "オフ"
+pair_refused = "&e{label} はペアリングできませんでした: &f{reason}&r"
+pair_unavailable = "&cWeb ペアリングを利用できません: &f{reason}&r"
+refused_expired = "リンクの期限が切れました。新しいリンクを作成してください"
+refused_origin = "オリジン {origin} は web.toml の allowedOrigins にありません"
+relay_connecting = "{url} に接続中"
+relay_registered = "{url} に登録済み"
+relay_waiting = "最初のペアリングを待機中"
 revoked = "&bトークンを失効させました:&r {id}"
-role = "&bロール:&r {role}"
-server_fingerprint = "&bサーバーフィンガープリント:&r {fingerprint}"
-token_entry = "&7  {id} | {label} | issuedAt={issued_at}&r"
-token_fingerprint = "&bトークンフィンガープリント:&r {fingerprint}"
+role_and_scopes = "&crole= か scopes= のどちらか一方を使ってください。&r"
+scopes_need_read = "&cscopes= には read を含めてください。&r"
+state_ready = "準備完了"
+status = "&bReact Web&r {state} | リスナー {listener} | リレー {relay} | トークン {tokens} 件、未使用リンク {links} 件 | ソケット {sockets} 件"
+status_fingerprint = "&7フィンガープリント&r {fingerprint}"
+token_entry = "&7  {id} | {label} | {access} | 期限 {expires} | 最終使用 {used} | {client} | ソケット {sockets} 件&r"
 token_header = "&b有効なトークン ({count}):&r"
-token_id = "&bトークン ID:&r {id}"
 token_not_found = "&cトークンが見つかりません: &f{id}&r"
 update_failed = "&cトークンストアを更新できませんでした: &f{reason}&r"
 
@@ -469,13 +499,17 @@ description = "React内蔵のHTTP/WebSocket管理APIの設定です。web.toml�
 impact = "リスナーをlocalhostの外部に公開する場合は、リバースプロキシのHTTPS URLを設定してください。React内蔵のリスナーは引き続きHTTPのみをサポートします。web.tomlを保存すると、変更が自動的に適用されます。"
 summary = "直接接続する API クライアントに通知する公開ベース URL。"
 
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.allowedorigins]
+impact = "各項目はオリジンです: スキーム、ホスト、ポートで、パスは含めません。プレーンな http はループバックのみです。ほかのオリジンのページは origin_not_allowed で拒否されます。リレーからのように Origin のないリクエストは影響を受けません。"
+summary = "直接リスナーを使えるブラウザーのオリジン。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.appurl]
+impact = "自分でホストする React Web に変更し、そのオリジンを allowedOrigins に追加します。"
+summary = "ペアリングリンクが開く React Web のアドレス。"
+
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenaddress]
 impact = "既定のワイルドカード :: は、LAN・コンテナー・ポート転送経由の IPv6 および IPv4 マップド通信を受け付けます。ループバックアドレスは、同じホストのリバースプロキシまたは中継経由でのみ使用してください。"
 summary = "Web リスナーがバインドする IP アドレス。"
-
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.corsorigins]
-impact = "空のリストはすべてのオリジンを許可します。クロスオリジンアクセスを制限するには、特定のオリジンを追加してください。"
-summary = "HTTP API で許可する CORS オリジンの一覧。"
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React は既定で認証付き API を公開します。false にすると HTTP/WebSocket リスナーを起動しません。"
@@ -486,8 +520,8 @@ impact = "このポートが使用中の場合、Reactは次の99個のポート
 summary = "ウェブサーバーで優先する TCP ポート。"
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayenabled]
-impact = "true の場合、React は relayUrl のリレーブローカーに接続し、コンパニオンアプリがポート転送なしで NAT の背後にあるサーバーへ到達できるようにします。"
-summary = "NAT 越えのための送信用クラウドリレークライアントを有効にします。"
+impact = "React は最初の /react web pair で relayUrl に接続し、ペアリングがある間は起動のたびに接続します。ペアリングリンクにはリレーのアドレスも入ります。"
+summary = "ポートを開けずにブラウザーがこのサーバーへ届くよう、送信側のリレークライアントを有効にします。"
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayurl]
 impact = "relayEnabled が true の場合にのみ読み込まれます。リレーが無効な場合は空のままにしてください。"
@@ -497,9 +531,13 @@ summary = "リレーブローカーのベース WSS URL。例: wss://relay.arcan
 impact = "true の場合、認証されていない GET リクエストは 401 で拒否されます。完全に信頼できるネットワーク環境でのみ false に設定してください。"
 summary = "読み取り専用の HTTP エンドポイントに有効な認証トークンを必須にします。"
 
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.wspushhz]
-impact = "値を大きくするとプッシュの精度が上がりますが、ネットワークと CPU のオーバーヘッドも増えます。"
-summary = "WebSocket 接続でサンプラーの更新をプッシュする目標頻度 (Hz)。"
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.servername]
+impact = "空の場合は MOTD の 1 行目を使い、MOTD が vanilla の既定値ならサーバーフォルダー名を使います。"
+summary = "React Web がこのサーバーに表示する名前。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
+impact = "使うたびに期間が最初から数え直されます。/react web pair expires= で 1 つのリンクだけ上書きできます。1 から 365。"
+summary = "使われない状態でペアリングが続く日数。"
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "ガベージコレクション実行アクションの設定。JVM のガベージコレクションを要求し、即時に回収されたヒープ量を報告します。"

@@ -1,6 +1,7 @@
 package art.arcane.react.core.gui;
 
 import art.arcane.react.React;
+import art.arcane.react.api.web.WebRevisions;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.project.config.ConfigFileSupport;
 import art.arcane.react.util.project.config.TomlCodec;
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -64,7 +66,9 @@ class MainConfigEditIsolationTest {
         return null;
       });
 
+      WebRevisions.Snapshot revisionsBefore = WebRevisions.current();
       assertFalse(ReactConfigGUI.applyAndSave(null, path, value));
+      assertSame(revisionsBefore, WebRevisions.current(), "a rejected save must not announce a change");
       assertEquals(2, writes.get());
       assertFalse(active.isUnsafeBytecode());
       assertEquals(25.0, active.getValue().getValueMutlipliers().get("DIAMOND"));

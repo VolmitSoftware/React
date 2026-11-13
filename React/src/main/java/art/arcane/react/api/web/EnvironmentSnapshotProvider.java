@@ -8,13 +8,16 @@ import java.util.function.Supplier;
 
 public final class EnvironmentSnapshotProvider {
     private final Supplier<IdentityDto> identitySupplier;
+    private final Supplier<String> serverVersionSupplier;
     private final Supplier<HostTelemetrySnapshot> telemetrySupplier;
 
     public EnvironmentSnapshotProvider(
         Supplier<IdentityDto> identitySupplier,
+        Supplier<String> serverVersionSupplier,
         Supplier<HostTelemetrySnapshot> telemetrySupplier
     ) {
         this.identitySupplier = identitySupplier;
+        this.serverVersionSupplier = serverVersionSupplier;
         this.telemetrySupplier = telemetrySupplier;
     }
 
@@ -38,9 +41,9 @@ public final class EnvironmentSnapshotProvider {
     private EnvironmentDto.ServerDto buildServer(EnvironmentDto.ServerDto source) {
         EnvironmentDto.ServerDto server = new EnvironmentDto.ServerDto();
         IdentityDto identity = identitySupplier.get();
+        server.version = serverVersionSupplier.get();
         if (identity != null) {
             server.brand = identity.serverName;
-            server.version = identity.version;
             server.folia = identity.folia;
         }
         if (source != null) {

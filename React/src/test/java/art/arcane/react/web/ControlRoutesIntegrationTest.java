@@ -1,11 +1,7 @@
 package art.arcane.react.web;
 
 import art.arcane.react.api.web.ControlBackend;
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebConfiguration;
-import art.arcane.react.api.web.WebSecret;
 import art.arcane.react.api.web.dto.ControlItemDto;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.SampleController;
@@ -51,7 +47,6 @@ public class ControlRoutesIntegrationTest {
             @Override
             protected IdentityDto resolveIdentity() {
                 IdentityDto dto = new IdentityDto();
-                dto.version = "9.9.9-test";
                 dto.serverName = "TestBrand";
                 dto.folia = false;
                 dto.serverId = "127.0.0.1:0";
@@ -74,16 +69,8 @@ public class ControlRoutesIntegrationTest {
 
     @Test
     void featuresRoutesHappyPathAndAuthGuards(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord opRecord = new TokenRecord("tok-op", "op-device", 1000L, Set.of("read", "op:execute"), "operator");
-        TokenRecord readRecord = new TokenRecord("tok-read", "read-device", 1000L, Set.of("read"), "viewer");
-        String opBearer = PairingToken.mint(secret, opRecord.id(), opRecord.label(), opRecord.issuedAt(), opRecord.scopes());
-        String readBearer = PairingToken.mint(secret, readRecord.id(), readRecord.label(), readRecord.issuedAt(), readRecord.scopes());
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(opRecord);
-        store.add(readRecord);
-        store.save(tokensFile);
+        String opBearer = WebTestTokens.issue(dataFolder, "op-device", "operator");
+        String readBearer = WebTestTokens.issue(dataFolder, "read-device", "viewer");
 
         FakeControlBackend fakeFeatureBackend = new FakeControlBackend("feature");
         FakeControlBackend fakeTweakBackend = new FakeControlBackend("tweak");
@@ -231,16 +218,8 @@ public class ControlRoutesIntegrationTest {
 
     @Test
     void tweaksRoutesHappyPath(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord opRecord = new TokenRecord("tok-tw-op", "op-device", 2000L, Set.of("read", "op:execute"), "operator");
-        TokenRecord readRecord = new TokenRecord("tok-tw-read", "read-device", 2000L, Set.of("read"), "viewer");
-        String opBearer = PairingToken.mint(secret, opRecord.id(), opRecord.label(), opRecord.issuedAt(), opRecord.scopes());
-        String readBearer = PairingToken.mint(secret, readRecord.id(), readRecord.label(), readRecord.issuedAt(), readRecord.scopes());
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(opRecord);
-        store.add(readRecord);
-        store.save(tokensFile);
+        String opBearer = WebTestTokens.issue(dataFolder, "op-device", "operator");
+        String readBearer = WebTestTokens.issue(dataFolder, "read-device", "viewer");
 
         FakeControlBackend fakeFeatureBackend = new FakeControlBackend("feature");
         FakeControlBackend fakeTweakBackend = new FakeControlBackend("tweak");

@@ -9,11 +9,30 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
 public final class WsAuthenticationGate {
+  /** Socket close code for a pairing that was revoked or expired; the reason is {@code token_revoked} or {@code token_expired}. */
+  public static final int CLOSE_PAIRING_ENDED = 4401;
+  /** Socket close code for a direct upgrade from an origin outside {@code allowedOrigins}. */
+  public static final int CLOSE_ORIGIN_NOT_ALLOWED = 4403;
+  public static final int CLOSE_POLICY = 1008;
+
+  /** Checks a socket's token for a scope: null admits it, anything else is the refusal reason sent with the close. */
+  @FunctionalInterface
+  public interface Verifier {
+    String refusal(String token, String scope);
+  }
+
+  /** The close code for a refusal reason: 4401 when the pairing ended, 4403 for the origin, else 1008. */
+  public static int closeCode(String reason) {
+    if ("token_revoked".equals(reason) || "token_expired".equals(reason)) {
+      return CLOSE_PAIRING_ENDED;
+    }
+    return "origin_not_allowed".equals(reason) ? CLOSE_ORIGIN_NOT_ALLOWED : CLOSE_POLICY;
+  }
+
   private static final int MAX_AUTH_FRAME_CHARS = 4096;
   private static final int MAX_TOKEN_CHARS = 2048;
 
@@ -22,13 +41,13 @@ public final class WsAuthenticationGate {
   private final AtomicInteger pendingCount = new AtomicInteger();
   private final int maximumPending;
   private final long timeoutNanos;
-  private final BiPredicate<String, String> scopeVerifier;
+  private final Verifier scopeVerifier;
   private final LongSupplier nanoTime;
 
   public WsAuthenticationGate(
       int maximumPending,
       long timeoutMillis,
-      BiPredicate<String, String> scopeVerifier
+      Verifier scopeVerifier
   ) {
     this(maximumPending, timeoutMillis, scopeVerifier, System::nanoTime);
   }
@@ -36,7 +55,7 @@ public final class WsAuthenticationGate {
   public WsAuthenticationGate(
       int maximumPending,
       long timeoutMillis,
-      BiPredicate<String, String> scopeVerifier,
+      Verifier scopeVerifier,
       LongSupplier nanoTime
   ) {
     if (maximumPending < 1) {
@@ -51,11 +70,11 @@ public final class WsAuthenticationGate {
     this.nanoTime = Objects.requireNonNull(nanoTime, "nanoTime");
   }
 
-  public boolean register(
-      WsChannel channel,
+  public <C extends WsChannel> boolean register(
+      C channel,
       Consumer<String> policyCloser,
       String requiredScope,
-      WebSocketSessions targetSessions
+      WebSocketSessions<C> targetSessions
   ) {
     Objects.requireNonNull(channel, "channel");
     Objects.requireNonNull(policyCloser, "policyCloser");
@@ -77,6 +96,7 @@ public final class WsAuthenticationGate {
         policyCloser,
         requiredScope,
         targetSessions,
+        tokenId -> targetSessions.add(channel, tokenId),
         nanoTime.getAsLong() + timeoutNanos
     );
     PendingSession previous = pending.putIfAbsent(channel.id(), session);
@@ -91,7 +111,7 @@ public final class WsAuthenticationGate {
   public boolean authenticate(
       String sessionId,
       String message,
-      WebSocketSessions targetSessions,
+      WebSocketSessions<?> targetSessions,
       Consumer<String> policyCloser
   ) {
     Objects.requireNonNull(sessionId, "sessionId");
@@ -106,15 +126,20 @@ public final class WsAuthenticationGate {
     }
 
     AuthFrame frame = parse(message);
-    if (frame == null || !scopeVerifier.test(frame.token(), session.requiredScope())) {
+    if (frame == null) {
       session.policyCloser().accept("Invalid authentication frame");
+      return false;
+    }
+    String refusal = scopeVerifier.refusal(frame.token(), session.requiredScope());
+    if (refusal != null) {
+      session.policyCloser().accept(refusal);
       return false;
     }
     if (!session.channel().isOpen()) {
       session.policyCloser().accept("Connection closed during authentication");
       return false;
     }
-    targetSessions.add(session.channel());
+    session.admit().accept(tokenIdOf(frame.token()));
     return true;
   }
 
@@ -122,7 +147,7 @@ public final class WsAuthenticationGate {
       String sessionId,
       String message,
       String requiredScope,
-      WebSocketSessions targetSessions,
+      WebSocketSessions<?> targetSessions,
       Consumer<String> policyCloser
   ) {
     Objects.requireNonNull(sessionId, "sessionId");
@@ -131,19 +156,19 @@ public final class WsAuthenticationGate {
     Objects.requireNonNull(policyCloser, "policyCloser");
 
     AuthFrame frame = parse(message);
-    if (!optionalAuthenticated.add(sessionId)
-        || frame == null
-        || !scopeVerifier.test(frame.token(), requiredScope)) {
+    String refusal = frame == null ? "Invalid authentication frame" : scopeVerifier.refusal(frame.token(), requiredScope);
+    if (!optionalAuthenticated.add(sessionId) || refusal != null) {
       targetSessions.remove(sessionId);
-      policyCloser.accept("Invalid or repeated authentication frame");
+      policyCloser.accept(refusal == null ? "Repeated authentication frame" : refusal);
       return false;
     }
+    targetSessions.bindToken(sessionId, tokenIdOf(frame.token()));
     return true;
   }
 
   public void reject(
       String sessionId,
-      WebSocketSessions targetSessions,
+      WebSocketSessions<?> targetSessions,
       Consumer<String> policyCloser,
       String reason
   ) {
@@ -234,6 +259,11 @@ public final class WsAuthenticationGate {
     }
   }
 
+  static String tokenIdOf(String bearer) {
+    int dot = bearer.indexOf('.');
+    return dot > 0 ? bearer.substring(0, dot) : bearer;
+  }
+
   private record AuthFrame(String token) {
   }
 
@@ -241,7 +271,8 @@ public final class WsAuthenticationGate {
       WsChannel channel,
       Consumer<String> policyCloser,
       String requiredScope,
-      WebSocketSessions targetSessions,
+      WebSocketSessions<?> targetSessions,
+      Consumer<String> admit,
       long deadlineNanos
   ) {
   }

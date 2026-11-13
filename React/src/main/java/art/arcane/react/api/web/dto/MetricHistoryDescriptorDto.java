@@ -12,6 +12,8 @@ public record MetricHistoryDescriptorDto(
     long intervalMs,
     long windowMs,
     Sampler.Quality quality,
-    String unit
+    String unit,
+    boolean available,
+    String unavailableReason
 ) {
 }

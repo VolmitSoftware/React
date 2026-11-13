@@ -1,20 +1,28 @@
+/// Performance > Internals (Advanced): React's own tick time, job queue and
+/// CPU share, its telemetry pipeline and the JVM runtime. Every sampler row
+/// opens its history in Metrics.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
+import 'package:jaspr/jaspr.dart' show Component;
 
-import '../chart/timeseries_chart.dart';
+import '../chart/range_chart.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
+import '../model/health.dart';
 import '../model/sampler_sample.dart';
+import '../model/reading.dart';
 import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/gauge.dart';
-import '../widget/section_card.dart';
+import '../ui/kit/health_badge.dart';
+import '../ui/kit/metric_tile.dart';
+import '../ui/kit/data_list.dart';
+import '../ui/kit/page.dart';
+import '../ui/kit/section.dart';
 import '../widget/server_snapshot_state.dart';
-import '../widget/stat_tile.dart';
+import 'monitor_parts.dart';
 
-const List<String> _kTelemetryPipelineIds = <String>[
+const List<String> kTelemetryPipelineIds = <String>[
   'react-history-writer-queue',
   'react-history-writer-capacity',
   'react-history-dropped-snapshots',
@@ -34,168 +42,156 @@ const List<String> _kTelemetryPipelineIds = <String>[
   'react-published-metrics-dropped',
 ];
 
-const List<String> _kWebTelemetryIds = <String>[
+const List<String> kWebTelemetryIds = <String>[
   'react-websocket-sessions',
   'react-websocket-coalesced-frames',
 ];
 
-const List<String> _kJvmRuntimeIds = <String>[
+/// The JVM beyond its heap (the heap is under Memory).
+const List<String> kJvmRuntimeIds = <String>[
   'jvm-threads',
-  'jvm-heap-max',
-  'jvm-heap-committed',
-  'jvm-heap-utilization',
-  'jvm-nonheap-used',
-  'jvm-direct-buffer-bytes',
-  'jvm-direct-buffer-count',
   'jvm-loaded-classes',
   'jvm-gc-collections-rate',
   'jvm-process-uptime',
 ];
 
+/// CPU load (process or system, percent) at which a tile reads Warning,
+/// then Critical.
+const (double, double) kProcessLoadLevels = (60.0, 85.0);
+
+/// A CPU load tile, coloured and named by [kProcessLoadLevels].
+MetricTile _loadTile(ReactorText label, SamplerSample? load) {
+  final HealthLevel level = load == null
+      ? HealthLevel.unknown
+      : shownValue(load.value) >= kProcessLoadLevels.$2
+      ? HealthLevel.critical
+      : shownValue(load.value) >= kProcessLoadLevels.$1
+      ? HealthLevel.warning
+      : HealthLevel.healthy;
+  return samplerTile(
+    reactorText(label),
+    load,
+    tone: levelTone(level),
+    caption: levelWord(level),
+  );
+}
+
 class InternalsScreen extends StatelessWidget {
-  const InternalsScreen({super.key});
+  const InternalsScreen({this.serverId, super.key});
+
+  /// The open server, so sampler rows can open their history.
+  final String? serverId;
 
   @override
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    final Widget? statePage = serverSnapshotStatePage(
-      scope: scope,
-      title: reactorText(ReactorText.internalsTitle),
-      subtitle: reactorText(ReactorText.internalsSubtitle),
-    );
-    if (snapshot == null) return statePage!;
+    if (snapshot == null) return serverSnapshotState(scope: scope);
 
-    final SamplerSample? asyncTickTime = snapshot.sampler(
-      'react-async-tick-time',
-    );
-    final SamplerSample? syncTickTime = snapshot.sampler(
-      'react-sync-tick-time',
-    );
-    final SamplerSample? jobsQueue = snapshot.sampler('react-jobs-queue');
-    final SamplerSample? jobQueueTime = snapshot.sampler(
-      'react-job-queue-time',
-    );
-    final SamplerSample? jobBudget = snapshot.sampler('react-job-budget');
-    final SamplerSample? systemLoad = snapshot.sampler('processor-system-load');
+    final SamplerSample? asyncTick = snapshot.sampler('react-async-tick-time');
+    final SamplerSample? syncTick = snapshot.sampler('react-sync-tick-time');
     final SamplerSample? processLoad = snapshot.sampler(
       'processor-process-load',
     );
-    final SamplerSample? outsideLoad = snapshot.sampler('processor-outside');
-    final List<SamplerSample> telemetryPipeline = _samples(
-      snapshot,
-      _kTelemetryPipelineIds,
-    );
-    final List<SamplerSample> webTelemetry = _samples(
-      snapshot,
-      _kWebTelemetryIds,
-    );
-    final List<SamplerSample> jvmRuntime = _samples(snapshot, _kJvmRuntimeIds);
+    final SamplerSample? systemLoad = snapshot.sampler('processor-system-load');
 
-    final List<(String, List<double>)> tickSeries = <(String, List<double>)>[
-      (
-        reactorText(ReactorText.internalsAsync),
-        asyncTickTime?.history ?? const <double>[],
-      ),
-      (
-        reactorText(ReactorText.internalsSync),
-        syncTickTime?.history ?? const <double>[],
-      ),
-    ];
-
-    return ReactorPage(
-      title: reactorText(ReactorText.internalsTitle),
-      subtitle: reactorText(ReactorText.internalsSubtitle),
+    return PageStack(
       children: <Widget>[
-        SectionPanel(
-          label: reactorText(ReactorText.internalsReactTickTime),
-          child: TimeseriesChart(series: tickSeries, height: 160),
-        ),
-        SectionPanel(
-          label: reactorText(ReactorText.internalsJobs),
-          flush: true,
-          child: statGrid(<Widget>[
-            StatTile(
-              label: reactorText(ReactorText.commonQueue),
-              sample: jobsQueue,
-            ),
-            StatTile(
-              label: reactorText(ReactorText.commonQueueTime),
-              sample: jobQueueTime,
-            ),
-            StatTile(
-              label: reactorText(ReactorText.commonBudget),
-              sample: jobBudget,
-            ),
-          ]),
-        ),
-        SectionPanel(
-          label: reactorText(ReactorText.internalsCpuLoad),
-          flush: true,
-          child: reactorGrid(
-            children: <Widget>[
-              if (processLoad == null)
-                StatTile(
-                  label: reactorText(ReactorText.commonProcessLoad),
-                  sample: null,
-                )
-              else
-                Gauge(
-                  label: reactorText(ReactorText.commonProcessLoad),
-                  value: processLoad.value,
-                  display: processLoad.display,
-                  max: 100.0,
-                  thresholds: (60.0, 85.0),
+        PageSection(
+          title: reactorText(ReactorText.internalsJobs),
+          children: <Widget>[
+            MetricGrid(
+              children: <Widget>[
+                samplerTile(
+                  reactorText(ReactorText.commonQueue),
+                  snapshot.sampler('react-jobs-queue'),
                 ),
-              StatTile(
-                label: reactorText(ReactorText.internalsSystemLoad),
-                sample: systemLoad,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.internalsOutsideLoad),
-                sample: outsideLoad,
-              ),
-            ],
-          ),
+                samplerTile(
+                  reactorText(ReactorText.commonQueueTime),
+                  snapshot.sampler('react-job-queue-time'),
+                ),
+                samplerTile(
+                  reactorText(ReactorText.commonBudget),
+                  snapshot.sampler('react-job-budget'),
+                ),
+              ],
+            ),
+          ],
         ),
-        if (telemetryPipeline.isNotEmpty)
-          _sampleSection(
-            reactorText(ReactorText.internalsTelemetryPipeline),
-            telemetryPipeline,
-          ),
-        if (webTelemetry.isNotEmpty)
-          _sampleSection(
-            reactorText(ReactorText.internalsWebTelemetry),
-            webTelemetry,
-          ),
-        if (jvmRuntime.isNotEmpty)
-          _sampleSection(
-            reactorText(ReactorText.internalsJvmRuntime),
-            jvmRuntime,
-          ),
+        PageSection(
+          title: reactorText(ReactorText.internalsCpuLoad),
+          children: <Widget>[
+            MetricGrid(
+              children: <Widget>[
+                _loadTile(ReactorText.commonProcessLoad, processLoad),
+                _loadTile(ReactorText.internalsSystemLoad, systemLoad),
+                samplerTile(
+                  reactorText(ReactorText.internalsOutsideLoad),
+                  snapshot.sampler('processor-outside'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        RangeChartCard(
+          title: reactorText(ReactorText.internalsReactTickTime),
+          unit: 'ms',
+          series: <RangeSeries>[
+            RangeSeries(
+              reactorText(ReactorText.internalsAsync),
+              'react-async-tick-time',
+              asyncTick,
+            ),
+            RangeSeries(
+              reactorText(ReactorText.internalsSync),
+              'react-sync-tick-time',
+              syncTick,
+            ),
+          ],
+        ),
+        _samplerList(
+          reactorText(ReactorText.internalsTelemetryPipeline),
+          samplersOf(snapshot, kTelemetryPipelineIds),
+        ),
+        _samplerList(
+          reactorText(ReactorText.internalsWebTelemetry),
+          samplersOf(snapshot, kWebTelemetryIds),
+        ),
+        _samplerList(
+          reactorText(ReactorText.internalsJvmRuntime),
+          samplersOf(snapshot, kJvmRuntimeIds),
+        ),
       ],
     );
   }
 
-  List<SamplerSample> _samples(ServerSnapshot snapshot, List<String> ids) {
-    return ids
-        .map(snapshot.sampler)
-        .whereType<SamplerSample>()
-        .toList(growable: false);
-  }
-
-  Widget _sampleSection(String label, List<SamplerSample> samples) {
-    return SectionPanel(
-      label: label,
-      flush: true,
-      child: statGrid(
-        samples
-            .map((SamplerSample sample) {
-              return StatTile(label: sample.name, sample: sample);
-            })
-            .toList(growable: false),
-      ),
+  Widget _samplerList(String title, List<SamplerSample> samples) {
+    if (samples.isEmpty) return const Component.fragment(<Widget>[]);
+    final String? id = serverId;
+    return DataList<SamplerSample>(
+      label: title,
+      title: title,
+      items: samples,
+      href: id == null
+          ? null
+          : (SamplerSample sample) => serverPagePath(
+              id,
+              'metrics',
+              <String, String>{'metric': sample.id},
+            ),
+      columns: <ListColumn<SamplerSample>>[
+        ListColumn<SamplerSample>(
+          reactorText(ReactorText.metricsSampler),
+          (SamplerSample sample) => Component.text(sample.name),
+        ),
+        ListColumn<SamplerSample>(
+          reactorText(ReactorText.metricsCurrent),
+          (SamplerSample sample) => Component.text(readingOf(sample).text),
+          numeric: true,
+          width: '10rem',
+        ),
+      ],
     );
   }
 }

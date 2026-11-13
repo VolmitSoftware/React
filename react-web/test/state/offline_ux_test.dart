@@ -2,11 +2,8 @@ library;
 
 import 'dart:async';
 
-import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr_test/server_test.dart';
 
-import 'package:react_web/app/reactor_app.dart';
 import 'package:react_web/model/sampler_sample.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/service/react_client.dart';
@@ -58,11 +55,6 @@ Future<void> pump([int count = 20]) async {
     await Future<void>.delayed(Duration.zero);
   }
 }
-
-const AsciiStylesheet _sheet = AsciiStylesheet();
-
-Widget _wrap(Widget child) =>
-    ArcaneThemeProvider(stylesheet: _sheet, child: child);
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -159,162 +151,5 @@ void main() {
       await sub.cancel();
       expect(emitted.last, equals(ConnState.live));
     });
-  });
-
-  // -------------------------------------------------------------------------
-  // ReactorShell offline UX rendering
-  // -------------------------------------------------------------------------
-  group('ReactorShell offline UX', () {
-    testServer('shows offline banner text when server state is offline', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          ReactorShell(
-            servers: const <ServerEntry>[
-              ServerEntry(id: 'srv1', name: 'Alpha', state: ConnState.offline),
-            ],
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, 200);
-      expect(
-        res.body.contains('Connection lost'),
-        isTrue,
-        reason:
-            '_OfflineBanner must render "Connection lost" text when a server is offline',
-      );
-    });
-
-    testServer('shows Reconnect button when any server is offline', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          ReactorShell(
-            servers: const <ServerEntry>[
-              ServerEntry(id: 'srv1', name: 'Alpha', state: ConnState.offline),
-            ],
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, 200);
-      expect(
-        res.body.contains('Reconnect'),
-        isTrue,
-        reason: 'shell must render Reconnect button when a server is offline',
-      );
-    });
-
-    testServer('shows Reconnect button when any server is degraded', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          ReactorShell(
-            servers: const <ServerEntry>[
-              ServerEntry(id: 'srv1', name: 'Alpha', state: ConnState.degraded),
-            ],
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, 200);
-      expect(
-        res.body.contains('Reconnect'),
-        isTrue,
-        reason: 'shell must render Reconnect button when a server is degraded',
-      );
-    });
-
-    testServer('does not show Reconnect button when all servers are live', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          ReactorShell(
-            servers: const <ServerEntry>[
-              ServerEntry(id: 'srv1', name: 'Alpha', state: ConnState.live),
-            ],
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, 200);
-      expect(
-        res.body.contains('Reconnect'),
-        isFalse,
-        reason:
-            'shell must not render Reconnect button when all servers are live',
-      );
-    });
-
-    testServer('does not show Reconnect button when no servers are present', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrap(const ReactorShell()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, 200);
-      expect(
-        res.body.contains('Reconnect'),
-        isFalse,
-        reason: 'shell must not render Reconnect button with no servers',
-      );
-    });
-
-    testServer('applies dim style to offline server sidebar section', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          ReactorShell(
-            servers: const <ServerEntry>[
-              ServerEntry(
-                id: 'srv1',
-                name: 'DimServer',
-                state: ConnState.offline,
-              ),
-            ],
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, 200);
-      expect(
-        res.body.contains('opacity'),
-        isTrue,
-        reason:
-            'offline server section must carry an opacity style for visual dimming',
-      );
-    });
-
-    testServer(
-      'ReactorShell renders Reconnect button when onReconnect is wired (SSR render presence only)',
-      (ServerTester tester) async {
-        tester.pumpComponent(
-          _wrap(
-            ReactorShell(
-              servers: const <ServerEntry>[
-                ServerEntry(
-                  id: 'srv1',
-                  name: 'Alpha',
-                  state: ConnState.offline,
-                ),
-              ],
-              onReconnect: () {},
-            ),
-          ),
-        );
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, 200);
-        expect(
-          res.body.contains('Reconnect'),
-          isTrue,
-          reason: 'Reconnect button must be present when onReconnect is wired',
-        );
-      },
-    );
   });
 }

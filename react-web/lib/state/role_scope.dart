@@ -2,6 +2,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/jaspr.dart' show InheritedComponent, PreloadStateMixin;
 
 import '../model/role_info.dart';
+import '../service/cached_role_client.dart';
 import '../service/react_client.dart';
 
 class RoleScope extends InheritedComponent {
@@ -52,6 +53,17 @@ class _RoleObserverState extends State<RoleObserver>
       _started = true;
     } on Object {
       return;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // A role this session already knows shows at once, with no request.
+    final IRoleClient? c = component.client;
+    if (c is CachedRoleClient && c.known != null) {
+      _role = c.known;
+      _started = true;
     }
   }
 

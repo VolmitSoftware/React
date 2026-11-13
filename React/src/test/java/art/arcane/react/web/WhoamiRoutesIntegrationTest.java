@@ -1,11 +1,7 @@
 package art.arcane.react.web;
 
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebConfiguration;
-import art.arcane.react.api.web.WebSecret;
 import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.WebController;
@@ -47,7 +43,6 @@ public class WhoamiRoutesIntegrationTest {
             @Override
             protected IdentityDto resolveIdentity() {
                 IdentityDto dto = new IdentityDto();
-                dto.version = "9.9.9-test";
                 dto.serverName = "TestBrand";
                 dto.folia = false;
                 dto.serverId = "127.0.0.1:0";
@@ -70,25 +65,13 @@ public class WhoamiRoutesIntegrationTest {
 
     @Test
     void whoamiReturnsRoleAndScopes(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
 
-        TokenRecord viewerRecord = new TokenRecord("tok-wh-viewer", "viewer-device", 1000L, Set.of("read"), "viewer");
-        TokenRecord operatorRecord = new TokenRecord("tok-wh-op", "op-device", 1001L, Set.of("read", "op:execute"), "operator");
-        TokenRecord adminRecord = new TokenRecord("tok-wh-admin", "admin-device", 1002L, Set.of("read", "op:execute", "admin"), "admin");
-        TokenRecord legacyRecord = new TokenRecord("tok-wh-legacy", "legacy-device", 1003L, Set.of("read", "op:execute"), null);
 
-        String viewerBearer = PairingToken.mint(secret, viewerRecord.id(), viewerRecord.label(), viewerRecord.issuedAt(), viewerRecord.scopes());
-        String operatorBearer = PairingToken.mint(secret, operatorRecord.id(), operatorRecord.label(), operatorRecord.issuedAt(), operatorRecord.scopes());
-        String adminBearer = PairingToken.mint(secret, adminRecord.id(), adminRecord.label(), adminRecord.issuedAt(), adminRecord.scopes());
-        String legacyBearer = PairingToken.mint(secret, legacyRecord.id(), legacyRecord.label(), legacyRecord.issuedAt(), legacyRecord.scopes());
+        String viewerBearer = WebTestTokens.issue(dataFolder, "viewer-device", "viewer");
+        String operatorBearer = WebTestTokens.issue(dataFolder, "op-device", "operator");
+        String adminBearer = WebTestTokens.issue(dataFolder, "admin-device", "admin");
+        String customBearer = WebTestTokens.issue(dataFolder, "custom-device", List.of("read", "console:read"));
 
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(viewerRecord);
-        store.add(operatorRecord);
-        store.add(adminRecord);
-        store.add(legacyRecord);
-        store.save(tokensFile);
 
         SampleController sampleController = mock(SampleController.class);
         @SuppressWarnings("unchecked")
@@ -175,29 +158,29 @@ public class WhoamiRoutesIntegrationTest {
         assertTrue(adminScopeList.contains("console:read"), "admin scopes must contain console:read");
         assertTrue(adminScopeList.contains("console:execute"), "admin scopes must contain console:execute");
         assertEquals(
-            List.of("admin", "console:execute", "console:read", "op:execute", "read"),
+            List.of("read", "op:execute", "admin", "console:read", "console:execute"),
             adminScopeList,
-            "admin scopes must be sorted"
+            "admin scopes come in the documented order"
         );
+        assertEquals(WebTestTokens.idOf(adminBearer), adminData.get("tokenId").getAsString());
+        assertEquals("admin-device", adminData.get("label").getAsString());
+        assertEquals(7L * 24 * 3600, adminData.get("lifetimeSeconds").getAsLong());
+        assertTrue(java.time.Instant.parse(adminData.get("expiresAt").getAsString()).isAfter(java.time.Instant.now().plusSeconds(6L * 24 * 3600)));
 
-        HttpResponse<String> legacyResponse = client.send(
+        HttpResponse<String> customResponse = client.send(
             HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .header("Authorization", "Bearer " + legacyBearer)
+                .header("Authorization", "Bearer " + customBearer)
                 .GET()
                 .build(),
             HttpResponse.BodyHandlers.ofString()
         );
-        assertEquals(200, legacyResponse.statusCode(),
-            "Legacy (null-role) bearer should return 200, body: " + legacyResponse.body());
-        JsonObject legacyData = JsonParser.parseString(legacyResponse.body()).getAsJsonObject().getAsJsonObject("data");
-        assertNotNull(legacyData, "legacy response must have 'data' object");
-        assertEquals("viewer", legacyData.get("role").getAsString(), "null role must default to viewer");
-        JsonArray legacyScopes = legacyData.getAsJsonArray("scopes");
-        assertNotNull(legacyScopes, "legacy scopes must be present");
-        List<String> legacyScopeList = new ArrayList<>();
-        legacyScopes.forEach(e -> legacyScopeList.add(e.getAsString()));
-        assertEquals(List.of("read"), legacyScopeList, "legacy null-role token must be read-only");
+        assertEquals(200, customResponse.statusCode(), "custom scopes bearer should return 200, body: " + customResponse.body());
+        JsonObject customData = JsonParser.parseString(customResponse.body()).getAsJsonObject().getAsJsonObject("data");
+        assertEquals("custom", customData.get("role").getAsString(), "scopes that match no role read as custom");
+        List<String> customScopeList = new ArrayList<>();
+        customData.getAsJsonArray("scopes").forEach(e -> customScopeList.add(e.getAsString()));
+        assertEquals(List.of("read", "console:read"), customScopeList);
 
         HttpResponse<String> noAuthResponse = client.send(
             HttpRequest.newBuilder()
@@ -211,5 +194,6 @@ public class WhoamiRoutesIntegrationTest {
         JsonObject noAuthRoot = JsonParser.parseString(noAuthResponse.body()).getAsJsonObject();
         assertTrue(noAuthRoot.has("error"), "401 body must have 'error' object");
         assertTrue(noAuthRoot.getAsJsonObject("error").has("message"), "error must have 'message'");
+        assertEquals("unauthorized", noAuthRoot.getAsJsonObject("error").get("code").getAsString());
     }
 }

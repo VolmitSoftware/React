@@ -1,125 +1,122 @@
 library;
 
-import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr_test/server_test.dart';
-
+import 'package:react_web/localization/reactor_localizations.dart';
+import 'package:react_web/model/range_history.dart';
 import 'package:react_web/model/sampler_sample.dart';
-import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/screen/performance.dart';
+import 'package:react_web/state/chart_history.dart';
 import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/server_scope.dart';
+import 'package:react_web/ui/kit/mode.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
-
-SamplerSample _sample(
-  String id,
-  double value, {
-  String suffix = 'ms',
-  double max = 50.0,
-}) => SamplerSample(
-  id: id,
-  name: id,
-  value: value,
-  display: value.toString(),
-  suffix: suffix,
-  min: 0.0,
-  max: max,
-  history: <double>[value, value * 0.9, value * 1.1],
-);
-
-ServerSnapshot _fakeSnapshot() {
-  final List<SamplerSample> samples = <SamplerSample>[
-    _sample('tick-time', 8.3),
-    _sample('tick-ms-p50', 6.1),
-    _sample('tick-ms-p95', 12.4),
-    _sample('tick-ms-p99', 18.7),
-    _sample('tick-spike-rate', 0.05, suffix: '/s', max: 1.0),
-    _sample('top-world-mspt', 5.2),
-    _sample('top-chunk-cost', 3.1),
-  ];
-  final Map<String, SamplerSample> byId = <String, SamplerSample>{
-    for (final SamplerSample s in samples) s.id: s,
-  };
-  return ServerSnapshot(byId: byId, at: DateTime.now(), seq: 1);
-}
-
-Widget _wrap(Widget child) => ArcaneThemeProvider(
-  stylesheet: _sheet,
-  child: ServerScope(
-    snapshot: _fakeSnapshot(),
-    state: ConnState.live,
-    child: child,
-  ),
-);
+import 'monitor_support.dart';
 
 void main() {
-  group('PerformanceScreen', () {
-    testServer('renders tick-time section heading', (
+  group('PerformanceScreen (Ticks)', () {
+    testServer('Simple: TPS and tick time, then the tick chart alone', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const PerformanceScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Tick Duration'),
-        isTrue,
-        reason: 'Tick Duration section heading must appear in rendered HTML',
+      tester.pumpComponent(
+        onServer(
+          const PerformanceScreen(),
+          snapshot: snapshotOf(<SamplerSample>[
+            sample('ticks-per-second', 19.9),
+            sample('tick-time', 12.5, suffix: 'ms'),
+            sample('tick-spike-rate', 0.4),
+          ]),
+        ),
       );
+      final String body = (await tester.request('/')).body;
+      expect(occurrences(body, 'class="ui-metric"'), 2);
+      expect(body, contains(ReactorText.overviewTps.english));
+      expect(body, isNot(contains(ReactorText.performanceSpikeRate.english)));
+      expect(occurrences(body, 'data-chart-card'), 1);
     });
 
-    testServer('renders top-world-mspt tile label and value', (
+    testServer('Advanced: tiles on the page, then the tick chart', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const PerformanceScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Top World MSPT'),
-        isTrue,
-        reason: 'Top World MSPT tile label must appear in rendered HTML',
+      tester.pumpComponent(
+        onServer(
+          const PerformanceScreen(),
+          mode: ReactorMode.advanced,
+          snapshot: snapshotOf(<SamplerSample>[
+            sample('tick-time', 12.5, suffix: 'ms'),
+            sample('tick-ms-p50', 11),
+            sample('tick-ms-p95', 20),
+            sample('tick-ms-p99', 31),
+            sample('tick-spike-rate', 0.4),
+            sample('top-world-mspt', 8),
+            sample('top-chunk-cost', 2),
+          ]),
+        ),
       );
-      expect(
-        res.body.contains('5.2'),
-        isTrue,
-        reason: 'top-world-mspt value 5.2 must appear as stat tile numeric',
-      );
+      final String body = (await tester.request('/')).body;
+
+      expect(occurrences(body, 'class="ui-metric"'), 4);
+      // One chart: the spike rate is a tile.
+      expect(occurrences(body, 'data-chart-card'), 1);
+      expect(body, contains('<polyline'));
+      for (final String label in <String>[
+        ReactorText.commonTickTime.english,
+        ReactorText.performanceSpikeRate.english,
+        ReactorText.commonTopWorldMspt.english,
+        ReactorText.commonTopChunkCost.english,
+      ]) {
+        expect(body, contains(label));
+      }
+      expect(body, contains('12.5'));
     });
 
-    testServer('renders tick-spike-rate as sparkline section', (
+    testServer('missing percentiles leave the tick chart with one series', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const PerformanceScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Tick Spike Rate'),
-        isTrue,
-        reason: 'Tick Spike Rate section heading must appear in rendered HTML',
+      tester.pumpComponent(
+        onServer(
+          const PerformanceScreen(),
+          snapshot: snapshotOf(<SamplerSample>[sample('tick-time', 3)]),
+        ),
       );
-      expect(
-        res.body.contains('<polyline'),
-        isTrue,
-        reason: 'tick-spike-rate must render as a local SVG sparkline',
-      );
+      final String body = (await tester.request('/')).body;
+
+      expect(body, isNot(contains('p95')));
+      expect(body, contains('--'));
     });
 
-    testServer('renders top-chunk-cost tile label and value', (
+    testServer('the tick chart follows the stored range, percentiles too', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const PerformanceScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Top Chunk Cost'),
-        isTrue,
-        reason: 'Top Chunk Cost tile label must appear in rendered HTML',
+      final ChartHistory charts = await chartsOn(
+        ChartRange.sixHours,
+        <String, double>{'tick-time': 12, 'tick-ms-p95': 30},
       );
-      expect(
-        res.body.contains('3.1'),
-        isTrue,
-        reason: 'top-chunk-cost value 3.1 must appear as stat tile numeric',
+      tester.pumpComponent(
+        onServer(
+          const PerformanceScreen(),
+          mode: ReactorMode.advanced,
+          charts: charts,
+          snapshot: snapshotOf(<SamplerSample>[
+            sample('tick-time', 12.5, suffix: 'ms'),
+            sample('tick-ms-p50', 11),
+            sample('tick-ms-p95', 20),
+          ]),
+        ),
       );
+      final String body = (await tester.request('/')).body;
+
+      expect(body, contains('aria-label="${ReactorText.chartRange.english}"'));
+      expect(body, contains('aria-pressed="true" data-variant="outline">6h<'));
+      // p50 has nothing stored: the stored chart draws tick time and p95.
+      expect(body, contains('>p95<'));
+      expect(body, isNot(contains('>p50<')));
+    });
+
+    testServer('loads while connecting', (ServerTester tester) async {
+      tester.pumpComponent(
+        onServer(const PerformanceScreen(), state: ConnState.connecting),
+      );
+      final String body = (await tester.request('/')).body;
+      expect(body, contains('ui-loading'));
     });
   });
 }

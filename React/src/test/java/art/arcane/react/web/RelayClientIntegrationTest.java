@@ -33,6 +33,7 @@ public class RelayClientIntegrationTest {
 
     private static final Base64.Encoder B64URL = Base64.getUrlEncoder().withoutPadding();
     private static final Base64.Decoder B64URL_DECODER = Base64.getUrlDecoder();
+    private static final String CHALLENGE = "C".repeat(43);
 
     private Javalin broker;
     private RelayClient client;
@@ -93,6 +94,7 @@ public class RelayClientIntegrationTest {
                     routePayload.addProperty("path", "/api/v1/identity");
                     JsonObject headers = new JsonObject();
                     headers.addProperty("Authorization", "Bearer X");
+                    headers.addProperty("x-react-challenge", CHALLENGE);
                     routePayload.add("headers", headers);
                     routePayload.addProperty("body", "");
                     ctx.send(new RelayFrame("route", frame.serverId(), "req-1", routePayload).toJson());
@@ -116,7 +118,7 @@ public class RelayClientIntegrationTest {
         };
 
         scheduler = Executors.newSingleThreadScheduledExecutor();
-        client = new RelayClient("ws://127.0.0.1:" + port, identity, stubBridge, new RelayBackoff(100, 1000), scheduler);
+        client = new RelayClient("ws://127.0.0.1:" + port, identity, stubBridge, new RelayBackoff(100, 0, 100, 1000), scheduler);
         client.start();
 
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
@@ -135,6 +137,15 @@ public class RelayClientIntegrationTest {
             dataFrame.payload().getAsJsonObject("body").getAsJsonObject("data").get("ok").getAsBoolean(),
             "data frame body.data.ok must be true"
         );
+
+        JsonObject proof = dataFrame.payload().getAsJsonObject("headers");
+        assertNotNull(proof, "a route with a challenge is answered with the server's proof");
+        assertEquals(identity.publicKeyBase64(), proof.get(RelayClient.SERVER_KEY_HEADER).getAsString());
+        assertTrue(ReactServerIdentity.verify(
+            identity.publicKeyBytes(),
+            B64URL_DECODER.decode(proof.get(RelayClient.PROOF_HEADER).getAsString()),
+            (RelayClient.PROOF_PREFIX + CHALLENGE).getBytes(java.nio.charset.StandardCharsets.UTF_8)
+        ), "the proof is the paired key's signature over the prefix and the challenge");
 
         assertEquals("GET", invokedMethod.get(), "bridge must be invoked with GET");
         assertEquals("/api/v1/identity", invokedPath.get(), "bridge must be invoked with correct path");
@@ -182,7 +193,7 @@ public class RelayClientIntegrationTest {
             new RelayRequestBridge.RelayResponse(200, new JsonObject());
 
         scheduler = Executors.newSingleThreadScheduledExecutor();
-        client = new RelayClient("ws://127.0.0.1:" + port, identity, stubBridge, new RelayBackoff(20, 100), scheduler);
+        client = new RelayClient("ws://127.0.0.1:" + port, identity, stubBridge, new RelayBackoff(20, 0, 20, 100), scheduler);
         client.start();
 
         assertTrue(

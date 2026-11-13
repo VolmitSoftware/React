@@ -1,21 +1,26 @@
 library;
 
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr_router/jaspr_router.dart';
+import 'package:jaspr/jaspr.dart' as jaspr show Component, Text;
+import 'package:jaspr/jaspr.dart' show StatefulBuilder;
 import 'package:jaspr_test/server_test.dart';
-
-import 'package:react_web/app/reactor_app.dart';
+import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:react_web/model/environment_info.dart';
 import 'package:react_web/model/sampler_sample.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/screen/environment.dart';
-import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/operate_scope.dart';
+import 'package:react_web/service/react_client.dart';
+import 'package:react_web/service/react_exceptions.dart';
+import 'package:react_web/state/fleet_manager.dart';
+import 'package:react_web/state/server_session.dart';
+import 'package:react_web/state/server_session_scope.dart';
+import 'package:react_web/ui/kit/mode.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+import '../state/support/fake_react_client.dart';
+import 'monitor_support.dart';
 
 EnvironmentInfo _fakeInfo() => EnvironmentInfo(
   sections: LinkedHashMap<String, Map<String, Object?>>.from(
@@ -23,7 +28,8 @@ EnvironmentInfo _fakeInfo() => EnvironmentInfo(
       'cpu': <String, Object?>{'model': 'Apple M3', 'cores': 8},
       'memory': <String, Object?>{'usedMb': 18000},
       'jvm': <String, Object?>{'version': '25'},
-      'server': <String, Object?>{'brand': 'Purpur'},
+      'server': <String, Object?>{'brand': 'Purpur', 'react': '9.9.9-qa'},
+      'react': <String, Object?>{'version': '9.9.9-qa'},
     },
   ),
   disks: const <EnvironmentDisk>[
@@ -50,6 +56,16 @@ EnvironmentInfo _fakeInfo() => EnvironmentInfo(
       freeBytes: 300,
       usableBytes: 250,
     ),
+    // Read-only and near full by design: never a full-disk warning.
+    EnvironmentMount(
+      name: 'Preboot',
+      mount: '/System/Volumes/Preboot',
+      description: 'Local Disk',
+      type: 'apfs',
+      totalBytes: 1000,
+      freeBytes: 30,
+      usableBytes: 30,
+    ),
   ],
   network: const <EnvironmentNetworkInterface>[
     EnvironmentNetworkInterface(
@@ -73,228 +89,234 @@ EnvironmentInfo _fakeInfo() => EnvironmentInfo(
   ],
 );
 
-ServerSnapshot _hostSnapshot() {
-  final SamplerSample memory = SamplerSample(
-    id: 'physical-memory-used',
-    name: 'Physical Memory Used',
-    value: 1024.0,
-    display: '1',
+ServerSnapshot _hostSnapshot({double errors = 0}) => snapshotOf(<SamplerSample>[
+  sample(
+    'physical-memory-used',
+    1024,
     suffix: 'KB',
-    min: 1024.0,
-    max: 1024.0,
-    history: const <double>[512.0, 1024.0],
-  );
-  return ServerSnapshot(
-    byId: <String, SamplerSample>{memory.id: memory},
-    at: DateTime(2026, 8, 25),
-  );
+    name: 'Physical memory used',
+  ),
+  sample('network-receive-errors', errors, name: 'Receive errors'),
+  sample('disk-read-rate', 5, name: 'Disk read rate'),
+]);
+
+Widget _view({ReactorMode mode = ReactorMode.simple, double errors = 0}) =>
+    onServer(
+      EnvironmentView(
+        info: _fakeInfo(),
+        snapshot: _hostSnapshot(errors: errors),
+        diskWriteHistory: const <double>[0, 64],
+        networkReceiveHistory: const <double>[0, 256],
+        networkSendHistory: const <double>[0, 96],
+      ),
+      snapshot: _hostSnapshot(errors: errors),
+      mode: mode,
+    );
+
+class _HostClient extends FakeReactClient {
+  _HostClient(String id, this.reply) : super(fingerprint: 'fp-$id');
+
+  final Future<EnvironmentInfo> Function() reply;
+  int environmentCalls = 0;
+
+  @override
+  Future<EnvironmentInfo> environment() {
+    environmentCalls++;
+    return reply();
+  }
 }
 
-Widget _wrapView(Widget child) =>
-    ArcaneThemeProvider(stylesheet: _sheet, child: child);
+Widget _screen(ServerSession? session) => onServer(
+  session == null
+      ? const EnvironmentScreen()
+      : ServerSessionScope(session: session, child: const EnvironmentScreen()),
+  snapshot: _hostSnapshot(),
+);
 
 void main() {
-  group('EnvironmentScreen route wiring', () {
-    test('kRouteServerEnvironment constant is correct', () {
-      expect(kRouteServerEnvironment, equals('/server/:id/environment'));
+  group('EnvironmentView system mounts', () {
+    testServer('stay out of the tiles in Simple', (ServerTester tester) async {
+      tester.pumpComponent(_view());
+      final String body = (await tester.request('/')).body;
+      expect(body, isNot(contains('/System/Volumes/Preboot')));
+      expect(body, isNot(contains('data-tone="error"')));
+      expect(
+        body,
+        isNot(contains(ReactorText.environmentSystemMounts.english)),
+      );
     });
 
-    test('buildReactorRoutes includes environment route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasEnv = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerEnvironment,
-      );
+    testServer('are listed, folded and uncoloured, in Advanced', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_view(mode: ReactorMode.advanced));
+      final String body = (await tester.request('/')).body;
       expect(
-        hasEnv,
-        isTrue,
-        reason: 'per-server Environment tab requires route',
+        body,
+        contains('${ReactorText.environmentSystemMounts.english} (1)'),
       );
+      expect(body, contains('/System/Volumes/Preboot'));
+      expect(body, isNot(contains('data-tone="error"')));
     });
   });
 
-  group('ReactorShell sidebar', () {
-    testServer('renders Environment sidebar item for a connected server', (
+  group('EnvironmentView in Simple', () {
+    testServer('host tiles, mount capacity and both rate charts', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(
-        _wrapView(
-          ReactorShell(
-            currentPath: '/server/srv1/environment',
-            servers: const <ServerEntry>[
-              ServerEntry(
-                id: 'srv1',
-                name: 'Test Server',
-                state: ConnState.live,
-              ),
-            ],
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
+      tester.pumpComponent(_view());
+      final String body = (await tester.request('/')).body;
+
+      expect(body, contains('Physical memory used'));
+      expect(body, contains('role="meter"'));
+      expect(body, contains('of 1,000 B'));
+      expect(occurrences(body, 'data-chart-card'), 2);
+      expect(body, contains(ReactorText.environmentDisk.english));
+      expect(body, contains(ReactorText.environmentNetwork.english));
+      expect(body, contains(ReactorText.environmentRead.english));
+      expect(body, contains(ReactorText.environmentReceived.english));
+    });
+
+    testServer('raw sections, device lists and rate tiles stay Advanced', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_view());
+      final String body = (await tester.request('/')).body;
+
+      expect(body, isNot(contains('Apple M3')));
+      expect(body, isNot(contains('Purpur')));
+      expect(body, isNot(contains('Primary network (en0)')));
+      expect(body, isNot(contains('Disk read rate')));
+      expect(body, isNot(contains('role="table"')));
+    });
+
+    testServer('network errors show once there are any', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_view());
       expect(
-        res.body.contains('Environment'),
-        isTrue,
-        reason: 'Environment sidebar item must appear for connected server',
+        (await tester.request('/')).body,
+        isNot(contains('Receive errors')),
       );
+    });
+
+    testServer('network errors above zero do show', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_view(errors: 3));
+      expect((await tester.request('/')).body, contains('Receive errors'));
     });
   });
 
-  group('EnvironmentView', () {
-    testServer('renders persistent host telemetry when sampled', (
-      ServerTester tester,
-    ) async {
+  group('EnvironmentView rate charts', () {
+    testServer('one reading is not a line yet', (ServerTester tester) async {
       tester.pumpComponent(
-        _wrapView(
-          EnvironmentView(info: _fakeInfo(), snapshot: _hostSnapshot()),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-
-      expect(res.statusCode, equals(200));
-      expect(res.body.contains('Persistent Host Telemetry'), isTrue);
-      expect(res.body.contains('Physical Memory Used'), isTrue);
-    });
-
-    testServer('renders Apple M3 value from cpu section', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrapView(EnvironmentView(info: _fakeInfo())));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Apple M3'),
-        isTrue,
-        reason: 'cpu.model value must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders cores value 8 from cpu section', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrapView(EnvironmentView(info: _fakeInfo())));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('8'),
-        isTrue,
-        reason: 'cpu.cores value must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders usedMb value 18000 from memory section', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrapView(EnvironmentView(info: _fakeInfo())));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('18000'),
-        isTrue,
-        reason: 'memory.usedMb value must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders Purpur value from server section', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrapView(EnvironmentView(info: _fakeInfo())));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Purpur'),
-        isTrue,
-        reason: 'server.brand value must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders CPU section heading', (ServerTester tester) async {
-      tester.pumpComponent(_wrapView(EnvironmentView(info: _fakeInfo())));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('CPU'),
-        isTrue,
-        reason: 'CPU section heading must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders Memory section heading', (ServerTester tester) async {
-      tester.pumpComponent(_wrapView(EnvironmentView(info: _fakeInfo())));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Memory'),
-        isTrue,
-        reason: 'Memory section heading must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders JVM section heading', (ServerTester tester) async {
-      tester.pumpComponent(_wrapView(EnvironmentView(info: _fakeInfo())));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('JVM'),
-        isTrue,
-        reason: 'JVM section heading must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders Server section heading', (ServerTester tester) async {
-      tester.pumpComponent(_wrapView(EnvironmentView(info: _fakeInfo())));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Server'),
-        isTrue,
-        reason: 'Server section heading must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders hoverable Disk and Network charts', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrapView(
+        onServer(
           EnvironmentView(
             info: _fakeInfo(),
-            diskReadHistory: const <double>[0, 128],
-            diskWriteHistory: const <double>[0, 64],
-            networkReceiveHistory: const <double>[0, 256],
-            networkSendHistory: const <double>[0, 96],
+            diskReadHistory: const <double>[5],
+            diskWriteHistory: const <double>[3],
+            networkReceiveHistory: const <double>[2],
+            networkSendHistory: const <double>[1],
           ),
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.body.contains('Read / write throughput'), isTrue);
-      expect(res.body.contains('Receive / send throughput'), isTrue);
-      expect(res.body.contains('reactor-chart-hit-target'), isTrue);
-      expect(res.body.contains('Primary network'), isTrue);
+      final String body = (await tester.request('/')).body;
+      expect(body, isNot(contains('<polyline')));
+      expect(occurrences(body, ReactorText.chartAwaitingSamples.english), 2);
     });
   });
 
-  group('EnvironmentScreen null client', () {
-    testServer('renders live-connection note when client is null', (
+  group('EnvironmentView in Advanced', () {
+    testServer('adds the raw sections and the device lists', (
       ServerTester tester,
     ) async {
+      tester.pumpComponent(_view(mode: ReactorMode.advanced));
+      final String body = (await tester.request('/')).body;
+
+      for (final String text in <String>[
+        'Apple M3',
+        'Purpur',
+        'CPU',
+        'JVM',
+        ReactorText.memoryTitle.english,
+        ReactorText.commonServer.english,
+        'Primary network (en0)',
+        'disk0 (Fast Disk)',
+        ReactorText.environmentValue.english,
+      ]) {
+        expect(body, contains(text));
+      }
+      // The rate is the Disk chart's; no tile repeats it.
+      expect(body, isNot(contains('Disk read rate')));
+    });
+
+    testServer('never shows React facts such as its version', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_view(mode: ReactorMode.advanced));
+      expect((await tester.request('/')).body, isNot(contains('9.9.9-qa')));
+    });
+  });
+
+  group('EnvironmentScreen states', () {
+    testServer('says a live connection is needed without a client', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_screen(null));
+      final String body = (await tester.request('/')).body;
+      expect(body, contains(ReactorText.environmentLiveRequired.english));
+      expect(body, contains('ui-empty'));
+    });
+
+    testComponents('a failed first load offers Retry', (
+      ComponentTester tester,
+    ) async {
+      final FleetManager fleet = await fleetOf(<String, IReactClient>{
+        'a': _HostClient('a', () async => throw const ReactForbidden()),
+      });
+      addTearDown(fleet.dispose);
+      tester.pumpComponent(_screen(fleet.sessionFor('a')));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text(ReactorText.errorForbidden.english), findsOneComponent);
+      expect(find.text(ReactorText.commonRetry.english), findsOneComponent);
+    });
+
+    testComponents('another server starts from nothing', (
+      ComponentTester tester,
+    ) async {
+      final _HostClient second = _HostClient(
+        'b',
+        () => Completer<EnvironmentInfo>().future,
+      );
+      final FleetManager fleet = await fleetOf(<String, IReactClient>{
+        'a': _HostClient('a', () async => _fakeInfo()),
+        'b': second,
+      });
+      addTearDown(fleet.dispose);
+      late void Function(void Function()) rebuild;
+      ServerSession current = fleet.sessionFor('a')!;
       tester.pumpComponent(
-        _wrapView(
-          OperateScope(
-            client: null,
-            logSocketFactory: null,
-            child: const EnvironmentScreen(),
-          ),
+        StatefulBuilder(
+          builder: (BuildContext context, void Function(void Function()) set) {
+            rebuild = set;
+            return _screen(current);
+          },
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Environment data requires a live connection.'),
-        isTrue,
-        reason:
-            'live-connection note must appear when OperateScope client is null',
+      await tester.pump();
+      await tester.pump();
+      Finder ofTotal() => find.byComponentPredicate(
+        (jaspr.Component c) => c is jaspr.Text && c.text.endsWith('of 1,000 B'),
       );
+      expect(ofTotal(), findsOneComponent);
+
+      rebuild(() => current = fleet.sessionFor('b')!);
+      await tester.pump();
+      expect(second.environmentCalls, 1);
+      expect(ofTotal(), findsNothing);
     });
   });
 }

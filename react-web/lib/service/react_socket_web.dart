@@ -10,6 +10,7 @@ import '../model/server_credential.dart';
 import '../model/server_snapshot.dart';
 import 'direct_web_socket_handshake.dart';
 import 'react_socket_interface.dart';
+import 'web_socket_close.dart';
 
 class _WebMetricsSocket implements IMetricsSocket {
   final StreamController<ServerSnapshot> _controller =
@@ -61,10 +62,11 @@ class _WebMetricsSocket implements IMetricsSocket {
 
     _ws.addEventListener(
       'close',
-      ((web.Event _) {
-        if (!_controller.isClosed) {
-          _controller.close();
-        }
+      ((web.CloseEvent event) {
+        if (_controller.isClosed) return;
+        final Exception? error = socketCloseError(event.code);
+        if (error != null) _controller.addError(error);
+        _controller.close();
       }).toJS,
     );
   }

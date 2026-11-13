@@ -56,3 +56,31 @@ class ChartTimeline {
     return ChartTimeline(positions: positions, breakBefore: breakBefore);
   }
 }
+
+String _two(int value) => value.toString().padLeft(2, '0');
+
+/// [time] on a time axis spanning [span]: seconds for a few minutes, the
+/// date for more than a day.
+String axisTime(DateTime time, Duration span) {
+  final DateTime local = time.toLocal();
+  final String clock = '${_two(local.hour)}:${_two(local.minute)}';
+  if (span > const Duration(days: 1)) {
+    return '${_two(local.month)}-${_two(local.day)} $clock';
+  }
+  if (span <= const Duration(minutes: 10)) {
+    return '$clock:${_two(local.second)}';
+  }
+  return clock;
+}
+
+/// The indexes of [count] samples the time axis names: the first, the last
+/// and one in the middle (two for four labels).
+List<int> axisSamples(int count, {int labels = 3}) {
+  if (count <= 0) return const <int>[];
+  if (count == 1) return const <int>[0];
+  final int shown = labels.clamp(2, count);
+  return <int>[
+    for (int index = 0; index < shown; index++)
+      (index * (count - 1) / (shown - 1)).round(),
+  ];
+}

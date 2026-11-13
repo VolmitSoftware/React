@@ -66,11 +66,20 @@ Future<void> pump([int count = 20]) async {
   }
 }
 
+/// Pumps until [done] holds, so a busy machine does not fail the test.
+Future<void> pumpUntil(bool Function() done) async {
+  final DateTime deadline = DateTime.now().add(const Duration(seconds: 5));
+  while (!done() && DateTime.now().isBefore(deadline)) {
+    await Future<void>.delayed(const Duration(milliseconds: 1));
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 void main() {
+  _restartTests();
   test(
     'restart ignores a previous generation request and removes retired metrics',
     () async {
@@ -160,9 +169,11 @@ void main() {
     });
 
     test('seeds ring buffer per sampler (capacity 128)', () async {
+      // Distinct sequence numbers: two snapshots made within the same clock
+      // tick with one sequence are one frame repeated, and count once.
       final List<Object> responses = List<Object>.generate(
         5,
-        (int i) => _makeSnapshot(cpuValue: i.toDouble()),
+        (int i) => _makeSnapshot(seq: i + 1, cpuValue: i.toDouble()),
       );
 
       final ConnectionManager manager = ConnectionManager(
@@ -171,7 +182,7 @@ void main() {
       );
 
       manager.start();
-      await pump(60);
+      await pumpUntil(() => manager.samplerHistory('cpu').length >= 5);
 
       final List<double> history = manager.samplerHistory('cpu');
       expect(history.length, greaterThanOrEqualTo(5));
@@ -354,6 +365,60 @@ void main() {
         pollInterval: Duration.zero,
       );
       expect(() => manager.dispose(), returnsNormally);
+    });
+  });
+}
+
+void _restartTests() {
+  group('restart', () {
+    test(
+      'a server that went away is asked again at once, not after backoff',
+      () async {
+        final List<Object> answers = <Object>[
+          _makeSnapshot(),
+          for (int i = 0; i < 6; i++) const ReactUnavailable('down'),
+          _makeSnapshot(seq: 1),
+        ];
+        final _FakeMetricsClient client = _FakeMetricsClient(answers);
+        final ConnectionManager manager = ConnectionManager(
+          client,
+          pollInterval: const Duration(milliseconds: 30),
+          maxBackoff: const Duration(seconds: 30),
+          quickRetry: const Duration(milliseconds: 20),
+        );
+        addTearDown(manager.dispose);
+        manager.start();
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        final Stopwatch watch = Stopwatch()..start();
+        await manager.stateChanges
+            .firstWhere(
+              (ConnState state) =>
+                  state == ConnState.live && client.callCount > 7,
+            )
+            .timeout(const Duration(seconds: 2));
+        expect(
+          watch.elapsedMilliseconds,
+          lessThan(600),
+          reason: 'six failures at 20 ms, not 30 ms doubling to seconds',
+        );
+      },
+    );
+
+    test('after the quick window it backs off again', () async {
+      final _FakeMetricsClient client = _FakeMetricsClient(<Object>[
+        for (int i = 0; i < 20; i++) const ReactUnavailable('down'),
+      ]);
+      final ConnectionManager manager = ConnectionManager(
+        client,
+        pollInterval: const Duration(milliseconds: 40),
+        maxBackoff: const Duration(seconds: 30),
+        quickRetry: const Duration(milliseconds: 10),
+        quickWindow: Duration.zero,
+      );
+      addTearDown(manager.dispose);
+      manager.start();
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(client.callCount, lessThan(5), reason: '40, 80, 160 ms backoff');
     });
   });
 }

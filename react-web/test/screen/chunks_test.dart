@@ -1,161 +1,59 @@
 library;
 
-import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr_router/jaspr_router.dart';
 import 'package:jaspr_test/server_test.dart';
-
-import 'package:react_web/app/reactor_app.dart';
+import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:react_web/model/sampler_sample.dart';
-import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/screen/chunks.dart';
 import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/server_scope.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
-
-SamplerSample _sample(
-  String id,
-  double value, {
-  String suffix = '',
-  double min = 0.0,
-  double max = 100.0,
-  String? name,
-}) => SamplerSample(
-  id: id,
-  name: name ?? id,
-  value: value,
-  display: value.toString(),
-  suffix: suffix,
-  min: min,
-  max: max,
-  history: <double>[value],
-);
-
-ServerSnapshot _fakeSnapshot() {
-  final List<SamplerSample> samples = <SamplerSample>[
-    _sample('chunks', 1200.0, max: 10000.0),
-    _sample('chunks-loaded', 5.0, suffix: '/s', max: 200.0),
-    _sample('chunks-generated', 3.0, suffix: '/s', max: 200.0),
-    _sample('chunk-load-listener-ms', 3.2, suffix: 'ms', max: 50.0),
-    _sample('chunk-gen-listener-ms', 8.5, suffix: 'ms', max: 100.0),
-    _sample(
-      'world-save-event-interval',
-      45.0,
-      name: 'World Save Event Interval',
-      suffix: 'ms',
-      max: 5000.0,
-    ),
-    _sample('pdc-write-batcher', 12.0, suffix: 'ms', max: 1000.0),
-    _sample('chunks-force-loaded', 6.0),
-    _sample('chunk-tickets', 23.0),
-    _sample('chunk-unloads', 4.0, suffix: '/s'),
-    _sample('worlds', 3.0),
-  ];
-  final Map<String, SamplerSample> byId = <String, SamplerSample>{
-    for (final SamplerSample s in samples) s.id: s,
-  };
-  return ServerSnapshot(byId: byId, at: DateTime.now(), seq: 1);
-}
-
-Widget _wrap(Widget child) => ArcaneThemeProvider(
-  stylesheet: _sheet,
-  child: ServerScope(
-    snapshot: _fakeSnapshot(),
-    state: ConnState.live,
-    child: child,
-  ),
-);
+import 'monitor_support.dart';
 
 void main() {
   group('ChunksScreen', () {
-    testServer('renders Chunks stat tile label', (ServerTester tester) async {
-      tester.pumpComponent(_wrap(const ChunksScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Chunks'),
-        isTrue,
-        reason: 'Chunks stat tile label must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders Persistence section card heading', (
+    testServer('loading tiles, listener chart, persistence and residency', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const ChunksScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Persistence'),
-        isTrue,
-        reason: 'Persistence section heading must appear in rendered HTML',
+      tester.pumpComponent(
+        onServer(
+          const ChunksScreen(),
+          snapshot: snapshotOf(<SamplerSample>[
+            sample('chunks', 2408),
+            sample('chunks-loaded', 12),
+            sample('chunks-generated', 3),
+            sample('chunk-load-listener-ms', 0.8, suffix: 'ms'),
+            sample('chunk-gen-listener-ms', 1.6, suffix: 'ms'),
+            sample('world-save-event-interval', 300, suffix: 's'),
+            sample('pdc-write-batcher', 4),
+            sample('chunk-tickets', 900, name: 'Chunk tickets'),
+          ]),
+        ),
       );
+      final String body = (await tester.request('/')).body;
+
+      expect(occurrences(body, 'data-chart-card'), 1);
+      for (final String label in <String>[
+        ReactorText.commonChunks.english,
+        ReactorText.chunksLoadedPerSecond.english,
+        ReactorText.chunksGeneratedPerSecond.english,
+        ReactorText.chunksLoadListenerTime.english,
+        ReactorText.chunksGenListenerTime.english,
+        ReactorText.chunksListenerTime.english,
+        ReactorText.chunksPersistence.english,
+        ReactorText.chunksWorldSaveEventInterval.english,
+        ReactorText.chunksPdcBatcher.english,
+        ReactorText.chunksResidency.english,
+        'Chunk tickets',
+      ]) {
+        expect(body, contains(label));
+      }
+      expect(body, contains('2408.0'));
     });
 
-    testServer('renders World Save Event Interval stat tile label', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrap(const ChunksScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('World Save Event Interval'),
-        isTrue,
-        reason: 'World Save stat tile label must appear in rendered HTML',
+    testServer('is empty while offline', (ServerTester tester) async {
+      tester.pumpComponent(
+        onServer(const ChunksScreen(), state: ConnState.offline),
       );
-    });
-
-    testServer('renders chunks value 1200.0', (ServerTester tester) async {
-      tester.pumpComponent(_wrap(const ChunksScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('1200.0'),
-        isTrue,
-        reason: 'chunks value 1200.0 must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders Chunk Listener Time section card heading', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrap(const ChunksScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Chunk Listener Time'),
-        isTrue,
-        reason:
-            'Chunk Listener Time section heading must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders residency metrics', (ServerTester tester) async {
-      tester.pumpComponent(_wrap(const ChunksScreen()));
-      final DocumentResponse res = await tester.request('/');
-
-      expect(res.statusCode, equals(200));
-      expect(res.body.contains('Residency'), isTrue);
-      expect(res.body.contains('23.0'), isTrue);
-    });
-  });
-
-  group('ChunksScreen route wiring', () {
-    test('kRouteServerChunks constant is correct', () {
-      expect(kRouteServerChunks, equals('/server/:id/chunks'));
-    });
-
-    test('buildReactorRoutes includes server chunks route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasChunks = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerChunks,
-      );
-      expect(
-        hasChunks,
-        isTrue,
-        reason: 'per-server Chunks tab requires /server/:id/chunks route',
-      );
+      expect((await tester.request('/')).body, contains('ui-empty'));
     });
   });
 }

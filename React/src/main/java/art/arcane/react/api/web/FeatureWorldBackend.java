@@ -90,6 +90,8 @@ public class FeatureWorldBackend implements WorldBackend {
                         featureController.activateFeature(feature);
                     }
                 }
+                WebRevisions.bump(WebRevisions.Kind.WORLDS);
+                WebRevisions.bump(WebRevisions.Kind.FEATURES);
                 if (persistenceFailure != null) {
                     throw new IllegalStateException(
                         "Failed to persist world override for " + canonicalWorldKey,

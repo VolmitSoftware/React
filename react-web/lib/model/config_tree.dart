@@ -41,16 +41,6 @@ class ConfigTree {
     );
   }
 
-  Map<String, Object?> flatten() {
-    final Map<String, Object?> result = <String, Object?>{};
-    for (final ConfigSection section in sections) {
-      for (final Knob node in section.nodes) {
-        result[node.key] = node.value;
-      }
-    }
-    return result;
-  }
-
   Knob? node(String key) {
     for (final ConfigSection section in sections) {
       for (final Knob k in section.nodes) {

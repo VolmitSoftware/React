@@ -9,6 +9,8 @@ import '../model/control_item.dart';
 import '../model/environment_info.dart';
 import '../model/heatmap.dart';
 import '../model/identity_info.dart';
+import '../model/range_history.dart';
+import '../model/log_line.dart';
 import '../model/incident_status.dart';
 import '../model/metric_history.dart';
 import '../model/player_navigation.dart';
@@ -17,10 +19,12 @@ import '../model/role_info.dart';
 import '../model/server_capabilities.dart';
 import '../model/server_credential.dart';
 import '../model/server_snapshot.dart';
+import '../model/server_summary.dart';
 import '../model/world_settings.dart';
 import '../state/memory_fleet_storage.dart';
 import 'monotonic_counter.dart';
 import 'react_exceptions.dart';
+import 'react_status.dart';
 
 abstract interface class IMetricsClient {
   Future<ServerSnapshot> metrics();
@@ -36,6 +40,10 @@ abstract interface class IHistoryClient {
     int pageSize,
     String? cursor,
   });
+
+  /// One stored range of the chart samplers ([kChartSamplerIds] unless
+  /// [ids] narrows it), in one response.
+  Future<RangeHistory> metricRange(ChartRange range, {List<String>? ids});
 }
 
 abstract interface class IReactClient implements IMetricsClient {
@@ -95,6 +103,11 @@ abstract interface class IActionClient {
   });
 }
 
+/// Ticket status for a queued action. Old plugins answer 404.
+abstract interface class IActionTicketClient {
+  Future<ActionTicketStatus> actionTicket(String ticketId);
+}
+
 abstract interface class IIncidentClient {
   Future<IncidentStatus> incidents();
 }
@@ -113,12 +126,23 @@ abstract interface class ILogClient {
   Future<List<String>> logs({int limit});
 }
 
+/// Sequenced log lines. [after] asks for lines with a higher seq; servers
+/// that ignore it return the tail.
+abstract interface class ILogLineClient {
+  Future<List<LogLine>> logLines({int limit, int? after});
+}
+
 abstract interface class IConsoleClient {
   Future<bool> executeConsole(String command);
 }
 
 abstract interface class IRoleClient {
   Future<RoleInfo> whoami();
+}
+
+/// `GET /summary`: the start page's row for one server.
+abstract interface class ISummaryClient {
+  Future<ServerSummary> summary();
 }
 
 abstract interface class IPluginApiPackClient {
@@ -144,18 +168,29 @@ class ReactClient
         IPlayerClient,
         IControlClient,
         IOperateClient,
+        IActionTicketClient,
+        ILogLineClient,
         IConsoleClient,
         IRoleClient,
+        ISummaryClient,
         IHistoryClient,
         IPluginApiPackClient {
   final ServerCredential cred;
   final http.Client _http;
   final MonotonicCounter _counter;
+  final Future<void> Function(Duration) _sleep;
   bool _closed = false;
 
-  ReactClient(this.cred, {http.Client? client, MonotonicCounter? counter})
-    : _http = client ?? http.Client(),
-      _counter = counter ?? MonotonicCounter(InMemoryFleetStorage());
+  static const Duration _timeout = Duration(seconds: 2);
+
+  ReactClient(
+    this.cred, {
+    http.Client? client,
+    MonotonicCounter? counter,
+    Future<void> Function(Duration)? sleep,
+  }) : _http = client ?? http.Client(),
+       _counter = counter ?? MonotonicCounter(InMemoryFleetStorage()),
+       _sleep = sleep ?? ((Duration d) => Future<void>.delayed(d));
 
   @override
   Future<void> close() async {
@@ -168,27 +203,83 @@ class ReactClient
     if (_closed) throw const ReactUnavailable('Client closed');
   }
 
-  Map<String, String> get _headers => <String, String>{
-    'Authorization': 'Bearer ${cred.bearer}',
-    'Content-Type': 'application/json',
-  };
+  /// Sends one request and maps every non-2xx status to a typed error. A GET
+  /// answered 429 is retried at most twice; a mutation answered with a
+  /// counter conflict is re-based and retried once.
+  Future<Map<String, dynamic>?> _send(
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+    bool authenticated = true,
+  }) async {
+    final bool mutating = method != 'GET';
+    int rateLimitRetries = 0;
+    bool rebased = false;
+    while (true) {
+      final http.Response response = await _transport(
+        method,
+        path,
+        body: body,
+        authenticated: authenticated,
+        mutating: mutating,
+      );
+      final Map<String, dynamic>? decoded = _tryDecode(response.body);
+      final Exception? error = reactErrorFor(
+        response.statusCode,
+        decoded,
+        retryAfter: parseRetryAfter(response.headers['retry-after']),
+      );
+      if (error == null) {
+        if (decoded == null) {
+          throw const ReactUnavailable(
+            'Malformed response: expected an object',
+          );
+        }
+        return decoded;
+      }
+      if (error is ReactCounterConflict && mutating && !rebased) {
+        rebased = true;
+        _counter.rebase(cred.id, error.lastCounter);
+        continue;
+      }
+      if (error is ReactRateLimited &&
+          !mutating &&
+          rateLimitRetries < kMaxRateLimitRetries) {
+        rateLimitRetries++;
+        await _sleep(rateLimitDelay(error.retryAfter));
+        _ensureOpen();
+        continue;
+      }
+      throw error;
+    }
+  }
 
-  Future<http.Response> _get(String path, {bool authenticated = true}) async {
+  Future<http.Response> _transport(
+    String method,
+    String path, {
+    required Map<String, Object?>? body,
+    required bool authenticated,
+    required bool mutating,
+  }) async {
     _ensureOpen();
     final Uri uri = cred.directEndpoint('api/v1$path');
+    final Map<String, String> headers = <String, String>{
+      if (authenticated) 'Authorization': 'Bearer ${cred.bearer}',
+      if (authenticated) 'Content-Type': 'application/json',
+      if (mutating) 'X-React-Counter': _counter.next(cred.id).toString(),
+    };
     try {
-      final http.Response response = await _http
-          .get(
-            uri,
-            headers: authenticated ? _headers : const <String, String>{},
-          )
-          .timeout(const Duration(seconds: 2));
+      final Future<http.Response> pending = switch (method) {
+        'GET' => _http.get(uri, headers: headers),
+        'PUT' => _http.put(uri, headers: headers, body: jsonEncode(body)),
+        'POST' => _http.post(uri, headers: headers, body: jsonEncode(body)),
+        'DELETE' => _http.delete(uri, headers: headers),
+        _ => throw ArgumentError.value(method, 'method'),
+      };
+      final http.Response response = await pending.timeout(_timeout);
       _ensureOpen();
-      if (response.statusCode == 401) {
-        throw const ReactAuthException();
-      }
       return response;
-    } on ReactAuthException {
+    } on ReactUnavailable {
       rethrow;
     } on http.ClientException catch (e) {
       throw ReactUnavailable(e.message);
@@ -199,260 +290,105 @@ class ReactClient
     }
   }
 
-  Map<String, dynamic> _decodeJson(String body) {
+  Map<String, dynamic>? _tryDecode(String body) {
     try {
       final Object? decoded = jsonDecode(body);
-      if (decoded is! Map<String, dynamic>) {
-        throw const ReactUnavailable('Malformed response: expected an object');
-      }
-      return decoded;
-    } on FormatException catch (e) {
-      throw ReactUnavailable(e.message);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } on FormatException {
+      return null;
     }
   }
 
-  Map<String, dynamic> _decodeData(String body) {
-    final Map<String, dynamic> root = _decodeJson(body);
-    final Object? data = root['data'];
+  Future<Map<String, dynamic>> _getData(
+    String path, {
+    bool authenticated = true,
+  }) async =>
+      _dataObject(await _send('GET', path, authenticated: authenticated));
+
+  Future<List<dynamic>> _getList(String path) async {
+    final Object? data = (await _send('GET', path))?['data'];
+    if (data is! List<dynamic>) {
+      throw const ReactUnavailable('Malformed response: missing data list');
+    }
+    return data;
+  }
+
+  Map<String, dynamic> _dataObject(Map<String, dynamic>? root) {
+    final Object? data = root?['data'];
     if (data is! Map<String, dynamic>) {
       throw const ReactUnavailable('Malformed response: missing data object');
     }
     return data;
   }
 
-  String _errorMessage(String body) {
-    try {
-      final Object? decoded = jsonDecode(body);
-      if (decoded is Map<String, dynamic>) {
-        final Object? error = decoded['error'];
-        if (error is Map<String, dynamic>) {
-          final Object? message = error['message'];
-          if (message is String) {
-            return message;
-          }
-        }
-      }
-      return 'Request failed';
-    } on Object {
-      return 'Request failed';
-    }
-  }
-
-  Future<List<ControlItem>> _getItems(String path) async {
-    final http.Response response = await _get(path);
-    final Map<String, dynamic> root = _decodeJson(response.body);
-    final Object? data = root['data'];
-    if (data is! List) {
-      throw const ReactUnavailable('Malformed response: missing data list');
-    }
-    return data
-        .map((dynamic e) => ControlItem.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
-
   Future<Map<String, dynamic>> _putData(
     String path,
     Map<String, Object?> body,
-  ) async {
-    _ensureOpen();
-    final Uri uri = cred.directEndpoint('api/v1$path');
-    final Map<String, String> headers = <String, String>{
-      'Authorization': 'Bearer ${cred.bearer}',
-      'Content-Type': 'application/json',
-      'X-React-Counter': _counter.next(cred.id).toString(),
-    };
-    try {
-      final http.Response response = await _http
-          .put(uri, headers: headers, body: jsonEncode(body))
-          .timeout(const Duration(seconds: 2));
-      _ensureOpen();
-      switch (response.statusCode) {
-        case 200:
-          return _decodeData(response.body);
-        case 400:
-          throw ReactBadRequest(_errorMessage(response.body));
-        case 401:
-          throw const ReactAuthException();
-        case 403:
-          throw ReactForbidden(_errorMessage(response.body));
-        case 404:
-          throw ReactNotFound(_errorMessage(response.body));
-        case 409:
-          throw ReactConflict(_errorMessage(response.body));
-        default:
-          throw ReactUnavailable(_errorMessage(response.body));
-      }
-    } on ReactAuthException {
-      rethrow;
-    } on ReactBadRequest {
-      rethrow;
-    } on ReactForbidden {
-      rethrow;
-    } on ReactNotFound {
-      rethrow;
-    } on ReactConflict {
-      rethrow;
-    } on ReactUnavailable {
-      rethrow;
-    } on http.ClientException catch (e) {
-      throw ReactUnavailable(e.message);
-    } on TimeoutException catch (e) {
-      throw ReactUnavailable(e.message ?? 'Request timed out');
-    } on Exception catch (e) {
-      throw ReactUnavailable(e.toString());
-    }
-  }
+  ) async => _dataObject(await _send('PUT', path, body: body));
 
   Future<Map<String, dynamic>> _postData(
     String path,
     Map<String, Object?> body,
-  ) async {
-    _ensureOpen();
-    final Uri uri = cred.directEndpoint('api/v1$path');
-    final Map<String, String> headers = <String, String>{
-      'Authorization': 'Bearer ${cred.bearer}',
-      'Content-Type': 'application/json',
-      'X-React-Counter': _counter.next(cred.id).toString(),
-    };
-    try {
-      final http.Response response = await _http
-          .post(uri, headers: headers, body: jsonEncode(body))
-          .timeout(const Duration(seconds: 2));
-      _ensureOpen();
-      switch (response.statusCode) {
-        case 200:
-        case 202:
-          return _decodeData(response.body);
-        case 400:
-          throw ReactBadRequest(_errorMessage(response.body));
-        case 401:
-          throw const ReactAuthException();
-        case 403:
-          throw ReactForbidden(_errorMessage(response.body));
-        case 404:
-          throw ReactNotFound(_errorMessage(response.body));
-        case 409:
-          throw ReactConflict(_errorMessage(response.body));
-        default:
-          throw ReactUnavailable(_errorMessage(response.body));
-      }
-    } on ReactAuthException {
-      rethrow;
-    } on ReactBadRequest {
-      rethrow;
-    } on ReactForbidden {
-      rethrow;
-    } on ReactNotFound {
-      rethrow;
-    } on ReactConflict {
-      rethrow;
-    } on ReactUnavailable {
-      rethrow;
-    } on http.ClientException catch (e) {
-      throw ReactUnavailable(e.message);
-    } on TimeoutException catch (e) {
-      throw ReactUnavailable(e.message ?? 'Request timed out');
-    } on Exception catch (e) {
-      throw ReactUnavailable(e.toString());
-    }
-  }
+  ) async => _dataObject(await _send('POST', path, body: body));
 
-  Future<Map<String, dynamic>> _deleteData(String path) async {
-    _ensureOpen();
-    final Uri uri = cred.directEndpoint('api/v1$path');
-    final Map<String, String> headers = <String, String>{
-      'Authorization': 'Bearer ${cred.bearer}',
-      'Content-Type': 'application/json',
-      'X-React-Counter': _counter.next(cred.id).toString(),
-    };
-    try {
-      final http.Response response = await _http
-          .delete(uri, headers: headers)
-          .timeout(const Duration(seconds: 2));
-      _ensureOpen();
-      switch (response.statusCode) {
-        case 200:
-          return _decodeData(response.body);
-        case 400:
-          throw ReactBadRequest(_errorMessage(response.body));
-        case 401:
-          throw const ReactAuthException();
-        case 403:
-          throw ReactForbidden(_errorMessage(response.body));
-        case 404:
-          throw ReactNotFound(_errorMessage(response.body));
-        default:
-          throw ReactUnavailable(_errorMessage(response.body));
-      }
-    } on ReactAuthException {
-      rethrow;
-    } on ReactBadRequest {
-      rethrow;
-    } on ReactForbidden {
-      rethrow;
-    } on ReactNotFound {
-      rethrow;
-    } on ReactUnavailable {
-      rethrow;
-    } on http.ClientException catch (error) {
-      throw ReactUnavailable(error.message);
-    } on TimeoutException catch (error) {
-      throw ReactUnavailable(error.message ?? 'Request timed out');
-    } on Exception catch (error) {
-      throw ReactUnavailable(error.toString());
-    }
-  }
+  Future<Map<String, dynamic>> _deleteData(String path) async =>
+      _dataObject(await _send('DELETE', path));
+
+  Future<List<ControlItem>> _getItems(String path) async =>
+      (await _getList(path))
+          .map((dynamic e) => ControlItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+  static String _query(Map<String, String> params) => params.entries
+      .map(
+        (MapEntry<String, String> e) =>
+            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}',
+      )
+      .join('&');
 
   @override
   Future<ServerCapabilities> ping() async {
-    final http.Response response = await _get('/ping', authenticated: false);
-    if (response.statusCode != 200) {
-      throw ReactUnavailable(_errorMessage(response.body));
-    }
+    final Map<String, dynamic> data = await _getData(
+      '/ping',
+      authenticated: false,
+    );
     try {
-      return ServerCapabilities.fromJson(_decodeData(response.body));
-    } on ReactUnavailable {
-      rethrow;
+      return ServerCapabilities.fromJson(data);
     } on FormatException catch (error) {
       throw ReactUnavailable(error.message);
     }
   }
 
   @override
-  Future<IdentityInfo> identity() async {
-    final http.Response response = await _get('/identity');
-    return IdentityInfo.fromJson(_decodeData(response.body));
-  }
+  Future<IdentityInfo> identity() async =>
+      IdentityInfo.fromJson(await _getData('/identity'));
 
   @override
-  Future<RoleInfo> whoami() async {
-    final http.Response response = await _get('/whoami');
-    return RoleInfo.fromJson(_decodeData(response.body));
-  }
+  Future<ServerSummary> summary() async =>
+      ServerSummary.fromJson(await _getData('/summary'));
+
+  @override
+  Future<RoleInfo> whoami() async =>
+      RoleInfo.fromJson(await _getData('/whoami'));
 
   @override
   Future<ServerSnapshot> metrics() async {
-    final http.Response response = await _get('/metrics');
-    return ServerSnapshot.fromJson(_decodeJson(response.body));
+    final Map<String, dynamic>? root = await _send('GET', '/metrics?compact=1');
+    try {
+      return ServerSnapshot.fromJson(root!);
+    } on TypeError {
+      throw const ReactUnavailable('Malformed metrics response');
+    }
   }
 
   @override
-  Future<List<MetricHistoryDescriptor>> historyCatalog() async {
-    final http.Response response = await _get('/metrics/catalog');
-    if (response.statusCode != 200) {
-      throw ReactUnavailable(_errorMessage(response.body));
-    }
-    final Object? data = _decodeJson(response.body)['data'];
-    if (data is! List<dynamic>) {
-      throw const ReactUnavailable('Malformed history catalog response');
-    }
-    return data
-        .map(
-          (dynamic value) =>
-              MetricHistoryDescriptor.fromJson(value as Map<String, dynamic>),
-        )
-        .toList();
-  }
+  Future<List<MetricHistoryDescriptor>> historyCatalog() async =>
+      (await _getList('/metrics/catalog'))
+          .map(
+            (dynamic value) =>
+                MetricHistoryDescriptor.fromJson(value as Map<String, dynamic>),
+          )
+          .toList();
 
   @override
   Future<MetricHistoryPage> historyPage({
@@ -465,40 +401,31 @@ class ReactClient
   }) async {
     final String path;
     if (cursor != null) {
-      path = '/metrics/history?cursor=${Uri.encodeQueryComponent(cursor)}';
+      path = '/metrics/history?${_query(<String, String>{'cursor': cursor})}';
     } else {
       if (ids == null || ids.isEmpty || from == null || to == null) {
         throw ArgumentError('ids, from, and to are required without a cursor');
       }
-      final Map<String, String> query = <String, String>{
-        'ids': ids.join(','),
-        'from': from.millisecondsSinceEpoch.toString(),
-        'to': to.millisecondsSinceEpoch.toString(),
-        'maxPoints': maxPoints.toString(),
-        'pageSize': pageSize.toString(),
-      };
       path =
-          '/metrics/history?${query.entries.map((MapEntry<String, String> entry) => '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(entry.value)}').join('&')}';
+          '/metrics/history?${_query(<String, String>{'ids': ids.join(','), 'from': from.millisecondsSinceEpoch.toString(), 'to': to.millisecondsSinceEpoch.toString(), 'maxPoints': maxPoints.toString(), 'pageSize': pageSize.toString()})}';
     }
-    final http.Response response = await _get(path);
-    if (response.statusCode != 200) {
-      throw ReactUnavailable(_errorMessage(response.body));
-    }
-    return MetricHistoryPage.fromJson(_decodeData(response.body));
+    return MetricHistoryPage.fromJson(await _getData(path));
   }
 
   @override
-  Future<List<HeatmapSummary>> heatmaps() async {
-    final http.Response r = await _get('/heatmaps');
-    final Map<String, dynamic> root = _decodeJson(r.body);
-    final Object? data = root['data'];
-    if (data is! List) {
-      throw const ReactUnavailable('Malformed heatmaps response');
-    }
-    return data
-        .map((dynamic e) => HeatmapSummary.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
+  Future<RangeHistory> metricRange(
+    ChartRange range, {
+    List<String>? ids,
+  }) async => RangeHistory.fromJson(
+    await _getData(
+      '/metrics/range?${_query(<String, String>{'range': range.id, if (ids != null) 'ids': ids.join(',')})}',
+    ),
+  );
+
+  @override
+  Future<List<HeatmapSummary>> heatmaps() async => (await _getList('/heatmaps'))
+      .map((dynamic e) => HeatmapSummary.fromJson(e as Map<String, dynamic>))
+      .toList();
 
   @override
   Future<HeatmapGrid> heatmap(
@@ -508,49 +435,23 @@ class ReactClient
     int? centerChunkZ,
     int? radius,
   }) async {
-    final Map<String, String> params = <String, String>{};
-    if (world != null) params['world'] = world;
-    if (centerChunkX != null) {
-      params['centerChunkX'] = centerChunkX.toString();
-    }
-    if (centerChunkZ != null) {
-      params['centerChunkZ'] = centerChunkZ.toString();
-    }
-    if (radius != null) params['radius'] = radius.toString();
-    final String query = params.isEmpty
-        ? ''
-        : '?${params.entries.map((MapEntry<String, String> e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&')}';
-    final String path = '/heatmaps/$id$query';
-    final http.Response r = await _get(path);
-    if (r.statusCode == 404) {
-      throw ReactUnavailable('Unknown heatmap: $id');
-    }
-    return HeatmapGrid.fromJson(_decodeData(r.body));
+    final Map<String, String> params = <String, String>{
+      'world': ?world,
+      if (centerChunkX != null) 'centerChunkX': centerChunkX.toString(),
+      if (centerChunkZ != null) 'centerChunkZ': centerChunkZ.toString(),
+      if (radius != null) 'radius': radius.toString(),
+    };
+    final String query = params.isEmpty ? '' : '?${_query(params)}';
+    return HeatmapGrid.fromJson(await _getData('/heatmaps/$id$query'));
   }
 
   @override
-  Future<List<OnlinePlayerInfo>> players() async {
-    final http.Response response = await _get('/players');
-    switch (response.statusCode) {
-      case 200:
-        final Object? data = _decodeJson(response.body)['data'];
-        if (data is! List<dynamic>) {
-          throw const ReactUnavailable('Malformed players response');
-        }
-        return data
-            .map(
-              (dynamic value) =>
-                  OnlinePlayerInfo.fromJson(value as Map<String, dynamic>),
-            )
-            .toList(growable: false);
-      case 403:
-        throw ReactForbidden(_errorMessage(response.body));
-      case 404:
-        throw ReactNotFound(_errorMessage(response.body));
-      default:
-        throw ReactUnavailable(_errorMessage(response.body));
-    }
-  }
+  Future<List<OnlinePlayerInfo>> players() async => (await _getList('/players'))
+      .map(
+        (dynamic value) =>
+            OnlinePlayerInfo.fromJson(value as Map<String, dynamic>),
+      )
+      .toList(growable: false);
 
   @override
   Future<PlayerTeleportResult> teleportPlayer(
@@ -575,80 +476,46 @@ class ReactClient
   Future<List<ControlItem>> features() => _getItems('/features');
 
   @override
-  Future<ControlItem> feature(String id) async {
-    final http.Response response = await _get('/features/$id');
-    if (response.statusCode == 404) {
-      throw ReactNotFound(_errorMessage(response.body));
-    }
-    return ControlItem.fromJson(_decodeData(response.body));
-  }
+  Future<ControlItem> feature(String id) async =>
+      ControlItem.fromJson(await _getData('/features/$id'));
 
   @override
-  Future<ControlItem> setFeatureEnabled(String id, bool enabled) async {
-    final Map<String, dynamic> data = await _putData(
-      '/features/$id',
-      <String, Object?>{'enabled': enabled},
-    );
-    return ControlItem.fromJson(data);
-  }
+  Future<ControlItem> setFeatureEnabled(String id, bool enabled) async =>
+      ControlItem.fromJson(
+        await _putData('/features/$id', <String, Object?>{'enabled': enabled}),
+      );
 
   @override
   Future<ControlItem> setFeatureConfig(
     String id,
     Map<String, Object?> knobs,
-  ) async {
-    final Map<String, dynamic> data = await _putData(
-      '/features/$id/config',
-      knobs,
-    );
-    return ControlItem.fromJson(data);
-  }
+  ) async =>
+      ControlItem.fromJson(await _putData('/features/$id/config', knobs));
 
   @override
   Future<List<ControlItem>> tweaks() => _getItems('/tweaks');
 
   @override
-  Future<ControlItem> tweak(String id) async {
-    final http.Response response = await _get('/tweaks/$id');
-    if (response.statusCode == 404) {
-      throw ReactNotFound(_errorMessage(response.body));
-    }
-    return ControlItem.fromJson(_decodeData(response.body));
-  }
+  Future<ControlItem> tweak(String id) async =>
+      ControlItem.fromJson(await _getData('/tweaks/$id'));
 
   @override
-  Future<ControlItem> setTweakEnabled(String id, bool enabled) async {
-    final Map<String, dynamic> data = await _putData(
-      '/tweaks/$id',
-      <String, Object?>{'enabled': enabled},
-    );
-    return ControlItem.fromJson(data);
-  }
+  Future<ControlItem> setTweakEnabled(String id, bool enabled) async =>
+      ControlItem.fromJson(
+        await _putData('/tweaks/$id', <String, Object?>{'enabled': enabled}),
+      );
 
   @override
   Future<ControlItem> setTweakConfig(
     String id,
     Map<String, Object?> knobs,
-  ) async {
-    final Map<String, dynamic> data = await _putData(
-      '/tweaks/$id/config',
-      knobs,
-    );
-    return ControlItem.fromJson(data);
-  }
+  ) async => ControlItem.fromJson(await _putData('/tweaks/$id/config', knobs));
 
   @override
-  Future<List<WorldSettings>> worlds() async {
-    final http.Response response = await _get('/worlds');
-    final Map<String, dynamic> root = _decodeJson(response.body);
-    final Object? data = root['data'];
-    if (data is! List) {
-      throw const ReactUnavailable('Malformed worlds response');
-    }
-    return data
-        .map((dynamic e) => WorldSettings.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
+  Future<List<WorldSettings>> worlds() async =>
+      (await _getList('/worlds'))
+          .map((dynamic e) => WorldSettings.fromJson(e as Map<String, dynamic>))
+          .toList();
 
   @override
   Future<WorldSettings> setWorld(
@@ -657,29 +524,21 @@ class ReactClient
     double? panicMs,
     double? releaseMs,
   }) async {
-    final Map<String, Object?> body = <String, Object?>{
-      'budgetMs': ?budgetMs,
-      'panicMs': ?panicMs,
-      'releaseMs': ?releaseMs,
-    };
-    final Map<String, dynamic> data = await _putData('/worlds/$name', body);
+    final Map<String, dynamic> data = await _putData(
+      '/worlds/$name',
+      <String, Object?>{
+        'budgetMs': ?budgetMs,
+        'panicMs': ?panicMs,
+        'releaseMs': ?releaseMs,
+      },
+    );
     return WorldSettings.fromJson(data);
   }
 
   @override
-  Future<List<ActionDescriptor>> actions() async {
-    final http.Response r = await _get('/actions');
-    final Map<String, dynamic> root = _decodeJson(r.body);
-    final Object? data = root['data'];
-    if (data is! List) {
-      throw const ReactUnavailable('Malformed actions response');
-    }
-    return data
-        .map(
-          (dynamic e) => ActionDescriptor.fromJson(e as Map<String, dynamic>),
-        )
-        .toList();
-  }
+  Future<List<ActionDescriptor>> actions() async => (await _getList('/actions'))
+      .map((dynamic e) => ActionDescriptor.fromJson(e as Map<String, dynamic>))
+      .toList();
 
   @override
   Future<ActionTicket> executeAction(
@@ -695,47 +554,60 @@ class ReactClient
   }
 
   @override
-  Future<IncidentStatus> incidents() async {
-    final http.Response r = await _get('/incidents');
-    return IncidentStatus.fromJson(_decodeData(r.body));
-  }
-
-  @override
-  Future<EnvironmentInfo> environment() async {
-    final http.Response r = await _get('/environment');
-    return EnvironmentInfo.fromJson(_decodeData(r.body));
-  }
-
-  @override
-  Future<ConfigTree> config() async {
-    final http.Response r = await _get('/config');
-    return ConfigTree.fromJson(_decodeData(r.body));
-  }
-
-  @override
-  Future<ConfigTree> applyConfig(Map<String, Object?> changes) async {
-    final Map<String, dynamic> data = await _putData('/config', changes);
-    return ConfigTree.fromJson(data);
-  }
-
-  @override
-  Future<ConfigTree> applyPreset(String name) async {
-    final Map<String, dynamic> data = await _postData(
-      '/config/preset/$name',
-      const <String, Object?>{},
+  Future<ActionTicketStatus> actionTicket(String ticketId) async {
+    final Map<String, dynamic>? root = await _send(
+      'GET',
+      '/actions/tickets/${Uri.encodeComponent(ticketId)}',
     );
-    return ConfigTree.fromJson(data);
+    final Object? data = root?['data'];
+    return ActionTicketStatus.fromJson(
+      data is Map<String, dynamic> ? data : root!,
+    );
   }
 
   @override
-  Future<List<String>> logs({int limit = 200}) async {
-    final http.Response r = await _get('/logs?limit=$limit');
-    final Map<String, dynamic> root = _decodeJson(r.body);
-    final Object? data = root['data'];
-    if (data is! List) {
-      throw const ReactUnavailable('Malformed logs response');
+  Future<IncidentStatus> incidents() async =>
+      IncidentStatus.fromJson(await _getData('/incidents'));
+
+  @override
+  Future<EnvironmentInfo> environment() async =>
+      EnvironmentInfo.fromJson(await _getData('/environment'));
+
+  @override
+  Future<ConfigTree> config() async =>
+      ConfigTree.fromJson(await _getData('/config'));
+
+  @override
+  Future<ConfigTree> applyConfig(Map<String, Object?> changes) async =>
+      ConfigTree.fromJson(await _putData('/config', changes));
+
+  @override
+  Future<ConfigTree> applyPreset(String name) async => ConfigTree.fromJson(
+    await _postData('/config/preset/$name', const <String, Object?>{}),
+  );
+
+  @override
+  Future<List<String>> logs({int limit = 200}) async =>
+      (await logLines(limit: limit)).map((LogLine l) => l.text).toList();
+
+  @override
+  Future<List<LogLine>> logLines({int limit = 200, int? after}) async {
+    final Map<String, String> params = <String, String>{
+      'limit': limit.toString(),
+      if (after != null) 'after': after.toString(),
+    };
+    final Map<String, dynamic>? root = await _send(
+      'GET',
+      '/logs?${_query(params)}',
+    );
+    final Object? data = root?['data'];
+    if (data is! List<dynamic>) {
+      throw const ReactUnavailable('Malformed response: missing data list');
     }
-    return data.map((dynamic e) => e as String).toList();
+    return LogLine.withTrailingSeq(
+      LogLine.listFromJson(data),
+      root?['lastSeq'],
+    );
   }
 
   @override
@@ -754,36 +626,30 @@ class ReactClient
   }
 
   @override
-  Future<PluginApiCatalog> pluginApiPacks() async {
-    final http.Response response = await _get('/plugin-api-packs');
-    return PluginApiCatalog.fromJson(_decodeData(response.body));
-  }
+  Future<PluginApiCatalog> pluginApiPacks() async =>
+      PluginApiCatalog.fromJson(await _getData('/plugin-api-packs'));
 
   @override
   Future<PluginApiValidationResult> validatePluginApiPack(
     String content,
-  ) async {
-    final Map<String, dynamic> data = await _postData(
-      '/plugin-api-packs/validate',
-      <String, Object?>{'content': content},
-    );
-    return PluginApiValidationResult.fromJson(data);
-  }
+  ) async => PluginApiValidationResult.fromJson(
+    await _postData('/plugin-api-packs/validate', <String, Object?>{
+      'content': content,
+    }),
+  );
 
   @override
-  Future<PluginApiPack> installPluginApiPack(String id, String content) async {
-    final Map<String, dynamic> data = await _putData(
-      '/plugin-api-packs/${Uri.encodeComponent(id)}',
-      <String, Object?>{'content': content},
-    );
-    return PluginApiPack.fromJson(data);
-  }
+  Future<PluginApiPack> installPluginApiPack(String id, String content) async =>
+      PluginApiPack.fromJson(
+        await _putData(
+          '/plugin-api-packs/${Uri.encodeComponent(id)}',
+          <String, Object?>{'content': content},
+        ),
+      );
 
   @override
-  Future<PluginApiCatalog> removePluginApiPack(String id) async {
-    final Map<String, dynamic> data = await _deleteData(
-      '/plugin-api-packs/${Uri.encodeComponent(id)}',
-    );
-    return PluginApiCatalog.fromJson(data);
-  }
+  Future<PluginApiCatalog> removePluginApiPack(String id) async =>
+      PluginApiCatalog.fromJson(
+        await _deleteData('/plugin-api-packs/${Uri.encodeComponent(id)}'),
+      );
 }

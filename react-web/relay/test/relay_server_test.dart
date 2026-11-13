@@ -38,6 +38,43 @@ Future<RelayFrame> _nextFrame(StreamIterator<String> iter) async {
   return frame;
 }
 
+String _identityRoute(String serverId, String requestId) => RelayFrame(
+  type: RelayFrameType.route,
+  serverId: serverId,
+  requestId: requestId,
+  payload: <String, dynamic>{
+    'method': 'GET',
+    'path': '/api/v1/identity',
+    'headers': <String, dynamic>{'Authorization': 'Bearer x'},
+  },
+).encode();
+
+String _okReply(String serverId, String requestId) => RelayFrame(
+  type: RelayFrameType.data,
+  serverId: serverId,
+  requestId: requestId,
+  payload: <String, dynamic>{
+    'status': 200,
+    'body': <String, dynamic>{'ok': true},
+  },
+).encode();
+
+Future<Map<String, dynamic>> _health(int port) async {
+  final HttpClient client = HttpClient();
+  try {
+    final HttpClientRequest request = await client.get(
+      '127.0.0.1',
+      port,
+      '/healthz',
+    );
+    final HttpClientResponse response = await request.close();
+    return jsonDecode(await utf8.decoder.bind(response).join())
+        as Map<String, dynamic>;
+  } finally {
+    client.close(force: true);
+  }
+}
+
 void main() {
   group('relay_server integration', () {
     late Ed25519 algo;
@@ -142,6 +179,9 @@ void main() {
         appCh!.sink.add(
           RelayFrame(type: RelayFrameType.subscribe, serverId: fp).encode(),
         );
+        final RelayFrame status = await _nextFrame(appIter!);
+        expect(status.type, RelayFrameType.status);
+        expect(status.online, isTrue);
 
         const String requestId = 'r1';
         appCh!.sink.add(
@@ -241,6 +281,9 @@ void main() {
           RelayFrame(type: RelayFrameType.subscribe, serverId: fp).encode(),
         );
 
+        final RelayFrame status = await _nextFrame(appIter!);
+        expect(status.type, RelayFrameType.status);
+        expect(status.online, isFalse);
         final RelayFrame offlineFrame = await _nextFrame(appIter!);
         expect(offlineFrame.type, equals(RelayFrameType.error));
         expect(offlineFrame.payload?['message'], equals('server offline'));
@@ -261,6 +304,8 @@ void main() {
         appChB!.sink.add(
           RelayFrame(type: RelayFrameType.subscribe, serverId: fp).encode(),
         );
+        expect((await _nextFrame(appIter!)).online, isTrue);
+        expect((await _nextFrame(appIterB!)).online, isTrue);
 
         for (final MapEntry<IOWebSocketChannel, String> entry
             in <MapEntry<IOWebSocketChannel, String>>[
@@ -373,6 +418,7 @@ void main() {
         appCh!.sink.add(
           RelayFrame(type: RelayFrameType.subscribe, serverId: fp).encode(),
         );
+        expect((await _nextFrame(appIter!)).online, isFalse);
         final RelayFrame offline = await _nextFrame(appIter!);
         expect(offline.payload!['message'], 'server offline');
       },
@@ -438,39 +484,231 @@ void main() {
       expect(error.payload!['message'], contains('frame size limit'));
     });
 
-    test('per-connection message rate limit closes a flooding app', () async {
-      await restartServer(
-        limits: const RelayLimits(
-          maxMessagesPerWindow: 1,
-          messageRateWindow: Duration(minutes: 1),
-        ),
+    test('a restarting relay closes every agent and app with 4012', () async {
+      final RelayConnections connections = RelayConnections();
+      await server.close(force: true);
+      server = await startRelayServer(port: 0, connections: connections);
+      port = server.port;
+      await connectAndRegisterAgent();
+      appCh = IOWebSocketChannel.connect('ws://127.0.0.1:$port/app');
+      await appCh!.ready;
+      final Completer<int?> agentClosed = Completer<int?>();
+      final Completer<int?> appClosed = Completer<int?>();
+      agentIter!.moveNext().then((_) {
+        if (!agentClosed.isCompleted) agentClosed.complete(agentCh!.closeCode);
+      });
+      final Completer<void> subscribed = Completer<void>();
+      appCh!.stream.listen((Object? _) {
+        if (!subscribed.isCompleted) subscribed.complete();
+      }, onDone: () => appClosed.complete(appCh!.closeCode));
+      // A subscribed browser is sent the agent's offline status while the
+      // agent closes; it must still get the restart close.
+      appCh!.sink.add(
+        RelayFrame(type: RelayFrameType.subscribe, serverId: fp).encode(),
       );
+      await subscribed.future.timeout(const Duration(seconds: 5));
+      expect(connections.openCount, 2);
+
+      await connections.closeAll();
+
+      expect(
+        await agentClosed.future.timeout(const Duration(seconds: 5)),
+        relayRestartCloseCode,
+      );
+      expect(
+        await appClosed.future.timeout(const Duration(seconds: 5)),
+        relayRestartCloseCode,
+      );
+      expect(connections.openCount, 0);
+    });
+
+    test('a refused route says why with a code', () async {
+      appCh = IOWebSocketChannel.connect('ws://127.0.0.1:$port/app');
+      appIter = StreamIterator<String>(appCh!.stream.cast<String>());
+      appCh!.sink.add(
+        RelayFrame(type: RelayFrameType.subscribe, serverId: fp).encode(),
+      );
+      expect((await _nextFrame(appIter!)).online, isFalse);
+      expect((await _nextFrame(appIter!)).payload!['code'], 'server_offline');
+      appCh!.sink.add(_identityRoute(fp, 'r1'));
+      final RelayFrame refused = await _nextFrame(appIter!);
+      expect(refused.payload!['status'], 503);
+      final Map<String, dynamic> body =
+          refused.payload!['body'] as Map<String, dynamic>;
+      expect(body['error'], <String, dynamic>{
+        'code': 'server_offline',
+        'message': 'server offline',
+      });
+    });
+
+    test('subscribers see the agent go offline and come back online', () async {
+      await connectAndRegisterAgent();
       appCh = IOWebSocketChannel.connect('ws://127.0.0.1:$port/app');
       appIter = StreamIterator<String>(appCh!.stream.cast<String>());
       appCh!.sink.add(
         RelayFrame(type: RelayFrameType.subscribe, serverId: fp).encode(),
       );
       expect(
-        (await _nextFrame(appIter!)).payload!['message'],
-        'server offline',
+        (await _nextFrame(appIter!)).encode(),
+        '{"type":"status","serverId":"$fp","online":true,'
+        '"payload":{"online":true}}',
       );
 
-      appCh!.sink.add(
-        RelayFrame(
-          type: RelayFrameType.route,
-          serverId: fp,
-          requestId: 'flood',
-          payload: <String, dynamic>{
-            'method': 'GET',
-            'path': '/api/v1/identity',
-            'headers': <String, dynamic>{},
-          },
-        ).encode(),
+      await agentIter!.cancel();
+      await agentCh!.sink.close();
+      expect(
+        (await _nextFrame(appIter!)).encode(),
+        '{"type":"status","serverId":"$fp","online":false,'
+        '"payload":{"online":false}}',
       );
 
-      final RelayFrame error = await _nextFrame(appIter!);
+      await connectAndRegisterAgent();
+      final RelayFrame online = await _nextFrame(appIter!);
+      expect(online.type, RelayFrameType.status);
+      expect(online.online, isTrue);
+    });
+
+    test(
+      'over-rate app routes get a 429 reply and the socket stays open',
+      () async {
+        await restartServer(
+          limits: const RelayLimits(
+            maxAppMessagesPerWindow: 2,
+            messageRateWindow: Duration(minutes: 1),
+          ),
+        );
+        await connectAndRegisterAgent();
+        appCh = IOWebSocketChannel.connect('ws://127.0.0.1:$port/app');
+        appIter = StreamIterator<String>(appCh!.stream.cast<String>());
+        appCh!.sink.add(
+          RelayFrame(type: RelayFrameType.subscribe, serverId: fp).encode(),
+        );
+        expect((await _nextFrame(appIter!)).online, isTrue);
+
+        appCh!.sink.add(_identityRoute(fp, 'r1'));
+        final RelayFrame routed = await _nextFrame(agentIter!);
+        agentCh!.sink.add(_okReply(fp, routed.requestId!));
+        expect((await _nextFrame(appIter!)).payload!['status'], 200);
+
+        appCh!.sink.add(_identityRoute(fp, 'r2'));
+        expect(
+          (await _nextFrame(appIter!)).encode(),
+          '{"type":"data","serverId":"$fp","requestId":"r2","payload":'
+          '{"status":429,"body":{"error":{"code":"relay_rate_limited","message":"relay rate limit exceeded"}}}}',
+        );
+
+        appCh!.sink.add(
+          RelayFrame(type: RelayFrameType.subscribe, serverId: fp).encode(),
+        );
+        appCh!.sink.add(_identityRoute(fp, 'r3'));
+        final RelayFrame third = await _nextFrame(appIter!);
+        expect(third.requestId, 'r3');
+        expect(third.payload!['status'], 429);
+
+        final Map<String, dynamic> health = await _health(port);
+        expect(health['appSessions'], 1);
+        expect(health['pendingRequests'], 0);
+      },
+    );
+
+    test('an agent over its own message rate is closed', () async {
+      await restartServer(
+        limits: const RelayLimits(
+          maxAgentMessagesPerWindow: 1,
+          messageRateWindow: Duration(minutes: 1),
+        ),
+      );
+      await connectAndRegisterAgent();
+      agentCh!.sink.add(_okReply(fp, 'unsolicited'));
+
+      final RelayFrame error = await _nextFrame(agentIter!);
       expect(error.type, RelayFrameType.error);
       expect(error.payload!['message'], contains('message rate limit'));
+      expect(
+        await agentIter!.moveNext().timeout(const Duration(seconds: 2)),
+        isFalse,
+      );
+    });
+
+    for (final int burstSize in <int>[300, 1000]) {
+      test(
+        'a burst of $burstSize routes gets exactly one reply each without closing the app',
+        () async {
+          await connectAndRegisterAgent();
+          unawaited(() async {
+            while (await agentIter!.moveNext()) {
+              final RelayFrame? route = RelayFrame.decode(agentIter!.current);
+              if (route?.type != RelayFrameType.route) continue;
+              agentCh!.sink.add(_okReply(fp, route!.requestId!));
+            }
+          }());
+          appCh = IOWebSocketChannel.connect('ws://127.0.0.1:$port/app');
+          appIter = StreamIterator<String>(appCh!.stream.cast<String>());
+          appCh!.sink.add(
+            RelayFrame(type: RelayFrameType.subscribe, serverId: fp).encode(),
+          );
+          expect((await _nextFrame(appIter!)).online, isTrue);
+
+          for (int index = 0; index < burstSize; index++) {
+            appCh!.sink.add(_identityRoute(fp, 'burst-$index'));
+          }
+          final Map<String, int> statusByRequest = <String, int>{};
+          int rateLimited = 0;
+          for (int index = 0; index < burstSize; index++) {
+            final RelayFrame reply = await _nextFrame(appIter!);
+            expect(reply.type, RelayFrameType.data);
+            expect(statusByRequest.containsKey(reply.requestId), isFalse);
+            statusByRequest[reply.requestId!] = reply.payload!['status'] as int;
+            final Map<String, dynamic> body =
+                reply.payload!['body'] as Map<String, dynamic>;
+            final Object? error = body['error'];
+            if (error is Map<String, dynamic> &&
+                error['message'] == 'relay rate limit exceeded') {
+              rateLimited++;
+            }
+          }
+          expect(statusByRequest, hasLength(burstSize));
+          expect(statusByRequest.values.toSet(), <int>{200, 429});
+          expect(rateLimited, greaterThan(0));
+
+          await Future<void>.delayed(const Duration(milliseconds: 1100));
+          appCh!.sink.add(_identityRoute(fp, 'after-burst'));
+          final RelayFrame after = await _nextFrame(appIter!);
+          expect(after.requestId, 'after-burst');
+          expect(after.payload!['status'], 200);
+        },
+      );
+    }
+
+    test('an agent with 1000 queued requests is not closed', () async {
+      await restartServer(
+        limits: const RelayLimits(
+          maxAppMessagesPerWindow: 2000,
+          maxPendingRequestsPerApp: 1000,
+        ),
+      );
+      await connectAndRegisterAgent();
+      appCh = IOWebSocketChannel.connect('ws://127.0.0.1:$port/app');
+      appIter = StreamIterator<String>(appCh!.stream.cast<String>());
+      appCh!.sink.add(
+        RelayFrame(type: RelayFrameType.subscribe, serverId: fp).encode(),
+      );
+      expect((await _nextFrame(appIter!)).online, isTrue);
+
+      for (int index = 0; index < 1000; index++) {
+        appCh!.sink.add(_identityRoute(fp, 'queued-$index'));
+      }
+      final Set<String> routed = <String>{};
+      for (int index = 0; index < 1000; index++) {
+        final RelayFrame frame = await _nextFrame(agentIter!);
+        expect(frame.type, RelayFrameType.route);
+        routed.add(frame.requestId!);
+      }
+      expect(routed, hasLength(1000));
+
+      final Map<String, dynamic> health = await _health(port);
+      expect(health['onlineAgents'], 1);
+      expect(health['pendingRequests'], 1000);
     });
   });
 }

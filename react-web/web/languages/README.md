@@ -7,7 +7,7 @@ well with translation platforms and ordinary JSON editors.
 
 Placeholders such as `{server}`, `{count}`, and `{action}` must remain exactly
 the same, although they may move within a sentence. Keep product names,
-commands, URLs, sampler IDs, and protocol tokens such as `React`, `RCT2`, `TPS`,
+commands, URLs, sampler IDs, and protocol tokens such as `React`, `RCT3`, `TPS`,
 `MSPT`, `HTTP`, and `WebSocket` unchanged.
 
 Use the key as the translation context when an English label is ambiguous:
@@ -15,10 +15,9 @@ Use the key as the translation context when an English label is ambiguous:
 - `screen.config_editor.preset.light` is the lightweight performance preset;
   `screen.settings.light_theme` is the bright visual theme.
 - `screen.logs.resume`, `screen.logs.pause`, and `screen.logs.clear` are actions
-  on log output, while `screen.logs.stream` is the telemetry data stream.
-- `screen.add_server.pair` is the verb for securely associating a server;
-  `screen.add_server.port` is a network port and `handshake` is the networking
-  protocol term.
+  on log output.
+- `pair.pair` is the verb for securely associating a server with this browser;
+  `pair.link` is the one-time link the server prints for it.
 - `chart.sample` and `screen.metrics.samples` are telemetry measurements.
 - `screen.world_overrides.title` means settings applied to individual
   Minecraft worlds, and `screen.heatmaps.event_impact_pie` means a pie chart.

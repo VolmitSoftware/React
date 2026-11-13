@@ -1,7 +1,7 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
+import 'package:react_web/theme/reactor_stylesheet.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 import 'package:jaspr_test/server_test.dart';
@@ -20,7 +20,7 @@ import 'package:react_web/state/fleet_scope.dart';
 import 'package:react_web/state/memory_fleet_storage.dart';
 import 'package:react_web/state/server_tags_store.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+const ReactorStylesheet _sheet = ReactorStylesheet();
 
 class _FakeFleetController implements FleetController {
   final InMemoryFleetStorage _storage = InMemoryFleetStorage();

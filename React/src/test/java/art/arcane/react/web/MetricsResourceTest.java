@@ -2,11 +2,14 @@ package art.arcane.react.web;
 
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.MetricsSerializer;
+import art.arcane.react.api.web.WebRevisions;
 import art.arcane.react.api.web.dto.Envelope;
+import art.arcane.react.api.web.dto.MetricHistoryDescriptorDto;
 import art.arcane.react.api.web.dto.SamplerDto;
 import art.arcane.react.api.web.resource.MetricsResource;
 import art.arcane.react.core.controller.HistoryController;
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.core.history.MetricDescriptor;
 import art.arcane.react.core.history.MetricSnapshot;
 import art.arcane.react.core.history.MetricSnapshotValue;
 import art.arcane.react.util.project.registry.Registry;
@@ -19,6 +22,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -119,6 +123,55 @@ public class MetricsResourceTest {
 
     assertEquals(1, values.length);
     assertEquals("tps", values[0].id);
+  }
+
+  @Test
+  void catalogMarksWhichMetricsAreAvailableNow() {
+    HistoryController history = mock(HistoryController.class);
+    MetricSnapshotValue live = new MetricSnapshotValue("tps", "TPS", "", 20D, "20", true,
+        123L, Sampler.Metadata.UNKNOWN, "", Sampler.Diagnostics.EMPTY);
+    MetricSnapshotValue off = new MetricSnapshotValue("adapt-xp", "Adapt XP", "", 0D, "0", false,
+        123L, Sampler.Metadata.UNKNOWN, "plugin-missing", Sampler.Diagnostics.EMPTY);
+    when(history.latest()).thenReturn(MetricSnapshot.of(3L, 1_000L, List.of(live, off)));
+    when(history.descriptors()).thenReturn(List.of(
+        new MetricDescriptor("tps", "TPS", "", 1L, 2L, true, Sampler.Metadata.UNKNOWN),
+        new MetricDescriptor("adapt-xp", "Adapt XP", "", 1L, 2L, true, Sampler.Metadata.UNKNOWN),
+        new MetricDescriptor("retired", "Retired", "", 1L, 2L, false, Sampler.Metadata.UNKNOWN)
+    ));
+    Context context = mock(Context.class);
+    ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+
+    new MetricsResource(null, history, new MetricsSerializer()).historyCatalog(context);
+
+    verify(context).json(captor.capture());
+    MetricHistoryDescriptorDto[] data = (MetricHistoryDescriptorDto[]) ((Envelope<?>) captor.getValue()).data();
+    assertEquals(true, data[0].available());
+    assertNull(data[0].unavailableReason());
+    assertEquals(false, data[1].available());
+    assertEquals("plugin-missing", data[1].unavailableReason());
+    assertEquals(false, data[2].available());
+  }
+
+  @Test
+  void liveFrameKeepsOnlyAvailableSamplersAndIsReusedUntilSomethingMoves() {
+    HistoryController history = mock(HistoryController.class);
+    MetricSnapshotValue live = new MetricSnapshotValue("tps", "TPS", "", 20D, "20", true,
+        123L, Sampler.Metadata.UNKNOWN, "", new Sampler.Diagnostics(1L, 1L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L));
+    MetricSnapshotValue off = new MetricSnapshotValue("adapt-xp", "Adapt XP", "", 0D, "0", false,
+        123L, Sampler.Metadata.UNKNOWN, "plugin-missing", Sampler.Diagnostics.EMPTY);
+    MetricSnapshot snapshot = MetricSnapshot.of(3L, 1_000L, List.of(live, off));
+    when(history.latestObserved()).thenReturn(snapshot);
+    MetricsResource resource = new MetricsResource(null, history, new MetricsSerializer());
+
+    MetricsResource.LiveFrame first = resource.liveFrame();
+    assertEquals(1, first.samplers().length);
+    assertEquals("tps", first.samplers()[0].id());
+    assertSame(first, resource.liveFrame(), "an unchanged poll must not allocate a new frame");
+    WebRevisions.bump(WebRevisions.Kind.CONFIG);
+    MetricsResource.LiveFrame moved = resource.liveFrame();
+    assertNotSame(first, moved);
+    assertSame(first.samplers(), moved.samplers(), "a revision change reuses the sampler array");
+    assertEquals(first.revisions().config() + 1L, moved.revisions().config());
   }
 
   @Test

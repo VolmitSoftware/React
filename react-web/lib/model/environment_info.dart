@@ -173,6 +173,59 @@ class EnvironmentMount {
 
   double get usedFraction => totalBytes <= 0 ? 0 : usedBytes / totalBytes;
 
+  /// A system or read-only pseudo mount rather than storage the server
+  /// writes to: macOS system volumes, snapshots, cryptexes, devfs and
+  /// automount maps; Linux proc, sysfs, tmpfs, overlay and squashfs. They
+  /// are often near full by design, so they never count as a full disk.
+  bool get isSystem {
+    final String kind = type.toLowerCase();
+    final String path = mount.isEmpty ? name : mount;
+    return totalBytes <= 0 ||
+        _pseudoTypes.contains(kind) ||
+        name.startsWith('map ') ||
+        _systemPrefixes.any(path.startsWith) ||
+        path.toLowerCase().contains('snapshot') ||
+        name.toLowerCase().contains('snapshot');
+  }
+
+  static const Set<String> _pseudoTypes = <String>{
+    'devfs',
+    'autofs',
+    'nullfs',
+    'proc',
+    'sysfs',
+    'tmpfs',
+    'devtmpfs',
+    'ramfs',
+    'overlay',
+    'squashfs',
+    'cgroup',
+    'cgroup2',
+    'devpts',
+    'mqueue',
+    'debugfs',
+    'tracefs',
+    'securityfs',
+    'pstore',
+    'bpf',
+    'configfs',
+    'fusectl',
+    'hugetlbfs',
+    'efivarfs',
+    'binfmt_misc',
+    'nsfs',
+  };
+
+  static const List<String> _systemPrefixes = <String>[
+    '/System/Volumes/',
+    '/private/var/',
+    '/Library/Developer/CoreSimulator/',
+    '/dev',
+    '/proc',
+    '/sys/',
+    '/snap/',
+  ];
+
   Map<String, Object?> toJson() => <String, Object?>{
     'name': name,
     'mount': mount,

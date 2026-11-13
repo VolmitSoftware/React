@@ -2,11 +2,7 @@ package art.arcane.react.web;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebConfiguration;
-import art.arcane.react.api.web.WebSecret;
 import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.WebController;
@@ -56,11 +52,15 @@ public class EnvironmentRoutesIntegrationTest {
             @Override
             protected IdentityDto resolveIdentity() {
                 IdentityDto dto = new IdentityDto();
-                dto.version = "9.9.9-test";
                 dto.serverName = "TestBrand";
                 dto.folia = true;
                 dto.serverId = "127.0.0.1:0";
                 return dto;
+            }
+
+            @Override
+            protected String resolveServerVersion() {
+                return "Paper 26.3";
             }
         };
         c.setConfig(config);
@@ -80,13 +80,7 @@ public class EnvironmentRoutesIntegrationTest {
 
     @Test
     void environmentEndpointRequiresTokenWhenReadGuardEnabled(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord readRecord = new TokenRecord("tok-env-read", "read-device", 1000L, Set.of("read"), "viewer");
-        String readBearer = PairingToken.mint(secret, readRecord.id(), readRecord.label(), readRecord.issuedAt(), readRecord.scopes());
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(readRecord);
-        store.save(tokensFile);
+        String readBearer = WebTestTokens.issue(dataFolder, "read-device", "viewer");
 
         SampleController sampleController = mock(SampleController.class);
         @SuppressWarnings("unchecked")
@@ -137,7 +131,7 @@ public class EnvironmentRoutesIntegrationTest {
         assertNotNull(data.getAsJsonArray("disks"), "data.disks must be present");
         assertNotNull(data.getAsJsonArray("mounts"), "data.mounts must be present");
         assertNotNull(data.getAsJsonArray("network"), "data.network must be present");
-        assertEquals("9.9.9-test", data.getAsJsonObject("server").get("version").getAsString(),
-            "data.server.version must match injected identity");
+        assertEquals("Paper 26.3", data.getAsJsonObject("server").get("version").getAsString(),
+            "data.server.version is the server software version");
     }
 }

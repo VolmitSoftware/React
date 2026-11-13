@@ -1,28 +1,30 @@
 package art.arcane.react.web;
 
-import art.arcane.react.api.web.dto.SamplerDto;
+import art.arcane.react.api.web.WebRevisions;
 import art.arcane.react.api.web.resource.MetricsResource;
+import art.arcane.react.api.web.ws.CoalescingWsChannel;
 import art.arcane.react.api.web.ws.WebSocketSessions;
-import art.arcane.react.api.web.ws.WsChannel;
 import art.arcane.react.api.web.ws.WsMetricsBroadcaster;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WsMetricsBroadcasterTest {
+  private static final WebRevisions.Snapshot REVISIONS = new WebRevisions.Snapshot(1L, 1L, 1L, 1L, 1L, 1L);
+
   @Test
   void returnsZeroAndDoesNoWorkWithoutSessions() {
-    WebSocketSessions sessions = new WebSocketSessions();
+    WebSocketSessions<CoalescingWsChannel> sessions = new WebSocketSessions<>();
     AtomicInteger supplierCalls = new AtomicInteger();
-    Supplier<MetricsResource.SnapshotResponse> supplier = () -> {
+    Supplier<MetricsResource.LiveFrame> supplier = () -> {
       supplierCalls.incrementAndGet();
-      return snapshot(1L);
+      return frame(1L, REVISIONS);
     };
     WsMetricsBroadcaster broadcaster = new WsMetricsBroadcaster(supplier, sessions, value -> "FRAME");
 
@@ -32,69 +34,72 @@ public class WsMetricsBroadcasterTest {
 
   @Test
   void broadcastsOneSerializationToEverySession() {
-    WebSocketSessions sessions = new WebSocketSessions();
-    FakeWsChannel first = new FakeWsChannel("first");
-    FakeWsChannel second = new FakeWsChannel("second");
-    sessions.add(first);
-    sessions.add(second);
+    WebSocketSessions<CoalescingWsChannel> sessions = new WebSocketSessions<>();
+    RecordingTransport first = new RecordingTransport("first");
+    RecordingTransport second = new RecordingTransport("second");
+    sessions.add(new CoalescingWsChannel(first));
+    sessions.add(new CoalescingWsChannel(second));
     AtomicInteger serializerCalls = new AtomicInteger();
-    Function<MetricsResource.SnapshotResponse, String> serializer = value -> {
+    Function<MetricsResource.LiveFrame, String> serializer = value -> {
       serializerCalls.incrementAndGet();
       return "FRAME";
     };
-    WsMetricsBroadcaster broadcaster = new WsMetricsBroadcaster(() -> snapshot(1L), sessions, serializer);
+    WsMetricsBroadcaster broadcaster = new WsMetricsBroadcaster(() -> frame(1L, REVISIONS), sessions, serializer);
 
     assertEquals(2, broadcaster.broadcastOnce());
     assertEquals(1, serializerCalls.get());
-    assertEquals(List.of("FRAME"), first.received);
-    assertEquals(List.of("FRAME"), second.received);
+    assertEquals(List.of("FRAME"), first.sent());
+    assertEquals(List.of("FRAME"), second.sent());
   }
 
   @Test
-  void skipsDuplicateSnapshotSequence() {
-    WebSocketSessions sessions = new WebSocketSessions();
-    FakeWsChannel channel = new FakeWsChannel("only");
-    sessions.add(channel);
+  void skipsUnchangedFramesAndPushesWhenSequenceOrRevisionsMove() {
+    WebSocketSessions<CoalescingWsChannel> sessions = new WebSocketSessions<>();
+    RecordingTransport transport = new RecordingTransport("only");
+    sessions.add(new CoalescingWsChannel(transport));
     AtomicInteger sequence = new AtomicInteger(4);
+    AtomicReference<WebRevisions.Snapshot> revisions = new AtomicReference<>(REVISIONS);
     WsMetricsBroadcaster broadcaster = new WsMetricsBroadcaster(
-        () -> snapshot(sequence.get()),
+        () -> frame(sequence.get(), revisions.get()),
         sessions,
-        value -> "SEQ:" + value.sequence()
+        value -> "SEQ:" + value.sequence() + ":" + value.revisions().tweaks()
     );
 
     assertEquals(1, broadcaster.broadcastOnce());
     assertEquals(0, broadcaster.broadcastOnce());
     sequence.incrementAndGet();
     assertEquals(1, broadcaster.broadcastOnce());
-    assertEquals(List.of("SEQ:4", "SEQ:5"), channel.received);
+    revisions.set(new WebRevisions.Snapshot(1L, 2L, 1L, 1L, 1L, 1L));
+    assertEquals(1, broadcaster.broadcastOnce());
+    assertEquals(0, broadcaster.broadcastOnce());
+    assertEquals(List.of("SEQ:4:1", "SEQ:5:1", "SEQ:5:2"), transport.sent());
   }
 
-  private static MetricsResource.SnapshotResponse snapshot(long sequence) {
-    return new MetricsResource.SnapshotResponse(sequence, 1_000L, new SamplerDto[0]);
+  @Test
+  void sendsTheCurrentFrameToANewSocketOnlyWithoutWaitingForACapture() {
+    WebSocketSessions<CoalescingWsChannel> sessions = new WebSocketSessions<>();
+    RecordingTransport open = new RecordingTransport("open");
+    RecordingTransport admitted = new RecordingTransport("admitted");
+    CoalescingWsChannel openChannel = new CoalescingWsChannel(open);
+    CoalescingWsChannel admittedChannel = new CoalescingWsChannel(admitted);
+    sessions.add(openChannel);
+    sessions.add(admittedChannel);
+    WsMetricsBroadcaster broadcaster = new WsMetricsBroadcaster(
+        () -> frame(7L, REVISIONS),
+        sessions,
+        value -> "SEQ:" + value.sequence()
+    );
+
+    assertEquals(2, broadcaster.broadcastOnce());
+
+    broadcaster.sendCurrent(admittedChannel);
+
+    assertEquals(List.of("SEQ:7", "SEQ:7"), admitted.sent());
+    assertEquals(List.of("SEQ:7"), open.sent());
+    assertEquals(0, broadcaster.broadcastOnce());
   }
 
-  private static final class FakeWsChannel implements WsChannel {
-    private final String id;
-    private final List<String> received;
-
-    FakeWsChannel(String id) {
-      this.id = id;
-      this.received = new ArrayList<>();
-    }
-
-    @Override
-    public String id() {
-      return id;
-    }
-
-    @Override
-    public boolean isOpen() {
-      return true;
-    }
-
-    @Override
-    public void send(String text) {
-      received.add(text);
-    }
+  private static MetricsResource.LiveFrame frame(long sequence, WebRevisions.Snapshot revisions) {
+    return new MetricsResource.LiveFrame(sequence, 1_000L, new MetricsResource.LiveSampleDto[0], revisions);
   }
 }

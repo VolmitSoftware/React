@@ -35,12 +35,7 @@ class _FakeClient implements IReactClient, IPlayerClient {
     identityCalls++;
     if (delay > Duration.zero) await Future<void>.delayed(delay);
     if (shouldThrow) throw const ReactUnavailable();
-    return IdentityInfo(
-      serverName: 'test',
-      version: '1.0',
-      folia: false,
-      serverId: serverId,
-    );
+    return IdentityInfo(serverName: 'test', folia: false, serverId: serverId);
   }
 
   @override
@@ -75,6 +70,54 @@ class _FakeClient implements IReactClient, IPlayerClient {
 }
 
 void main() {
+  group('direct preference (M1)', () {
+    test(
+      'a relay that answers first waits for a direct path in grace',
+      () async {
+        final _FakeClient direct = _FakeClient(
+          serverId: 'fp',
+          delay: const Duration(milliseconds: 20),
+        );
+        final _FakeClient relay = _FakeClient(serverId: 'fp');
+        final HappyEyeballsClient client = HappyEyeballsClient(
+          direct: direct,
+          relay: relay,
+          pinnedFingerprint: 'fp',
+          directGrace: const Duration(milliseconds: 200),
+        );
+        await client.identity();
+        expect(client.activePath, RelayPath.direct);
+      },
+    );
+
+    test('the relay wins when direct misses the grace window', () async {
+      final _FakeClient direct = _FakeClient(
+        serverId: 'fp',
+        delay: const Duration(milliseconds: 300),
+      );
+      final _FakeClient relay = _FakeClient(serverId: 'fp');
+      final HappyEyeballsClient client = HappyEyeballsClient(
+        direct: direct,
+        relay: relay,
+        pinnedFingerprint: 'fp',
+        directGrace: const Duration(milliseconds: 10),
+      );
+      await client.identity();
+      expect(client.activePath, RelayPath.relay);
+      client.reprobe();
+      expect(client.activePath, RelayPath.none);
+    });
+
+    test('a fingerprint mismatch on every path is ReactWrongServer', () async {
+      final HappyEyeballsClient client = HappyEyeballsClient(
+        direct: _FakeClient(serverId: 'other'),
+        relay: _FakeClient(serverId: 'other'),
+        pinnedFingerprint: 'fp',
+      );
+      await expectLater(client.identity(), throwsA(isA<ReactWrongServer>()));
+    });
+  });
+
   test(
     'concurrent reads share resolution and close terminates both transports',
     () async {
@@ -197,32 +240,30 @@ void main() {
       },
     );
 
-    test(
-      '(6) metrics ReactUnavailable marks stale, re-probe picks direct when healthy',
-      () async {
-        final _FakeClient direct = _FakeClient(
-          serverId: 'fp:direct',
-          shouldThrow: true,
-        );
-        final _FakeClient relay = _FakeClient(serverId: 'fp:relay');
-        final HappyEyeballsClient client = HappyEyeballsClient(
-          direct: direct,
-          relay: relay,
-        );
+    test('(6) a read whose path stops answering moves to the other path in the same call', () async {
+      final _FakeClient direct = _FakeClient(
+        serverId: 'fp:direct',
+        shouldThrow: true,
+      );
+      final _FakeClient relay = _FakeClient(serverId: 'fp:relay');
+      final HappyEyeballsClient client = HappyEyeballsClient(
+        direct: direct,
+        relay: relay,
+      );
 
-        await client.identity();
-        expect(client.activePath, equals(RelayPath.relay));
+      await client.identity();
+      expect(client.activePath, equals(RelayPath.relay));
 
-        relay.shouldThrow = true;
-        direct.shouldThrow = false;
+      relay.shouldThrow = true;
+      direct.shouldThrow = false;
 
-        await expectLater(client.metrics(), throwsA(isA<ReactUnavailable>()));
-        expect(client.activePath, equals(RelayPath.none));
+      await client.metrics();
+      expect(client.activePath, equals(RelayPath.direct));
 
-        await client.identity();
-        expect(client.activePath, equals(RelayPath.direct));
-      },
-    );
+      direct.shouldThrow = true;
+      await expectLater(client.metrics(), throwsA(isA<ReactUnavailable>()));
+      expect(client.activePath, equals(RelayPath.none));
+    });
 
     test('(7a) relay-only (direct==null) uses relay', () async {
       final _FakeClient relay = _FakeClient(serverId: 'fp:relay');

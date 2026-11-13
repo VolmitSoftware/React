@@ -302,9 +302,11 @@ void main() {
           ),
         );
 
-        expect(appSink.sent, hasLength(1));
-        expect(appSink.sent.first.type, equals(RelayFrameType.data));
-        expect(appSink.sent.first.requestId, equals('client-request'));
+        expect(appSink.sent, hasLength(2));
+        expect(appSink.sent.first.type, equals(RelayFrameType.status));
+        expect(appSink.sent.first.online, isTrue);
+        expect(appSink.sent.last.type, equals(RelayFrameType.data));
+        expect(appSink.sent.last.requestId, equals('client-request'));
       },
     );
 

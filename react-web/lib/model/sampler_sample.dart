@@ -1,6 +1,10 @@
+import 'metric_unit.dart';
+
 class SamplerSample {
   final String id;
   final String name;
+
+  /// The unit after the value (see [metricUnit]).
   final String suffix;
   final double value;
   final String display;
@@ -26,7 +30,7 @@ class SamplerSample {
     return SamplerSample(
       id: json['id'] as String,
       name: json['name'] as String,
-      suffix: json['suffix'] as String,
+      suffix: metricUnit(json['suffix'] as String),
       value: value,
       display: (json['display'] as String?) ?? value.toString(),
       min: value,

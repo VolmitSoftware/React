@@ -32,7 +32,8 @@ class CommandTreeTest {
         Arguments.of((Object) new String[]{"test", "loadtest"}),
         Arguments.of((Object) new String[]{"web"}),
         Arguments.of((Object) new String[]{"web", "pair"}),
-        Arguments.of((Object) new String[]{"web", "list"}),
+        Arguments.of((Object) new String[]{"web", "status"}),
+        Arguments.of((Object) new String[]{"web", "tokens"}),
         Arguments.of((Object) new String[]{"web", "revoke"})
     );
   }
@@ -44,14 +45,12 @@ class CommandTreeTest {
   }
 
   @Test
-  void versionAppearsOnlyInDebugHelpAndBothRootSpellingsResolve() {
-    DirectorMiniMenu.DirectorHelpPage help = DirectorMiniMenu.resolveHelp(engine, List.of()).orElseThrow();
+  void noCommandShowsTheReactVersion() {
     DirectorMiniMenu.DirectorHelpPage debug = DirectorMiniMenu.resolveHelp(engine, List.of("debug")).orElseThrow();
-    Assertions.assertFalse(help.entries().stream().anyMatch(node -> node.getDescriptor().getName().equals("version")));
-    Assertions.assertTrue(debug.entries().stream().anyMatch(node -> node.getDescriptor().getName().equals("version")));
-    assertExactPath(root, "version");
-    assertExactPath(root, "v");
-    assertExactPath(root, "debug", "version");
+    Assertions.assertFalse(debug.entries().stream().anyMatch(node -> node.getDescriptor().getName().equals("version")));
+    Assertions.assertNull(findExactChild(root, "version"));
+    Assertions.assertNull(findExactChild(root, "v"));
+    Assertions.assertNull(findExactChild(findExactChild(root, "debug"), "version"));
   }
 
   @Test

@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import '../model/server_credential.dart';
 import '../model/server_snapshot.dart';
 import 'connection_manager.dart';
 import 'fleet_rollup.dart';
+import 'server_session.dart';
 
 class FleetLiveSource {
   final String id;
@@ -11,17 +13,46 @@ class FleetLiveSource {
   final Stream<ServerSnapshot> snapshots;
   final Stream<ConnState> stateChanges;
 
+  /// Server identity shared by every entry paired to the same server.
+  final String? fingerprint;
+  final String? role;
+  final ServerTransport? transport;
+
+  /// Reads the entry's current access (revoked, wrong server) on each state
+  /// change.
+  final ConnAccess Function()? readAccess;
+
   const FleetLiveSource({
     required this.id,
     required this.name,
     required this.initialState,
     required this.snapshots,
     required this.stateChanges,
+    this.fingerprint,
+    this.role,
+    this.transport,
+    this.readAccess,
   });
+
+  factory FleetLiveSource.forSession(ServerSession session) {
+    final ConnectionManager connection = session.connection;
+    return FleetLiveSource(
+      id: session.serverId,
+      name: session.label,
+      initialState: connection.state,
+      snapshots: connection.snapshots,
+      stateChanges: connection.stateChanges,
+      fingerprint: session.fingerprint,
+      role: session.role,
+      transport: session.transport,
+      readAccess: () => connection.access,
+    );
+  }
 }
 
 class _ServerEntry {
   ConnState state;
+  ConnAccess access = ConnAccess.granted;
   ServerSnapshot? snapshot;
   DateTime? lastSeen;
   final String id;
@@ -55,6 +86,10 @@ class FleetLiveModel {
       state: entry.state,
       snapshot: entry.snapshot,
       lastSeen: entry.lastSeen,
+      fingerprint: entry.source.fingerprint,
+      role: entry.source.role,
+      transport: entry.source.transport,
+      access: entry.access,
     );
   }
 
@@ -103,6 +138,12 @@ class FleetLiveModel {
       if (existing != null) {
         if (existing.name != source.name) {
           existing.name = source.name;
+          existing.cached = null;
+          changed = true;
+        }
+        if (existing.source.role != source.role ||
+            existing.source.fingerprint != source.fingerprint) {
+          existing.source = source;
           existing.cached = null;
           changed = true;
         }
@@ -181,6 +222,7 @@ class FleetLiveModel {
         return;
       }
       entry.state = state;
+      entry.access = source.readAccess?.call() ?? ConnAccess.granted;
       _changed(source.id);
     });
   }

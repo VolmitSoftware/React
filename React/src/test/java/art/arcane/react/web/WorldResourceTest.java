@@ -1,21 +1,18 @@
 package art.arcane.react.web;
 
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
+import art.arcane.react.api.web.pairing.WebToken;
 import art.arcane.react.api.web.WorldBackend;
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.WorldDto;
 import art.arcane.react.api.web.resource.WorldResource;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
-import io.javalin.http.ForbiddenResponse;
+import art.arcane.react.api.web.WebError;
 import io.javalin.http.NotFoundResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,25 +30,18 @@ import static org.mockito.Mockito.when;
 
 public class WorldResourceTest {
 
-    private PairingToken opToken;
-    private PairingToken readToken;
+    private WebToken opToken;
+    private WebToken readToken;
     private FakeWorldBackend fakeBackend;
     private WorldResource resource;
 
     @BeforeEach
     void setUp() {
-        byte[] secret = new byte[32];
-        new SecureRandom().nextBytes(secret);
 
-        TokenRecord opRecord = new TokenRecord("tok-op", "op-device", 1000L, Set.of("read", "op:execute"), "operator");
-        TokenRecord readRecord = new TokenRecord("tok-read", "read-device", 1000L, Set.of("read"), "viewer");
-        TokenStore store = TokenStore.inMemory(opRecord, readRecord);
 
-        String opBearer = PairingToken.mint(secret, opRecord.id(), opRecord.label(), opRecord.issuedAt(), opRecord.scopes());
-        String readBearer = PairingToken.mint(secret, readRecord.id(), readRecord.label(), readRecord.issuedAt(), readRecord.scopes());
 
-        opToken = PairingToken.verify(secret, opBearer, store).orElseThrow();
-        readToken = PairingToken.verify(secret, readBearer, store).orElseThrow();
+        opToken = WebTestTokens.token("tok-op", "operator");
+        readToken = WebTestTokens.token("tok-read", "viewer");
 
         fakeBackend = new FakeWorldBackend();
         resource = new WorldResource(fakeBackend, (context, mutation) -> {
@@ -76,7 +66,7 @@ public class WorldResourceTest {
     @Test
     void update_with_op_token_invokes_backend_update_and_returns_envelope() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         Map<String, Object> body = new HashMap<>();
         body.put("worldKey", "test:world/path");
         body.put("budgetMs", 40.0);
@@ -100,7 +90,7 @@ public class WorldResourceTest {
     @Test
     void update_unknown_world_backend_returns_null_throws_not_found() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         Map<String, Object> body = new HashMap<>();
         body.put("worldKey", "test:unknown/world");
         body.put("budgetMs", 40.0);
@@ -112,7 +102,7 @@ public class WorldResourceTest {
     @Test
     void updateNamed_resolves_display_name_to_canonical_world_key() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         when(ctx.pathParam("name")).thenReturn("world");
         when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of("panicMs", 55.0));
 
@@ -125,17 +115,17 @@ public class WorldResourceTest {
     @Test
     void update_with_read_only_token_throws_forbidden() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(readToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(readToken);
 
-        assertThrows(ForbiddenResponse.class, () -> resource.update(ctx));
+        assertThrows(WebError.class, () -> resource.update(ctx));
     }
 
     @Test
     void updateNamed_authorizes_before_reading_worlds_or_body() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(readToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(readToken);
 
-        assertThrows(ForbiddenResponse.class, () -> resource.updateNamed(ctx));
+        assertThrows(WebError.class, () -> resource.updateNamed(ctx));
         assertEquals(0, fakeBackend.listCalls);
         verify(ctx, never()).bodyAsClass(Map.class);
     }
@@ -143,7 +133,7 @@ public class WorldResourceTest {
     @Test
     void update_with_non_numeric_budget_throws_bad_request() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         Map<String, Object> body = new HashMap<>();
         body.put("worldKey", "test:world/path");
         body.put("budgetMs", "not-a-number");
@@ -155,7 +145,7 @@ public class WorldResourceTest {
     @Test
     void update_without_world_key_throws_bad_request() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of("budgetMs", 40.0));
 
         assertThrows(BadRequestResponse.class, () -> resource.update(ctx));

@@ -27,9 +27,14 @@ identity layer; React's bearer token still authorizes every forwarded API call.
 It mitigates cross-site browser use but is not client authentication, and
 non-browser WebSocket clients can omit `Origin`. Production deployments should
 set an exact origin allowlist, terminate TLS at the service, and keep
-credentials short-lived and scoped. React Web's RCT2 payload pins each server
+credentials short-lived and scoped. A React Web pairing link pins each server
 subscription to its public-key fingerprint, while the React API token still
-authorizes every forwarded request.
+authorizes every forwarded request. A route that carries `X-React-Challenge`
+is answered with `headers` in its `data` payload: `X-React-Server-Key` and
+`X-React-Proof`, the server key's Ed25519 signature over
+`react-web-proof/1 <challenge>`. React Web checks it against the paired key
+before it sends a pairing secret or token, so a relay cannot pose as the
+server.
 
 The relay validates envelope shape and the route contract but does not parse
 the JSON document carried in a request body. For `POST`, `PUT`, or `PATCH`, the
@@ -79,6 +84,25 @@ frame is delivered only to the originating browser with
 `browser-local-id` restored. Unknown, expired, duplicated, disconnected, or
 cross-server response IDs are dropped.
 
+Subscribed browsers receive a `status` frame on subscribe and whenever the
+agent connects or disconnects. A replaced agent connection sends one online
+frame. When the server is offline at subscribe time, the status frame is
+followed by the `server offline` error frame.
+
+```json
+{"type":"status","serverId":"<sha256 fingerprint>","online":true,"payload":{"online":true}}
+```
+
+A route the relay refuses gets a `data` reply whose body has the server's
+error shape, `{"error": {"code": ..., "message": ...}}`. Codes:
+`server_offline` (503), `relay_timeout` (504), `relay_rate_limited` (429),
+`relay_busy` (503), `bad_request` (400), `conflict` (409) and `bad_gateway`
+(502).
+
+On SIGTERM or SIGINT the relay closes every agent and browser socket with
+close code 4012 (`relay restarting`, the 1012 meaning in the range the
+WebSocket library sends) and exits. Agents and browsers reconnect at once.
+
 ## Configuration
 
 Run locally with `dart run bin/relay.dart`. Configuration uses environment
@@ -90,18 +114,24 @@ variables:
 | `BIND_ADDRESS` | `0.0.0.0` | Listener address |
 | `ALLOWED_APP_ORIGINS` | unset | Comma-separated exact `http://` or `https://` browser origins |
 | `MAX_FRAME_BYTES` | `1048576` | Maximum UTF-8 bytes in one incoming text frame |
-| `MAX_MESSAGES_PER_WINDOW` | `120` | Per-connection messages accepted each second |
+| `MAX_APP_MESSAGES_PER_WINDOW` | `240` | Messages accepted each second from one browser connection |
+| `MAX_AGENT_MESSAGES_PER_WINDOW` | `5000` | Messages accepted each second from one agent connection |
 | `MAX_PENDING_PER_APP` | `64` | Concurrent requests from one browser connection |
 | `MAX_PENDING_GLOBAL` | `4096` | Concurrent requests across the process |
-| `MAX_OUTBOUND_QUEUE_MESSAGES` | `128` | Relay-managed outbound queue bound per connection |
+| `MAX_OUTBOUND_QUEUE_MESSAGES` | `128` | Outbound queue bound per browser connection |
+| `MAX_AGENT_OUTBOUND_QUEUE_MESSAGES` | `4096` | Outbound queue bound per agent connection |
 | `HANDSHAKE_TIMEOUT_SECONDS` | `10` | Agent registration deadline |
 | `SUBSCRIPTION_TIMEOUT_SECONDS` | `10` | Browser subscription deadline |
 | `REQUEST_TIMEOUT_SECONDS` | `10` | Broker correlation lifetime |
 | `PING_INTERVAL_SECONDS` | `30` | WebSocket ping/pong failure interval |
 
-Malformed, oversized, over-rate, unauthenticated-agent, and protocol-invalid
-connections are closed. Pending requests are removed on browser disconnect and
-failed when an agent disconnects or is replaced.
+Malformed, oversized, unauthenticated-agent, and protocol-invalid connections
+are closed, as are agents over their message rate. Browser connections are
+never closed for rate: an over-rate `route` frame gets an immediate `data` reply
+with status `429` and other over-rate frames are dropped. A browser connection
+stops being read while its outbound queue backs up and resumes once it drains.
+Pending requests are removed on browser disconnect and failed when an agent
+disconnects or is replaced.
 
 ## Container and Cloud Run
 

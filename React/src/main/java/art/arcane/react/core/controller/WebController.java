@@ -3,12 +3,14 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.api.action.Action;
 import art.arcane.react.api.action.ActionParams;
+import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.tweak.Tweak;
 import art.arcane.react.api.web.ActionBackend;
 import art.arcane.react.api.web.ActionDispatcher;
 import art.arcane.react.api.web.ActionParamCoercer;
 import art.arcane.react.api.web.ActionParamSerializer;
+import art.arcane.react.api.web.ActionTicketRegistry;
 import art.arcane.react.api.web.AuditLog;
 import art.arcane.react.api.web.BukkitConsoleCommandDispatcher;
 import art.arcane.react.api.web.BukkitPlayerBackend;
@@ -21,17 +23,23 @@ import art.arcane.react.api.web.ControlSerializer;
 import art.arcane.react.api.web.ConsoleCommandDispatcher;
 import art.arcane.react.api.web.FeatureWorldBackend;
 import art.arcane.react.api.web.MetricsSerializer;
-import art.arcane.react.api.web.PairingToken;
 import art.arcane.react.api.web.PlayerBackend;
 import art.arcane.react.api.web.PresetApplier;
 import art.arcane.react.api.web.RegistryActionBackend;
 import art.arcane.react.api.web.RegistryControlBackend;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebAuth;
+import art.arcane.react.api.web.WebError;
+import art.arcane.react.api.web.WebOrigins;
+import art.arcane.react.api.web.WebRole;
+import art.arcane.react.api.web.WebRevisions;
 import art.arcane.react.api.web.WebConfiguration;
 import art.arcane.react.api.web.WebConfigurationSchema;
-import art.arcane.react.api.web.WebSecret;
 import art.arcane.react.api.web.WebMutationReporter;
+import art.arcane.react.api.web.pairing.PairingLink;
+import art.arcane.react.api.web.pairing.PairingNotices;
+import art.arcane.react.api.web.pairing.ServerNames;
+import art.arcane.react.api.web.pairing.WebToken;
+import art.arcane.react.api.web.pairing.WebTokens;
 import art.arcane.react.api.web.relay.ReactIdentityStore;
 import art.arcane.react.api.web.relay.ReactServerIdentity;
 import art.arcane.react.api.web.relay.RelayBackoff;
@@ -64,16 +72,18 @@ import art.arcane.react.api.web.resource.LogsResource;
 import art.arcane.react.api.web.resource.MetricsResource;
 import art.arcane.react.api.web.resource.RuntimeMetricsResource;
 import art.arcane.react.api.web.resource.PlayerResource;
+import art.arcane.react.api.web.resource.PairResource;
 import art.arcane.react.api.web.resource.PluginApiPackResource;
+import art.arcane.react.api.web.resource.SummaryResource;
 import art.arcane.react.api.web.resource.WhoamiResource;
 import art.arcane.react.api.web.resource.WorldResource;
-import art.arcane.react.api.web.ws.LogFrame;
 import art.arcane.react.api.web.dto.EnvironmentDto;
 import art.arcane.react.content.feature.FeatureIncidentMode;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.ws.CoalescingWsChannel;
-import art.arcane.react.api.web.ws.JavalinWsChannel;
+import art.arcane.react.api.web.ws.JettyWsTransport;
+import art.arcane.react.api.web.ws.LogWsChannel;
 import art.arcane.react.api.web.ws.WebSocketSessions;
 import art.arcane.react.api.web.ws.WsAuthenticationGate;
 import art.arcane.react.api.web.ws.WsMetricsBroadcaster;
@@ -105,12 +115,16 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.URI;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.file.Files;
+import java.time.Clock;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.Objects;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
-import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -120,6 +134,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 @Getter
@@ -132,14 +147,20 @@ public class WebController implements IController {
     private static final int PORT_SEARCH_ATTEMPTS = 100;
     private static final long WS_AUTHENTICATION_TIMEOUT_MILLIS = 5000L;
     private static final long WS_AUTHENTICATION_SWEEP_MILLIS = 1000L;
+    private static final long WS_PING_INTERVAL_MILLIS = 15_000L;
+    private static final long METRICS_POLL_MILLIS = 100L;
+    private static final long TOKEN_HOUSEKEEPING_MILLIS = 1000L;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private final transient PairingNotices pairingNotices = new PairingNotices(() -> this.tokens, this::auditLog);
 
     private volatile WebConfiguration config = new WebConfiguration();
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private final transient Object hotloadLock = new Object();
     private transient volatile File dataFolder;
-    private transient volatile byte[] secret;
-    private transient volatile TokenStore tokenStore;
+    private transient volatile WebTokens tokens;
+    private transient volatile Clock clock = Clock.systemUTC();
     private transient volatile ReactServerIdentity identity;
     private transient volatile SampleController sampleController;
     private transient volatile HistoryController historyController;
@@ -155,7 +176,7 @@ public class WebController implements IController {
     private transient volatile RelayClient relayClient;
     private transient volatile CountDownLatch startLatch;
     private transient volatile Throwable startFailure;
-    private transient volatile WebSocketSessions metricsSessions;
+    private transient volatile WebSocketSessions<CoalescingWsChannel> metricsSessions;
     private transient volatile WsMetricsBroadcaster metricsBroadcaster;
     private transient volatile ScheduledExecutorService wsPushExecutor;
     private transient volatile ExecutorService wsSendExecutor;
@@ -172,11 +193,16 @@ public class WebController implements IController {
     private transient volatile ConfigApplier configApplier;
     private transient volatile PresetApplier presetApplier;
     private transient volatile RingLogHandler logHandler;
-    private transient volatile IntFunction<List<String>> logLinesSupplier;
-    private transient volatile WebSocketSessions logSessions;
+    private transient volatile WebSocketSessions<LogWsChannel> logSessions;
     private transient volatile WsAuthenticationGate wsAuthenticationGate;
     private transient volatile Logger attachedLogger;
     private transient volatile Log4jConsoleCapture log4jConsoleCapture;
+    @Setter(AccessLevel.NONE)
+    private final transient ActionTicketRegistry actionTickets =
+        new ActionTicketRegistry(() -> WebRevisions.bump(WebRevisions.Kind.ACTIONS));
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private final transient AtomicLong logSequence = new AtomicLong();
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private transient long lifecycleGeneration;
@@ -244,6 +270,10 @@ public class WebController implements IController {
         return PORT_SEARCH_ATTEMPTS;
     }
 
+    protected long wsPingIntervalMillis() {
+        return WS_PING_INTERVAL_MILLIS;
+    }
+
     protected void reportPortBindFailure(int requestedPort, int lastPort) {
         String ports = requestedPort == lastPort
             ? Integer.toString(requestedPort)
@@ -289,6 +319,8 @@ public class WebController implements IController {
         File obsoleteJson = React.instance.getDataFile("web.json");
         try {
             WebConfigurationSchema.requireCurrent(canonical, obsoleteJson);
+            WebConfigurationSchema.moveCorsOrigins(canonical).ifPresent(move -> React.info("web.toml: corsOrigins moved to allowedOrigins "
+                + move.moved() + (move.dropped().isEmpty() ? "" : "; dropped " + move.dropped() + ", which allowedOrigins does not accept")));
             config = ConfigFileSupport.load(
                 canonical,
                 null,
@@ -397,8 +429,10 @@ public class WebController implements IController {
         snapshot.setListenAddress(source.getListenAddress() == null ? "" : source.getListenAddress().trim());
         snapshot.setPort(source.getPort());
         snapshot.setAdvertisedUrl(source.getAdvertisedUrl() == null ? "" : source.getAdvertisedUrl().trim());
-        snapshot.setCorsOrigins(source.getCorsOrigins() == null ? List.of() : List.copyOf(source.getCorsOrigins()));
-        snapshot.setWsPushHz(source.getWsPushHz());
+        snapshot.setAllowedOrigins(WebOrigins.canonical(source.getAllowedOrigins() == null ? List.of() : source.getAllowedOrigins()));
+        snapshot.setAppUrl(source.getAppUrl() == null || source.getAppUrl().isBlank() ? WebConfiguration.DEFAULT_APP_URL : source.getAppUrl().trim());
+        snapshot.setServerName(source.getServerName() == null ? "" : source.getServerName().trim());
+        snapshot.setTokenDays(source.getTokenDays());
         snapshot.setRequireTokenForReads(source.isRequireTokenForReads());
         snapshot.setRelayEnabled(source.isRelayEnabled());
         snapshot.setRelayUrl(source.getRelayUrl() == null ? "" : source.getRelayUrl().trim());
@@ -408,11 +442,15 @@ public class WebController implements IController {
         if (snapshot.getPort() < 0 || snapshot.getPort() > 65535) {
             throw new IllegalArgumentException("port must be between 0 and 65535");
         }
-        if (snapshot.getWsPushHz() < 1 || snapshot.getWsPushHz() > 1000) {
-            throw new IllegalArgumentException("wsPushHz must be between 1 and 1000");
-        }
         if (!snapshot.getAdvertisedUrl().isBlank()) {
             validateAdvertisedUrl(snapshot.getAdvertisedUrl());
+        }
+        validateAppUrl(snapshot.getAppUrl());
+        if (snapshot.getServerName().length() > ServerNames.MAXIMUM_LENGTH) {
+            throw new IllegalArgumentException("serverName must be at most " + ServerNames.MAXIMUM_LENGTH + " characters");
+        }
+        if (snapshot.getTokenDays() < 1 || snapshot.getTokenDays() > 365) {
+            throw new IllegalArgumentException("tokenDays must be between 1 and 365");
         }
         if (snapshot.isRelayEnabled() && !snapshot.getRelayUrl().isBlank()) {
             URI uri = URI.create(snapshot.getRelayUrl());
@@ -424,14 +462,13 @@ public class WebController implements IController {
         return snapshot;
     }
 
+    /** Loads the server identity and the token store once, removing the stores of the old pairing code format. */
     public synchronized void loadAuth() {
         File folder = resolveDataFolder();
-        if (secret == null) {
-            secret = WebSecret.load(folder);
-        }
-        if (tokenStore == null) {
+        if (tokens == null) {
+            removeOldPairingFiles(folder);
             try {
-                tokenStore = TokenStore.fromToml(tokensFile(folder));
+                tokens = WebTokens.load(folder, clock);
             } catch (IOException e) {
                 throw new IllegalStateException("Failed to load token store", e);
             }
@@ -445,12 +482,19 @@ public class WebController implements IController {
         }
     }
 
-    public File tokensFile() {
-        return tokensFile(resolveDataFolder());
-    }
-
-    private static File tokensFile(File folder) {
-        return new File(folder, "web/tokens.toml");
+    private static void removeOldPairingFiles(File folder) {
+        boolean removed = false;
+        for (String name : List.of("web/tokens.toml", "web/secret.key")) {
+            File old = new File(folder, name);
+            try {
+                removed |= Files.deleteIfExists(old.toPath());
+            } catch (IOException failure) {
+                React.warn("Could not remove " + name + ": " + failure.getMessage());
+            }
+        }
+        if (removed) {
+            React.warn("React Web pairings from before pairing links no longer work; pair each browser again with /react web pair");
+        }
     }
 
     private File resolveDataFolder() {
@@ -466,11 +510,29 @@ public class WebController implements IController {
 
     protected IdentityDto resolveIdentity() {
         IdentityDto dto = new IdentityDto();
-        dto.version = React.instance.getDescription().getVersion();
-        dto.serverName = React.instance.getServer().getName();
+        dto.serverName = serverName();
         dto.folia = J.isFoliaThreading();
         dto.serverId = React.instance.getServer().getIp() + ":" + React.instance.getServer().getPort();
         return dto;
+    }
+
+    /** The name pairing links, ping, summary and identity give this server. */
+    public String serverName() {
+        return ServerNames.resolve(config.getServerName(), resolveMotd(), resolveServerFolder());
+    }
+
+    protected String resolveMotd() {
+        org.bukkit.Server server = React.instance == null ? null : React.instance.getServer();
+        return server == null ? "" : server.getMotd();
+    }
+
+    protected File resolveServerFolder() {
+        org.bukkit.Server server = React.instance == null ? null : React.instance.getServer();
+        return server == null ? resolveDataFolder() : server.getWorldContainer();
+    }
+
+    protected String resolveServerVersion() {
+        return React.instance.getServer().getVersion();
     }
 
     protected Logger resolveConsoleLogger() {
@@ -532,6 +594,20 @@ public class WebController implements IController {
         return null;
     }
 
+    private static void validateAppUrl(String url) {
+        URI uri;
+        try {
+            uri = new URI(url);
+        } catch (java.net.URISyntaxException invalid) {
+            throw new IllegalArgumentException("appUrl must be an absolute HTTP or HTTPS URL");
+        }
+        String scheme = uri.getScheme();
+        if (scheme == null || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) || uri.getHost() == null
+            || uri.getUserInfo() != null || uri.getQuery() != null || uri.getFragment() != null) {
+            throw new IllegalArgumentException("appUrl must be an absolute HTTP or HTTPS URL without credentials, query, or fragment");
+        }
+    }
+
     private static void validateAdvertisedUrl(String url) {
         URI uri = URI.create(url);
         String scheme = uri.getScheme();
@@ -587,21 +663,13 @@ public class WebController implements IController {
                     new MetricsSerializer()
                 );
                 IdentityResource identity = new IdentityResource(this::resolveIdentity);
-                WebAuth auth = new WebAuth(secret, tokenStore);
-                List<String> origins = startupConfiguration.getCorsOrigins();
+                WebAuth auth = new WebAuth(tokens);
+                List<String> origins = startupConfiguration.getAllowedOrigins();
+                WebOrigins originGate = new WebOrigins(() -> origins, pairingNotices::originRefused);
                 String listenAddress = startupConfiguration.getListenAddress();
                 int requestedPort = startupConfiguration.getPort();
                 int searchAttempts = Math.max(1, portSearchAttempts());
                 Javalin javalin = Javalin.create(cfg -> {
-                    cfg.bundledPlugins.enableCors(cors -> cors.addRule(rule -> {
-                        if (origins.isEmpty()) {
-                            rule.anyHost();
-                        } else {
-                            for (String origin : origins) {
-                                rule.allowHost(origin);
-                            }
-                        }
-                    }));
                     cfg.jetty.addConnector((server, httpConfiguration) -> new IncrementingPortConnector(
                         server,
                         httpConfiguration,
@@ -613,19 +681,29 @@ public class WebController implements IController {
                 runtime.app = javalin;
                 javalin.exception(HttpResponseException.class, (e, ctx) -> {
                     String msg = e.getMessage() == null ? defaultMessageFor(e.getStatus()) : e.getMessage();
-                    ctx.status(e.getStatus()).json(new ErrorEnvelope(new ErrorEnvelope.Message(msg)));
+                    ctx.status(e.getStatus()).json(new ErrorEnvelope(new ErrorEnvelope.Message(WebError.codeFor(e.getStatus()), msg)));
                 });
+                javalin.exception(WebError.class, (e, ctx) -> ctx.status(e.status()).json(e.body()));
                 javalin.exception(JsonProcessingException.class, (e, ctx) ->
-                    ctx.status(400).json(new ErrorEnvelope(new ErrorEnvelope.Message("Malformed request body"))));
+                    ctx.status(400).json(new ErrorEnvelope(new ErrorEnvelope.Message("bad_request", "Malformed request body"))));
                 javalin.exception(Exception.class, (e, ctx) -> {
                     React.warn("Unhandled web exception: " + e.getMessage(), e);
-                    ctx.status(500).json(new ErrorEnvelope(new ErrorEnvelope.Message("Internal server error")));
+                    ctx.status(500).json(new ErrorEnvelope(new ErrorEnvelope.Message("internal", "Internal server error")));
                 });
+                javalin.before(originGate);
                 CapabilityResource capabilityResource = new CapabilityResource(
                     () -> WebController.this.identity.fingerprint(),
+                    this::serverName,
                     this::isRelayAvailable
                 );
                 javalin.get("/api/v1/ping", capabilityResource::get);
+                PairResource pairResource = new PairResource(
+                    tokens,
+                    () -> WebController.this.identity.fingerprint(),
+                    this::serverName,
+                    pairingNotices
+                );
+                javalin.post("/api/v1/pair", pairResource::pair);
                 if (featureControlBackend == null) {
                     ControlMutator fcMutator = WebController::applyConfigValueOnServerThread;
                     featureControlBackend = new RegistryControlBackend<Feature>(
@@ -691,6 +769,7 @@ public class WebController implements IController {
                     javalin.before("/api/v1/metrics", auth);
                     javalin.before("/api/v1/metrics/catalog", auth);
                     javalin.before("/api/v1/metrics/history", auth);
+                    javalin.before("/api/v1/metrics/range", auth);
                     javalin.before("/api/v1/metrics/runtime", auth);
                     javalin.before("/api/v1/features", auth);
                     javalin.before("/api/v1/tweaks", auth);
@@ -705,6 +784,7 @@ public class WebController implements IController {
                 javalin.get("/api/v1/metrics", metrics::snapshot);
                 javalin.get("/api/v1/metrics/catalog", metrics::historyCatalog);
                 javalin.get("/api/v1/metrics/history", metrics::history);
+                javalin.get("/api/v1/metrics/range", metrics::range);
                 javalin.get("/api/v1/metrics/runtime", new RuntimeMetricsResource(
                     () -> React.controller(RuntimeTelemetryController.class))::get);
                 javalin.get("/api/v1/features", featureResource::list);
@@ -819,21 +899,25 @@ public class WebController implements IController {
                             throw new NotFoundResponse("Unknown action: " + id);
                         }
                         ActionParams coerced = new ActionParamCoercer().coerce(action, params);
-                        String ticketId = UUID.randomUUID().toString();
-                        action.createForceful(coerced).queue();
+                        ActionTicket<?> ticket = action.createForceful(coerced);
+                        String ticketId = actionTickets.track(ticket);
+                        ticket.queue();
                         return new ActionDispatcher.DispatchResult(ticketId, "queued");
                     };
                 }
                 ActionResource actionResource = new ActionResource(
                     actionBackend,
                     actionDispatcher,
-                    mutationReporter
+                    mutationReporter,
+                    actionTickets
                 );
                 if (requireTokenForReads) {
                     javalin.before("/api/v1/actions", auth);
+                    javalin.before("/api/v1/actions/tickets/{id}", auth);
                 }
                 javalin.before("/api/v1/actions/{id}/execute", auth);
                 javalin.get("/api/v1/actions", actionResource::list);
+                javalin.get("/api/v1/actions/tickets/{id}", actionResource::ticket);
                 javalin.post("/api/v1/actions/{id}/execute", actionResource::execute);
                 if (consoleCommandDispatcher == null) {
                     consoleCommandDispatcher = new BukkitConsoleCommandDispatcher();
@@ -889,6 +973,7 @@ public class WebController implements IController {
                 if (environmentSnapshotSupplier == null) {
                     EnvironmentSnapshotProvider environmentProvider = new EnvironmentSnapshotProvider(
                         this::resolveIdentity,
+                        this::resolveServerVersion,
                         () -> {
                             TelemetryController telemetryController = React.controller(TelemetryController.class);
                             return telemetryController == null
@@ -903,6 +988,15 @@ public class WebController implements IController {
                     javalin.before("/api/v1/environment", auth);
                 }
                 javalin.get("/api/v1/environment", environmentResource::get);
+                SummaryResource summaryResource = new SummaryResource(
+                    metrics::liveFrame,
+                    incidentStateSupplier,
+                    incidentRecordsSupplier,
+                    this::serverName,
+                    () -> WebController.this.identity.fingerprint()
+                );
+                javalin.before("/api/v1/summary", auth);
+                javalin.get("/api/v1/summary", summaryResource::get);
                 if (configTreeSupplier == null) {
                     configTreeSupplier = () -> new ConfigTreeSerializer().serialize(ReactConfiguration.get());
                 }
@@ -931,12 +1025,8 @@ public class WebController implements IController {
                 javalin.get("/api/v1/config", configResource::get);
                 javalin.put("/api/v1/config", configResource::put);
                 javalin.post("/api/v1/config/preset/{name}", configResource::preset);
-                RingLogHandler localLogHandler = new RingLogHandler();
+                RingLogHandler localLogHandler = new RingLogHandler(RingLogHandler.DEFAULT_CAPACITY, logSequence);
                 runtime.logHandler = localLogHandler;
-                IntFunction<List<String>> activeLogLinesSupplier = logLinesSupplier;
-                if (activeLogLinesSupplier == null) {
-                    activeLogLinesSupplier = localLogHandler::recent;
-                }
                 Logger consoleLogger = resolveConsoleLogger();
                 runtime.attachedLogger = consoleLogger;
                 consoleLogger.addHandler(localLogHandler);
@@ -947,34 +1037,39 @@ public class WebController implements IController {
                         React.warn("Unable to attach React web console capture to Log4j", e);
                     }
                 }
-                LogsResource logsResource = new LogsResource(activeLogLinesSupplier);
+                LogsResource logsResource = new LogsResource(localLogHandler::tail);
                 javalin.before("/api/v1/logs", auth);
                 javalin.get("/api/v1/logs", logsResource::list);
                 if (!isCurrentGeneration(generation)) {
                     return false;
                 }
-                WebSocketSessions localMetricsSessions = new WebSocketSessions();
+                WebSocketSessions<CoalescingWsChannel> localMetricsSessions = new WebSocketSessions<>();
                 runtime.metricsSessions = localMetricsSessions;
-                WebSocketSessions localLogSessions = new WebSocketSessions();
+                WebSocketSessions<LogWsChannel> localLogSessions = new WebSocketSessions<>();
                 runtime.logSessions = localLogSessions;
                 ExecutorService sendExecutor = createWsSendExecutor();
                 runtime.wsSendExecutor = sendExecutor;
                 WsAuthenticationGate authenticationGate = new WsAuthenticationGate(
                     WS_UNAUTHENTICATED_CAPACITY,
                     WS_AUTHENTICATION_TIMEOUT_MILLIS,
-                    this::authorizeWsScope
+                    this::refuseWsScope
                 );
                 runtime.wsAuthenticationGate = authenticationGate;
                 javalin.ws("/ws/metrics", ws -> {
                     ws.onConnect(ctx -> {
-                        CoalescingWsChannel channel = new CoalescingWsChannel(new JavalinWsChannel(ctx), sendExecutor);
+                        if (!WebOrigins.allows(origins, ctx.header("Origin"))) {
+                            pairingNotices.originRefused(ctx.header("Origin"));
+                            ctx.closeSession(WsAuthenticationGate.CLOSE_ORIGIN_NOT_ALLOWED, "origin_not_allowed");
+                            return;
+                        }
+                        CoalescingWsChannel channel = new CoalescingWsChannel(new JettyWsTransport(ctx));
                         if (!requireTokenForReads) {
                             localMetricsSessions.add(channel);
                             return;
                         }
                         authenticationGate.register(
                             channel,
-                            reason -> ctx.closeSession(1008, reason),
+                            reason -> ctx.closeSession(WsAuthenticationGate.closeCode(reason), reason),
                             "read",
                             localMetricsSessions
                         );
@@ -986,16 +1081,22 @@ public class WebController implements IController {
                                 ctx.message(),
                                 "read",
                                 localMetricsSessions,
-                                reason -> ctx.closeSession(1008, reason)
+                                reason -> ctx.closeSession(WsAuthenticationGate.closeCode(reason), reason)
                             );
                             return;
                         }
-                        authenticationGate.authenticate(
+                        if (authenticationGate.authenticate(
                             ctx.sessionId(),
                             ctx.message(),
                             localMetricsSessions,
-                            reason -> ctx.closeSession(1008, reason)
-                        );
+                            reason -> ctx.closeSession(WsAuthenticationGate.closeCode(reason), reason)
+                        )) {
+                            CoalescingWsChannel admitted = localMetricsSessions.get(ctx.sessionId());
+                            WsMetricsBroadcaster current = runtime.metricsBroadcaster;
+                            if (admitted != null && current != null) {
+                                current.sendCurrent(admitted);
+                            }
+                        }
                     });
                     ws.onBinaryMessage(ctx -> authenticationGate.reject(
                         ctx.sessionId(),
@@ -1014,23 +1115,35 @@ public class WebController implements IController {
                 });
                 Gson gson = new Gson();
                 WsMetricsBroadcaster localMetricsBroadcaster = new WsMetricsBroadcaster(
-                    metrics::snapshotData,
+                    metrics::liveFrame,
                     localMetricsSessions,
-                    snapshot -> gson.toJson(new Envelope<>(snapshot))
+                    frame -> gson.toJson(new Envelope<>(frame))
                 );
                 runtime.metricsBroadcaster = localMetricsBroadcaster;
                 javalin.ws("/ws/logs", ws -> {
-                    ws.onConnect(ctx -> authenticationGate.register(
-                        new CoalescingWsChannel(new JavalinWsChannel(ctx), sendExecutor),
-                        reason -> ctx.closeSession(1008, reason),
-                        "console:read",
-                        localLogSessions
-                    ));
+                    ws.onConnect(ctx -> {
+                        if (!WebOrigins.allows(origins, ctx.header("Origin"))) {
+                            pairingNotices.originRefused(ctx.header("Origin"));
+                            ctx.closeSession(WsAuthenticationGate.CLOSE_ORIGIN_NOT_ALLOWED, "origin_not_allowed");
+                            return;
+                        }
+                        authenticationGate.register(
+                            new LogWsChannel(
+                                new JettyWsTransport(ctx),
+                                sendExecutor,
+                                "1".equals(ctx.queryParam("batch")),
+                                LogWsChannel.DEFAULT_CAPACITY
+                            ),
+                            reason -> ctx.closeSession(WsAuthenticationGate.closeCode(reason), reason),
+                            "console:read",
+                            localLogSessions
+                        );
+                    });
                     ws.onMessage(ctx -> authenticationGate.authenticate(
                         ctx.sessionId(),
                         ctx.message(),
                         localLogSessions,
-                        reason -> ctx.closeSession(1008, reason)
+                        reason -> ctx.closeSession(WsAuthenticationGate.closeCode(reason), reason)
                     ));
                     ws.onBinaryMessage(ctx -> authenticationGate.reject(
                         ctx.sessionId(),
@@ -1047,18 +1160,11 @@ public class WebController implements IController {
                         localLogSessions.remove(ctx.sessionId());
                     });
                 });
-                CoalescingWsChannel logBroadcaster = CoalescingWsChannel.broadcastTo(
-                    "react-log-broadcast",
-                    localLogSessions,
-                    sendExecutor
-                );
                 localLogHandler.setLineListener(line -> {
                     if (!localLogSessions.isEmpty()) {
-                        String frame = gson.toJson(new LogFrame("log", line));
-                        logBroadcaster.send(frame);
+                        localLogSessions.forEachOpen(channel -> channel.offer(line));
                     }
                 });
-                long periodMs = Math.max(1L, 1000L / Math.max(1, startupConfiguration.getWsPushHz()));
                 ScheduledExecutorService executor = createWsPushExecutor();
                 runtime.wsPushExecutor = executor;
                 if (!isCurrentGeneration(generation)) {
@@ -1076,7 +1182,25 @@ public class WebController implements IController {
                     } catch (Throwable t) {
                         React.verbose("WebSocket metrics push failed", t);
                     }
-                }, periodMs, periodMs, TimeUnit.MILLISECONDS);
+                }, METRICS_POLL_MILLIS, METRICS_POLL_MILLIS, TimeUnit.MILLISECONDS);
+                long pingMillis = Math.max(1L, wsPingIntervalMillis());
+                executor.scheduleAtFixedRate(() -> {
+                    try {
+                        localMetricsSessions.forEachOpen(CoalescingWsChannel::ping);
+                        localLogSessions.forEachOpen(LogWsChannel::ping);
+                        Set<String> inUse = new HashSet<>(localMetricsSessions.tokenIds());
+                        inUse.addAll(localLogSessions.tokenIds());
+                        inUse.forEach(tokens::touch);
+                    } catch (Throwable t) {
+                        React.verbose("WebSocket ping failed", t);
+                    }
+                }, pingMillis, pingMillis, TimeUnit.MILLISECONDS);
+                executor.scheduleAtFixedRate(
+                    this::expireTokens,
+                    TOKEN_HOUSEKEEPING_MILLIS,
+                    TOKEN_HOUSEKEEPING_MILLIS,
+                    TimeUnit.MILLISECONDS
+                );
                 if (!isCurrentGeneration(generation)) {
                     return false;
                 }
@@ -1145,16 +1269,8 @@ public class WebController implements IController {
                 React.warn("React web port " + requestedPort + " was unavailable; listener started on "
                     + runtime.boundPort + ".");
             }
-            if (startupConfiguration.isRelayEnabled() && startupConfiguration.getRelayUrl() != null && !startupConfiguration.getRelayUrl().isBlank()) {
-                RelayLoopbackBridge bridge = createRelayLoopbackBridge(runtime.boundPort);
-                RelayClient client = new RelayClient(
-                    startupConfiguration.getRelayUrl(),
-                    WebController.this.identity,
-                    bridge,
-                    new RelayBackoff(1000L, 30000L)
-                );
-                runtime.relayClient = client;
-                client.start();
+            if (relayConfigured(startupConfiguration) && tokens.wanted()) {
+                runtime.relayClient = startRelay(startupConfiguration, runtime.boundPort);
             }
             return publishRuntime(generation, runtime, startupConfiguration);
         }
@@ -1313,13 +1429,145 @@ public class WebController implements IController {
         };
     }
 
-    private boolean authorizeWsScope(String token, String scope) {
+    /** Null when the socket's token holds {@code scope}, else the reason its socket closes with. */
+    private String refuseWsScope(String token, String scope) {
         if (token == null || token.isBlank()) {
-            return false;
+            return "unauthorized";
         }
-        return PairingToken.verify(secret, token, tokenStore)
-            .map(pairingToken -> pairingToken.hasScope(scope))
-            .orElse(false);
+        try {
+            WebToken admitted = tokens.authenticate(token);
+            return admitted.hasScope(scope) ? null : "scope_missing";
+        } catch (WebError refused) {
+            return refused.code();
+        }
+    }
+
+    /** Ends tokens unused past their lifetime and closes their sockets. Runs every second. */
+    private void expireTokens() {
+        WebTokens store = tokens;
+        if (store == null) {
+            return;
+        }
+        try {
+            for (String id : store.expire()) {
+                closeSockets(id, "token_expired");
+                auditLog().append("server", "expire", "id=" + id, "expired");
+            }
+        } catch (Throwable failure) {
+            React.verbose("React Web token housekeeping failed", failure);
+        }
+    }
+
+    private void closeSockets(String tokenId, String reason) {
+        WebSocketSessions<CoalescingWsChannel> localMetricsSessions = metricsSessions;
+        if (localMetricsSessions != null) {
+            localMetricsSessions.closeToken(tokenId, WsAuthenticationGate.CLOSE_PAIRING_ENDED, reason);
+        }
+        WebSocketSessions<LogWsChannel> localLogSessions = logSessions;
+        if (localLogSessions != null) {
+            localLogSessions.closeToken(tokenId, WsAuthenticationGate.CLOSE_PAIRING_ENDED, reason);
+        }
+    }
+
+    /** Open sockets of one token, for {@code /react web tokens}. */
+    public int socketsOf(String tokenId) {
+        WebSocketSessions<CoalescingWsChannel> localMetricsSessions = metricsSessions;
+        WebSocketSessions<LogWsChannel> localLogSessions = logSessions;
+        return (localMetricsSessions == null ? 0 : localMetricsSessions.count(tokenId))
+            + (localLogSessions == null ? 0 : localLogSessions.count(tokenId));
+    }
+
+    /**
+     * Revokes a token, or {@code all}, and cancels a link not opened yet the same way. The token's sockets close with 4401
+     * at once and its next request gets {@code token_revoked}. Returns the ended ids; empty when nothing matched.
+     */
+    public List<String> revoke(String target) throws IOException {
+        loadAuth();
+        List<String> ids = tokens.revoke(target);
+        for (String id : ids) {
+            closeSockets(id, "token_revoked");
+        }
+        return ids;
+    }
+
+    /** A pairing link the command prints, and the link's id and deadline. */
+    public record IssuedLink(String url, WebTokens.Link link) {
+    }
+
+    /**
+     * Makes a one-time link for {@code grant}. Connects the relay the first time someone pairs. Throws
+     * {@link IllegalStateException} with the reason while the listener cannot be reached or too many links wait.
+     */
+    public synchronized IssuedLink createLink(WebTokens.Grant grant) {
+        String unavailable = pairingUnavailableReason();
+        if (unavailable != null) {
+            throw new IllegalStateException(unavailable);
+        }
+        loadAuth();
+        WebConfiguration current = config;
+        Optional<String> direct = Optional.of(resolveDirectUrl());
+        Optional<String> relay = relayConfigured(current) ? Optional.of(current.getRelayUrl()) : Optional.empty();
+        WebTokens.Link link = tokens.pair(grant);
+        ensureRelay();
+        PairingLink code = new PairingLink(direct, relay, identity.fingerprint(), identity.publicKeyBase64(), link.tokenId(),
+            link.secret(), link.expires(), serverName(), grant.scopes(), grant.lifetime().toSeconds(),
+            grant.label().isBlank() ? Optional.empty() : Optional.of(grant.label()));
+        auditLog().append(grant.issuer(), "pair-issued", "id=" + link.tokenId() + " scopes=" + String.join(",", grant.scopes()), "issued");
+        return new IssuedLink(code.url(current.getAppUrl()), link);
+    }
+
+    private static boolean relayConfigured(WebConfiguration configuration) {
+        return configuration.isRelayEnabled() && configuration.getRelayUrl() != null && !configuration.getRelayUrl().isBlank();
+    }
+
+    private RelayClient startRelay(WebConfiguration configuration, int port) {
+        RelayClient client = new RelayClient(
+            configuration.getRelayUrl(),
+            identity,
+            createRelayLoopbackBridge(port),
+            RelayBackoff.DEFAULT
+        );
+        client.start();
+        return client;
+    }
+
+    /** Connects the relay once someone paired or is pairing; a server nobody paired never dials out. */
+    public synchronized void ensureRelay() {
+        if (app != null && relayClient == null && relayConfigured(config) && tokens != null && tokens.wanted()) {
+            relayClient = startRelay(config, boundPort);
+        }
+    }
+
+    /** Where React Web stands, for {@code /react web status}. */
+    public record WebStatus(String problem, String listener, RelayState relay, String relayUrl, int tokens, int links, int sockets,
+                            String fingerprint) {
+    }
+
+    public enum RelayState { OFF, WAITING, CONNECTING, REGISTERED }
+
+    public synchronized WebStatus status() {
+        loadAuth();
+        String host = config.getListenAddress();
+        String listener = app == null ? "" : (host.indexOf(':') >= 0 && !host.startsWith("[") ? "[" + host + "]" : host) + ":" + boundPort;
+        RelayState relay;
+        if (!relayConfigured(config)) {
+            relay = RelayState.OFF;
+        } else if (relayClient == null) {
+            relay = RelayState.WAITING;
+        } else {
+            relay = relayClient.isRegistered() ? RelayState.REGISTERED : RelayState.CONNECTING;
+        }
+        return new WebStatus(pairingUnavailableReason(), listener, relay, config.getRelayUrl(), tokens.list().size(),
+            tokens.openLinks().size(), activeWebSocketSessions(), identity.fingerprint());
+    }
+
+    private AuditLog auditLog() {
+        AuditLog current = auditLog;
+        if (current == null) {
+            current = new AuditLog(resolveDataFolder());
+            auditLog = current;
+        }
+        return current;
     }
 
     private boolean isRelayAvailable() {
@@ -1394,12 +1642,12 @@ public class WebController implements IController {
         private Javalin app;
         private int boundPort;
         private RelayClient relayClient;
-        private WebSocketSessions metricsSessions;
+        private WebSocketSessions<CoalescingWsChannel> metricsSessions;
         private WsMetricsBroadcaster metricsBroadcaster;
         private ScheduledExecutorService wsPushExecutor;
         private ExecutorService wsSendExecutor;
         private RingLogHandler logHandler;
-        private WebSocketSessions logSessions;
+        private WebSocketSessions<LogWsChannel> logSessions;
         private WsAuthenticationGate wsAuthenticationGate;
         private Logger attachedLogger;
         private Log4jConsoleCapture log4jConsoleCapture;

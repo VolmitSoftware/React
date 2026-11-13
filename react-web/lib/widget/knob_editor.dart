@@ -1,95 +1,123 @@
+/// One setting of a feature, tweak or action as a library field: a switch
+/// beside its label, or a number or text box or a select under it, with its
+/// documentation behind an (i). Numbers and text are committed on Enter or
+/// when the box loses focus, never per keystroke.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:jaspr/dom.dart' as dom;
-import 'package:jaspr/jaspr.dart' show Component;
 
+import '../localization/reactor_localizations.dart';
 import '../model/knob.dart';
+import '../ui/kit/alert.dart';
+import '../ui/kit/density.dart';
+import '../ui/kit/info_tip.dart';
 
-class KnobEditor extends StatelessWidget {
+class KnobEditor extends StatefulWidget {
   final Knob knob;
   final void Function(Object? value)? onChanged;
   final bool disabled;
+
+  /// The server changed this setting while it held an unsaved edit here.
+  final bool changedOnServer;
 
   const KnobEditor({
     required this.knob,
     this.onChanged,
     this.disabled = false,
+    this.changedOnServer = false,
     super.key,
   });
 
   @override
+  State<KnobEditor> createState() => _KnobEditorState();
+}
+
+class _KnobEditorState extends State<KnobEditor> {
+  /// What the box holds while it is being edited; null shows the knob.
+  String? _draft;
+
+  Knob get knob => component.knob;
+
+  String get _id =>
+      'knob-${knob.key.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '-')}';
+
+  String get _shown => switch (knob.type) {
+    KnobType.intType => knob.intValue.toString(),
+    KnobType.doubleType => knob.doubleValue.toString(),
+    _ => knob.stringValue,
+  };
+
+  @override
+  void didUpdateWidget(KnobEditor oldComponent) {
+    super.didUpdateWidget(oldComponent);
+    if (oldComponent.knob.key != component.knob.key) _draft = null;
+  }
+
+  /// Sends the draft when it parses and differs from the knob's value.
+  void _commit([String? text]) {
+    final String? draft = text ?? _draft;
+    _draft = null;
+    if (draft == null || draft.trim() == _shown) return;
+    final String value = draft.trim();
+    final Object? parsed = switch (knob.type) {
+      KnobType.intType => int.tryParse(value),
+      KnobType.doubleType => double.tryParse(value),
+      _ => draft,
+    };
+    if (parsed != null) component.onChanged?.call(parsed);
+  }
+
+  Widget _box(TextInputType type, ComponentSize size) => TextInput(
+    type: type,
+    size: size,
+    value: _draft ?? _shown,
+    onChanged: component.disabled ? null : (String s) => _draft = s,
+    onBlur: component.disabled ? null : _commit,
+    onSubmitted: component.disabled ? null : _commit,
+  );
+
+  @override
   Widget build(BuildContext context) {
-    final Widget input = switch (knob.type) {
+    final bool disabled = component.disabled;
+    final ComponentSize size = controlSize(DensityScope.of(context));
+    final String doc = knob.doc;
+    final Widget label = ArcaneFieldLabel(
+      knob.label,
+      trailing: <Widget>[if (doc.isNotEmpty) InfoTip(tip: doc)],
+    );
+    final Widget control = switch (knob.type) {
       KnobType.boolType => ArcaneToggleSwitch(
         value: knob.boolValue,
-        label: knob.label,
-        disabled: disabled,
-        onChanged: disabled ? null : (bool b) => onChanged?.call(b),
+        size: size,
+        onChanged: disabled ? null : (bool b) => component.onChanged?.call(b),
       ),
-      KnobType.intType => TextInput(
-        label: knob.label,
-        type: TextInputType.number,
-        value: knob.intValue.toString(),
-        disabled: disabled,
-        onChanged: disabled
-            ? null
-            : (String s) {
-                final int? v = int.tryParse(s.trim());
-                if (v != null) onChanged?.call(v);
-              },
-      ),
-      KnobType.doubleType => TextInput(
-        label: knob.label,
-        type: TextInputType.number,
-        value: knob.doubleValue.toString(),
-        disabled: disabled,
-        onChanged: disabled
-            ? null
-            : (String s) {
-                final double? v = double.tryParse(s.trim());
-                if (v != null) onChanged?.call(v);
-              },
-      ),
-      KnobType.stringType => TextInput(
-        label: knob.label,
-        type: TextInputType.text,
-        value: knob.stringValue,
-        disabled: disabled,
-        onChanged: disabled ? null : (String s) => onChanged?.call(s),
-      ),
+      KnobType.intType ||
+      KnobType.doubleType => _box(TextInputType.number, size),
       KnobType.enumType => ArcaneSelect(
-        size: ComponentSize.sm,
-        label: knob.label,
+        size: size,
         value: knob.stringValue,
-        disabled: disabled,
+        fullWidth: true,
         options: <ArcaneSelectOption>[
           for (final String o in knob.options)
             ArcaneSelectOption(label: o, value: o),
         ],
-        onChanged: disabled ? null : (String s) => onChanged?.call(s),
+        onChanged: disabled ? null : (String s) => component.onChanged?.call(s),
       ),
+      _ => _box(TextInputType.text, size),
     };
-
-    return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'flex-direction': 'column',
-          'gap': '0.25rem',
-        },
-      ),
-      [
-        input,
-        if (knob.doc.isNotEmpty)
-          dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'font-size': '0.75rem',
-                'color': 'var(--muted-foreground)',
-              },
-            ),
-            [Component.text(knob.doc)],
+    return ArcaneFormField(
+      controlId: _id,
+      orientation: knob.type == KnobType.boolType
+          ? FieldOrientation.horizontal
+          : FieldOrientation.vertical,
+      disabled: disabled,
+      children: <Widget>[
+        label,
+        control,
+        if (component.changedOnServer)
+          AppAlert(
+            tone: AlertTone.warning,
+            message: reactorText(ReactorText.optimizationChangedOnServer),
           ),
       ],
     );

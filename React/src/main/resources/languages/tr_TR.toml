@@ -23,6 +23,7 @@
 #
 # === Değişkenler ===
 # Değişken adlarını değiştirmeyin ve yalnızca ilgili iletinin değişkenlerini kullanın.
+#   {access}  Bir React Web eşleştirmesinin rolü veya izinleri
 #   {action}  Eylem adı veya renk ayarlama yönü
 #   {actions}  Kuyruktaki eylem sayısı veya hariç tutulan eylem adları listesi
 #   {active}  Etkin özellik veya ince ayar sayısı
@@ -41,7 +42,7 @@
 #   {before}  Değişiklikten önceki yapılandırma değeri, dil iletisi veya yığın bellek kullanımı
 #   {checked}  Kontrol edilen örnekleyici sayısı
 #   {chunks}  Bir eylemden etkilenen chunk sayısı
-#   {code}  Web eşleştirme kodu
+#   {client}  Bir React Web eşleştirmesinin yapıldığı tarayıcının adı
 #   {command}  Komut yolu
 #   {count}  Kayıt, modül, değişiklik veya test bulgusu sayısı
 #   {current}  Geçerli sayfa numarası
@@ -57,6 +58,7 @@
 #   {entities}  Bir eylemden etkilenen varlık sayısı
 #   {entry}  Entegrasyon zaman çizelgesi kaydı
 #   {exceptions}  Bir yük testi turunda kaydedilen React istisnaları
+#   {expires}  Bir React Web eşleştirmesinin kullanılmazsa bittiği zaman
 #   {fail}  Başarısız kontrol sayısı
 #   {file}  Yapılandırma, dil veya eklenti API dosyasının adı
 #   {fingerprint}  Sunucu veya web erişim belirtecinin parmak izi
@@ -80,14 +82,17 @@
 #   {incident}  Geliştirici testlerinden çıkarılan özyinelemeli olay eyleminin kimliği
 #   {index}  Geçerli geliştirici testi adımının numarası
 #   {invalid}  Geçersiz ölçüm döndüren örnekleyici sayısı
-#   {issued_at}  Web erişim belirtecinin oluşturulma zamanı
 #   {item}  Eşya adı veya kimliği
 #   {items}  Birleştirilen eşya varlığı sayısı
 #   {kept}  Dil güncellemesinde korunan yerel düzenlemeler
 #   {key}  Komut parametresi anahtarı, yapılandırma anahtarı veya dil iletisi kimliği
 #   {label}  Performans testi, ölçüm, ayar, komut veya web erişim belirteci etiketi
+#   {lifetime}  Bir React Web eşleştirmesinin kullanılmadan ne kadar sürdüğü
 #   {line}  Çok satırlı iletide düzenlenen satırın numarası
 #   {lines}  Taranan sunucu günlüğü satırlarının sayısı
+#   {link}  React Web eşleştirme bağlantısı
+#   {links}  Henüz açılmamış React Web eşleştirme bağlantısı sayısı
+#   {listener}  React Web dinleyicisinin bağlı olduğu adres
 #   {loaded}  Ön yükleme sırasında yeni yüklenen chunk sayısı
 #   {locale}  Görüntülenen, seçilen veya düzenlenen dil kodu
 #   {matched}  Otomatik kaydetme durumu testin başlangıç durumuyla eşleşen dünyalar
@@ -105,6 +110,7 @@
 #   {offenders}  Sonlu olmayan değer döndüren örnekleyici sayısı
 #   {options}  Kabul edilen yapılandırma değerleri
 #   {p95}  Yük testi sırasında tik süresinin 95. yüzdelik değeri, ms cinsinden
+#   {origin}  Bir isteğin geldiği tarayıcı kaynağı
 #   {parameter}  Komut parametresinin adı
 #   {parameters}  Yok sayılan komut parametreleri
 #   {pass}  Başarılı kontrol sayısı
@@ -128,6 +134,7 @@
 #   {react_errors}  Sunucu günlüğünde bulunan React hata satırlarının sayısı
 #   {reason}  Hata, ret veya kullanılamama durumunun açıklaması
 #   {registered}  Kayıtlı modül sayısı
+#   {relay}  React Web aktarıcısının durumu
 #   {remaining}  Bir sonraki dil denetimine kalan süre
 #   {removed_first}  İlk devre dışı bırakmanın özelliği etkin kayıt listesinden çıkarıp çıkarmadığı
 #   {removed_second}  Tekrarlanan devre dışı bırakmanın özelliği etkin kayıt listesinden çıkarıp çıkarmadığı
@@ -137,6 +144,7 @@
 #   {sampler}  Örnekleyici adı veya kimliği
 #   {samplers}  Entegrasyon örnekleyicilerinin veya başarısız örnekleyicilerin listesi
 #   {scope}  Harita kapsamı veya mesafe ayarının kapsamı
+#   {scopes}  Bir React Web eşleştirmesinin izinleri
 #   {score}  Performans testi puanı
 #   {seconds}  Geri sayım veya yük testi süresi, saniye cinsinden
 #   {section}  Yapılandırma veya dil düzenleyicisi bölümü
@@ -145,6 +153,7 @@
 #   {since_run}  Geçerli testin başlangıcından bu yana bildirilen hatalar
 #   {size}  Harita duvarının azami veya etkin boyutları
 #   {skip}  Atlanan kontrol sayısı
+#   {sockets}  Açık React Web soketi sayısı
 #   {spawn_y}  Yerçekimi testi bloğunun oluşturulduğu yükseklik
 #   {state}  Eylemin veya eklenti API paketinin durumu
 #   {status}  Entegrasyon veya yapılandırma durum etiketi
@@ -159,6 +168,7 @@
 #   {tier}  Olay müdahale planının önem derecesi
 #   {timing}  Dakika başına yetenek geri çağrısı süresi, milisaniye cinsinden
 #   {to}  Geçerli sayfadaki son kayıt numarası
+#   {tokens}  Eşleştirilmiş React Web tarayıcısı sayısı
 #   {total}  İletideki toplam kayıt, modül, dünya, kontrol veya bellek miktarı
 #   {type}  Komut parametresi, yapılandırma değeri, harita veya mesafe türü
 #   {unavailable}  Kullanılamayan NMS köprü erişimlerinin sayısı
@@ -225,12 +235,12 @@ root = "Kök React komutu"
 test = "React doğrulama ve yük testlerini çalıştır"
 "test.load" = "İki geçişli sentetik yük testi çalıştır"
 "test.run" = "React doğrulama paketini çalıştır"
-version = "React sürümünü göster"
 distance = "Sunucu, dünya veya oyuncu için görüş, simülasyon ya da gönderim mesafesini ayarla"
 web = "React WebUI erişim belirteçlerini yönet"
-"web.list" = "Etkin WebUI belirteçlerini listele"
-"web.pair" = "Bir WebUI eşleştirme belirteci oluşturun"
-"web.revoke" = "Bir WebUI belirtecini iptal et"
+"web.pair" = "Tek kullanımlık bir React Web eşleştirme bağlantısı oluştur"
+"web.revoke" = "Bir jetonu iptal et veya henüz açılmamış bir bağlantıyı iptal et"
+"web.status" = "Dinleyiciyi, aktarıcıyı ve parmak izini göster"
+"web.tokens" = "Eşleştirilmiş tarayıcıları listele"
 language = "Kendi dilinizi veya sunucu dilini seçin"
 
 [command.parameter]
@@ -267,9 +277,11 @@ target = "Hedef dünya veya oyuncu; varsayılan olarak komutu gönderenin bağla
 value = "Chunk cinsinden mesafe; üst ayarın devralınması destekleniyorsa -1 kullanın"
 
 [command.parameter.web]
-id = "İptal edilecek belirteç kimliği"
+expires = "Eşleştirmenin kullanılmadan ne kadar süreceği, örneğin 7d"
+id = "Jeton kimliği veya all"
 label = "Bu belirteç için okunabilir etiket"
 role = "Bu belirtecin rolü: viewer, operator veya admin"
+scopes = "Rol yerine izinler, örneğin read,op:execute"
 
 [command.runtime]
 chunk_not_sampled = "&cBu chunk henüz ölçülmedi; bir saniye sonra tekrar kontrol edin.&r"
@@ -347,21 +359,39 @@ threading_folia = "(Folia bölge iş parçacıklı)"
 threading_standard = ""
 
 [command.runtime.web]
+fingerprint_copy_hover = "Parmak izini kopyala"
+invalid_expires = "&cexpires= d, h veya m ile bir sayı alır, 1m ile 365d arası, örneğin 7d.&r"
+invalid_label = "&cEtiket en fazla 64 karakterdir.&r"
 invalid_role = "&cGeçersiz rol: &f{role}&c. viewer, operator veya admin bekleniyordu.&r"
+invalid_scope = "&cBilinmeyen izin &f{scope}&c. İzinler: {scopes}.&r"
+link_copy = "&b&n[Kopyala]&r"
+link_copy_hover = "Bağlantıyı kopyala"
+link_details = "&7İzinler {scopes}; kullanılmazsa {lifetime} sonra biter; jeton {id}&r"
+link_open = "&b&n[React Web'i aç]&r"
+link_open_hover = "Tarayıcında aç"
+link_ready = "&aBağlantı hazır. 10 dakika içinde açın&r"
+link_ready_console = "&aBağlantı hazır. 10 dakika içinde açın:&r {link}"
+link_revoke = "&c&n[İptal et]&r"
+link_revoke_hover = "Bu bağlantıyı iptal et veya oluşturduğu eşleştirmeyi sonlandır"
 mutation_notice = "&eWeb değişikliğini yapan &f{actor}&e: &b{target}&e — &f{detail}&e.&r"
-pair_unavailable = "&cWeb eşleştirmesi kullanılamıyor: &f{reason}&r"
+never = "hiç"
 no_tokens = "&bEtkin belirteç yok.&r"
-pairing_code = "&bEşleştirme kodu:&r {code}"
-pairing_copy = "&bEşleştirme kodu:&r &e&nKopyalamak için tıklayın&r"
-pairing_copy_hover = "Tam eşleştirme kodunu kopyala"
-persist_failed = "&cBelirteç kalıcı olarak kaydedilemedi: &f{reason}&r"
+off = "kapalı"
+pair_refused = "&e{label} eşleşemedi: &f{reason}&r"
+pair_unavailable = "&cWeb eşleştirmesi kullanılamıyor: &f{reason}&r"
+refused_expired = "bağlantının süresi doldu; yenisini oluşturun"
+refused_origin = "{origin} kaynağı web.toml içindeki allowedOrigins listesinde değil"
+relay_connecting = "{url} bağlanıyor"
+relay_registered = "{url} kayıtlı"
+relay_waiting = "ilk eşleştirmeyi bekliyor"
 revoked = "&bİptal edilen belirteç:&r {id}"
-role = "&bRol:&r {role}"
-server_fingerprint = "&bSunucu parmak izi:&r {fingerprint}"
-token_entry = "&7  {id} | {label} | issuedAt={issued_at}&r"
-token_fingerprint = "&bBelirteç parmak izi:&r {fingerprint}"
+role_and_scopes = "&crole= veya scopes= kullanın, ikisini birden değil.&r"
+scopes_need_read = "&cscopes= read içermelidir.&r"
+state_ready = "hazır"
+status = "&bReact Web&r {state} | dinleyici {listener} | aktarıcı {relay} | {tokens} jeton, {links} açık bağlantı | {sockets} soket"
+status_fingerprint = "&7Parmak izi&r {fingerprint}"
+token_entry = "&7  {id} | {label} | {access} | bitiş {expires} | son kullanım {used} | {client} | {sockets} soket&r"
 token_header = "&bEtkin belirteçler ({count}):&r"
-token_id = "&bBelirteç kimliği:&r {id}"
 token_not_found = "&cBelirteç bulunamadı: &f{id}&r"
 update_failed = "&cBelirteç deposu güncellenemedi: &f{reason}&r"
 
@@ -469,13 +499,17 @@ description = "React’in yerleşik HTTP/WebSocket yönetim API’sinin yapılan
 impact = "Dinleyiciye localhost dışından erişilebiliyorsa ters vekil sunucunun HTTPS URL’sini ayarlayın. React’in yerleşik dinleyicisi yalnızca HTTP desteklemeye devam eder. web.toml kaydedildiğinde değişiklikler otomatik olarak uygulanır."
 summary = "Doğrudan API istemcilerine bildirilen genel temel URL."
 
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.allowedorigins]
+impact = "Her girdi bir kaynaktır: şema, ana makine ve bağlantı noktası, yol olmadan; düz http yalnızca geri döngüde. Başka bir kaynaktan gelen sayfa origin_not_allowed ile reddedilir. Aktarıcınınki gibi Origin içermeyen istekler etkilenmez."
+summary = "Doğrudan dinleyiciyi kullanabilecek tarayıcı kaynakları."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.appurl]
+impact = "Kendi barındırdığınız bir React Web ile değiştirin ve kaynağını allowedOrigins listesine ekleyin."
+summary = "Eşleştirme bağlantılarının açtığı React Web adresi."
+
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenaddress]
 impact = "Varsayılan :: joker adresi; yerel ağ, kapsayıcı ve port yönlendirme erişimi için IPv6 ve IPv4 eşlemeli trafiği kabul eder. Geri döngü adresini yalnızca aynı makinedeki bir ters vekil veya aktarıcının arkasında kullanın."
 summary = "Web dinleyicisinin bağlandığı IP adresi."
-
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.corsorigins]
-impact = "Boş liste tüm kökenlere izin verir. Kökenler arası erişimi kısıtlamak için belirli kökenler ekleyin."
-summary = "HTTP API için izin verilen CORS kökenlerinin listesi."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React varsayılan olarak kimlik doğrulamalı API’yi açar. HTTP veya WebSocket dinleyicisi açmamak için false olarak ayarlayın."
@@ -486,8 +520,8 @@ impact = "Bu port doluysa React sonraki 99 portu sırayla dener ve advertisedUrl
 summary = "Web sunucusu için tercih edilen TCP bağlantı noktası."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayenabled]
-impact = "true olduğunda React, eşlik eden uygulama NAT arkasındaki sunuculara port yönlendirmesi olmadan ulaşabilsin diye relayUrl adresindeki aktarma aracısına bağlanır."
-summary = "NAT geçişi için giden bulut aktarma istemcisini etkinleştirir."
+impact = "React ilk /react web pair komutunda ve bir eşleştirme var olduğu sürece her başlangıçta relayUrl adresine bağlanır. Eşleştirme bağlantıları o zaman aktarıcı adresini de taşır."
+summary = "Tarayıcıların açık bir bağlantı noktası olmadan bu sunucuya ulaşması için giden aktarıcı istemcisini etkinleştirir."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayurl]
 impact = "Yalnızca relayEnabled true olduğunda okunur. Aktarma devre dışıysa boş bırakın."
@@ -497,9 +531,13 @@ summary = "Aktarma aracısının temel WSS URL'si, ör. wss://relay.arcane.art; 
 impact = "true olduğunda kimliği doğrulanmamış GET istekleri 401 ile reddedilir. Yalnızca tamamen güvenilir ağ ortamlarında false yapın."
 summary = "Salt okunur HTTP uç noktaları için geçerli bir kimlik doğrulama belirteci gerektirir."
 
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.wspushhz]
-impact = "Yüksek değerler gönderim doğruluğunu artırır, ancak ağ ve CPU yükünü de artırır."
-summary = "Örnekleyici güncellemelerinin WebSocket bağlantıları üzerinden gönderildiği hedef sıklık (Hz)."
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.servername]
+impact = "Boş bırakılırsa MOTD'nin ilk satırı, MOTD vanilla varsayılanıysa sunucu klasörünün adı kullanılır."
+summary = "React Web'in bu sunucu için gösterdiği ad."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
+impact = "Her kullanım süreyi yeniden başlatır. /react web pair expires= bunu tek bir bağlantı için değiştirir. 1 ile 365 arası."
+summary = "Bir eşleştirmenin kullanılmadan sürdüğü gün sayısı."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Çöp Toplama eylemi için yapılandırma. JVM çöp toplamayı ister ve anında geri kazanılan yığın belleği bildirir."

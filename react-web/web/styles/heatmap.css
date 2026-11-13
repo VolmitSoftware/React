@@ -1,0 +1,127 @@
+/* The map (lib/widget/heatmap_*): the plane, a square of chunk cells with
+   its axes, the world border and the legend. shadcn
+   tokens only; a cell's colour is data (its inline --heatmap-cell-color). */
+
+/* Scales to the card's width as a square, capped so the square and the
+   legend under it fit the window below the page header and toolbar;
+   score labels show only while the cells are wide enough for them. */
+.reactor-heatmap-plane {
+  container: heatmap / inline-size;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  width: min(100%, 46rem, 100dvh - 25rem);
+  margin-inline: auto;
+}
+
+/* Centre X, Z and the radius: three short numbers on one row. */
+.reactor-field-grid.reactor-heatmap-fields { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.reactor-heatmap-corner,
+.reactor-heatmap-axis,
+.reactor-heatmap-cell {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.reactor-heatmap-corner, .reactor-heatmap-axis { color: var(--muted-foreground); }
+.reactor-heatmap-corner, .reactor-heatmap-axis.is-z { padding-inline-end: 0.375rem; }
+.reactor-heatmap-axis.is-x { padding-bottom: 0.375rem; }
+.reactor-heatmap-corner { align-self: center; }
+.reactor-heatmap-axis { display: grid; min-width: 0; }
+.reactor-heatmap-axis span { display: grid; place-items: center; white-space: nowrap; }
+.reactor-heatmap-axis.is-z span { justify-items: end; }
+.reactor-heatmap-axis span.is-center { color: var(--foreground); font-weight: 600; }
+.reactor-heatmap-stage { position: relative; }
+
+.reactor-heatmap-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  border: 1px solid var(--border);
+  outline: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.reactor-heatmap-grid.is-dragging { cursor: grabbing; }
+.reactor-heatmap-grid:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+.reactor-heatmap-cell {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  place-items: center;
+  background: var(--heatmap-cell-color, var(--background));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.reactor-heatmap-cell:hover { filter: brightness(1.12); }
+.reactor-heatmap-cell.is-world-axis { box-shadow: inset 0 0 0 1px var(--muted-foreground); }
+.reactor-heatmap-cell.is-region-west { border-left: 2px solid var(--foreground); }
+.reactor-heatmap-cell.is-region-north { border-top: 2px solid var(--foreground); }
+.reactor-heatmap-cell.is-selected { z-index: 2; outline: 2px solid var(--foreground); outline-offset: -2px; }
+
+.reactor-heatmap-swatch { width: 0.75rem; height: 0.75rem; border: 1px solid var(--border); }
+
+.reactor-heatmap-cell.is-empty,
+.reactor-heatmap-swatch {
+  background: repeating-linear-gradient(135deg, transparent 0 5px, var(--border) 5px 7px), var(--background);
+}
+
+.reactor-heatmap-cell.is-center {
+  box-shadow: inset 0 0 0 1px var(--foreground), inset 0 0 0 3px var(--background);
+}
+
+/* Spawn: a dot in the cell's corner. */
+.reactor-heatmap-cell.is-spawn::after {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--background);
+  border-radius: 50%;
+  background: var(--foreground);
+  content: "";
+}
+
+.reactor-heatmap-cell-label { display: none; }
+
+@container heatmap (min-width: 22rem) {
+  [data-labels="s"] .reactor-heatmap-cell-label { display: block; }
+}
+
+@container heatmap (min-width: 39rem) {
+  [data-labels="m"] .reactor-heatmap-cell-label { display: block; }
+}
+
+.reactor-heatmap-world-border {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+}
+.reactor-heatmap-world-border-edge {
+  position: absolute;
+  min-width: 2px;
+  min-height: 2px;
+  translate: -1px -1px;
+  background: var(--destructive);
+}
+
+.reactor-heatmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.reactor-heatmap-scale-bar {
+  width: 6rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--muted), var(--destructive));
+}

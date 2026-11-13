@@ -38,4 +38,17 @@ void main() {
     expect(timeline.positions, <double>[0, 0.5, 1]);
     expect(timeline.breakBefore, isEmpty);
   });
+
+  test('the time axis names the first, middle and last samples', () {
+    expect(axisSamples(128), <int>[0, 64, 127]);
+    expect(axisSamples(2), <int>[0, 1]);
+    expect(axisSamples(1), <int>[0]);
+  });
+
+  test('axis times show seconds for minutes and the date past a day', () {
+    final DateTime time = DateTime(2026, 11, 13, 14, 2, 9);
+    expect(axisTime(time, const Duration(minutes: 2)), '14:02:09');
+    expect(axisTime(time, const Duration(hours: 3)), '14:02');
+    expect(axisTime(time, const Duration(days: 7)), '11-13 14:02');
+  });
 }

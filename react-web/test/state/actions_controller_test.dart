@@ -44,10 +44,8 @@ void main() {
         ),
       ];
       int notifyCount = 0;
-      final ActionsController controller = ActionsController(
-        client,
-        onChange: () => notifyCount++,
-      );
+      final ActionsController controller = ActionsController(client)
+        ..addListener(() => notifyCount++);
 
       await controller.load();
 
@@ -58,23 +56,19 @@ void main() {
       expect(notifyCount, greaterThanOrEqualTo(2));
     });
 
-    test('sets error and calls onError on failure', () async {
+    test('sets error and reports the error on failure', () async {
       final _FakeActionClient client = _FakeActionClient();
       client.throwOnActions = true;
-      Object? capturedError;
       int notifyCount = 0;
-      final ActionsController controller = ActionsController(
-        client,
-        onChange: () => notifyCount++,
-        onError: (Object e) => capturedError = e,
-      );
+      final ActionsController controller = ActionsController(client)
+        ..addListener(() => notifyCount++);
 
       await controller.load();
 
       expect(controller.actions, isEmpty);
       expect(controller.loading, isFalse);
       expect(controller.error, isA<ReactUnavailable>());
-      expect(capturedError, isA<ReactUnavailable>());
+      expect(controller.error, isA<ReactUnavailable>());
       expect(notifyCount, greaterThanOrEqualTo(2));
     });
   });
@@ -121,7 +115,7 @@ void main() {
       expect(controller.recent.length, equals(2));
     });
 
-    test('failure calls onError and leaves recent unchanged', () async {
+    test('failure reports the error and leaves recent unchanged', () async {
       final _FakeActionClient client = _FakeActionClient();
       client.actionsResult = <ActionDescriptor>[
         const ActionDescriptor(
@@ -133,13 +127,14 @@ void main() {
       ];
       client.throwOnExecute = true;
       Object? capturedError;
-      final ActionsController controller = ActionsController(
-        client,
-        onError: (Object e) => capturedError = e,
-      );
+      final ActionsController controller = ActionsController(client);
       await controller.load();
 
-      await controller.execute('gc', <String, Object?>{}, false);
+      capturedError = await controller.execute(
+        'gc',
+        <String, Object?>{},
+        false,
+      );
 
       expect(controller.recent, isEmpty);
       expect(capturedError, isA<ReactConflict>());

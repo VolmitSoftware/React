@@ -3,7 +3,10 @@ library;
 import '../model/relay_frame.dart';
 import 'relay_connection_interface.dart';
 
-class _StubRelayConnection implements IRelayConnection {
+class _StubRelayConnection implements IRelayConnection, IServerPresence {
+  @override
+  Stream<bool> get serverOnline => const Stream<bool>.empty();
+
   @override
   Future<RelayResponse> request({
     required String method,

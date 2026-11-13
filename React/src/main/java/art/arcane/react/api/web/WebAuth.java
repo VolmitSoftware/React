@@ -1,34 +1,33 @@
 package art.arcane.react.api.web;
 
-import io.javalin.http.BadRequestResponse;
-import io.javalin.http.ConflictResponse;
+import art.arcane.react.api.web.pairing.WebToken;
+import art.arcane.react.api.web.pairing.WebTokens;
 import io.javalin.http.Context;
-import io.javalin.http.ForbiddenResponse;
 import io.javalin.http.Handler;
 import io.javalin.http.HandlerType;
-import io.javalin.http.UnauthorizedResponse;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Authenticates {@code Authorization: Bearer <token>} against {@link WebTokens}, which slides the token's expiry, and
+ * holds each token's {@code X-React-Counter} high-water mark for mutating requests.
+ */
 public final class WebAuth implements Handler {
 
   private static final Set<HandlerType> MUTATING_METHODS = Set.of(
       HandlerType.PUT, HandlerType.POST, HandlerType.PATCH, HandlerType.DELETE);
 
-  private final byte[] secret;
-  private final TokenStore store;
+  private final WebTokens tokens;
   private final ConcurrentHashMap<String, Long> counterMap = new ConcurrentHashMap<>();
 
-  public WebAuth(byte[] secret, TokenStore store) {
-    this.secret = secret;
-    this.store = store;
+  public WebAuth(WebTokens tokens) {
+    this.tokens = tokens;
   }
 
   @Override
-  public void handle(Context ctx) throws Exception {
-    if ("OPTIONS".equals(ctx.method().name())) {
+  public void handle(Context ctx) {
+    if (ctx.method() == HandlerType.OPTIONS) {
       return;
     }
     if (ctx.attribute("token") != null) {
@@ -36,56 +35,44 @@ public final class WebAuth implements Handler {
     }
     String authorization = ctx.header("Authorization");
     if (authorization == null || !authorization.startsWith("Bearer ")) {
-      throw new UnauthorizedResponse("Missing or invalid Authorization header");
+      throw WebError.unauthorized();
     }
-    String bearer = authorization.substring(7);
-    int dot = bearer.indexOf('.');
-    if (dot < 0) {
-      throw new UnauthorizedResponse("Malformed bearer token");
-    }
-    String tokenId = bearer.substring(0, dot);
+    WebToken token = tokens.authenticate(authorization.substring(7));
 
-    Optional<PairingToken> maybeToken = PairingToken.verify(secret, bearer, store);
-    if (maybeToken.isEmpty()) {
-      throw new UnauthorizedResponse("Invalid token");
-    }
-
-    HandlerType m = ctx.method();
-    if (MUTATING_METHODS.contains(m)) {
+    if (MUTATING_METHODS.contains(ctx.method())) {
       String counterHeader = ctx.header("X-React-Counter");
       if (counterHeader == null) {
-        throw new ConflictResponse("Missing X-React-Counter header");
+        throw new WebError(409, "conflict", "Missing X-React-Counter header");
       }
       long counter;
       try {
         counter = Long.parseLong(counterHeader);
       } catch (NumberFormatException e) {
-        throw new BadRequestResponse("Invalid X-React-Counter value");
+        throw WebError.badRequest("Invalid X-React-Counter value");
       }
-      long finalCounter = counter;
-      boolean[] rejected = {false};
-      counterMap.compute(tokenId, (id, lastSeen) -> {
-        if (lastSeen != null && finalCounter <= lastSeen) {
-          rejected[0] = true;
+      long[] rejectedBy = {Long.MIN_VALUE};
+      counterMap.compute(token.id(), (id, lastSeen) -> {
+        if (lastSeen != null && counter <= lastSeen) {
+          rejectedBy[0] = lastSeen;
           return lastSeen;
         }
-        return finalCounter;
+        return counter;
       });
-      if (rejected[0]) {
-        throw new ConflictResponse("Replayed or non-increasing X-React-Counter");
+      if (rejectedBy[0] != Long.MIN_VALUE) {
+        throw WebError.counterConflict(rejectedBy[0]);
       }
     }
 
-    ctx.attribute("token", maybeToken.get());
+    ctx.attribute("token", token);
   }
 
   public static void requireScope(Context ctx, String scope) {
-    PairingToken token = ctx.attribute("token");
+    WebToken token = ctx.attribute("token");
     if (token == null) {
-      throw new UnauthorizedResponse("No authenticated token in context");
+      throw WebError.unauthorized();
     }
     if (!token.hasScope(scope)) {
-      throw new ForbiddenResponse("Insufficient scope: " + scope);
+      throw WebError.scopeMissing(scope);
     }
   }
 }

@@ -1,224 +1,148 @@
+/// Without a live connection nothing on the Console, Actions, Tuning and
+/// Plugins pages writes to the server, whatever the role.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr_test/server_test.dart';
+import 'package:jaspr/jaspr.dart' show Element;
+import 'package:jaspr_test/jaspr_test.dart';
 
 import 'package:react_web/model/action_descriptor.dart';
 import 'package:react_web/model/config_tree.dart';
 import 'package:react_web/model/control_item.dart';
 import 'package:react_web/model/knob.dart';
-import 'package:react_web/model/role_info.dart';
 import 'package:react_web/model/world_settings.dart';
 import 'package:react_web/screen/actions.dart';
 import 'package:react_web/screen/config_editor.dart';
-import 'package:react_web/screen/governors.dart';
 import 'package:react_web/screen/logs.dart';
 import 'package:react_web/screen/optimization.dart';
-import 'package:react_web/screen/tweaks.dart';
+import 'package:react_web/screen/plugin_api_packs.dart';
 import 'package:react_web/screen/world_overrides.dart';
-import 'package:react_web/state/actions_controller.dart';
+import 'package:react_web/state/connection_manager.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+import 'support/operate_fakes.dart';
 
-const RoleInfo _adminRole = RoleInfo(
-  role: 'admin',
-  scopes: <String>['read', 'op:execute', 'admin'],
-);
+T _one<T>() => find.byType(T).evaluate().single.component as T;
 
-const ControlItem _control = ControlItem(
-  id: 'runtime-control',
-  name: 'Runtime Control',
-  category: 'Runtime',
-  enabled: true,
-  description: 'A mutable runtime control.',
-  knobs: <Knob>[
-    Knob(key: 'limit', label: 'Limit', type: KnobType.intType, value: 4),
-  ],
-);
-
-const ActionDescriptor _action = ActionDescriptor(
-  id: 'purge',
-  name: 'Purge',
-  description: 'Purges runtime state.',
-  destructive: true,
-  params: <ActionParam>[
-    ActionParam(
-      key: 'limit',
-      label: 'Limit',
-      type: KnobType.intType,
-      required: true,
-      defaultValue: 4,
+FakeServer _server() => FakeServer(
+  client: OperateClient(
+    features: <ControlItem>[controlItem('random-tick-governor')],
+    tweaks: <ControlItem>[controlItem('fast-snow')],
+    worlds: <WorldSettings>[worldSettings('world')],
+    actions: const <ActionDescriptor>[
+      ActionDescriptor(
+        id: 'gc',
+        name: 'Force GC',
+        description: '',
+        destructive: false,
+      ),
+    ],
+    config: const ConfigTree(
+      sections: <ConfigSection>[
+        ConfigSection(
+          name: 'Runtime',
+          nodes: <Knob>[
+            Knob(
+              key: 'limit',
+              label: 'Limit',
+              type: KnobType.intType,
+              value: 4,
+            ),
+          ],
+        ),
+      ],
     ),
-  ],
+    logs: const <String>['[INFO] ready'],
+  ),
+  socket: FakeLogSocket(),
 );
-
-Widget _wrap(Widget child) =>
-    ArcaneThemeProvider(stylesheet: _sheet, child: child);
-
-bool _hasDisabledControl(String body) =>
-    body.contains('data-disabled="true"') ||
-    RegExp(r'\sdisabled(?:=|>)').hasMatch(body);
 
 void main() {
-  group('non-live mutation gating', () {
-    testServer('optimization controls render disabled', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          OptimizationGridView(
-            items: const <ControlItem>[_control],
-            total: 1,
-            enabledCount: 1,
-            readOnly: true,
-            onToggle: (String _, bool _) {},
-            onSetAll: (bool _) {},
-            onConfigure: (String _) {},
+  for (final ConnState state in <ConnState>[
+    ConnState.connecting,
+    ConnState.degraded,
+    ConnState.offline,
+  ]) {
+    group('${state.name}: nothing writes', () {
+      testComponents('features, including governors', (
+        ComponentTester tester,
+      ) async {
+        tester.pumpComponent(
+          serverScopes(
+            _server(),
+            const ControlListScreen.features(),
+            state: state,
           ),
-        ),
-      );
-      final DocumentResponse response = await tester.request('/');
-      expect(_hasDisabledControl(response.body), isTrue);
-    });
+        );
+        await tester.pump();
+        expect(_one<ControlListView>().onToggle, isNull);
+        expect(_one<ControlListView>().onSetAll, isNull);
+      });
 
-    testServer('tweak controls render disabled', (ServerTester tester) async {
-      tester.pumpComponent(
-        _wrap(
-          TweaksListView(
-            items: const <ControlItem>[_control],
-            readOnly: true,
-            onToggle: (String _, bool _) {},
-            onKnobChanged: (String _, String _, Object? _) {},
+      testComponents('tweaks', (ComponentTester tester) async {
+        tester.pumpComponent(
+          serverScopes(
+            _server(),
+            const ControlListScreen.tweaks(),
+            state: state,
           ),
-        ),
-      );
-      final DocumentResponse response = await tester.request('/');
-      expect(_hasDisabledControl(response.body), isTrue);
-    });
+        );
+        await tester.pump();
+        expect(_one<ControlListView>().onToggle, isNull);
+      });
 
-    testServer('governor toggles render disabled without a live callback', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(const GovernorDashboardView(governors: <ControlItem>[_control])),
-      );
-      final DocumentResponse response = await tester.request('/');
-      expect(_hasDisabledControl(response.body), isTrue);
-    });
+      testComponents('world budgets', (ComponentTester tester) async {
+        tester.pumpComponent(
+          serverScopes(_server(), const WorldOverridesScreen(), state: state),
+        );
+        await tester.pump();
+        _one<WorldOverridesView>().onEdit!('world');
+        await tester.pump();
+        expect(_one<WorldBudgetSheet>().onStage, isNull);
+        expect(_one<WorldBudgetSheet>().onSave, isNull);
+      });
 
-    testServer('world override fields render disabled', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          WorldOverridesView(
-            worlds: const <WorldSettings>[
-              WorldSettings(
-                key: 'minecraft:world',
-                name: 'world',
-                pressureMode: PressureMode.normal,
-                budgetMs: 45,
-                panicMs: 50,
-                releaseMs: 40,
-              ),
-            ],
-            readOnly: true,
-            onSetBudget:
-                (
-                  String _, {
-                  double? budgetMs,
-                  double? panicMs,
-                  double? releaseMs,
-                }) {},
-          ),
-        ),
-      );
-      final DocumentResponse response = await tester.request('/');
-      expect(_hasDisabledControl(response.body), isTrue);
-    });
+      testComponents('actions', (ComponentTester tester) async {
+        tester.pumpComponent(
+          serverScopes(_server(), const ActionsScreen(), state: state),
+        );
+        await tester.pump();
+        expect(_one<ActionsView>().onRun, isNull);
+      });
 
-    testServer('action execution and parameters render disabled', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          ActionsConsoleView(
-            actions: const <ActionDescriptor>[_action],
-            recent: const <ActionExecution>[],
-            pendingId: _action.id,
-            paramValues: const <String, Map<String, Object?>>{},
-            role: _adminRole,
-            connectionReadOnly: true,
-            onExecute: (String _, Map<String, Object?> _, bool _) {},
-            onPendingChanged: (String? _) {},
-            onParamChanged: (String _, String _, Object? _) {},
-          ),
-        ),
-      );
-      final DocumentResponse response = await tester.request('/');
-      expect(_hasDisabledControl(response.body), isTrue);
-      expect(response.body.contains('Confirm Purge'), isFalse);
-    });
+      testComponents('config', (ComponentTester tester) async {
+        tester.pumpComponent(
+          serverScopes(_server(), const ConfigEditorScreen(), state: state),
+        );
+        await tester.pump();
+        expect(_one<ConfigPresetsCard>().onPreset, isNull);
+        expect(_one<ConfigSectionsCard>().onEdit, isNull);
+        expect(_one<ConfigSectionsCard>().onSave, isNull);
+      });
 
-    testServer('configuration mutations render disabled', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          ConfigEditorView(
-            tree: const ConfigTree(
-              sections: <ConfigSection>[
-                ConfigSection(
-                  name: 'Runtime',
-                  nodes: <Knob>[
-                    Knob(
-                      key: 'limit',
-                      label: 'Limit',
-                      type: KnobType.intType,
-                      value: 4,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            pending: const <String, Object?>{},
-            connectionReadOnly: true,
-            onEdit: (String _, Object? _) {},
-            onPreset: (String _) {},
-            onApply: () {},
-          ),
-        ),
-      );
-      final DocumentResponse response = await tester.request('/');
-      expect(_hasDisabledControl(response.body), isTrue);
-      expect(response.body.contains('live server connection'), isTrue);
-    });
+      testComponents('console commands', (ComponentTester tester) async {
+        tester.pumpComponent(
+          serverScopes(_server(), const LogsScreen(), state: state),
+        );
+        await tester.pump();
+        final Iterable<TextInput> boxes = find
+            .byType(TextInput)
+            .evaluate()
+            .map((Element element) => element.component as TextInput)
+            .where(
+              (TextInput input) => input.attributes?['aria-label'] == 'Command',
+            );
+        expect(boxes.single.disabled, isTrue);
+      });
 
-    testServer('console command controls render disabled', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          LogsView(
-            lines: const <String>['[INFO] ready'],
-            paused: false,
-            levelFilter: 'ALL',
-            onPause: null,
-            onClear: null,
-            onLevelFilter: null,
-            command: 'say hello',
-            consoleEnabled: false,
-            consoleUnavailableMessage:
-                'Command execution is disabled until the connection is live.',
-            onCommandChanged: (String _) {},
-            onExecuteCommand: () {},
-          ),
-        ),
-      );
-      final DocumentResponse response = await tester.request('/');
-      expect(_hasDisabledControl(response.body), isTrue);
-      expect(response.body.contains('connection is live'), isTrue);
+      testComponents('plugin packs', (ComponentTester tester) async {
+        tester.pumpComponent(
+          serverScopes(_server(), const PluginApiPacksScreen(), state: state),
+        );
+        await tester.pump();
+        expect(_one<PluginApiCatalogView>().onNew, isNull);
+        expect(_one<PluginApiCatalogView>().onEdit, isNull);
+        expect(_one<PluginApiCatalogView>().onDelete, isNull);
+      });
     });
-  });
+  }
 }

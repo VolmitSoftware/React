@@ -1,35 +1,59 @@
+/// The plot of a [TimeseriesChart]: lines on a value axis with round,
+/// evenly spaced ticks ([chartScale]) and a time axis. One tab stop: the
+/// arrow keys walk the samples and the read-out follows; a pointer does the
+/// same by hovering.
 library;
 
 import 'package:jaspr/dom.dart';
 import 'package:jaspr/jaspr.dart';
+import 'package:universal_web/web.dart' as web;
 
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
+import '../model/units.dart';
+import 'chart_scale.dart';
+
+/// Most hover targets drawn across the plot; longer series share them.
+const int kChartHoverTargets = 160;
 
 class SvgFallbackChart extends StatefulComponent {
   const SvgFallbackChart({
     required this.series,
     this.height = 160,
-    this.hiddenSeries = const <int>{},
     this.activeSample,
+    this.unit,
     this.valueFormatter,
-    this.sampleLabels,
+    this.sampleTitles,
     this.samplePositions,
     this.breakBeforeSamples = const <int>{},
     this.secondarySeries = const <int>{},
+    this.timeLabels = const <(int, String)>[],
     this.onSampleHover,
     super.key,
   });
 
   final List<(String, List<double>)> series;
   final int height;
-  final Set<int> hiddenSeries;
   final int? activeSample;
+
+  /// The unit of every value ("ms", "%"); on the axis and in the read-out.
+  final String? unit;
+
+  /// Writes a value with its unit (byte rates); overrides [unit].
   final String Function(double value)? valueFormatter;
-  final List<String>? sampleLabels;
+
+  /// What each sample is called in the read-out (its time).
+  final List<String>? sampleTitles;
+
+  /// Each sample's place from 0 to 1 (wall-clock time); even when null.
   final List<double>? samplePositions;
   final Set<int> breakBeforeSamples;
+
+  /// Drawn dashed and fainter (a reference line).
   final Set<int> secondarySeries;
+
+  /// The time axis: (sample index, label), two to four of them.
+  final List<(int, String)> timeLabels;
   final void Function(int?)? onSampleHover;
 
   @override
@@ -38,159 +62,21 @@ class SvgFallbackChart extends StatefulComponent {
 
 class _SvgFallbackChartState extends State<SvgFallbackChart> {
   List<(String, List<double>)> get series => component.series;
-  int get height => component.height;
-  Set<int> get hiddenSeries => component.hiddenSeries;
-  int? get activeSample => component.activeSample;
-  String Function(double)? get valueFormatter => component.valueFormatter;
-  List<String>? get sampleLabels => component.sampleLabels;
-  List<double>? get samplePositions => component.samplePositions;
-  Set<int> get breakBeforeSamples => component.breakBeforeSamples;
-  Set<int> get secondarySeries => component.secondarySeries;
-  void Function(int?)? get onSampleHover => component.onSampleHover;
-  (double, double)? _bounds;
+  ChartScale? _scale;
   List<Component>? _lines;
   List<Component>? _targets;
-  ReactorLocaleScope? _locale;
 
   @override
   void didUpdateComponent(SvgFallbackChart oldComponent) {
     super.didUpdateComponent(oldComponent);
     if (oldComponent.series != series ||
-        oldComponent.hiddenSeries != hiddenSeries ||
-        oldComponent.samplePositions != samplePositions ||
-        oldComponent.breakBeforeSamples != breakBeforeSamples ||
-        oldComponent.secondarySeries != secondarySeries) {
-      _bounds = null;
+        oldComponent.samplePositions != component.samplePositions ||
+        oldComponent.breakBeforeSamples != component.breakBeforeSamples ||
+        oldComponent.secondarySeries != component.secondarySeries) {
+      _scale = null;
       _lines = null;
       _targets = null;
     }
-    if (oldComponent.sampleLabels != sampleLabels ||
-        oldComponent.valueFormatter != valueFormatter) {
-      _targets = null;
-    }
-  }
-
-  @override
-  Component build(BuildContext context) {
-    final ReactorLocaleScope? locale = dependOnReactorLocale(context);
-    if (!identical(locale, _locale)) {
-      _locale = locale;
-      _targets = null;
-    }
-    final (double, double) bounds = _bounds ??= _globalBounds();
-    final List<int> interactiveSamples = _targets == null
-        ? _interactiveSamples
-        : const <int>[];
-    final String accessibleLabel = series.isEmpty
-        ? reactorText(ReactorText.chartNoTimeSeriesData)
-        : reactorText(ReactorText.chartTimeSeriesLabel, <String, Object?>{
-            'series': series
-                .map(((String, List<double>) item) => item.$1)
-                .join(', '),
-          });
-    return div(classes: 'reactor-chart-plot', <Component>[
-      span(classes: 'reactor-chart-scale is-max', <Component>[
-        Component.text(_formatBound(bounds.$2)),
-      ]),
-      svg(
-        <Component>[
-          for (int index = 0; index < 5; index++)
-            line(
-              const <Component>[],
-              x1: '0',
-              y1: '${6 + index * 22}',
-              x2: '100',
-              y2: '${6 + index * 22}',
-              classes: 'reactor-chart-grid-line',
-              attributes: const <String, String>{
-                'vector-effect': 'non-scaling-stroke',
-              },
-            ),
-          ...(_lines ??= _seriesLines(bounds)),
-          if (activeSample != null) _activeGuide(bounds, activeSample!),
-          ...(_targets ??= <Component>[
-            for (final (int targetIndex, int index)
-                in interactiveSamples.indexed)
-              rect(
-                const <Component>[],
-                key: ValueKey<int>(index),
-                x: '${targetIndex * (100 / interactiveSamples.length)}',
-                y: '0',
-                width: '${100 / interactiveSamples.length}',
-                height: '100',
-                classes: 'reactor-chart-hit-target',
-                attributes: <String, String>{
-                  'tabindex': '0',
-                  'aria-label': _sampleLabel(index),
-                },
-                events: <String, EventCallback>{
-                  'mouseenter': (_) => onSampleHover?.call(index),
-                  'focus': (_) => onSampleHover?.call(index),
-                  'mouseleave': (_) => onSampleHover?.call(null),
-                  'blur': (_) => onSampleHover?.call(null),
-                },
-              ),
-          ]),
-        ],
-        viewBox: '0 0 100 100',
-        classes: 'reactor-chart-svg',
-        styles: Styles(
-          raw: <String, String>{
-            'width': '100%',
-            'height': '${height}px',
-            'display': 'block',
-          },
-        ),
-        attributes: <String, String>{
-          'preserveAspectRatio': 'none',
-          'role': 'img',
-          'aria-label': accessibleLabel,
-        },
-      ),
-      span(classes: 'reactor-chart-scale is-min', <Component>[
-        Component.text(_formatBound(bounds.$1)),
-      ]),
-      if (_sampleCount > 0 && sampleLabels != null)
-        div(classes: 'reactor-chart-time-axis', <Component>[
-          span(<Component>[Component.text(_sampleTitle(0))]),
-          if (_sampleCount > 2)
-            span(<Component>[Component.text(_sampleTitle(_sampleCount ~/ 2))]),
-          if (_sampleCount > 1)
-            span(<Component>[Component.text(_sampleTitle(_sampleCount - 1))]),
-        ]),
-      if (activeSample != null)
-        div(
-          classes: 'reactor-chart-tooltip',
-          styles: Styles(
-            raw: <String, String>{'left': '${_samplePosition(activeSample!)}%'},
-          ),
-          <Component>[
-            span(classes: 'reactor-chart-tooltip-index', <Component>[
-              Component.text(_sampleTitle(activeSample!)),
-            ]),
-            for (int index = 0; index < series.length; index++)
-              if (!hiddenSeries.contains(index) &&
-                  activeSample! < series[index].$2.length)
-                span(classes: 'reactor-chart-tooltip-row', <Component>[
-                  i(
-                    const <Component>[],
-                    classes: 'reactor-chart-tooltip-swatch',
-                    styles: Styles(
-                      raw: <String, String>{
-                        'background': 'var(--reactor-chart-${(index % 6) + 1})',
-                      },
-                    ),
-                  ),
-                  span(<Component>[Component.text(series[index].$1)]),
-                  strong(<Component>[
-                    Component.text(
-                      _formatValue(series[index].$2[activeSample!]),
-                    ),
-                  ]),
-                ]),
-          ],
-        ),
-    ]);
   }
 
   int get _sampleCount {
@@ -201,20 +87,162 @@ class _SvgFallbackChartState extends State<SvgFallbackChart> {
     return count;
   }
 
-  List<int> get _interactiveSamples {
-    const int maximumTargets = 160;
-    if (_sampleCount <= maximumTargets) {
-      return List<int>.generate(_sampleCount, (int index) => index);
-    }
-    return List<int>.generate(
-      maximumTargets,
-      (int index) =>
-          (index * (_sampleCount - 1) / (maximumTargets - 1)).round(),
-      growable: false,
-    );
+  @override
+  Component build(BuildContext context) {
+    dependOnReactorLocale(context);
+    final ChartScale scale = _scale ??= chartScale(<double>[
+      for (final (String _, List<double> values) in series) ...values,
+    ]);
+    final int? active = component.activeSample;
+    final String names = series
+        .map(((String, List<double>) item) => item.$1)
+        .join(', ');
+    return div(classes: 'reactor-chart-plot', <Component>[
+      div(classes: 'reactor-chart-area', <Component>[
+        svg(
+          <Component>[
+            for (final double tick in scale.ticks)
+              line(
+                const <Component>[],
+                x1: '0',
+                y1: '${_y(scale, tick)}',
+                x2: '100',
+                y2: '${_y(scale, tick)}',
+                classes: 'reactor-chart-grid-line',
+                attributes: const <String, String>{
+                  'vector-effect': 'non-scaling-stroke',
+                },
+              ),
+            ...(_lines ??= _seriesLines(scale)),
+            if (active != null) _activeGuide(scale, active),
+            ...(_targets ??= _hoverTargets()),
+          ],
+          viewBox: '0 0 100 100',
+          classes: 'reactor-chart-svg',
+          attributes: <String, String>{
+            'width': '100%',
+            'height': '${component.height}',
+            'preserveAspectRatio': 'none',
+            'role': 'img',
+            'tabindex': '0',
+            'aria-label':
+                '${reactorText(ReactorText.chartTimeSeriesLabel, <String, Object?>{'series': names})}. '
+                '${reactorText(ReactorText.chartKeysHint)}',
+          },
+          events: <String, EventCallback>{
+            'keydown': _keys,
+            'focus': (_) {
+              if (component.activeSample == null && _sampleCount > 0) {
+                component.onSampleHover?.call(_sampleCount - 1);
+              }
+            },
+            'blur': (_) => component.onSampleHover?.call(null),
+          },
+        ),
+        for (final double tick in scale.ticks)
+          span(
+            classes: 'reactor-chart-tick',
+            styles: Styles(raw: <String, String>{'top': '${_y(scale, tick)}%'}),
+            <Component>[Component.text(_tickLabel(scale, tick))],
+          ),
+        if (active != null)
+          div(
+            classes: 'reactor-chart-tooltip',
+            attributes: const <String, String>{'role': 'status'},
+            styles: Styles(
+              raw: <String, String>{'left': '${_samplePosition(active)}%'},
+            ),
+            <Component>[
+              span(classes: 'reactor-chart-tooltip-index', <Component>[
+                Component.text(_sampleTitle(active)),
+              ]),
+              for (int index = 0; index < series.length; index++)
+                if (active < series[index].$2.length)
+                  span(classes: 'reactor-chart-tooltip-row', <Component>[
+                    i(
+                      const <Component>[],
+                      classes:
+                          'reactor-chart-tooltip-swatch '
+                          'reactor-chart-series-${index % 6}',
+                    ),
+                    span(<Component>[Component.text(series[index].$1)]),
+                    strong(<Component>[
+                      Component.text(_formatValue(series[index].$2[active])),
+                    ]),
+                  ]),
+            ],
+          ),
+      ]),
+      if (component.timeLabels.isNotEmpty)
+        div(classes: 'reactor-chart-time-axis', <Component>[
+          for (final (int index, String label) in component.timeLabels)
+            span(
+              classes: index == 0
+                  ? 'is-start'
+                  : index >= _sampleCount - 1
+                  ? 'is-end'
+                  : null,
+              styles: Styles(
+                raw: <String, String>{'left': '${_samplePosition(index)}%'},
+              ),
+              <Component>[Component.text(label)],
+            ),
+        ]),
+    ]);
   }
 
-  Component _activeGuide((double, double) bounds, int sample) {
+  /// Left and Right step through the samples, Home and End jump to the
+  /// first and last.
+  void _keys(web.Event raw) {
+    final int count = _sampleCount;
+    if (count == 0) return;
+    final String key = (raw as web.KeyboardEvent).key;
+    final int at = component.activeSample ?? count - 1;
+    final int? next = switch (key) {
+      'ArrowLeft' || 'ArrowDown' => (at - 1).clamp(0, count - 1),
+      'ArrowRight' || 'ArrowUp' => (at + 1).clamp(0, count - 1),
+      'PageDown' => (at - 10).clamp(0, count - 1),
+      'PageUp' => (at + 10).clamp(0, count - 1),
+      'Home' => 0,
+      'End' => count - 1,
+      _ => null,
+    };
+    if (next == null) return;
+    raw.preventDefault();
+    component.onSampleHover?.call(next);
+  }
+
+  /// Pointer targets, one per sample (or per group of samples on a long
+  /// series). Not in the tab order: the plot is one stop.
+  List<Component> _hoverTargets() {
+    final int count = _sampleCount;
+    final List<int> samples = count <= kChartHoverTargets
+        ? List<int>.generate(count, (int index) => index)
+        : List<int>.generate(
+            kChartHoverTargets,
+            (int index) =>
+                (index * (count - 1) / (kChartHoverTargets - 1)).round(),
+          );
+    return <Component>[
+      for (final (int slot, int index) in samples.indexed)
+        rect(
+          const <Component>[],
+          key: ValueKey<int>(index),
+          x: '${slot * (100 / samples.length)}',
+          y: '0',
+          width: '${100 / samples.length}',
+          height: '100',
+          classes: 'reactor-chart-hit-target',
+          attributes: <String, String>{'data-sample': '$index'},
+          events: <String, EventCallback>{
+            'mouseenter': (_) => component.onSampleHover?.call(index),
+            'mouseleave': (_) => component.onSampleHover?.call(null),
+          },
+        ),
+    ];
+  }
+
+  Component _activeGuide(ChartScale scale, int sample) {
     final double x = _samplePosition(sample);
     return Component.fragment(<Component>[
       line(
@@ -226,149 +254,100 @@ class _SvgFallbackChartState extends State<SvgFallbackChart> {
         classes: 'reactor-chart-crosshair',
       ),
       for (int index = 0; index < series.length; index++)
-        if (!hiddenSeries.contains(index) && sample < series[index].$2.length)
+        if (sample < series[index].$2.length)
           circle(
             const <Component>[],
             cx: '$x',
-            cy: '${_pointY(series[index].$2[sample], bounds)}',
+            cy: '${_y(scale, series[index].$2[sample])}',
             r: '2.2',
-            classes: 'reactor-chart-point',
-            attributes: <String, String>{
-              'fill': 'var(--reactor-chart-${(index % 6) + 1})',
-            },
+            classes: 'reactor-chart-point reactor-chart-series-${index % 6}',
+            attributes: const <String, String>{'fill': 'currentColor'},
           ),
     ]);
   }
 
   double _samplePosition(int index) {
     if (_sampleCount <= 1) return 50.0;
-    final List<double>? positions = samplePositions;
+    final List<double>? positions = component.samplePositions;
     final double normalized = positions != null && index < positions.length
         ? positions[index].clamp(0.0, 1.0)
         : index / (_sampleCount - 1);
     return 2.0 + normalized * 96.0;
   }
 
-  double _pointY(double value, (double, double) bounds) =>
-      94.0 - ((value - bounds.$1) / (bounds.$2 - bounds.$1)) * 88.0;
-
-  String _sampleLabel(int index) {
-    final List<String> values = <String>[];
-    for (int seriesIndex = 0; seriesIndex < series.length; seriesIndex++) {
-      if (hiddenSeries.contains(seriesIndex) ||
-          index >= series[seriesIndex].$2.length) {
-        continue;
-      }
-      values.add(
-        '${series[seriesIndex].$1} ${_formatValue(series[seriesIndex].$2[index])}',
-      );
-    }
-    return '${_sampleTitle(index)}: ${values.join(', ')}';
-  }
+  /// The plot keeps 6 units free above and below the axis range.
+  double _y(ChartScale scale, double value) =>
+      94.0 - scale.fraction(value) * 88.0;
 
   String _sampleTitle(int index) {
-    final List<String>? labels = sampleLabels;
-    if (labels != null && index < labels.length) return labels[index];
+    final List<String>? titles = component.sampleTitles;
+    if (titles != null && index < titles.length) return titles[index];
     return reactorText(ReactorText.chartSample, <String, Object?>{
       'number': index + 1,
     });
   }
 
-  (double, double) _globalBounds() {
-    double? minimum;
-    double? maximum;
-    for (final (String _, List<double> values) in series) {
-      for (final double value in values) {
-        minimum = minimum == null || value < minimum ? value : minimum;
-        maximum = maximum == null || value > maximum ? value : maximum;
-      }
-    }
-    if (minimum == null || maximum == null) return (0.0, 1.0);
-    if ((maximum - minimum).abs() < 1e-9) {
-      final double padding = maximum.abs() < 1.0 ? 1.0 : maximum.abs() * 0.05;
-      return (minimum - padding, maximum + padding);
-    }
-    final double padding = (maximum - minimum) * 0.05;
-    return (minimum - padding, maximum + padding);
-  }
-
-  List<Component> _seriesLines((double, double) bounds) {
-    final List<Component> lines = <Component>[];
-    for (int index = 0; index < series.length; index++) {
-      if (hiddenSeries.contains(index)) continue;
-      lines.addAll(_polylinesFor(series[index].$2, bounds, index));
-    }
-    return lines;
-  }
+  List<Component> _seriesLines(ChartScale scale) => <Component>[
+    for (int index = 0; index < series.length; index++)
+      ..._polylinesFor(series[index].$2, scale, index),
+  ];
 
   List<Component> _polylinesFor(
     List<double> values,
-    (double, double) bounds,
+    ChartScale scale,
     int index,
   ) {
-    if (values.isEmpty) {
-      return <Component>[
-        polyline(
-          const <Component>[],
-          points: '',
-          classes: _seriesClasses(index),
-          attributes: <String, String>{
-            'fill': 'none',
-            'stroke': 'var(--reactor-chart-${(index % 6) + 1})',
-          },
-        ),
-      ];
-    }
-    final double minimum = bounds.$1;
-    final double range = bounds.$2 - bounds.$1;
-    final int count = values.length;
     final List<StringBuffer> segments = <StringBuffer>[StringBuffer()];
-    for (int pointIndex = 0; pointIndex < count; pointIndex++) {
-      if (pointIndex > 0 && breakBeforeSamples.contains(pointIndex)) {
+    for (int point = 0; point < values.length; point++) {
+      if (point > 0 && component.breakBeforeSamples.contains(point)) {
         segments.add(StringBuffer());
       }
-      final double x = _samplePosition(pointIndex);
-      final double y = 94.0 - ((values[pointIndex] - minimum) / range) * 88.0;
       final StringBuffer points = segments.last;
       if (points.isNotEmpty) points.write(' ');
-      points.write('${x.toStringAsFixed(2)},${y.toStringAsFixed(2)}');
+      points.write(
+        '${_samplePosition(point).toStringAsFixed(2)},'
+        '${_y(scale, values[point]).toStringAsFixed(2)}',
+      );
     }
-    return segments
-        .where((StringBuffer points) => points.isNotEmpty)
-        .map(
-          (StringBuffer points) => polyline(
+    return <Component>[
+      for (final StringBuffer points in segments)
+        if (points.isNotEmpty)
+          polyline(
             const <Component>[],
             points: points.toString(),
-            classes: _seriesClasses(index),
+            classes: 'reactor-chart-series-${index % 6}',
             attributes: <String, String>{
               'fill': 'none',
-              'stroke': 'var(--reactor-chart-${(index % 6) + 1})',
+              'stroke': 'currentColor',
               'stroke-width': '1.5',
               'stroke-linecap': 'square',
               'stroke-linejoin': 'miter',
               'vector-effect': 'non-scaling-stroke',
+              if (component.secondarySeries.contains(
+                index,
+              )) ...<String, String>{
+                'stroke-dasharray': '3 3',
+                'opacity': '0.6',
+              },
             },
           ),
-        )
-        .toList(growable: false);
+    ];
   }
 
-  String _formatBound(double value) {
-    final String Function(double value)? formatter = valueFormatter;
-    if (formatter != null) return formatter(value);
-    if (value.abs() >= 1000.0) return value.toStringAsFixed(0);
-    if (value.abs() >= 100.0) return value.toStringAsFixed(1);
-    return value.toStringAsFixed(2);
+  String _tickLabel(ChartScale scale, double tick) {
+    final String Function(double value)? formatter = component.valueFormatter;
+    if (formatter != null) return formatter(tick);
+    return withUnit(scale.label(tick), component.unit);
   }
-
-  String _seriesClasses(int index) =>
-      'reactor-chart-series reactor-chart-series-$index'
-      '${secondarySeries.contains(index) ? ' is-secondary' : ''}';
 
   String _formatValue(double value) {
-    final String Function(double value)? formatter = valueFormatter;
+    final String Function(double value)? formatter = component.valueFormatter;
     if (formatter != null) return formatter(value);
-    if (value.abs() >= 100.0) return value.toStringAsFixed(1);
-    return value.toStringAsFixed(2);
+    final String number = value.abs() >= 100
+        ? value.toStringAsFixed(0)
+        : value.abs() >= 10
+        ? value.toStringAsFixed(1)
+        : value.toStringAsFixed(2);
+    return withUnit(number, component.unit);
   }
 }

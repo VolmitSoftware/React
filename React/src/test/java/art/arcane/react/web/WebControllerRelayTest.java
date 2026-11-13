@@ -36,7 +36,6 @@ public class WebControllerRelayTest {
             @Override
             protected IdentityDto resolveIdentity() {
                 IdentityDto dto = new IdentityDto();
-                dto.version = "9.9.9-relay-test";
                 dto.serverName = "RelayTestBrand";
                 dto.folia = false;
                 dto.serverId = "127.0.0.1:0";
@@ -90,6 +89,7 @@ public class WebControllerRelayTest {
 
     @Test
     void relayEnabledWithUnreachableUrlStartsClientWithoutCrashing(@TempDir File dataFolder) throws Exception {
+        WebTestTokens.issue(dataFolder, "paired", "viewer");
         SampleController sampleController = mock(SampleController.class);
         @SuppressWarnings("unchecked")
         Registry<Sampler> registry = mock(Registry.class);
@@ -110,7 +110,7 @@ public class WebControllerRelayTest {
 
         assertNotNull(controller.getIdentity(), "Identity must be loaded when relay is enabled");
         RelayClient rc = controller.getRelayClient();
-        assertNotNull(rc, "RelayClient must be non-null when relayEnabled=true and relayUrl is set");
+        assertNotNull(rc, "RelayClient must be non-null when relayEnabled=true, relayUrl is set and a token exists");
 
         controller.stop();
         assertNull(controller.getRelayClient(), "RelayClient must be null after stop()");

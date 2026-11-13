@@ -74,12 +74,6 @@ class HeatmapCell {
   int get minimumBlockZ => z * 16;
   int get maximumBlockX => (x + sizeChunks) * 16 - 1;
   int get maximumBlockZ => (z + sizeChunks) * 16 - 1;
-
-  bool containsChunk(int chunkX, int chunkZ) =>
-      chunkX >= x &&
-      chunkX <= maximumChunkX &&
-      chunkZ >= z &&
-      chunkZ <= maximumChunkZ;
 }
 
 class HeatmapSummary {
@@ -177,13 +171,6 @@ class HeatmapGrid {
   HeatmapCell? cellAtOrigin(int chunkX, int chunkZ) {
     for (final HeatmapCell cell in cells) {
       if (cell.x == chunkX && cell.z == chunkZ) return cell;
-    }
-    return null;
-  }
-
-  HeatmapCell? cellContaining(int chunkX, int chunkZ) {
-    for (final HeatmapCell cell in cells) {
-      if (cell.containsChunk(chunkX, chunkZ)) return cell;
     }
     return null;
   }

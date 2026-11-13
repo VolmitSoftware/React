@@ -80,18 +80,17 @@ void main() {
       expect(r.worstTps, equals(20.0));
       expect(r.totalPlayers, equals(15));
       expect(r.worstMspt, isNull);
-      expect(r.compositeHealth, equals(100));
       expect(r.servers[0].health, equals(FleetHealth.healthy));
       expect(r.servers[1].health, equals(FleetHealth.healthy));
       expect(r.needsAttention, isEmpty);
     });
 
-    test('one server tps 10 (critical) one tps 20 (healthy)', () {
+    test('one server tps 9 (critical) one tps 20 (healthy)', () {
       final List<FleetServerLive> servers = <FleetServerLive>[
         _liveServer(
           'a',
           'Alpha',
-          samplers: <String, double>{'ticks-per-second': 10.0},
+          samplers: <String, double>{'ticks-per-second': 9.0},
         ),
         _liveServer(
           'b',
@@ -105,9 +104,8 @@ void main() {
         openAlerts: const <FleetAlert>[],
       );
 
-      expect(r.meanTps, equals(15.0));
-      expect(r.worstTps, equals(10.0));
-      expect(r.compositeHealth, equals(75));
+      expect(r.meanTps, equals(14.5));
+      expect(r.worstTps, equals(9.0));
       expect(r.servers[0].health, equals(FleetHealth.critical));
       expect(r.servers[1].health, equals(FleetHealth.healthy));
       expect(r.needsAttention.length, equals(1));
@@ -150,7 +148,6 @@ void main() {
       expect(r.worstTps, equals(20.0));
       expect(r.worstMspt, equals(10.0));
       expect(r.totalPlayers, equals(5));
-      expect(r.compositeHealth, equals(100));
       expect(
         r.needsAttention.any((FleetServerHealth s) => s.id == 'b'),
         isTrue,
@@ -181,7 +178,6 @@ void main() {
       expect(r.worstTps, isNull);
       expect(r.worstMspt, isNull);
       expect(r.totalPlayers, isNull);
-      expect(r.compositeHealth, isNull);
       expect(r.needsAttention, hasLength(2));
     });
 
@@ -239,10 +235,8 @@ void main() {
       expect(r.alertCounts[AlertSeverity.warning], equals(1));
       expect(r.alertCounts[AlertSeverity.info], equals(0));
       expect(r.servers[0].alertCount, equals(2));
-      expect(
-        r.needsAttention.any((FleetServerHealth s) => s.id == 'a'),
-        isTrue,
-      );
+      // Healthy readings: open alerts alone do not list a server.
+      expect(r.needsAttention, isEmpty);
     });
 
     test(
@@ -252,8 +246,6 @@ void main() {
           servers: const <FleetServerLive>[],
           openAlerts: const <FleetAlert>[],
         );
-
-        expect(r.compositeHealth, isNull);
         expect(r.meanTps, isNull);
         expect(r.needsAttention, isEmpty);
         expect(r.alertCounts[AlertSeverity.critical], equals(0));

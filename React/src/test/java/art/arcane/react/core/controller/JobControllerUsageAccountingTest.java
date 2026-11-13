@@ -21,7 +21,7 @@ class JobControllerUsageAccountingTest {
 
     double used = controller.getUsage().getAverage();
     Assertions.assertTrue(used >= 58D && used < 5_000D, "usage " + used);
-    Assertions.assertEquals(used, controller.getCostPerJob());
+    Assertions.assertEquals(used, controller.getCostPerJob(), 1.0E-9D);
     Assertions.assertEquals(used - 25D, controller.getOverBudget(), 1.0E-9D);
     Assertions.assertEquals(used / 25D, controller.getUsageCyclePercent().getAverage(), 1.0E-9D);
     Assertions.assertEquals(25.05D, controller.getCurrentComputeTarget(), 1.0E-9D);

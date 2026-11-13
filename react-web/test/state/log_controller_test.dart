@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:test/test.dart';
 
+import 'package:react_web/model/log_line.dart';
 import 'package:react_web/service/react_client.dart';
 import 'package:react_web/service/react_log_socket.dart';
 import 'package:react_web/state/log_controller.dart';
@@ -22,13 +23,14 @@ class _FakeLogClient implements ILogClient {
 }
 
 class _FakeLogSocket implements ILogSocket {
-  final StreamController<String> _ctrl = StreamController<String>.broadcast();
+  final StreamController<LogBatch> _ctrl =
+      StreamController<LogBatch>.broadcast();
   bool closed = false;
 
   @override
-  Stream<String> get lines => _ctrl.stream;
+  Stream<LogBatch> get batches => _ctrl.stream;
 
-  void add(String line) => _ctrl.add(line);
+  void add(String line) => _ctrl.add(LogBatch(<LogLine>[LogLine(line)]));
 
   @override
   Future<void> close() async {
@@ -38,34 +40,28 @@ class _FakeLogSocket implements ILogSocket {
 }
 
 void main() {
-  test(
-    'batches a burst while retaining bounded ordered lines and filter results',
-    () async {
-      final _FakeLogSocket socket = _FakeLogSocket();
-      int notifications = 0;
-      final LogController controller = LogController(
-        _FakeLogClient(),
-        socket: socket,
-        onChange: () => notifications++,
-      );
-      controller.start();
-      for (int index = 0; index < 1200; index++) {
-        socket.add('[INFO] $index');
-      }
-      await Future<void>.delayed(Duration.zero);
-      expect(controller.visible.length, LogController.maxLines);
-      expect(controller.visible.first, '[INFO] 200');
-      expect(controller.visible.last, '[INFO] 1199');
-      expect(notifications, 0);
-      await Future<void>.delayed(const Duration(milliseconds: 70));
-      expect(notifications, 1);
-      final List<String> cached = controller.visible;
-      expect(identical(controller.visible, cached), isTrue);
-      controller.setLevelFilter('ERROR');
-      expect(controller.visible, isEmpty);
-      controller.dispose();
-    },
-  );
+  test('batches a burst while retaining bounded ordered lines', () async {
+    final _FakeLogSocket socket = _FakeLogSocket();
+    int notifications = 0;
+    final LogController controller = LogController(
+      _FakeLogClient(),
+      socket: socket,
+    )..addListener(() => notifications++);
+    controller.start();
+    for (int index = 0; index < 1200; index++) {
+      socket.add('[INFO] $index');
+    }
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.lines.length, LogController.maxLines);
+    expect(controller.lines.first, '[INFO] 200');
+    expect(controller.lines.last, '[INFO] 1199');
+    expect(notifications, 0);
+    await Future<void>.delayed(const Duration(milliseconds: 70));
+    expect(notifications, 1);
+    final List<String> cached = controller.lines;
+    expect(identical(controller.lines, cached), isTrue);
+    controller.dispose();
+  });
 
   test('disposing cancels scheduled rendering', () async {
     final _FakeLogSocket socket = _FakeLogSocket();
@@ -73,8 +69,7 @@ void main() {
     final LogController controller = LogController(
       _FakeLogClient(),
       socket: socket,
-      onChange: () => notifications++,
-    );
+    )..addListener(() => notifications++);
     controller.start();
     socket.add('[INFO] last');
     await Future<void>.delayed(Duration.zero);
@@ -93,7 +88,7 @@ void main() {
 
         await ctrl.load();
 
-        expect(ctrl.visible, equals(seed));
+        expect(ctrl.lines, equals(seed));
       },
     );
 
@@ -106,30 +101,42 @@ void main() {
       expect(ctrl.loading, isFalse);
     });
 
-    test('notifies onChange at least once on success', () async {
+    test('notifies listeners at least once on success', () async {
       final _FakeLogClient client = _FakeLogClient(
         result: <String>['[INFO] hello'],
       );
       int count = 0;
-      final LogController ctrl = LogController(client, onChange: () => count++);
+      final LogController ctrl = LogController(client)
+        ..addListener(() => count++);
 
       await ctrl.load();
 
       expect(count, greaterThanOrEqualTo(1));
     });
 
-    test('calls onError when client throws', () async {
+    test('keeps the error when the first load fails', () async {
       final _FakeLogClient client = _FakeLogClient(shouldThrow: true);
-      Object? caught;
-      final LogController ctrl = LogController(
-        client,
-        onError: (Object e) => caught = e,
-      );
+      final LogController ctrl = LogController(client);
 
       await ctrl.load();
 
-      expect(caught, isNotNull);
-      expect(ctrl.visible, isEmpty);
+      expect(ctrl.error, isNotNull);
+      expect(ctrl.lines, isEmpty);
+    });
+
+    test('clears the error once a load succeeds', () async {
+      final _FakeLogClient client = _FakeLogClient(shouldThrow: true);
+      final LogController ctrl = LogController(client);
+      await ctrl.load();
+      expect(ctrl.error, isNotNull);
+
+      client
+        ..shouldThrow = false
+        ..result = <String>['[INFO] back'];
+      await ctrl.load();
+
+      expect(ctrl.error, isNull);
+      expect(ctrl.lines, <String>['[INFO] back']);
     });
 
     test('replaces buffer on second load call', () async {
@@ -142,7 +149,7 @@ void main() {
 
       await ctrl.load();
 
-      expect(ctrl.visible, equals(<String>['second load']));
+      expect(ctrl.lines, equals(<String>['second load']));
     });
   });
 
@@ -157,10 +164,10 @@ void main() {
       socket.add('[INFO] live line');
       await Future<void>.delayed(Duration.zero);
 
-      expect(ctrl.visible, contains('[INFO] live line'));
+      expect(ctrl.lines, contains('[INFO] live line'));
     });
 
-    test('paused: line added during pause is NOT appended', () async {
+    test('paused: line added during pause is held, not shown', () async {
       final _FakeLogClient client = _FakeLogClient(
         result: <String>['[INFO] seed'],
       );
@@ -170,14 +177,15 @@ void main() {
       ctrl.start();
       ctrl.setPaused(true);
 
-      socket.add('[WARN] dropped');
+      socket.add('[WARN] held');
       await Future<void>.delayed(Duration.zero);
 
-      expect(ctrl.visible, isNot(contains('[WARN] dropped')));
-      expect(ctrl.visible.length, equals(1));
+      expect(ctrl.lines, isNot(contains('[WARN] held')));
+      expect(ctrl.lines.length, equals(1));
+      expect(ctrl.heldCount, equals(1));
     });
 
-    test('resumed: line after resume is appended', () async {
+    test('resumed: held lines show in order before newer ones', () async {
       final _FakeLogClient client = _FakeLogClient(
         result: <String>['[INFO] seed'],
       );
@@ -187,14 +195,18 @@ void main() {
       ctrl.start();
       ctrl.setPaused(true);
 
-      socket.add('[WARN] dropped');
+      socket.add('[WARN] held');
       await Future<void>.delayed(Duration.zero);
       ctrl.setPaused(false);
       socket.add('[INFO] after resume');
       await Future<void>.delayed(Duration.zero);
 
-      expect(ctrl.visible, contains('[INFO] after resume'));
-      expect(ctrl.visible, isNot(contains('[WARN] dropped')));
+      expect(ctrl.lines, <String>[
+        '[INFO] seed',
+        '[WARN] held',
+        '[INFO] after resume',
+      ]);
+      expect(ctrl.heldCount, equals(0));
     });
   });
 
@@ -208,70 +220,20 @@ void main() {
 
       ctrl.clear();
 
-      expect(ctrl.visible, isEmpty);
+      expect(ctrl.lines, isEmpty);
     });
 
-    test('calls onChange after clear', () async {
+    test('notifies listeners after clear', () async {
       final _FakeLogClient client = _FakeLogClient(result: <String>['x']);
       int count = 0;
-      final LogController ctrl = LogController(client, onChange: () => count++);
+      final LogController ctrl = LogController(client)
+        ..addListener(() => count++);
       await ctrl.load();
       count = 0;
 
       ctrl.clear();
 
       expect(count, greaterThanOrEqualTo(1));
-    });
-  });
-
-  group('LogController.setLevelFilter', () {
-    test('ERROR filter returns only ERROR lines', () async {
-      final _FakeLogClient client = _FakeLogClient(
-        result: <String>['[INFO] a', '[ERROR] b', '[WARN] c'],
-      );
-      final LogController ctrl = LogController(client);
-      await ctrl.load();
-
-      ctrl.setLevelFilter('ERROR');
-
-      expect(ctrl.visible, equals(<String>['[ERROR] b']));
-    });
-
-    test('ALL filter restores all lines', () async {
-      final _FakeLogClient client = _FakeLogClient(
-        result: <String>['[INFO] a', '[ERROR] b', '[WARN] c'],
-      );
-      final LogController ctrl = LogController(client);
-      await ctrl.load();
-      ctrl.setLevelFilter('ERROR');
-
-      ctrl.setLevelFilter('ALL');
-
-      expect(ctrl.visible.length, equals(3));
-    });
-
-    test('INFO filter returns only INFO lines', () async {
-      final _FakeLogClient client = _FakeLogClient(
-        result: <String>['[INFO] a', '[ERROR] b', '[INFO] c'],
-      );
-      final LogController ctrl = LogController(client);
-      await ctrl.load();
-
-      ctrl.setLevelFilter('INFO');
-
-      expect(ctrl.visible, equals(<String>['[INFO] a', '[INFO] c']));
-    });
-
-    test('WARN filter returns only WARN lines', () async {
-      final _FakeLogClient client = _FakeLogClient(
-        result: <String>['[INFO] a', '[WARN] b', '[ERROR] c'],
-      );
-      final LogController ctrl = LogController(client);
-      await ctrl.load();
-
-      ctrl.setLevelFilter('WARN');
-
-      expect(ctrl.visible, equals(<String>['[WARN] b']));
     });
   });
 
@@ -286,7 +248,7 @@ void main() {
 
       await ctrl.load();
 
-      expect(ctrl.visible.length, equals(1000));
+      expect(ctrl.lines.length, equals(1000));
     });
 
     test('oldest lines dropped when buffer overflows', () async {
@@ -298,8 +260,8 @@ void main() {
       final LogController ctrl = LogController(client);
       await ctrl.load();
 
-      expect(ctrl.visible.first, equals('[INFO] line 100'));
-      expect(ctrl.visible.last, equals('[INFO] line 1099'));
+      expect(ctrl.lines.first, equals('[INFO] line 100'));
+      expect(ctrl.lines.last, equals('[INFO] line 1099'));
     });
   });
 

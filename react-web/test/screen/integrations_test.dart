@@ -1,18 +1,16 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr_router/jaspr_router.dart';
+import 'package:react_web/theme/reactor_stylesheet.dart';
 import 'package:jaspr_test/server_test.dart';
 
-import 'package:react_web/app/reactor_app.dart';
 import 'package:react_web/model/sampler_sample.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/screen/integrations.dart';
 import 'package:react_web/state/connection_manager.dart';
 import 'package:react_web/state/server_scope.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+const ReactorStylesheet _sheet = ReactorStylesheet();
 
 SamplerSample _sample(
   String id,
@@ -123,8 +121,7 @@ void main() {
       expect(
         res.body.contains('Adapt'),
         isTrue,
-        reason:
-            'Adapt section heading must appear when adapt-* samplers are present',
+        reason: 'Adapt section heading must appear when adapt-* samplers are present',
       );
     });
 
@@ -158,8 +155,7 @@ void main() {
         expect(
           res.body.contains('Wormholes'),
           isTrue,
-          reason:
-              'Wormholes section heading must appear when wormholes-* samplers are present',
+          reason: 'Wormholes section heading must appear when wormholes-* samplers are present',
         );
       },
     );
@@ -194,8 +190,7 @@ void main() {
       expect(
         hasValue,
         isTrue,
-        reason:
-            'at least one integration sampler value must appear in rendered HTML',
+        reason: 'at least one integration sampler value must appear in rendered HTML',
       );
     });
   });
@@ -212,8 +207,7 @@ void main() {
         expect(
           res.body.contains('No integrations detected'),
           isTrue,
-          reason:
-              'empty-state title must appear when no integration samplers are in the snapshot',
+          reason: 'empty-state title must appear when no integration samplers are in the snapshot',
         );
         expect(
           res.body.contains(
@@ -225,47 +219,27 @@ void main() {
       },
     );
 
-    testServer('does NOT render Adapt section when no adapt-* samplers present', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrapWith(const IntegrationsScreen(), _fakeSnapshotNoIntegrations()),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      // The empty-state description contains the word "Adapt", so we check for
-      // Adapt-section-specific tile content instead of the bare word.
-      expect(
-        res.body.contains('World Policy Latency'),
-        isFalse,
-        reason:
-            'Adapt section tile labels must NOT appear when no adapt-* samplers are in the snapshot',
-      );
-      expect(
-        res.body.contains('Ability Checks Per Tick'),
-        isFalse,
-        reason:
-            'Adapt section tile labels must NOT appear when no adapt-* samplers are in the snapshot',
-      );
-    });
-  });
-
-  group('IntegrationsScreen route wiring', () {
-    test('kRouteServerIntegrations constant has correct path', () {
-      expect(kRouteServerIntegrations, equals('/server/:id/integrations'));
-    });
-
-    test('buildReactorRoutes includes server integrations route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasIntegrations = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerIntegrations,
-      );
-      expect(
-        hasIntegrations,
-        isTrue,
-        reason:
-            'per-server Integrations tab requires /server/:id/integrations route',
-      );
-    });
+    testServer(
+      'does NOT render Adapt section when no adapt-* samplers present',
+      (ServerTester tester) async {
+        tester.pumpComponent(
+          _wrapWith(const IntegrationsScreen(), _fakeSnapshotNoIntegrations()),
+        );
+        final DocumentResponse res = await tester.request('/');
+        expect(res.statusCode, equals(200));
+        // The empty-state description contains the word "Adapt", so we check for
+        // Adapt-section-specific tile content instead of the bare word.
+        expect(
+          res.body.contains('World Policy Latency'),
+          isFalse,
+          reason: 'Adapt section tile labels must NOT appear when no adapt-* samplers are in the snapshot',
+        );
+        expect(
+          res.body.contains('Ability Checks Per Tick'),
+          isFalse,
+          reason: 'Adapt section tile labels must NOT appear when no adapt-* samplers are in the snapshot',
+        );
+      },
+    );
   });
 }

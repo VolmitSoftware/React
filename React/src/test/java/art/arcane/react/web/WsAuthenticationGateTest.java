@@ -15,11 +15,11 @@ class WsAuthenticationGateTest {
   @Test
   void exactFirstFrameAuthenticatesRequiredScope() {
     AtomicReference<String> closeReason = new AtomicReference<>();
-    WebSocketSessions sessions = new WebSocketSessions();
+    WebSocketSessions<OpenChannel> sessions = new WebSocketSessions<>();
     WsAuthenticationGate gate = new WsAuthenticationGate(
         4,
         5000L,
-        (token, scope) -> token.equals("bearer") && scope.equals("read")
+        (token, scope) -> token.equals("bearer") && scope.equals("read") ? null : "unauthorized"
     );
 
     Assertions.assertTrue(gate.register(
@@ -41,12 +41,25 @@ class WsAuthenticationGateTest {
   }
 
   @Test
+  void authenticatedSessionsAreBoundToTheirTokenId() {
+    WebSocketSessions<OpenChannel> sessions = new WebSocketSessions<>();
+    WsAuthenticationGate gate = new WsAuthenticationGate(4, 5000L, (token, scope) -> null);
+    gate.register(new OpenChannel("required"), reason -> { }, "read", sessions);
+    gate.authenticate("required", "{\"type\":\"auth\",\"token\":\"rct-abc.sig\"}", sessions, reason -> { });
+    sessions.add(new OpenChannel("optional"));
+    gate.authenticateOptional("optional", "{\"type\":\"auth\",\"token\":\"rct-abc.sig\"}", "read", sessions, reason -> { });
+
+    Assertions.assertEquals(2, sessions.closeToken("rct-abc", 4401, "Token revoked"));
+    Assertions.assertEquals(0, sessions.size());
+  }
+
+  @Test
   void malformedInvalidAndRepeatedAuthenticationAreRejected() {
-    WebSocketSessions sessions = new WebSocketSessions();
+    WebSocketSessions<OpenChannel> sessions = new WebSocketSessions<>();
     WsAuthenticationGate gate = new WsAuthenticationGate(
         4,
         5000L,
-        (token, scope) -> token.equals("bearer")
+        (token, scope) -> token.equals("bearer") ? null : "unauthorized"
     );
     AtomicReference<String> malformedReason = new AtomicReference<>();
     gate.register(new OpenChannel("malformed"), malformedReason::set, "read", sessions);
@@ -91,11 +104,11 @@ class WsAuthenticationGateTest {
     int maximumPending = 2048;
     AtomicLong clock = new AtomicLong(0L);
     AtomicInteger closes = new AtomicInteger();
-    WebSocketSessions sessions = new WebSocketSessions();
+    WebSocketSessions<OpenChannel> sessions = new WebSocketSessions<>();
     WsAuthenticationGate gate = new WsAuthenticationGate(
         maximumPending,
         5000L,
-        (token, scope) -> true,
+        (token, scope) -> null,
         clock::get
     );
 
@@ -125,12 +138,12 @@ class WsAuthenticationGateTest {
   @Test
   void optionalReadAuthenticationAcceptsOneValidClientFrame() {
     AtomicReference<String> closeReason = new AtomicReference<>();
-    WebSocketSessions sessions = new WebSocketSessions();
+    WebSocketSessions<OpenChannel> sessions = new WebSocketSessions<>();
     sessions.add(new OpenChannel("optional"));
     WsAuthenticationGate gate = new WsAuthenticationGate(
         4,
         5000L,
-        (token, scope) -> token.equals("bearer") && scope.equals("read")
+        (token, scope) -> token.equals("bearer") && scope.equals("read") ? null : "unauthorized"
     );
 
     Assertions.assertTrue(gate.authenticateOptional(
@@ -172,7 +185,11 @@ class WsAuthenticationGateTest {
     }
 
     @Override
-    public void send(String text) {
+    public void ping() {
+    }
+
+    @Override
+    public void close(int code, String reason) {
     }
   }
 }

@@ -6,29 +6,45 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.SimpleFormatter;
+import java.util.regex.Pattern;
 
 public class RingLogHandler extends Handler {
+    /** Console colour and cursor codes (ANSI CSI sequences); the web shows plain text. */
+    private static final Pattern TERMINAL_CODES = Pattern.compile("\u001B\\[[0-?]*[ -/]*[@-~]");
+    /**
+     * A pairing link's code. The console shows the link to whoever ran the command, as the Animus editor does; the web
+     * console must not, since a token that may read the console could redeem a stronger link first.
+     */
+    private static final Pattern PAIRING_CODES = Pattern.compile("RCT3\\.[A-Za-z0-9_-]+");
 
-    private static final int DEFAULT_CAPACITY = 256;
+    public static final int DEFAULT_CAPACITY = 1000;
 
     private final int capacity;
-    private final ArrayDeque<String> ring;
+    private final ArrayDeque<LogLine> ring;
     private final ReentrantLock lock;
-    private volatile Consumer<String> lineListener;
+    private final AtomicLong sequence;
+    private volatile Consumer<LogLine> lineListener;
 
     public RingLogHandler() {
         this(DEFAULT_CAPACITY);
     }
 
     public RingLogHandler(int capacity) {
+        this(capacity, new AtomicLong());
+    }
+
+    /** {@code sequence} may outlive this handler so line numbers keep rising across listener restarts. */
+    public RingLogHandler(int capacity, AtomicLong sequence) {
         this.capacity = capacity;
         this.ring = new ArrayDeque<>(capacity);
         this.lock = new ReentrantLock();
+        this.sequence = sequence;
         this.lineListener = null;
         setFormatter(new SimpleFormatter());
     }
@@ -46,23 +62,25 @@ public class RingLogHandler extends Handler {
     public void publishExternal(String level, String message, Throwable thrown) {
         String normalizedLevel = level == null || level.isBlank() ? "INFO" : level;
         List<String> lines = formatLines(normalizedLevel, message, thrown);
-        for (String line : lines) {
-            lock.lock();
-            try {
+        lock.lock();
+        try {
+            Consumer<LogLine> listener = lineListener;
+            for (String text : lines) {
+                LogLine line = new LogLine(sequence.incrementAndGet(), text);
                 while (ring.size() >= capacity) {
                     ring.pollFirst();
                 }
                 ring.addLast(line);
-            } finally {
-                lock.unlock();
-            }
-            Consumer<String> listener = lineListener;
-            if (listener != null) {
-                try {
-                    listener.accept(line);
-                } catch (Exception ignored) {
+                // Listeners only enqueue; running them under the lock keeps sequence order across threads.
+                if (listener != null) {
+                    try {
+                        listener.accept(line);
+                    } catch (Exception ignored) {
+                    }
                 }
             }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -83,7 +101,7 @@ public class RingLogHandler extends Handler {
         String prefix = "[" + level + "] ";
         List<String> lines = new ArrayList<>(rawLines.size());
         for (String rawLine : rawLines) {
-            lines.add(prefix + rawLine);
+            lines.add(prefix + PAIRING_CODES.matcher(TERMINAL_CODES.matcher(rawLine).replaceAll("")).replaceAll("RCT3.(hidden)"));
         }
         return lines;
     }
@@ -98,28 +116,37 @@ public class RingLogHandler extends Handler {
     }
 
     public List<String> recent(int n) {
-        if (n <= 0) {
-            return new ArrayList<>();
-        }
+        return tail(n).lines();
+    }
+
+    public Tail tail(int n) {
         lock.lock();
         try {
+            LogLine newest = ring.peekLast();
+            long lastSeq = newest == null ? sequence.get() : newest.seq();
+            if (n <= 0) {
+                return new Tail(new ArrayList<>(), lastSeq);
+            }
             int size = ring.size();
             int skip = Math.max(0, size - n);
             List<String> result = new ArrayList<>(Math.min(n, size));
             int index = 0;
-            for (String entry : ring) {
+            for (LogLine entry : ring) {
                 if (index >= skip) {
-                    result.add(entry);
+                    result.add(entry.text());
                 }
                 index++;
             }
-            return result;
+            return new Tail(result, lastSeq);
         } finally {
             lock.unlock();
         }
     }
 
-    public void setLineListener(Consumer<String> listener) {
+    public record Tail(List<String> lines, long lastSeq) {
+    }
+
+    public void setLineListener(Consumer<LogLine> listener) {
         this.lineListener = listener;
     }
 

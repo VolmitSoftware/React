@@ -157,8 +157,8 @@ class WebControllerLifecycleTest {
                 asyncController.resolveDirectUrl()
             );
             assertPing(asyncController.getBoundPort());
-            Assertions.assertTrue(asyncController.getTokenStore().all().isEmpty());
-            Assertions.assertFalse(asyncController.tokensFile().exists());
+            Assertions.assertTrue(asyncController.getTokens().list().isEmpty());
+            Assertions.assertFalse(new File(dataFolder, art.arcane.react.api.web.pairing.WebTokens.FILE).exists());
         }
     }
 
@@ -348,7 +348,6 @@ class WebControllerLifecycleTest {
         @Override
         protected IdentityDto resolveIdentity() {
             IdentityDto identity = new IdentityDto();
-            identity.version = "lifecycle-test";
             identity.serverName = "LifecycleTest";
             identity.folia = false;
             identity.serverId = "127.0.0.1:0";

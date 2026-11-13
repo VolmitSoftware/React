@@ -2,11 +2,7 @@ package art.arcane.react.web;
 
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.ConsoleCommandDispatcher;
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebConfiguration;
-import art.arcane.react.api.web.WebSecret;
 import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.WebController;
@@ -46,28 +42,8 @@ public class ConsoleRoutesIntegrationTest {
 
     @Test
     void consoleExecuteRequiresAdminScopeAndMonotonicCounter(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord adminRecord = new TokenRecord(
-            "tok-console-admin-route",
-            "admin-device",
-            1000L,
-            Set.of("read", "op:execute", "admin"),
-            "admin"
-        );
-        TokenRecord operatorRecord = new TokenRecord(
-            "tok-console-op-route",
-            "operator-device",
-            1000L,
-            Set.of("read", "op:execute"),
-            "operator"
-        );
-        String adminBearer = bearer(secret, adminRecord);
-        String operatorBearer = bearer(secret, operatorRecord);
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(adminRecord);
-        store.add(operatorRecord);
-        store.save(tokensFile);
+        String adminBearer = WebTestTokens.issue(dataFolder, "admin-device", "admin");
+        String operatorBearer = WebTestTokens.issue(dataFolder, "operator-device", "operator");
 
         WebConfiguration config = new WebConfiguration();
         config.setListenerEnabled(true);
@@ -127,7 +103,6 @@ public class ConsoleRoutesIntegrationTest {
             @Override
             protected IdentityDto resolveIdentity() {
                 IdentityDto dto = new IdentityDto();
-                dto.version = "9.9.9-test";
                 dto.serverName = "TestBrand";
                 dto.folia = false;
                 dto.serverId = "127.0.0.1:0";
@@ -168,7 +143,4 @@ public class ConsoleRoutesIntegrationTest {
         );
     }
 
-    private static String bearer(byte[] secret, TokenRecord record) {
-        return PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
-    }
 }

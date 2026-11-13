@@ -1,3 +1,5 @@
+/// Plugins > Integrations: the live numbers Volmit plugins report through
+/// React, one group of tiles per plugin.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
@@ -5,12 +7,15 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
+import '../model/units.dart';
 import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/section_card.dart' show statGrid;
+import '../ui/kit/metric_tile.dart';
+import '../ui/kit/page.dart';
+import '../ui/kit/section.dart';
+import '../ui/kit/states.dart';
 import '../widget/server_snapshot_state.dart';
-import '../widget/stat_tile.dart';
+import 'monitor_parts.dart';
 
 const Map<String, String> _kIntegrations = <String, String>{
   'adapt-': 'Adapt',
@@ -22,6 +27,8 @@ const Map<String, String> _kIntegrations = <String, String>{
   'wormholes-': 'Wormholes',
 };
 
+/// The available samplers of each detected plugin, by plugin name, sorted
+/// by sampler name; plugins without a reading are left out.
 Map<String, List<SamplerSample>> availableIntegrationSamples(
   ServerSnapshot snapshot,
 ) {
@@ -40,12 +47,22 @@ Map<String, List<SamplerSample>> availableIntegrationSamples(
     }
   }
   samples.removeWhere((String name, List<SamplerSample> values) {
-    values.sort((SamplerSample left, SamplerSample right) {
-      return left.name.compareTo(right.name);
-    });
+    values.sort(
+      (SamplerSample left, SamplerSample right) =>
+          left.name.compareTo(right.name),
+    );
     return values.isEmpty;
   });
   return samples;
+}
+
+/// [name] without a leading [plugin] ("Iris Pregen Queue" under Iris reads
+/// "Pregen Queue").
+String withoutPluginName(String name, String plugin) {
+  final String prefix = '${plugin.toLowerCase()} ';
+  return name.toLowerCase().startsWith(prefix) && name.length > prefix.length
+      ? name.substring(prefix.length)
+      : name;
 }
 
 class IntegrationsScreen extends StatelessWidget {
@@ -56,45 +73,37 @@ class IntegrationsScreen extends StatelessWidget {
     dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    final Widget? statePage = serverSnapshotStatePage(
-      scope: scope,
-      title: reactorText(ReactorText.integrationsTitle),
-      subtitle: reactorText(ReactorText.integrationsSubtitle),
-    );
-    if (snapshot == null) return statePage!;
-
+    if (snapshot == null) return serverSnapshotState(scope: scope);
     final Map<String, List<SamplerSample>> samples =
         availableIntegrationSamples(snapshot);
     if (samples.isEmpty) {
-      return ReactorPage(
-        title: reactorText(ReactorText.integrationsTitle),
-        subtitle: reactorText(ReactorText.integrationsSubtitle),
-        children: <Widget>[
-          ReactorEmptyState(
-            title: reactorText(ReactorText.integrationsNone),
-            description: reactorText(ReactorText.integrationsNoneDescription),
-          ),
-        ],
+      return EmptyState(
+        message: reactorText(ReactorText.integrationsNone),
+        description: reactorText(ReactorText.integrationsNoneDescription),
       );
     }
-
-    return ReactorPage(
-      title: reactorText(ReactorText.integrationsTitle),
-      subtitle: reactorText(ReactorText.integrationsSubtitle),
-      children: samples.entries.map(_integrationSection).toList(),
-    );
-  }
-
-  Widget _integrationSection(
-    MapEntry<String, List<SamplerSample>> integration,
-  ) {
-    return SectionPanel(
-      label: integration.key,
-      child: statGrid(
-        integration.value.map((SamplerSample sample) {
-          return StatTile(label: sample.name, sample: sample);
-        }).toList(),
-      ),
+    return PageStack(
+      children: <Widget>[
+        for (final MapEntry<String, List<SamplerSample>> plugin
+            in samples.entries)
+          PageSection(
+            title: plugin.key,
+            children: <Widget>[
+              MetricGrid(
+                children: <Widget>[
+                  for (final SamplerSample sample in plugin.value)
+                    samplerTile(
+                      labelWithoutUnit(
+                        withoutPluginName(sample.name, plugin.key),
+                        sample.suffix,
+                      ),
+                      sample,
+                    ),
+                ],
+              ),
+            ],
+          ),
+      ],
     );
   }
 }

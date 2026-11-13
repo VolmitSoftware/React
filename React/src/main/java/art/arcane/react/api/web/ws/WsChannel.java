@@ -5,5 +5,7 @@ public interface WsChannel {
 
   boolean isOpen();
 
-  void send(String text);
+  void ping();
+
+  void close(int code, String reason);
 }

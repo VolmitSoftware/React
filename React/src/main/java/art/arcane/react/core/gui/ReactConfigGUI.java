@@ -23,6 +23,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.action.Action;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.web.WebRevisions;
 import art.arcane.react.api.tweak.Tweak;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ConfigInputController;
@@ -354,6 +355,7 @@ public final class ReactConfigGUI {
       }
 
       target.afterReload().run();
+      WebRevisions.bumpForConfigPath(path);
       if (actor != null) {
         ReactLanguage.send(
             actor,

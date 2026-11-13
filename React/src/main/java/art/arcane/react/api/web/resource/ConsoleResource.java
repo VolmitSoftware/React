@@ -2,7 +2,7 @@ package art.arcane.react.api.web.resource;
 
 import art.arcane.react.api.web.AuditLog;
 import art.arcane.react.api.web.ConsoleCommandDispatcher;
-import art.arcane.react.api.web.PairingToken;
+import art.arcane.react.api.web.pairing.WebToken;
 import art.arcane.react.api.web.WebAuth;
 import art.arcane.react.api.web.WebMutation;
 import art.arcane.react.api.web.WebMutationReporter;
@@ -82,8 +82,8 @@ public final class ConsoleResource {
     }
 
     private static String resolveActor(Context ctx) {
-        PairingToken token = ctx.attribute("token");
-        return token == null ? "web" : "web:" + token.tokenId();
+        WebToken token = ctx.attribute("token");
+        return token == null ? "web" : "web:" + token.id();
     }
 
     private static String auditDetail(String command) {

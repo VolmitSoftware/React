@@ -2,11 +2,7 @@ package art.arcane.react.web;
 
 import art.arcane.react.api.rendering.Graph;
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebConfiguration;
-import art.arcane.react.api.web.WebSecret;
 import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.core.controller.IntegrationController.Health;
@@ -40,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -72,7 +69,6 @@ public class WebControllerIntegrationTest {
             @Override
             protected IdentityDto resolveIdentity() {
                 IdentityDto dto = new IdentityDto();
-                dto.version = "9.9.9-test";
                 dto.serverName = "TestBrand";
                 dto.folia = true;
                 dto.serverId = "127.0.0.1:0";
@@ -104,13 +100,7 @@ public class WebControllerIntegrationTest {
 
     @Test
     void webControllerServesRoutesWithAuth(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord record = new TokenRecord("tok-web-1", "test-device", 1000L, Set.of("read"), "viewer");
-        String bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
-        File tokens = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokens);
-        store.add(record);
-        store.save(tokens);
+        String bearer = WebTestTokens.issue(dataFolder, "test-device", "viewer");
 
         FakeSampler s1 = new FakeSampler("wc-tick-time", 42.0, "ms", new double[]{40.0, 41.0, 42.0});
         FakeSampler s2 = new FakeSampler("wc-tps", 20.0, "", new double[]{20.0, 20.0, 20.0});
@@ -181,11 +171,10 @@ public class WebControllerIntegrationTest {
         assertEquals(200, identityResponse.statusCode());
         JsonObject identityData = JsonParser.parseString(identityResponse.body())
             .getAsJsonObject().getAsJsonObject("data");
-        assertTrue(identityData.has("version"), "identity.data should carry version");
+        assertFalse(identityData.has("version"), "identity.data never carries React's version");
         assertTrue(identityData.has("serverName"), "identity.data should carry serverName");
         assertTrue(identityData.has("folia"), "identity.data should carry folia");
         assertTrue(identityData.has("serverId"), "identity.data should carry serverId");
-        assertEquals("9.9.9-test", identityData.get("version").getAsString());
         assertEquals("TestBrand", identityData.get("serverName").getAsString());
 
         HttpRequest metricsRequest = HttpRequest.newBuilder()
@@ -320,18 +309,12 @@ public class WebControllerIntegrationTest {
             "Identity should gate on requireTokenForReads identically to the other read routes");
         JsonObject identityData = JsonParser.parseString(identityResponse.body())
             .getAsJsonObject().getAsJsonObject("data");
-        assertTrue(identityData.has("version"), "identity.data should carry version");
+        assertTrue(identityData.has("serverName"), "identity.data should carry serverName");
     }
 
     @Test
     void webControllerServesIntegrationRouteWithAuth(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord record = new TokenRecord("tok-int-1", "test-device", 1000L, Set.of("read"), "viewer");
-        String bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
-        File tokens = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokens);
-        store.add(record);
-        store.save(tokens);
+        String bearer = WebTestTokens.issue(dataFolder, "test-device", "viewer");
 
         IntegrationController mockIc = mock(IntegrationController.class);
         when(mockIc.statuses()).thenReturn(List.of(
@@ -403,13 +386,7 @@ public class WebControllerIntegrationTest {
 
     @Test
     void errorResponsesUseErrorEnvelope(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord record = new TokenRecord("tok-err-1", "test-device", 1000L, Set.of("read"), "viewer");
-        String bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
-        File tokens = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokens);
-        store.add(record);
-        store.save(tokens);
+        String bearer = WebTestTokens.issue(dataFolder, "test-device", "viewer");
 
         SampleController sampleController = mock(SampleController.class);
         @SuppressWarnings("unchecked")

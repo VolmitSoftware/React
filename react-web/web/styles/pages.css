@@ -1,0 +1,63 @@
+/* Page parts that are not kit components: a list row's name, filters in a
+   toolbar, a grid of fields and the console's log viewport, the one region that
+   scrolls inside itself. Layout and shadcn tokens only. */
+
+.reactor-row-name { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.125rem; min-width: 0; }
+.reactor-row-title, .ui-summary { font-weight: 500; }
+
+/* A form that is the page's only part (a pairing card), at dialog width. */
+.reactor-narrow { width: min(100%, 28rem); margin-inline: auto; }
+.reactor-one-line { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Counts from before a drop or a restart while the row is checked again:
+   dimmed as the library dims a disabled control. */
+[data-stale] { opacity: 0.5; }
+
+/* In a toolbar a filter narrows to a floor and a search or command box
+   takes the room left; past that the row folds its buttons into "...". */
+.reactor-filter { flex: 0 1 12rem; min-width: 7rem; }
+.reactor-grow { flex: 1 1 12rem; min-width: 5rem; }
+
+/* Library fields side by side, one column on a phone. Controls line up
+   at the bottom of a row, so a label that wraps keeps its box level with
+   the boxes beside it, and a switch row is as tall as a box. */
+.reactor-field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
+  align-items: end;
+  gap: 1rem 1.5rem;
+}
+
+.reactor-field-grid > [data-orientation="horizontal"] { min-height: 2.25rem; }
+
+/* The console's log: the one region that scrolls inside itself. Its
+   height comes from the viewport, never from its lines, so the page does
+   not grow with the log: it fills the window under the page header and
+   toolbar, and above the command row, on any wrapper (a connection
+   alert above the page included); on phones it is a fixed share. */
+.reactor-log-frame {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.reactor-log {
+  height: max(12rem, calc(100dvh - 17.5rem));
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0.5rem 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.reactor-log-line { padding: 0 1rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.reactor-log-line.is-error { color: var(--destructive); }
+.reactor-log-line.is-warning { color: var(--warning); }
+.reactor-log-line.is-debug { color: var(--muted-foreground); }
+.reactor-log-jump { position: absolute; bottom: 0.75rem; inset-inline-end: 1.25rem; }
+
+@media (max-width: 760px) {
+  .reactor-log { height: max(12rem, calc(100dvh - 19rem)); }
+}

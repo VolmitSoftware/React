@@ -21,12 +21,19 @@ Future<void> main(List<String> args) async {
       1024,
       16 * 1024 * 1024,
     ),
-    maxMessagesPerWindow: _integerEnvironment(
+    maxAppMessagesPerWindow: _integerEnvironment(
       environment,
-      'MAX_MESSAGES_PER_WINDOW',
-      120,
+      'MAX_APP_MESSAGES_PER_WINDOW',
+      240,
       1,
       10000,
+    ),
+    maxAgentMessagesPerWindow: _integerEnvironment(
+      environment,
+      'MAX_AGENT_MESSAGES_PER_WINDOW',
+      5000,
+      1,
+      100000,
     ),
     maxPendingRequestsPerApp: _integerEnvironment(
       environment,
@@ -48,6 +55,13 @@ Future<void> main(List<String> args) async {
       128,
       1,
       4096,
+    ),
+    maxAgentOutboundQueueMessages: _integerEnvironment(
+      environment,
+      'MAX_AGENT_OUTBOUND_QUEUE_MESSAGES',
+      4096,
+      1,
+      65536,
     ),
     handshakeTimeout: Duration(
       seconds: _integerEnvironment(
@@ -88,11 +102,13 @@ Future<void> main(List<String> args) async {
   );
   limits.validate();
 
+  final RelayConnections connections = RelayConnections();
   final HttpServer server = await startRelayServer(
     port: port,
     address: address,
     limits: limits,
     allowedAppOrigins: allowedOrigins,
+    connections: connections,
   );
   stdout.writeln(
     'react-web-relay listening on ${server.address.host}:${server.port}',
@@ -114,7 +130,12 @@ Future<void> main(List<String> args) async {
   await shutdown.future;
   await terminateSubscription.cancel();
   await interruptSubscription.cancel();
+  // Close code 4012 tells every server and browser the relay is restarting,
+  // so each reconnects at once. Upgraded sockets are detached from the
+  // server and would otherwise keep this process serving them.
+  await connections.closeAll();
   await server.close(force: true);
+  exit(0);
 }
 
 int _integerEnvironment(

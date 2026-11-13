@@ -8,6 +8,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class WebConfigurationSchema {
   private static final long MAX_CONFIGURATION_BYTES = 2L * 1024L * 1024L;
@@ -39,6 +44,54 @@ public final class WebConfigurationSchema {
     if (!root.has("listenerEnabled") || !root.has("listenAddress")) {
       throw obsoleteConfiguration(canonicalFile, "listenerEnabled and listenAddress are required");
     }
+  }
+
+  private static final Pattern CORS_ORIGINS = Pattern.compile("(?m)^corsOrigins\\s*=\\s*\\[[^\\]]*\\]");
+
+  /** Entries dropped while moving {@code corsOrigins} to {@code allowedOrigins}, with why. */
+  public record OriginMove(List<String> moved, List<String> dropped) {
+  }
+
+  /**
+   * Moves an old non-empty {@code corsOrigins} list to {@code allowedOrigins} once, keeping the entries
+   * {@code allowedOrigins} accepts. Returns empty when there was nothing to move.
+   */
+  public static Optional<OriginMove> moveCorsOrigins(File canonicalFile) throws IOException {
+    if (canonicalFile == null || !canonicalFile.exists() || Files.size(canonicalFile.toPath()) > MAX_CONFIGURATION_BYTES) {
+      return Optional.empty();
+    }
+    String raw = Files.readString(canonicalFile.toPath(), StandardCharsets.UTF_8);
+    JsonElement parsed = TomlCodec.toJsonElement(raw);
+    if (!parsed.isJsonObject()) {
+      return Optional.empty();
+    }
+    JsonObject root = parsed.getAsJsonObject();
+    if (!root.has("corsOrigins") || root.has("allowedOrigins") || !root.get("corsOrigins").isJsonArray()
+        || root.getAsJsonArray("corsOrigins").isEmpty()) {
+      return Optional.empty();
+    }
+    List<String> moved = new ArrayList<>();
+    List<String> dropped = new ArrayList<>();
+    for (JsonElement entry : root.getAsJsonArray("corsOrigins")) {
+      String origin = entry.isJsonPrimitive() ? entry.getAsString() : entry.toString();
+      try {
+        moved.addAll(WebOrigins.canonical(List.of(origin)));
+      } catch (IllegalArgumentException refused) {
+        dropped.add(origin);
+      }
+    }
+    Matcher matcher = CORS_ORIGINS.matcher(raw);
+    if (!matcher.find()) {
+      return Optional.empty();
+    }
+    StringBuilder list = new StringBuilder("allowedOrigins = [");
+    for (int index = 0; index < moved.size(); index++) {
+      list.append(index == 0 ? "" : ", ").append('"').append(moved.get(index)).append('"');
+    }
+    list.append(']');
+    String rewritten = raw.substring(0, matcher.start()) + list + raw.substring(matcher.end());
+    Files.writeString(canonicalFile.toPath(), rewritten, StandardCharsets.UTF_8);
+    return Optional.of(new OriginMove(List.copyOf(moved), List.copyOf(dropped)));
   }
 
   private static IOException obsoleteConfiguration(File file, String reason) {

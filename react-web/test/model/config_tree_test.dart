@@ -77,26 +77,6 @@ void main() {
     });
   });
 
-  group('ConfigTree.flatten', () {
-    test('contains key view.min with value 4', () {
-      final ConfigTree tree = ConfigTree.fromJson(sampleJson);
-      final Map<String, Object?> flat = tree.flatten();
-      expect(flat['view.min'], equals(4));
-    });
-
-    test('contains key view.adaptive with value true', () {
-      final ConfigTree tree = ConfigTree.fromJson(sampleJson);
-      final Map<String, Object?> flat = tree.flatten();
-      expect(flat['view.adaptive'], equals(true));
-    });
-
-    test('contains key gc.threshold with value 80.0', () {
-      final ConfigTree tree = ConfigTree.fromJson(sampleJson);
-      final Map<String, Object?> flat = tree.flatten();
-      expect(flat['gc.threshold'], equals(80.0));
-    });
-  });
-
   group('ConfigTree.node', () {
     test('node returns knob for gc.threshold', () {
       final ConfigTree tree = ConfigTree.fromJson(sampleJson);

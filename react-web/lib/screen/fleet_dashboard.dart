@@ -1,28 +1,39 @@
+/// Server group > Servers: health tiles, the server table and the servers
+/// that need attention. A row opens the server's Overview; an attention item
+/// opens its Incidents. An entry whose access was revoked offers Pair again
+/// and Remove.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr/component/input/native_select.dart';
-import 'package:jaspr/dom.dart' as dom;
-import 'package:jaspr/jaspr.dart' show Component, EventCallback;
-import 'package:jaspr_router/jaspr_router.dart';
+import 'package:jaspr/jaspr.dart' show Component;
 
-import '../model/alert.dart';
+import '../app/paths.dart';
 import '../localization/reactor_locale.dart';
-import '../localization/reactor_locale_platform.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/alert_thresholds.dart';
-import '../model/server_snapshot.dart';
-import '../state/alert_engine.dart';
-import '../state/alert_store.dart';
+import '../model/health.dart';
+import '../model/units.dart';
+import '../model/role_info.dart';
+import '../model/server_credential.dart';
 import '../state/connection_manager.dart';
 import '../state/fleet_live_scope.dart';
 import '../state/fleet_rollup.dart';
 import '../state/fleet_scope.dart';
 import '../state/server_tags_store.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/gauge.dart';
-import '../widget/section_card.dart';
-import '../widget/status_dot.dart';
+import '../ui/kit/action_row.dart';
+import '../ui/kit/badge.dart';
+import '../ui/kit/card.dart';
+import '../ui/kit/confirm_dialog.dart';
+import '../ui/kit/data_list.dart';
+import '../ui/kit/health_badge.dart';
+import '../ui/kit/metric_tile.dart';
+import '../ui/kit/mode.dart';
+import '../ui/kit/page.dart';
+import '../ui/kit/states.dart';
+import 'alerts_inbox.dart';
+import 'pairing/pair_dialog.dart';
+import 'form_parts.dart';
+import 'server_roles.dart';
 
 class FleetDashboardScreen extends StatefulWidget {
   const FleetDashboardScreen({super.key});
@@ -32,625 +43,338 @@ class FleetDashboardScreen extends StatefulWidget {
 }
 
 class _FleetDashboardScreenState extends State<FleetDashboardScreen> {
-  static const String _removeDialogShellId =
-      'reactor-remove-server-dialog-shell';
-  static const String _serverSectionFocusId = 'reactor-fleet-servers-section';
+  static const String _tagSelectId = 'fleet-tag';
 
-  String _selectedTag = '';
-  String? _confirmRemoveId;
+  String _tag = '';
+  late final ServerRoles _roles = ServerRoles(() {
+    if (mounted) setState(() {});
+  });
+
+  @override
+  void dispose() {
+    _roles.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
-    final FleetLiveScope? liveScope = FleetLiveScope.of(context);
     final FleetController? fleet = FleetScope.of(context);
+    final List<FleetServerLive> all =
+        FleetLiveScope.of(context)?.servers ?? const <FleetServerLive>[];
+    if (all.isEmpty) return const _NoServers();
 
-    final List<FleetServerLive> allServers =
-        liveScope?.servers ?? <FleetServerLive>[];
-    final AlertStore? alertStore = fleet?.alertStore;
-    final ServerTagsStore? tagsStore = fleet?.tagsStore;
-
-    final List<String> allTags = tagsStore?.allTags() ?? <String>[];
-
-    List<FleetServerLive> filteredServers = allServers;
-    if (_selectedTag.isNotEmpty && tagsStore != null) {
-      final List<String> taggedIds = tagsStore.serverIdsWithTag(_selectedTag);
-      filteredServers = allServers
-          .where((FleetServerLive s) => taggedIds.contains(s.id))
-          .toList();
+    final ServerTagsStore? tags = fleet?.tagsStore;
+    final List<String> allTags = tags?.allTags() ?? const <String>[];
+    final String tag = allTags.contains(_tag) ? _tag : '';
+    final List<FleetServerLive> servers = tag.isEmpty || tags == null
+        ? all
+        : <FleetServerLive>[
+            for (final FleetServerLive server in all)
+              if (tags.tagsFor(server.id).contains(tag)) server,
+          ];
+    // Entries paired before roles were kept ask the server. The answer comes
+    // later, and a page rendered on the server cannot redraw.
+    if (fleet != null && context.binding.isClient) {
+      _roles.ask(fleet.fleetManager, <String>[
+        for (final FleetServerLive server in servers)
+          if (server.role == null) server.id,
+      ]);
     }
-
-    final List<({String id, String name, ServerSnapshot? snapshot})>
-    serverData = filteredServers
-        .map(
-          (FleetServerLive s) =>
-              (id: s.id, name: s.name, snapshot: currentFleetSnapshot(s)),
-        )
-        .toList();
 
     final AlertThresholds thresholds =
-        alertStore?.thresholds ?? AlertThresholds.defaults;
-    final List<FleetAlert> alerts = AlertEngine.computeFleet(
-      servers: serverData,
-      thresholds: thresholds,
-      now: DateTime.now(),
-    );
-    final List<FleetAlert> openAlerts = alertStore?.reconcile(alerts) ?? alerts;
-
+        fleet?.alertStore.thresholds ?? AlertThresholds.defaults;
     final FleetRollup rollup = FleetRollup.compute(
-      servers: filteredServers,
-      openAlerts: openAlerts,
+      servers: servers,
+      openAlerts: openFleetAlerts(servers, fleet?.alertStore),
+      thresholds: thresholds,
     );
+    final bool advanced = ModeScope.advanced(context);
+    final bool anyRevoked = rollup.servers.any(_revoked);
 
-    final int total = rollup.servers.length;
-    final int attention = rollup.needsAttention.length;
-    final String subtitle = total == 0
-        ? reactorText(ReactorText.fleetNoServersPaired)
-        : attention == 0
-        ? reactorText(ReactorText.fleetAllServersNominal, <String, Object?>{
-            'count': total,
-          })
-        : reactorText(ReactorText.fleetServersNeedAttention, <String, Object?>{
-            'total': total,
-            'attention': attention,
-          });
-
-    return ReactorPage(
-      title: reactorText(ReactorText.fleetTitle),
-      subtitle: subtitle,
-      actions: _tagFilter(allTags),
+    return PageStack(
       children: <Widget>[
-        SectionPanel(
-          label: reactorText(ReactorText.fleetHealth),
-          trailing: _alertBadges(rollup),
-          child: _rollupRow(rollup),
-        ),
-        _serverGrid(rollup, fleet),
-        _needsAttentionSection(rollup),
-      ],
-    );
-  }
-
-  void _removeServer(
-    FleetController fleet,
-    String id,
-    String focusAfterRemoval,
-  ) {
-    fleet.removeServer(id);
-    setState(() {
-      _confirmRemoveId = null;
-      if (_selectedTag.isNotEmpty &&
-          !fleet.tagsStore.allTags().contains(_selectedTag)) {
-        _selectedTag = '';
-      }
-    });
-    context.binding.addPostFrameCallback(() {
-      if (mounted) focusReactorElement(focusAfterRemoval);
-    });
-  }
-
-  void _showRemoveConfirmation(String id) {
-    setState(() => _confirmRemoveId = id);
-    context.binding.addPostFrameCallback(() {
-      if (mounted && _confirmRemoveId == id) {
-        focusReactorDialog(_removeDialogShellId);
-      }
-    });
-  }
-
-  void _closeRemoveConfirmation() {
-    final String? id = _confirmRemoveId;
-    if (id == null) return;
-    setState(() => _confirmRemoveId = null);
-    context.binding.addPostFrameCallback(() {
-      if (mounted) focusReactorElement('reactor-remove-server-$id');
-    });
-  }
-
-  void _onRemoveDialogKeyDown(Object event) {
-    if (consumeReactorEscape(event)) {
-      _closeRemoveConfirmation();
-      return;
-    }
-    trapReactorDialogFocus(event, _removeDialogShellId);
-  }
-
-  Widget _tagFilter(List<String> allTags) {
-    final List<ArcaneSelectOption> options = <ArcaneSelectOption>[
-      ArcaneSelectOption(label: reactorText(ReactorText.commonAll), value: ''),
-      for (final String tag in allTags)
-        ArcaneSelectOption(label: tag, value: tag),
-    ];
-    return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'align-items': 'center',
-          'gap': '0.6rem',
-        },
-      ),
-      <Widget>[
-        reactorEyebrow(reactorText(ReactorText.fleetTag)),
-        ArcaneNativeSelect(
-          size: ComponentSize.sm,
-          options: options,
-          value: _selectedTag,
-          onChanged: (String v) => setState(() => _selectedTag = v),
-        ),
-      ],
-    );
-  }
-
-  Widget _rollupRow(FleetRollup rollup) {
-    if (rollup.servers.isEmpty) {
-      return ReactorEmptyState(
-        title: reactorText(ReactorText.fleetNoFilterMatches),
-        description: reactorText(ReactorText.fleetChooseAnotherTag),
-      );
-    }
-    return dom.div(classes: 'reactor-fleet-rollup reactor-metric-bank', <
-      Widget
-    >[
-      if (rollup.meanTps == null)
-        ReactorStat(label: reactorText(ReactorText.fleetMeanTps), value: '--')
-      else
-        Gauge(
-          label: reactorText(ReactorText.fleetMeanTps),
-          value: rollup.meanTps!,
-          display: rollup.meanTps!.toStringAsFixed(1),
-          max: 20.0,
-          thresholds: const (5.0, 10.0),
-          invertStatus: true,
-        ),
-      if (rollup.worstTps == null)
-        ReactorStat(label: reactorText(ReactorText.fleetWorstTps), value: '--')
-      else
-        Gauge(
-          label: reactorText(ReactorText.fleetWorstTps),
-          value: rollup.worstTps!,
-          display: rollup.worstTps!.toStringAsFixed(1),
-          max: 20.0,
-          thresholds: const (5.0, 10.0),
-          invertStatus: true,
-        ),
-      if (rollup.compositeHealth == null)
-        ReactorStat(
-          label: reactorText(ReactorText.fleetCompositeHealth),
-          value: '--',
-        )
-      else
-        Gauge(
-          label: reactorText(ReactorText.fleetCompositeHealth),
-          value: rollup.compositeHealth!.toDouble(),
-          display: '${rollup.compositeHealth}%',
-          max: 100.0,
-          thresholds: const (20.0, 50.0),
-          invertStatus: true,
-        ),
-      ReactorStat(
-        label: reactorText(ReactorText.fleetTotalPlayers),
-        value: rollup.totalPlayers?.toString() ?? '--',
-      ),
-      ReactorStat(
-        label: reactorText(ReactorText.fleetWorstMspt),
-        value: rollup.worstMspt?.toStringAsFixed(1) ?? '--',
-        unit: 'ms',
-      ),
-    ]);
-  }
-
-  Widget _alertBadges(FleetRollup rollup) {
-    final int critical = rollup.alertCounts[AlertSeverity.critical] ?? 0;
-    final int warning = rollup.alertCounts[AlertSeverity.warning] ?? 0;
-    final int info = rollup.alertCounts[AlertSeverity.info] ?? 0;
-
-    return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'gap': '0.5rem',
-          'flex-wrap': 'wrap',
-        },
-      ),
-      <Widget>[
-        reactorBadge(
-          reactorText(ReactorText.fleetCriticalCount, <String, Object?>{
-            'count': critical,
-          }),
-          ReactorStatus.critical,
-        ),
-        reactorBadge(
-          reactorText(ReactorText.fleetWarningCount, <String, Object?>{
-            'count': warning,
-          }),
-          ReactorStatus.warning,
-        ),
-        reactorBadge(
-          reactorText(ReactorText.fleetInfoCount, <String, Object?>{
-            'count': info,
-          }),
-          ReactorStatus.info,
-        ),
-      ],
-    );
-  }
-
-  Widget _serverGrid(FleetRollup rollup, FleetController? fleet) {
-    FleetServerHealth? pendingRemoval;
-    int pendingRemovalIndex = -1;
-    for (int index = 0; index < rollup.servers.length; index += 1) {
-      final FleetServerHealth server = rollup.servers[index];
-      if (server.id == _confirmRemoveId) {
-        pendingRemoval = server;
-        pendingRemovalIndex = index;
-        break;
-      }
-    }
-    String focusAfterRemoval = _serverSectionFocusId;
-    if (pendingRemovalIndex >= 0) {
-      if (pendingRemovalIndex + 1 < rollup.servers.length) {
-        focusAfterRemoval =
-            'reactor-remove-server-${rollup.servers[pendingRemovalIndex + 1].id}';
-      } else if (pendingRemovalIndex > 0) {
-        focusAfterRemoval =
-            'reactor-remove-server-${rollup.servers[pendingRemovalIndex - 1].id}';
-      }
-    }
-
-    return dom.div(
-      id: _serverSectionFocusId,
-      classes: 'reactor-fleet-servers-section',
-      attributes: <String, String>{
-        'role': 'region',
-        'tabindex': '-1',
-        'aria-label': reactorText(ReactorText.fleetServers),
-      },
-      <Widget>[
-        sectionCard(
-          label: reactorText(ReactorText.fleetServers),
-          description: reactorText(
-            ReactorText.fleetPairedCount,
-            <String, Object?>{'count': rollup.servers.length},
+        _tiles(rollup, thresholds),
+        // Only when something needs attention: the Healthy tile above
+        // already says when nothing does.
+        if (rollup.needsAttention.isNotEmpty)
+          DataList<FleetServerHealth>(
+            label: reactorText(ReactorText.fleetNeedsAttention),
+            title: reactorText(ReactorText.fleetNeedsAttention),
+            items: rollup.needsAttention,
+            href: (FleetServerHealth server) =>
+                serverPath(server.id, 'incidents'),
+            columns: <ListColumn<FleetServerHealth>>[
+              ListColumn<FleetServerHealth>.text(
+                reactorText(ReactorText.commonServer),
+                (FleetServerHealth server) => server.name,
+                width: 'minmax(0, 2fr)',
+              ),
+              ListColumn<FleetServerHealth>(
+                reactorText(ReactorText.commonState),
+                _stateBadge,
+                width: 'minmax(0, 1fr)',
+              ),
+              ListColumn<FleetServerHealth>(
+                reactorText(ReactorText.commonAlerts),
+                (FleetServerHealth server) =>
+                    Component.text(server.alertCount.toString()),
+                numeric: true,
+                width: '5rem',
+              ),
+            ],
+            actions: fleet != null && rollup.needsAttention.any(_revoked)
+                ? (FleetServerHealth server) => _revokedActions(fleet, server)
+                : null,
           ),
-          flush: true,
-          child: rollup.servers.isEmpty
-              ? ReactorEmptyState(
-                  title: reactorText(ReactorText.fleetNoMatchingServers),
-                  description: reactorText(ReactorText.fleetFilterEmpty),
-                )
-              : dom.div(classes: 'reactor-server-table', <Widget>[
-                  dom.div(
-                    classes: 'reactor-fleet-server-row reactor-table-header',
-                    <Widget>[
-                      dom.span(<Widget>[
-                        Component.text(reactorText(ReactorText.commonServer)),
-                      ]),
-                      dom.span(<Widget>[
-                        Component.text(reactorText(ReactorText.commonState)),
-                      ]),
-                      dom.span(<Widget>[
-                        Component.text(reactorText(ReactorText.overviewTps)),
-                      ]),
-                      dom.span(<Widget>[
-                        Component.text(reactorText(ReactorText.commonPlayers)),
-                      ]),
-                      dom.span(<Widget>[
-                        Component.text(reactorText(ReactorText.commonAlerts)),
-                      ]),
-                      dom.span(<Widget>[
-                        Component.text(reactorText(ReactorText.commonLastSeen)),
-                      ]),
-                      const dom.span(<Widget>[]),
-                    ],
+        AppCard(
+          title: reactorText(ReactorText.fleetServers),
+          actions: allTags.isEmpty
+              ? null
+              : ActionRow(
+                  dense: true,
+                  label: reactorText(ReactorText.fleetTag),
+                  leading: <Widget>[_tagFilter(allTags, tag)],
+                ),
+          children: <Widget>[
+            DataList<FleetServerHealth>(
+              label: reactorText(ReactorText.fleetServers),
+              items: rollup.servers,
+              emptyMessage: reactorText(ReactorText.fleetNoFilterMatches),
+              href: (FleetServerHealth server) => serverPath(server.id),
+              columns: <ListColumn<FleetServerHealth>>[
+                ListColumn<FleetServerHealth>.text(
+                  reactorText(ReactorText.commonServer),
+                  (FleetServerHealth server) => server.name,
+                  width: 'minmax(0, 1.5fr)',
+                ),
+                ListColumn<FleetServerHealth>(
+                  reactorText(ReactorText.commonState),
+                  _stateBadge,
+                  width: 'minmax(0, 1fr)',
+                ),
+                if (advanced) ...<ListColumn<FleetServerHealth>>[
+                  ListColumn<FleetServerHealth>.text(
+                    reactorText(ReactorText.fleetRole),
+                    _role,
+                    width: 'minmax(0, 1fr)',
                   ),
-                  for (final FleetServerHealth s in rollup.servers)
-                    _ServerCard(
-                      server: s,
-                      onRemove: fleet == null
-                          ? null
-                          : () => _showRemoveConfirmation(s.id),
-                    ),
-                  if (fleet != null && pendingRemoval != null)
-                    dom.div(
-                      id: _removeDialogShellId,
-                      events: <String, EventCallback>{
-                        'keydown': _onRemoveDialogKeyDown,
-                      },
-                      <Widget>[
-                        ArcaneConfirmDialog(
-                          title: reactorText(
-                            ReactorText.settingsRemoveServer,
-                            <String, Object?>{'server': pendingRemoval.name},
-                          ),
-                          message: reactorText(
-                            ReactorText.settingsRemoveServerMessage,
-                          ),
-                          destructive: true,
-                          confirmText: reactorText(ReactorText.settingsRemove),
-                          cancelText: reactorText(ReactorText.pluginApiCancel),
-                          onConfirm: () => _removeServer(
-                            fleet,
-                            pendingRemoval!.id,
-                            focusAfterRemoval,
-                          ),
-                          onCancel: _closeRemoveConfirmation,
-                        ),
-                      ],
-                    ),
-                ]),
-        ),
-      ],
-    );
-  }
-
-  Widget _needsAttentionSection(FleetRollup rollup) {
-    return sectionCard(
-      label: reactorText(ReactorText.fleetNeedsAttention),
-      child: rollup.needsAttention.isEmpty
-          ? ReactorEmptyState(
-              title: rollup.servers.isEmpty
-                  ? reactorText(ReactorText.fleetNoServersInScope)
-                  : reactorText(ReactorText.fleetAllHealthy),
-              description: rollup.servers.isEmpty
-                  ? reactorText(ReactorText.fleetChooseAnotherFilter)
-                  : reactorText(ReactorText.fleetNoHealthConditions),
-              icon: rollup.servers.isEmpty
-                  ? ArcaneIcon.minus(size: IconSize.sm)
-                  : ArcaneIcon.check(size: IconSize.sm),
-            )
-          : dom.div(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'display': 'flex',
-                  'flex-direction': 'column',
-                },
-              ),
-              <Widget>[
-                for (final FleetServerHealth s in rollup.needsAttention)
-                  _NeedsAttentionRow(server: s),
+                  ListColumn<FleetServerHealth>.text(
+                    reactorText(ReactorText.fleetTransport),
+                    (FleetServerHealth server) => _transport(server.transport),
+                    width: 'minmax(0, 1fr)',
+                  ),
+                ],
+                ListColumn<FleetServerHealth>(
+                  reactorText(ReactorText.commonPlayers),
+                  (FleetServerHealth server) =>
+                      Component.text(server.players?.toString() ?? '--'),
+                  numeric: true,
+                  width: '5rem',
+                ),
+                ListColumn<FleetServerHealth>(
+                  reactorText(ReactorText.overviewTps),
+                  (FleetServerHealth server) =>
+                      Component.text(server.tps?.toStringAsFixed(1) ?? '--'),
+                  numeric: true,
+                  width: '5rem',
+                ),
+                ListColumn<FleetServerHealth>(
+                  reactorText(ReactorText.commonAlerts),
+                  (FleetServerHealth server) =>
+                      Component.text(server.alertCount.toString()),
+                  numeric: true,
+                  width: '5rem',
+                ),
               ],
-            ),
-    );
-  }
-}
-
-class _ServerCard extends StatelessWidget {
-  final FleetServerHealth server;
-  final void Function()? onRemove;
-
-  const _ServerCard({required this.server, required this.onRemove});
-
-  static (String, ReactorStatus) _health(FleetServerHealth s) {
-    return switch (s.health) {
-      FleetHealth.healthy => (
-        reactorText(ReactorText.commonHealthy),
-        ReactorStatus.healthy,
-      ),
-      FleetHealth.warning => (
-        reactorText(ReactorText.commonWarning),
-        ReactorStatus.warning,
-      ),
-      FleetHealth.critical => (
-        reactorText(ReactorText.statusCritical),
-        ReactorStatus.critical,
-      ),
-      FleetHealth.pending => (
-        s.state == ConnState.connecting
-            ? reactorText(ReactorText.statusConnecting)
-            : reactorText(ReactorText.fleetAwaitingTelemetry),
-        s.state == ConnState.degraded
-            ? ReactorStatus.warning
-            : ReactorStatus.neutral,
-      ),
-      FleetHealth.offline => (
-        reactorText(ReactorText.statusOffline),
-        ReactorStatus.critical,
-      ),
-    };
-  }
-
-  static String _formatLastSeen(DateTime? dt) {
-    if (dt == null) return reactorText(ReactorText.commonNever);
-    final Duration ago = DateTime.now().difference(dt);
-    if (ago.inSeconds < 60) {
-      return reactorText(ReactorText.commonSecondsAgo, <String, Object?>{
-        'value': ago.inSeconds,
-      });
-    }
-    if (ago.inMinutes < 60) {
-      return reactorText(ReactorText.commonMinutesAgo, <String, Object?>{
-        'value': ago.inMinutes,
-      });
-    }
-    if (ago.inHours < 24) {
-      return reactorText(ReactorText.commonHoursAgo, <String, Object?>{
-        'value': ago.inHours,
-      });
-    }
-    return reactorText(ReactorText.commonDaysAgo, <String, Object?>{
-      'value': ago.inDays,
-    });
-  }
-
-  Widget _cell(String label, String value, {ReactorStatus? accent}) {
-    return dom.div(
-      classes: 'reactor-server-cell',
-      attributes: <String, String>{'data-label': label},
-      <Widget>[
-        dom.span(
-          styles: dom.Styles(
-            raw: <String, String>{
-              'font-size': '0.75rem',
-              'font-weight': '500',
-              'font-variant-numeric': 'tabular-nums',
-              'color': accent == null
-                  ? 'var(--foreground)'
-                  : reactorStatusColor(accent),
-            },
-          ),
-          <Widget>[Component.text(value)],
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext ctx) {
-    final double? tps = server.tps;
-    final (String, ReactorStatus) health = _health(server);
-
-    return dom.div(classes: 'reactor-fleet-server-row', <Widget>[
-      dom.div(classes: 'reactor-server-identity', <Widget>[
-        StatusDot(state: server.state),
-        dom.span(<Widget>[Component.text(server.name)]),
-      ]),
-      dom.div(
-        classes: 'reactor-server-cell is-state',
-        attributes: <String, String>{
-          'data-label': reactorText(ReactorText.commonState),
-        },
-        <Widget>[reactorBadge(health.$1, health.$2)],
-      ),
-      _cell(
-        reactorText(ReactorText.overviewTps),
-        tps != null ? tps.toStringAsFixed(1) : '--',
-      ),
-      _cell(
-        reactorText(ReactorText.commonPlayers),
-        server.players?.toString() ?? '--',
-      ),
-      _cell(
-        reactorText(ReactorText.fleetAlerts),
-        server.alertCount.toString(),
-        accent: server.alertCount > 0
-            ? ReactorStatus.warning
-            : ReactorStatus.neutral,
-      ),
-      _cell(
-        reactorText(ReactorText.fleetLastSeen),
-        _formatLastSeen(server.lastSeen),
-      ),
-      dom.div(classes: 'reactor-fleet-server-actions', <Widget>[
-        Button.ghost(
-          label: reactorText(ReactorText.fleetOpenDashboard),
-          size: ButtonSize.small,
-          onPressed: () => ctx.push('/server/${server.id}/overview'),
-        ),
-        if (onRemove != null)
-          Button.destructive(
-            id: 'reactor-remove-server-${server.id}',
-            label: reactorText(ReactorText.settingsRemove),
-            size: ButtonSize.small,
-            attributes: <String, String>{
-              'aria-label': reactorText(
-                ReactorText.settingsRemoveServer,
-                <String, Object?>{'server': server.name},
-              ),
-            },
-            onPressed: onRemove,
-          ),
-      ]),
-    ]);
-  }
-}
-
-class _NeedsAttentionRow extends StatelessWidget {
-  final FleetServerHealth server;
-
-  const _NeedsAttentionRow({required this.server});
-
-  static (String, ReactorStatus) _reason(FleetServerHealth s) {
-    if (s.health == FleetHealth.pending) {
-      if (s.state == ConnState.connecting) {
-        return (
-          reactorText(ReactorText.statusConnecting),
-          ReactorStatus.neutral,
-        );
-      }
-      if (s.state == ConnState.degraded) {
-        return (
-          reactorText(ReactorText.fleetDegradedAwaiting),
-          ReactorStatus.warning,
-        );
-      }
-      return (
-        reactorText(ReactorText.fleetAwaitingTelemetry),
-        ReactorStatus.neutral,
-      );
-    }
-    if (s.state == ConnState.offline) {
-      return (reactorText(ReactorText.statusOffline), ReactorStatus.critical);
-    }
-    if (s.state == ConnState.degraded) {
-      return (reactorText(ReactorText.statusDegraded), ReactorStatus.warning);
-    }
-    if (s.health == FleetHealth.critical) {
-      return (reactorText(ReactorText.statusCritical), ReactorStatus.critical);
-    }
-    if (s.health == FleetHealth.warning) {
-      return (reactorText(ReactorText.commonWarning), ReactorStatus.warning);
-    }
-    if (s.alertCount > 0) {
-      return (
-        reactorText(ReactorText.fleetAlertCount, <String, Object?>{
-          'count': s.alertCount,
-        }),
-        ReactorStatus.warning,
-      );
-    }
-    return (reactorText(ReactorText.statusDegraded), ReactorStatus.warning);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    dependOnReactorLocale(context);
-    final (String, ReactorStatus) reason = _reason(server);
-    return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'justify-content': 'space-between',
-          'align-items': 'center',
-          'gap': '0.75rem',
-          'padding': '0.65rem 0',
-          'border-bottom': '1px solid $kReactorHairline',
-        },
-      ),
-      <Widget>[
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{
-              'display': 'flex',
-              'align-items': 'center',
-              'gap': '0.55rem',
-              'min-width': '0',
-            },
-          ),
-          <Widget>[
-            reactorStatusDot(reason.$2),
-            dom.span(
-              styles: const dom.Styles(
-                raw: <String, String>{
-                  'font-weight': '500',
-                  'font-size': '0.9rem',
-                  'color': 'var(--foreground)',
-                },
-              ),
-              <Widget>[Component.text(server.name)],
+              actions: anyRevoked && fleet != null
+                  ? (FleetServerHealth server) => _revokedActions(fleet, server)
+                  : null,
             ),
           ],
         ),
-        dom.span(
-          styles: dom.Styles(
-            raw: <String, String>{
-              'font-size': '0.8rem',
-              'font-weight': '500',
-              'color': reactorStatusColor(reason.$2),
-            },
-          ),
-          <Widget>[Component.text(reason.$1)],
+      ],
+    );
+  }
+
+  /// How many servers are healthy (coloured by the worst one), the worst
+  /// TPS and tick time, and the players online: four tiles, one row.
+  Widget _tiles(FleetRollup rollup, AlertThresholds thresholds) {
+    final int healthy = rollup.servers
+        .where((FleetServerHealth s) => s.health == FleetHealth.healthy)
+        .map((FleetServerHealth s) => s.serverKey)
+        .toSet()
+        .length;
+    final BadgeTone overall = healthTone(rollup.overall);
+    return MetricGrid(
+      children: <Widget>[
+        MetricTile(
+          label: reactorText(ReactorText.commonHealthy),
+          value: '$healthy / ${rollup.serverCount}',
+          tone: overall,
+          meter: rollup.serverCount == 0 ? null : healthy / rollup.serverCount,
+        ),
+        _readingTile(
+          ReactorText.fleetWorstTps,
+          HealthMetric.tps,
+          rollup.worstTps,
+          null,
+          thresholds,
+        ),
+        _readingTile(
+          ReactorText.fleetWorstMspt,
+          HealthMetric.tickTime,
+          rollup.worstMspt,
+          'ms',
+          thresholds,
+        ),
+        MetricTile(
+          label: reactorText(ReactorText.commonPlayers),
+          value: rollup.totalPlayers == null
+              ? '--'
+              : groupThousands(rollup.totalPlayers!),
         ),
       ],
     );
   }
+
+  /// A fleet-wide reading coloured and named by the shared verdict.
+  Widget _readingTile(
+    ReactorText label,
+    HealthMetric metric,
+    double? value,
+    String? unit,
+    AlertThresholds thresholds,
+  ) {
+    final HealthLevel level = value == null
+        ? HealthLevel.unknown
+        : metricHealth(metric, value, thresholds);
+    return MetricTile(
+      label: reactorText(label),
+      value: value?.toStringAsFixed(1) ?? '--',
+      unit: unit,
+      tone: levelTone(level),
+      caption: levelWord(level),
+    );
+  }
+
+  Widget _tagFilter(List<String> allTags, String tag) => FilterSelect(
+    id: _tagSelectId,
+    label: reactorText(ReactorText.fleetTag),
+    value: tag,
+    options: <ArcaneSelectOption>[
+      ArcaneSelectOption(
+        label: reactorText(ReactorText.fleetAllTags),
+        value: '',
+      ),
+      for (final String each in allTags)
+        ArcaneSelectOption(label: each, value: each),
+    ],
+    onChanged: (String value) => setState(() => _tag = value),
+  );
+
+  /// The server's state: what blocks its access, else its health.
+  static Widget _stateBadge(FleetServerHealth server) =>
+      _accessBadge(server) ??
+      (server.health == FleetHealth.pending
+          ? StatusBadge(
+              server.state == ConnState.connecting
+                  ? reactorText(ReactorText.startChecking)
+                  : reactorText(ReactorText.fleetAwaitingTelemetry),
+              tone: BadgeTone.info,
+            )
+          : server.state == ConnState.degraded &&
+                server.health == FleetHealth.healthy
+          ? StatusBadge(
+              reactorText(ReactorText.startChecking),
+              tone: BadgeTone.warning,
+            )
+          : HealthBadge(server.health));
+
+  static bool _revoked(FleetServerHealth server) =>
+      server.access == ConnAccess.revoked;
+
+  /// Pair again and Remove for an entry the server no longer accepts.
+  List<RowAction> _revokedActions(
+    FleetController fleet,
+    FleetServerHealth server,
+  ) {
+    if (!_revoked(server)) return const <RowAction>[];
+    return <RowAction>[
+      RowAction(
+        reactorText(ReactorText.fleetPairAgain),
+        PairDialogScope.of(context),
+      ),
+      RowAction(
+        reactorText(ReactorText.settingsRemove),
+        () => _remove(fleet, server),
+        destructive: true,
+        attributes: <String, String>{
+          'aria-label': reactorText(
+            ReactorText.settingsRemoveServer,
+            <String, Object?>{'server': server.name},
+          ),
+        },
+      ),
+    ];
+  }
+
+  Future<void> _remove(FleetController fleet, FleetServerHealth server) async {
+    final bool yes = await askToConfirm(
+      title: reactorText(ReactorText.settingsRemoveServer, <String, Object?>{
+        'server': server.name,
+      }),
+      message: reactorText(ReactorText.settingsRemoveServerMessage),
+      confirmLabel: reactorText(ReactorText.settingsRemove),
+      destructive: true,
+    );
+    if (yes && mounted) fleet.removeServer(server.id);
+  }
+
+  /// The token's role; old entries ask the server.
+  String _role(FleetServerHealth server) => switch (server.role) {
+    final String role => roleLabel(
+      RoleInfo(role: role, scopes: const <String>[]),
+    ),
+    null => _roles.label(server.id),
+  };
+
+  /// What blocks an entry from its server, as a badge; null when nothing.
+  static Widget? _accessBadge(FleetServerHealth server) =>
+      switch (server.access) {
+        ConnAccess.revoked => StatusBadge(
+          reactorText(ReactorText.pairEndedState),
+          tone: BadgeTone.error,
+        ),
+        ConnAccess.wrongServer => StatusBadge(
+          reactorText(ReactorText.fleetWrongServer),
+          tone: BadgeTone.error,
+        ),
+        ConnAccess.granted => null,
+      };
+
+  /// How this browser reaches the server.
+  static String _transport(ServerTransport? transport) => switch (transport) {
+    ServerTransport.direct => reactorText(ReactorText.fleetDirect),
+    ServerTransport.relay => reactorText(ReactorText.pairRelay),
+    ServerTransport.dual => reactorText(ReactorText.fleetDirectAndRelay),
+    null => '--',
+  };
+}
+
+/// The server group with nothing paired: one way forward.
+class _NoServers extends StatelessWidget {
+  const _NoServers();
+
+  @override
+  Widget build(BuildContext context) => EmptyState(
+    message: reactorText(ReactorText.fleetNoServersPaired),
+    icon: ArcaneIcon.server(),
+    action: ActionRow.footer(
+      primary: RowAction(
+        reactorText(ReactorText.pairTitle),
+        PairDialogScope.of(context),
+      ),
+    ),
+  );
 }

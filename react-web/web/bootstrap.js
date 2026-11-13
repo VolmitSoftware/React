@@ -11,7 +11,7 @@
   if (themeColor) {
     themeColor.setAttribute(
       'content',
-      mode === 'light' ? '#f6f5f0' : '#111310'
+      mode === 'light' ? '#ffffff' : '#0a0a0a'
     );
   }
 

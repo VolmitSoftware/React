@@ -30,6 +30,13 @@ import java.util.List;
 @ConfigDescription("Embedded HTTP/WebSocket management API configuration for React. Changes apply automatically when web.toml is saved.")
 public class WebConfiguration {
 
+  public static final String DEFAULT_APP_URL = "https://react.volmitsoftware.com";
+  public static final List<String> DEFAULT_ALLOWED_ORIGINS = List.of(
+      "https://react.volmitsoftware.com",
+      "https://react-web-plugin.web.app",
+      "https://react-web-plugin.firebaseapp.com"
+  );
+
   @ConfigDoc(value = "Enables the embedded web listener.", impact = "React opens the authenticated API by default. Set false to bind no HTTP or WebSocket listener.")
   private boolean listenerEnabled = true;
 
@@ -42,16 +49,22 @@ public class WebConfiguration {
   @ConfigDoc(value = "Public base URL advertised to direct API clients.", impact = "Set this to the HTTPS URL of a reverse proxy when the listener is exposed beyond localhost. React's embedded listener remains HTTP-only. Changes apply automatically when web.toml is saved.")
   private String advertisedUrl = "";
 
-  @ConfigDoc(value = "List of allowed CORS origins for the HTTP API.", impact = "An empty list allows all origins. Add specific origins to restrict cross-origin access.")
-  private List<String> corsOrigins = new ArrayList<>();
+  @ConfigDoc(value = "Browser origins that may use the direct listener.", impact = "Each entry is an origin: scheme, host and port, with no path; plain http only on loopback. A page from any other origin is refused with origin_not_allowed. Requests without an Origin, such as the relay's, are not affected.")
+  private List<String> allowedOrigins = new ArrayList<>(DEFAULT_ALLOWED_ORIGINS);
 
-  @ConfigDoc(value = "Target frequency (Hz) at which sampler updates are pushed over WebSocket connections.", impact = "Higher values increase push fidelity but also network and CPU overhead.")
-  private int wsPushHz = 5;
+  @ConfigDoc(value = "Address of React Web that pairing links open.", impact = "Change it to a React Web you host yourself, and add its origin to allowedOrigins.")
+  private String appUrl = DEFAULT_APP_URL;
+
+  @ConfigDoc(value = "Name React Web shows for this server.", impact = "Empty uses the first line of the MOTD, or the server folder name when the MOTD is the vanilla default.")
+  private String serverName = "";
+
+  @ConfigDoc(value = "Days a pairing lasts without use.", impact = "Each use starts the time again. /react web pair expires= overrides it for one link. 1 to 365.")
+  private int tokenDays = 7;
 
   @ConfigDoc(value = "Requires a valid auth token for read-only HTTP endpoints.", impact = "When true, unauthenticated GET requests are rejected with 401. Set to false only in fully trusted network environments.")
   private boolean requireTokenForReads = true;
 
-  @ConfigDoc(value = "Enables the outbound cloud-relay client for NAT traversal.", impact = "When true, React connects to the relay broker at relayUrl so the companion app can reach servers behind NAT without port forwarding.")
+  @ConfigDoc(value = "Enables the outbound relay client so browsers can reach this server without an open port.", impact = "React connects out to relayUrl at the first /react web pair, and at each start while a pairing exists. Pairing links then carry the relay address too.")
   private boolean relayEnabled = false;
 
   @ConfigDoc(value = "Base WSS URL of the relay broker, e.g. wss://relay.arcane.art; the /agent path is appended automatically.", impact = "Only read when relayEnabled is true. Leave empty when relay is disabled.")

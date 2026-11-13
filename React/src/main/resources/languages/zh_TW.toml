@@ -23,6 +23,7 @@
 #
 # === 變數 ===
 # 請勿變更變數名稱，僅使用各訊息中原有的變數。
+#   {access}  React Web 配對的角色或權限
 #   {action}  操作名稱或色彩調整方向
 #   {actions}  佇列中的操作數或已排除的操作名稱清單
 #   {active}  啟用中的功能或調校項目數量
@@ -41,7 +42,7 @@
 #   {before}  變更前的設定值、語言訊息或堆積使用量
 #   {checked}  已檢查的取樣器數量
 #   {chunks}  受操作影響的區塊數量
-#   {code}  網頁配對碼
+#   {client}  建立 React Web 配對的瀏覽器名稱
 #   {command}  指令路徑
 #   {count}  項目、模組、變更或測試發現的數量
 #   {current}  目前頁碼
@@ -57,6 +58,7 @@
 #   {entities}  受操作影響的實體數量
 #   {entry}  整合時間軸項目
 #   {exceptions}  一輪負載測試中記錄的 React 例外
+#   {expires}  React Web 配對在未使用時結束的時間
 #   {fail}  未通過的檢查數量
 #   {file}  設定、語言或外掛程式 API 檔案名稱
 #   {fingerprint}  伺服器或網頁權杖指紋
@@ -80,14 +82,17 @@
 #   {incident}  從開發測試套件排除的遞迴事件操作識別碼
 #   {index}  開發測試套件的目前步驟編號
 #   {invalid}  讀值無效的取樣器數量
-#   {issued_at}  網頁權杖建立時間
 #   {item}  物品名稱或識別碼
 #   {items}  已合併的物品實體數量
 #   {kept}  語言更新中保留的本機修改數
 #   {key}  指令參數鍵、設定鍵或語言訊息 ID
 #   {label}  基準測試、指標、設定、指令或網頁權杖標籤
+#   {lifetime}  React Web 配對在未使用時持續的時長
 #   {line}  正在編輯的多行訊息中的行號
 #   {lines}  已掃描的伺服器日誌行數
+#   {link}  React Web 配對連結
+#   {links}  尚未開啟的 React Web 配對連結數量
+#   {listener}  React Web 監聽器綁定的位址
 #   {loaded}  預熱期間新載入的區塊數量
 #   {locale}  正在顯示、選擇或編輯的語言代碼
 #   {matched}  自動儲存狀態與測試基準一致的世界
@@ -105,6 +110,7 @@
 #   {offenders}  傳回非有限值的取樣器數量
 #   {options}  允許的設定值
 #   {p95}  負載測試中刻耗時的第 95 百分位數，單位為 ms
+#   {origin}  請求來源的瀏覽器來源
 #   {parameter}  指令參數名稱
 #   {parameters}  已忽略的指令參數
 #   {pass}  通過的檢查數量
@@ -128,6 +134,7 @@
 #   {react_errors}  伺服器日誌中找到的 React 錯誤行數
 #   {reason}  失敗、拒絕或無法使用狀態的原因
 #   {registered}  已登錄的模組數量
+#   {relay}  React Web 中繼狀態
 #   {remaining}  距下次語言檢查的剩餘時間
 #   {removed_first}  首次停用是否將功能從作用中登錄表移除
 #   {removed_second}  再次停用是否將功能從作用中登錄表移除
@@ -137,6 +144,7 @@
 #   {sampler}  取樣器名稱或識別碼
 #   {samplers}  整合取樣器或發生故障的取樣器清單
 #   {scope}  地圖範圍或距離設定的套用範圍
+#   {scopes}  React Web 配對的權限
 #   {score}  基準測試分數
 #   {seconds}  倒數計時或負載測試時間，單位為秒
 #   {section}  設定或語言編輯器區段
@@ -145,6 +153,7 @@
 #   {since_run}  本次測試開始以來回報的錯誤
 #   {size}  地圖牆的最大或目前使用尺寸
 #   {skip}  已略過的檢查數量
+#   {sockets}  開啟中的 React Web 通訊端數量
 #   {spawn_y}  重力測試方塊的生成高度
 #   {state}  操作或外掛程式 API 套件的狀態
 #   {status}  整合狀態或設定狀態標籤
@@ -159,6 +168,7 @@
 #   {tier}  事件應變手冊的嚴重性等級
 #   {timing}  每分鐘能力回呼耗時，單位為毫秒
 #   {to}  目前頁面的最後一個項目編號
+#   {tokens}  已配對的 React Web 瀏覽器數量
 #   {total}  訊息中的項目、模組、世界、檢查或記憶體總量
 #   {type}  指令參數、設定值、地圖或距離類型
 #   {unavailable}  無法使用的 NMS 橋接控制代碼數量
@@ -225,12 +235,12 @@ root = "React 根指令"
 test = "執行 React 驗證與負載測試"
 "test.load" = "執行兩輪合成負載測試"
 "test.run" = "執行 React 驗證套件"
-version = "顯示 React 版本"
 distance = "設定伺服器、世界或玩家的視野、模擬或傳送距離"
 web = "管理 React WebUI 存取權杖"
-"web.list" = "列出有效的 WebUI 權杖"
-"web.pair" = "建立 WebUI 配對權杖"
-"web.revoke" = "撤銷 WebUI 權杖"
+"web.pair" = "建立一次性 React Web 配對連結"
+"web.revoke" = "撤銷權杖，或取消尚未開啟的連結"
+"web.status" = "顯示監聽器、中繼與指紋"
+"web.tokens" = "列出已配對的瀏覽器"
 language = "選擇個人語言或伺服器語言"
 
 [command.parameter]
@@ -267,9 +277,11 @@ target = "目標世界或玩家；預設採用指令執行者的目前環境"
 value = "以區塊為單位的距離；支援繼承設定時可使用 -1"
 
 [command.parameter.web]
-id = "要撤銷的權杖 ID"
+expires = "配對在未使用時持續多久，例如 7d"
+id = "權杖 ID，或 all"
 label = "此權杖的人類可讀標籤"
 role = "此權杖的角色：viewer、operator 或 admin"
+scopes = "取代角色的權限，例如 read,op:execute"
 
 [command.runtime]
 chunk_not_sampled = "&c此區塊尚未取樣，請稍後一秒再檢查。&r"
@@ -347,21 +359,39 @@ threading_folia = "（Folia 區域執行緒）"
 threading_standard = ""
 
 [command.runtime.web]
+fingerprint_copy_hover = "複製指紋"
+invalid_expires = "&cexpires= 接受帶 d、h 或 m 的數字，範圍 1m 到 365d，例如 7d。&r"
+invalid_label = "&c標籤最多 64 個字元。&r"
 invalid_role = "&c角色無效：&f{role}&c。應為 viewer、operator 或 admin。&r"
+invalid_scope = "&c未知權限 &f{scope}&c。可用權限：{scopes}。&r"
+link_copy = "&b&n[複製]&r"
+link_copy_hover = "複製連結"
+link_details = "&7權限 {scopes}；未使用 {lifetime} 後結束；權杖 {id}&r"
+link_open = "&b&n[開啟 React Web]&r"
+link_open_hover = "在瀏覽器中開啟"
+link_ready = "&a連結已就緒。請在 10 分鐘內開啟&r"
+link_ready_console = "&a連結已就緒。請在 10 分鐘內開啟：&r {link}"
+link_revoke = "&c&n[撤銷]&r"
+link_revoke_hover = "取消此連結，或結束它建立的配對"
 mutation_notice = "&e網頁變更者 &f{actor}&e：&b{target}&e — &f{detail}&e。&r"
-pair_unavailable = "&c網頁配對無法使用：&f{reason}&r"
+never = "從未"
 no_tokens = "&b沒有有效的權杖。&r"
-pairing_code = "&b配對碼：&r {code}"
-pairing_copy = "&b配對碼：&r &e&n點擊複製&r"
-pairing_copy_hover = "複製完整配對碼"
-persist_failed = "&c無法儲存權杖：&f{reason}&r"
+off = "關閉"
+pair_refused = "&e{label} 無法配對：&f{reason}&r"
+pair_unavailable = "&c網頁配對無法使用：&f{reason}&r"
+refused_expired = "連結已過期；請建立新連結"
+refused_origin = "來源 {origin} 不在 web.toml 的 allowedOrigins 中"
+relay_connecting = "{url} 連線中"
+relay_registered = "{url} 已註冊"
+relay_waiting = "等待第一次配對"
 revoked = "&b已撤銷的權杖：&r {id}"
-role = "&b角色：&r {role}"
-server_fingerprint = "&b伺服器指紋：&r {fingerprint}"
-token_entry = "&7  {id} | {label} | issuedAt={issued_at}&r"
-token_fingerprint = "&b權杖指紋：&r {fingerprint}"
+role_and_scopes = "&c請使用 role= 或 scopes=，不要同時使用。&r"
+scopes_need_read = "&cscopes= 必須包含 read。&r"
+state_ready = "就緒"
+status = "&bReact Web&r {state} | 監聽器 {listener} | 中繼 {relay} | {tokens} 個權杖，{links} 個未開啟連結 | {sockets} 個通訊端"
+status_fingerprint = "&7指紋&r {fingerprint}"
+token_entry = "&7  {id} | {label} | {access} | 到期 {expires} | 上次使用 {used} | {client} | {sockets} 個通訊端&r"
 token_header = "&b有效權杖 ({count})：&r"
-token_id = "&b權杖 ID：&r {id}"
 token_not_found = "&c找不到權杖：&f{id}&r"
 update_failed = "&c更新權杖儲存庫失敗：&f{reason}&r"
 
@@ -469,13 +499,17 @@ description = "React 內建 HTTP/WebSocket 管理 API 的設定。儲存 web.tom
 impact = "當接聽程式對外公開於 localhost 之外時，請將此項設為反向代理的 HTTPS URL。React 內建的接聽程式仍僅支援 HTTP。儲存 web.toml 後會自動套用變更。"
 summary = "向直接連線的 API 用戶端公布的公開基底 URL。"
 
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.allowedorigins]
+impact = "每一項都是一個來源：協定、主機與連接埠，不含路徑；一般 http 僅限迴路位址。來自其他來源的頁面會以 origin_not_allowed 被拒絕。沒有 Origin 的請求（例如中繼發出的）不受影響。"
+summary = "允許使用直連監聽器的瀏覽器來源。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.appurl]
+impact = "改為你自行託管的 React Web，並將它的來源加入 allowedOrigins。"
+summary = "配對連結開啟的 React Web 位址。"
+
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenaddress]
 impact = "預設的 :: 萬用位址可接受區域網路、容器及連接埠轉送存取所使用的 IPv6 與 IPv4 對應流量。僅在同一主機上的反向代理或中繼後方使用回送位址。"
 summary = "網頁接聽程式繫結的 IP 位址。"
-
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.corsorigins]
-impact = "空清單表示允許所有來源。新增特定來源可限制跨來源存取。"
-summary = "HTTP API 允許的 CORS 來源清單。"
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React 預設會開放需要驗證的 API。設為 false 則不繫結 HTTP 或 WebSocket 接聽程式。"
@@ -486,8 +520,8 @@ impact = "如果此連接埠已被占用，React 會依序嘗試接下來的 99 
 summary = "網頁伺服器優先使用的 TCP 連接埠。"
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayenabled]
-impact = "設為 true 時，React 會連線到 relayUrl 的中繼代理，讓配套應用程式無需連接埠轉送即可連到位於 NAT 後方的伺服器。"
-summary = "啟用用於 NAT 穿透的對外雲端中繼用戶端。"
+impact = "React 會在第一次 /react web pair 時連線 relayUrl，並在存在配對期間每次啟動時連線。配對連結隨後也會帶上中繼位址。"
+summary = "啟用對外中繼用戶端，讓瀏覽器不必開放連接埠也能連到此伺服器。"
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayurl]
 impact = "僅在 relayEnabled 為 true 時讀取。停用中繼時請留空。"
@@ -497,9 +531,13 @@ summary = "中繼代理的基底 WSS URL，例如 wss://relay.arcane.art; /agent
 impact = "設為 true 時，未驗證的 GET 請求會以 401 拒絕。僅在完全受信任的網路環境中才設為 false。"
 summary = "唯讀 HTTP 端點需要有效的驗證權杖。"
 
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.wspushhz]
-impact = "數值越高，推送的精細度越高，但網路與 CPU 的額外負擔也越大。"
-summary = "取樣器更新透過 WebSocket 連線推送的目標頻率（Hz）。"
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.servername]
+impact = "留空時使用 MOTD 的第一行；若 MOTD 是原版預設值，則使用伺服器資料夾名稱。"
+summary = "React Web 為此伺服器顯示的名稱。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
+impact = "每次使用都會重新計時。/react web pair expires= 可為單一連結覆寫此值。範圍 1 到 365。"
+summary = "配對在未使用時持續的天數。"
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "垃圾回收動作的設定。要求 JVM 執行垃圾回收，並回報立即回收的堆積量。"

@@ -1,3 +1,5 @@
+/// Tuning > Worlds, top: the slowest world's tick time from the live
+/// snapshot.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
@@ -8,10 +10,8 @@ import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/section_card.dart';
+import '../ui/kit/card.dart';
 import '../widget/server_snapshot_state.dart';
-import '../widget/stat_tile.dart';
 
 class WorldsScreen extends StatelessWidget {
   const WorldsScreen({super.key});
@@ -21,62 +21,24 @@ class WorldsScreen extends StatelessWidget {
     dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    final Widget? statePage = serverSnapshotStatePage(
-      scope: scope,
-      title: reactorText(ReactorText.worldsTitle),
-      subtitle: reactorText(ReactorText.worldsSubtitle),
-    );
-    if (snapshot == null) return statePage!;
-
-    final SamplerSample? topWorldMspt = snapshot.sampler('top-world-mspt');
-    final SamplerSample? perWorldTickTime = snapshot.sampler(
-      'per-world-tick-time',
-    );
-    final SamplerSample? topChunkCost = snapshot.sampler('top-chunk-cost');
-
-    final List<(String, List<double>)> tickSeries = <(String, List<double>)>[
-      (
-        reactorText(ReactorText.commonTopWorldMspt),
-        topWorldMspt?.history ?? const <double>[],
-      ),
-      (
-        reactorText(ReactorText.worldsPerWorldTick),
-        perWorldTickTime?.history ?? const <double>[],
-      ),
-    ];
-
-    return ReactorPage(
-      title: reactorText(ReactorText.worldsTitle),
-      subtitle: reactorText(ReactorText.worldsSubtitle),
-      children: <Widget>[
-        SectionPanel(
-          label: reactorText(ReactorText.commonTopWorldMspt),
-          children: <Widget>[
-            TimeseriesChart(series: tickSeries, height: 160),
-            statGrid(<Widget>[
-              StatTile(
-                label: reactorText(ReactorText.commonTopWorldMspt),
-                sample: topWorldMspt,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.worldsPerWorldTickTime),
-                sample: perWorldTickTime,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.commonTopChunkCost),
-                sample: topChunkCost,
-              ),
-            ]),
-          ],
-        ),
-        SectionPanel(
-          label: reactorText(ReactorText.worldsBreakdown),
-          child: ReactorNotice(
-            title: reactorText(ReactorText.worldsBudgetsMoved),
-            message: reactorText(ReactorText.worldsBudgetsMovedDescription),
+    if (snapshot == null) return serverSnapshotState(scope: scope);
+    // The slowest world's tick time: the plugin reports no series per
+    // world, so one line, in ms.
+    final SamplerSample? topWorld = snapshot.sampler('top-world-mspt');
+    // Titled for what it draws: the slowest world, not every world.
+    return ChartCard(
+      title: reactorText(ReactorText.commonTopWorldMspt),
+      tip: reactorText(ReactorText.worldsSubtitle),
+      child: TimeseriesChart(
+        unit: 'ms',
+        series: <(String, List<double>)>[
+          (
+            reactorText(ReactorText.commonTopWorldMspt),
+            topWorld?.history ?? const <double>[],
           ),
-        ),
-      ],
+        ],
+        height: 160,
+      ),
     );
   }
 }

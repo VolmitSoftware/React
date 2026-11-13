@@ -4,12 +4,8 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.ControlBackend;
 import art.arcane.react.api.web.ControlSerializer;
-import art.arcane.react.api.web.PairingToken;
 import art.arcane.react.api.web.RegistryControlBackend;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebConfiguration;
-import art.arcane.react.api.web.WebSecret;
 import art.arcane.react.api.web.dto.ControlItemDto;
 import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.core.controller.PluginApiPackController;
@@ -183,14 +179,7 @@ public class WebRequestHandlingIntegrationTest {
     }
 
     private void start(File dataFolder, ControlBackend featureBackend) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord record = new TokenRecord("tok-admin", "admin-device", 1000L,
-            Set.of("read", "op:execute", "console:execute", "admin"), "admin");
-        bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(record);
-        store.save(tokensFile);
+        bearer = WebTestTokens.issue(dataFolder, "admin-device", "admin");
 
         SampleController sampleController = mock(SampleController.class);
         @SuppressWarnings("unchecked")
@@ -212,7 +201,6 @@ public class WebRequestHandlingIntegrationTest {
             @Override
             protected IdentityDto resolveIdentity() {
                 IdentityDto dto = new IdentityDto();
-                dto.version = "9.9.9-test";
                 dto.serverName = "TestBrand";
                 dto.folia = false;
                 dto.serverId = "127.0.0.1:0";

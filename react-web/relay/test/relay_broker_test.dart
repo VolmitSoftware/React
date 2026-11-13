@@ -16,7 +16,21 @@ class _FakeSink implements RelaySink {
     closed = true;
     closeMessage = message;
   }
+
+  List<RelayFrame> get replies => <RelayFrame>[
+    for (final RelayFrame frame in sent)
+      if (frame.type != RelayFrameType.status) frame,
+  ];
+
+  List<bool?> get statuses => <bool?>[
+    for (final RelayFrame frame in sent)
+      if (frame.type == RelayFrameType.status) frame.online,
+  ];
 }
+
+String _statusJson(String serverId, bool online) =>
+    '{"type":"status","serverId":"$serverId","online":$online,'
+    '"payload":{"online":$online}}';
 
 Map<String, dynamic> _routePayload({String method = 'GET', Object? body}) {
   return <String, dynamic>{
@@ -50,13 +64,17 @@ RelayFrame _response(String brokerRequestId, String marker) {
 
 int _status(RelayFrame frame) => frame.payload!['status'] as int;
 
-RelayFrame _metrics(String id, String token) => RelayFrame(
+RelayFrame _metrics(
+  String id,
+  String token, {
+  String path = '/api/v1/metrics',
+}) => RelayFrame(
   type: RelayFrameType.route,
   serverId: 'S1',
   requestId: id,
   payload: <String, dynamic>{
     'method': 'GET',
-    'path': '/api/v1/metrics',
+    'path': path,
     'headers': <String, dynamic>{'Authorization': 'Bearer $token'},
   },
 );
@@ -85,11 +103,11 @@ void main() {
         agent,
         _response(agent.sent.first.requestId!, 'snapshot'),
       );
-      expect(first.sent, isEmpty);
-      expect(second.sent.single.requestId, 'second');
-      expect(otherToken.sent, isEmpty);
+      expect(first.replies, isEmpty);
+      expect(second.replies.single.requestId, 'second');
+      expect(otherToken.replies, isEmpty);
       broker.unregisterServer('S1', agent);
-      expect(_status(otherToken.sent.single), 503);
+      expect(_status(otherToken.replies.single), 503);
       expect(broker.pendingRequestCount, 0);
       broker.registerServer('S1', agent);
       broker.routeFromApp('S1', second, _metrics('next', 'token-a'));
@@ -117,9 +135,9 @@ void main() {
         isTrue,
       );
 
-      expect(app.sent, hasLength(1));
-      expect(app.sent.single.requestId, 'client-1');
-      expect(app.sent.single.payload!['body'], <String, dynamic>{
+      expect(app.replies, hasLength(1));
+      expect(app.replies.single.requestId, 'client-1');
+      expect(app.replies.single.payload!['body'], <String, dynamic>{
         'marker': 'one',
       });
       expect(broker.pendingRequestCount, 0);
@@ -144,20 +162,20 @@ void main() {
       expect(brokerIdB, isNot('same-id'));
 
       broker.routeFromServer('S1', agent, _response(brokerIdB, 'B'));
-      expect(appA.sent, isEmpty);
-      expect(appB.sent, hasLength(1));
-      expect(appB.sent.single.requestId, 'same-id');
-      expect(appB.sent.single.payload!['body'], <String, dynamic>{
+      expect(appA.replies, isEmpty);
+      expect(appB.replies, hasLength(1));
+      expect(appB.replies.single.requestId, 'same-id');
+      expect(appB.replies.single.payload!['body'], <String, dynamic>{
         'marker': 'B',
       });
 
       broker.routeFromServer('S1', agent, _response(brokerIdA, 'A'));
-      expect(appA.sent, hasLength(1));
-      expect(appA.sent.single.requestId, 'same-id');
-      expect(appA.sent.single.payload!['body'], <String, dynamic>{
+      expect(appA.replies, hasLength(1));
+      expect(appA.replies.single.requestId, 'same-id');
+      expect(appA.replies.single.payload!['body'], <String, dynamic>{
         'marker': 'A',
       });
-      expect(appB.sent, hasLength(1));
+      expect(appB.replies, hasLength(1));
     });
 
     test('drops unknown and already completed broker response IDs', () {
@@ -171,7 +189,7 @@ void main() {
         broker.routeFromServer('S1', agent, _response('unknown', 'bad')),
         isFalse,
       );
-      expect(app.sent, isEmpty);
+      expect(app.replies, isEmpty);
 
       broker.routeFromApp('S1', app, _route('client-1'));
       final String brokerRequestId = agent.sent.single.requestId!;
@@ -191,7 +209,7 @@ void main() {
         ),
         isFalse,
       );
-      expect(app.sent, hasLength(1));
+      expect(app.replies, hasLength(1));
     });
 
     test('rejects a response from a replaced agent connection', () {
@@ -206,8 +224,8 @@ void main() {
 
       broker.registerServer('S1', newAgent);
       expect(oldAgent.closed, isTrue);
-      expect(app.sent, hasLength(1));
-      expect(_status(app.sent.single), 503);
+      expect(app.replies, hasLength(1));
+      expect(_status(app.replies.single), 503);
       expect(
         broker.routeFromServer(
           'S1',
@@ -216,7 +234,7 @@ void main() {
         ),
         isFalse,
       );
-      expect(app.sent, hasLength(1));
+      expect(app.replies, hasLength(1));
     });
 
     test('removes every pending request when an app disconnects', () {
@@ -243,7 +261,7 @@ void main() {
           isFalse,
         );
       }
-      expect(app.sent, isEmpty);
+      expect(app.replies, isEmpty);
     });
 
     test('fails pending requests when the agent disconnects', () {
@@ -257,9 +275,9 @@ void main() {
       broker.unregisterServer('S1', agent);
 
       expect(broker.pendingRequestCount, 0);
-      expect(app.sent, hasLength(1));
-      expect(app.sent.single.requestId, 'client-1');
-      expect(_status(app.sent.single), 503);
+      expect(app.replies, hasLength(1));
+      expect(app.replies.single.requestId, 'client-1');
+      expect(_status(app.replies.single), 503);
     });
 
     test('enforces the per-app pending request limit', () {
@@ -277,9 +295,9 @@ void main() {
       expect(broker.routeFromApp('S1', app, _route('two')), isFalse);
 
       expect(agent.sent, hasLength(1));
-      expect(app.sent, hasLength(1));
-      expect(app.sent.single.requestId, 'two');
-      expect(_status(app.sent.single), 429);
+      expect(app.replies, hasLength(1));
+      expect(app.replies.single.requestId, 'two');
+      expect(_status(app.replies.single), 429);
       broker.unregisterApp(app);
     });
 
@@ -300,9 +318,9 @@ void main() {
       expect(broker.routeFromApp('S1', appB, _route('two')), isFalse);
 
       expect(agent.sent, hasLength(1));
-      expect(appA.sent, isEmpty);
-      expect(appB.sent, hasLength(1));
-      expect(_status(appB.sent.single), 503);
+      expect(appA.replies, isEmpty);
+      expect(appB.replies, hasLength(1));
+      expect(_status(appB.replies.single), 503);
       broker.unregisterApp(appA);
       broker.unregisterApp(appB);
     });
@@ -318,8 +336,8 @@ void main() {
       expect(broker.routeFromApp('S1', app, _route('same')), isFalse);
 
       expect(agent.sent, hasLength(1));
-      expect(app.sent, hasLength(1));
-      expect(_status(app.sent.single), 409);
+      expect(app.replies, hasLength(1));
+      expect(_status(app.replies.single), 409);
       broker.unregisterApp(app);
     });
 
@@ -339,9 +357,9 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 60));
 
         expect(broker.pendingRequestCount, 0);
-        expect(app.sent, hasLength(1));
-        expect(app.sent.single.requestId, 'client-timeout');
-        expect(_status(app.sent.single), 504);
+        expect(app.replies, hasLength(1));
+        expect(app.replies.single.requestId, 'client-timeout');
+        expect(_status(app.replies.single), 504);
       },
     );
 
@@ -362,9 +380,9 @@ void main() {
       );
 
       expect(agent.sent, isEmpty);
-      expect(_status(app.sent.single), 400);
+      expect(_status(app.replies.single), 400);
       final Map<String, dynamic> responseBody =
-          app.sent.single.payload!['body'] as Map<String, dynamic>;
+          app.replies.single.payload!['body'] as Map<String, dynamic>;
       final Map<String, dynamic> error =
           responseBody['error'] as Map<String, dynamic>;
       expect(error['message'], contains('JSON-encoded string'));
@@ -395,14 +413,128 @@ void main() {
       final RelayBroker broker = RelayBroker();
       final _FakeSink app = _FakeSink();
       broker.subscribeApp('S1', app);
-      expect(app.sent, hasLength(1));
-      expect(app.sent.first.type, RelayFrameType.error);
+      expect(app.replies, hasLength(1));
+      expect(app.replies.first.type, RelayFrameType.error);
 
       expect(broker.routeFromApp('S1', app, _route('offline')), isFalse);
 
+      expect(app.replies, hasLength(2));
+      expect(app.replies.last.requestId, 'offline');
+      expect(_status(app.replies.last), 503);
+    });
+
+    test('broadcasts offline then online status across an agent reconnect', () {
+      final RelayBroker broker = RelayBroker();
+      final _FakeSink agent = _FakeSink();
+      final _FakeSink appA = _FakeSink();
+      final _FakeSink appB = _FakeSink();
+      final _FakeSink otherServer = _FakeSink();
+      broker.registerServer('S1', agent);
+      broker.subscribeApp('S1', appA);
+      broker.subscribeApp('S1', appB);
+      broker.subscribeApp('S2', otherServer);
+
+      broker.unregisterServer('S1', agent);
+      broker.unregisterServer('S1', agent);
+      broker.registerServer('S1', _FakeSink());
+
+      expect(appA.statuses, <bool>[true, false, true]);
+      expect(appB.statuses, <bool>[true, false, true]);
+      expect(appA.sent[1].encode(), _statusJson('S1', false));
+      expect(appA.sent[2].encode(), _statusJson('S1', true));
+      expect(otherServer.statuses, <bool>[false]);
+    });
+
+    test('subscribe while offline sends status before the offline error', () {
+      final RelayBroker broker = RelayBroker();
+      final _FakeSink app = _FakeSink();
+      broker.subscribeApp('S1', app);
+
       expect(app.sent, hasLength(2));
-      expect(app.sent.last.requestId, 'offline');
-      expect(_status(app.sent.last), 503);
+      expect(app.sent[0].encode(), _statusJson('S1', false));
+      expect(app.sent[1].type, RelayFrameType.error);
+      expect(app.sent[1].payload!['message'], 'server offline');
+    });
+
+    test('subscribe while online sends only an online status', () {
+      final RelayBroker broker = RelayBroker();
+      final _FakeSink app = _FakeSink();
+      broker.registerServer('S1', _FakeSink());
+      broker.subscribeApp('S1', app);
+
+      expect(app.sent.single.encode(), _statusJson('S1', true));
+    });
+
+    test('a replaced registration sends one online status and no offline', () {
+      final RelayBroker broker = RelayBroker();
+      final _FakeSink oldAgent = _FakeSink();
+      final _FakeSink newAgent = _FakeSink();
+      final _FakeSink app = _FakeSink();
+      broker.registerServer('S1', oldAgent);
+      broker.subscribeApp('S1', app);
+
+      broker.registerServer('S1', newAgent);
+      broker.unregisterServer('S1', oldAgent);
+
+      expect(app.statuses, <bool>[true, true]);
+      expect(broker.isOnline('S1'), isTrue);
+    });
+
+    test('coalesces compact and full metrics polls separately', () {
+      const String compactPath = '/api/v1/metrics?compact=1';
+      final RelayBroker broker = RelayBroker();
+      final _FakeSink agent = _FakeSink();
+      final List<_FakeSink> full = <_FakeSink>[_FakeSink(), _FakeSink()];
+      final List<_FakeSink> compact = <_FakeSink>[_FakeSink(), _FakeSink()];
+      broker.registerServer('S1', agent);
+      for (final _FakeSink app in <_FakeSink>[...full, ...compact]) {
+        broker.subscribeApp('S1', app);
+      }
+      for (final _FakeSink app in full) {
+        broker.routeFromApp('S1', app, _metrics('full', 'token-a'));
+      }
+      for (final _FakeSink app in compact) {
+        broker.routeFromApp(
+          'S1',
+          app,
+          _metrics('compact', 'token-a', path: compactPath),
+        );
+      }
+
+      expect(agent.sent, hasLength(2));
+      final RelayFrame compactRoute = agent.sent.singleWhere(
+        (RelayFrame frame) => frame.payload!['path'] == compactPath,
+      );
+      final RelayFrame fullRoute = agent.sent.singleWhere(
+        (RelayFrame frame) => frame.payload!['path'] == '/api/v1/metrics',
+      );
+
+      broker.routeFromServer(
+        'S1',
+        agent,
+        _response(compactRoute.requestId!, 'compact-body'),
+      );
+      for (final _FakeSink app in compact) {
+        expect(app.replies.single.requestId, 'compact');
+        expect(app.replies.single.payload!['body'], <String, dynamic>{
+          'marker': 'compact-body',
+        });
+      }
+      for (final _FakeSink app in full) {
+        expect(app.replies, isEmpty);
+      }
+
+      broker.routeFromServer(
+        'S1',
+        agent,
+        _response(fullRoute.requestId!, 'full-body'),
+      );
+      for (final _FakeSink app in full) {
+        expect(app.replies.single.payload!['body'], <String, dynamic>{
+          'marker': 'full-body',
+        });
+      }
+      expect(broker.pendingRequestCount, 0);
     });
 
     test('online and session counts reflect registrations', () {

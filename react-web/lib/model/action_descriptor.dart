@@ -100,3 +100,45 @@ class ActionTicket {
     'status': status,
   };
 }
+
+enum ActionTicketState {
+  queued,
+  running,
+  done,
+  failed,
+  unknown;
+
+  bool get finished => this == done || this == failed;
+
+  static ActionTicketState fromWire(Object? raw) {
+    final String value = raw is String ? raw.toLowerCase() : '';
+    for (final ActionTicketState state in ActionTicketState.values) {
+      if (state.name == value) return state;
+    }
+    return switch (value) {
+      'completed' || 'success' || 'succeeded' => ActionTicketState.done,
+      'error' => ActionTicketState.failed,
+      _ => ActionTicketState.unknown,
+    };
+  }
+}
+
+class ActionTicketStatus {
+  final String id;
+  final ActionTicketState state;
+  final String message;
+
+  const ActionTicketStatus({
+    required this.id,
+    required this.state,
+    this.message = '',
+  });
+
+  factory ActionTicketStatus.fromJson(Map<String, dynamic> j) {
+    return ActionTicketStatus(
+      id: (j['id'] ?? j['ticketId']) as String,
+      state: ActionTicketState.fromWire(j['state'] ?? j['status']),
+      message: (j['message'] as String?) ?? '',
+    );
+  }
+}

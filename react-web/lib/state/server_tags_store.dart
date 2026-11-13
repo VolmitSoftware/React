@@ -60,9 +60,4 @@ class ServerTagsStore {
     final List<String> sorted = all.toList()..sort();
     return sorted;
   }
-
-  List<String> serverIdsWithTag(String tag) => _load().entries
-      .where((MapEntry<String, List<String>> e) => e.value.contains(tag))
-      .map((MapEntry<String, List<String>> e) => e.key)
-      .toList();
 }

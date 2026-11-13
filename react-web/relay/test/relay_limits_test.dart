@@ -7,6 +7,14 @@ void main() {
       expect(() => const RelayLimits().validate(), returnsNormally);
     });
 
+    test('agents get separate, larger rate and queue bounds than apps', () {
+      const RelayLimits limits = RelayLimits();
+      expect(limits.maxAppMessagesPerWindow, 240);
+      expect(limits.maxAgentMessagesPerWindow, 5000);
+      expect(limits.maxOutboundQueueMessages, 128);
+      expect(limits.maxAgentOutboundQueueMessages, 4096);
+    });
+
     test('rejects a global pending limit below the per-app limit', () {
       expect(
         () => const RelayLimits(
@@ -23,7 +31,15 @@ void main() {
         throwsArgumentError,
       );
       expect(
-        () => const RelayLimits(maxMessagesPerWindow: 0).validate(),
+        () => const RelayLimits(maxAppMessagesPerWindow: 0).validate(),
+        throwsArgumentError,
+      );
+      expect(
+        () => const RelayLimits(maxAgentMessagesPerWindow: 0).validate(),
+        throwsArgumentError,
+      );
+      expect(
+        () => const RelayLimits(maxAgentOutboundQueueMessages: 0).validate(),
         throwsArgumentError,
       );
       expect(

@@ -23,6 +23,7 @@
 #
 # === Kintamieji ===
 # Nekeiskite kintamųjų pavadinimų ir naudokite tik konkrečiame pranešime esančius kintamuosius.
+#   {access}  React Web susiejimo vaidmuo arba teisės
 #   {action}  Veiksmo pavadinimas arba spalvos keitimo kryptis
 #   {actions}  Eilėje esančių veiksmų skaičius arba praleistų veiksmų pavadinimai
 #   {active}  Aktyvių funkcijų arba patobulinimų skaičius
@@ -41,7 +42,7 @@
 #   {before}  Nustatymo reikšmė, kalbos pranešimas arba kaupo atmintis prieš pakeitimą
 #   {checked}  Patikrintų matuoklių skaičius
 #   {chunks}  Veiksmo paveiktų pasaulio segmentų skaičius
-#   {code}  Žiniatinklio susiejimo kodas
+#   {client}  Naršyklės, iš kurios sukurtas React Web susiejimas, pavadinimas
 #   {command}  Komandos kelias
 #   {count}  Įrašų, modulių, pakeitimų arba testo rezultatų skaičius
 #   {current}  Dabartinio puslapio numeris
@@ -57,6 +58,7 @@
 #   {entities}  Veiksmo paveiktų objektų skaičius
 #   {entry}  Integracijos laiko juostos įrašas
 #   {exceptions}  Apkrovos testo etape užregistruotos React išimtys
+#   {expires}  Kada React Web susiejimas baigiasi nenaudojant
 #   {fail}  Nepavykusių patikrų skaičius
 #   {file}  Nustatymų, kalbos arba įskiepio API failo pavadinimas
 #   {fingerprint}  Serverio arba žiniatinklio žetono kontrolinis atspaudas
@@ -80,14 +82,17 @@
 #   {incident}  Iš kūrėjo testų rinkinio pašalinto rekursinio incidento veiksmo ID
 #   {index}  Dabartinio kūrėjo testų rinkinio žingsnio numeris
 #   {invalid}  Matuoklių su neteisingais rodmenimis skaičius
-#   {issued_at}  Žiniatinklio žetono sukūrimo laikas
 #   {item}  Daikto pavadinimas arba ID
 #   {items}  Sujungtų daiktų objektų skaičius
 #   {kept}  Kalbos atnaujinimo išsaugoti vietiniai pakeitimai
 #   {key}  Komandos parametro raktas, nustatymo raktas arba kalbos pranešimo ID
 #   {label}  Našumo testo, rodiklio, nustatymo, komandos arba žiniatinklio žetono žyma
+#   {lifetime}  Kiek React Web susiejimas galioja nenaudojamas
 #   {line}  Redaguojamos eilutės numeris kelių eilučių pranešime
 #   {lines}  Patikrintų serverio žurnalo eilučių skaičius
+#   {link}  React Web susiejimo nuoroda
+#   {links}  Dar neatidarytų React Web susiejimo nuorodų skaičius
+#   {listener}  Adresas, prie kurio prijungtas React Web klausytojas
 #   {loaded}  Išankstinio paruošimo metu naujai įkeltų pasaulio segmentų skaičius
 #   {locale}  Rodomas, pasirenkamas arba redaguojamas kalbos kodas
 #   {matched}  Pasauliai, kurių automatinis išsaugojimas atitinka bazinę testo būseną
@@ -105,6 +110,7 @@
 #   {offenders}  Nebaigtines reikšmes grąžinančių matuoklių skaičius
 #   {options}  Leidžiamos nustatymo reikšmės
 #   {p95}  Žaidimo ciklo trukmės 95-asis procentilis apkrovos teste, ms
+#   {origin}  Užklausos naršyklės kilmė
 #   {parameter}  Komandos parametro pavadinimas
 #   {parameters}  Praleisti komandos parametrai
 #   {pass}  Sėkmingų patikrų skaičius
@@ -128,6 +134,7 @@
 #   {react_errors}  Serverio žurnale rastų React klaidų eilučių skaičius
 #   {reason}  Klaidos, atmetimo arba nepasiekiamumo paaiškinimas
 #   {registered}  Registruotų modulių skaičius
+#   {relay}  React Web retransliatoriaus būsena
 #   {remaining}  Laikas iki kito leidžiamo kalbų tikrinimo
 #   {removed_first}  Ar pirmas išjungimas pašalino funkciją iš aktyvaus registro
 #   {removed_second}  Ar pakartotinis išjungimas pašalino funkciją iš aktyvaus registro
@@ -137,6 +144,7 @@
 #   {sampler}  Matuoklio pavadinimas arba ID
 #   {samplers}  Integracijos arba netinkamai veikiančių matuoklių sąrašas
 #   {scope}  Žemėlapio arba atstumo nustatymo taikymo sritis
+#   {scopes}  React Web susiejimo teisės
 #   {score}  Našumo testo balas
 #   {seconds}  Atgalinio skaičiavimo arba apkrovos testo trukmė sekundėmis
 #   {section}  Konfigūracijos arba kalbų redaktoriaus skiltis
@@ -145,6 +153,7 @@
 #   {since_run}  Nuo dabartinio testo pradžios praneštos klaidos
 #   {size}  Didžiausi arba aktyvūs žemėlapių sienos matmenys
 #   {skip}  Praleistų patikrų skaičius
+#   {sockets}  Atvirų React Web lizdų skaičius
 #   {spawn_y}  Aukštis, kuriame sukurtas gravitacijos testo blokas
 #   {state}  Veiksmo arba įskiepio API paketo būsena
 #   {status}  Integracijos būsena arba nustatymo būsenos žyma
@@ -159,6 +168,7 @@
 #   {tier}  Incidento veiksmų plano rimtumo lygis
 #   {timing}  Gebėjimų atgalinių iškvietimų laikas milisekundėmis per minutę
 #   {to}  Paskutinio dabartinio puslapio įrašo numeris
+#   {tokens}  Susietų React Web naršyklių skaičius
 #   {total}  Bendras pranešime minimų įrašų, modulių, pasaulių, patikrų arba atminties kiekis
 #   {type}  Komandos parametro, nustatymo reikšmės, žemėlapio arba atstumo tipas
 #   {unavailable}  Nepasiekiamų NMS jungties nuorodų skaičius
@@ -225,12 +235,12 @@ root = "Pagrindinė React komanda"
 test = "Vykdyti React patikros ir apkrovos bandymus"
 "test.load" = "Atlikti dviejų etapų sintetinės apkrovos bandymą"
 "test.run" = "Paleisti React patikros rinkinį"
-version = "Rodyti React versiją"
 distance = "Nustatyti serverio, pasaulio arba žaidėjo matymo, simuliavimo arba siuntimo atstumą"
 web = "Tvarkyti React WebUI prieigos žetonus"
-"web.list" = "Rodyti aktyvius WebUI žetonus"
-"web.pair" = "Sukurti WebUI susiejimo žetoną"
-"web.revoke" = "Atšaukti WebUI žetoną"
+"web.pair" = "Sukurti vienkartinę React Web susiejimo nuorodą"
+"web.revoke" = "Atšaukti žetoną arba dar neatidarytą nuorodą"
+"web.status" = "Rodyti klausytoją, retransliatorių ir piršto atspaudą"
+"web.tokens" = "Išvardyti susietas naršykles"
 language = "Pasirinkite savo arba serverio kalbą"
 
 [command.parameter]
@@ -267,9 +277,11 @@ target = "Tikslinis pasaulis arba žaidėjas; numatyta reikšmė priklauso nuo k
 value = "Atstumas pasaulio segmentais; naudokite -1, kai galima paveldėti nustatymą"
 
 [command.parameter.web]
-id = "Atšaukiamo žetono ID"
+expires = "Kiek susiejimas galioja nenaudojamas, pvz., 7d"
+id = "Žetono ID arba all"
 label = "Žmogui suprantama šio žetono žyma"
 role = "Šio žetono vaidmuo: viewer, operator arba admin"
+scopes = "Teisės vietoje vaidmens, pvz., read,op:execute"
 
 [command.runtime]
 chunk_not_sampled = "&cŠis pasaulio segmentas dar neišmatuotas. Pabandykite po sekundės.&r"
@@ -347,21 +359,39 @@ threading_folia = "(Folia, regionų gijos)"
 threading_standard = ""
 
 [command.runtime.web]
+fingerprint_copy_hover = "Kopijuoti piršto atspaudą"
+invalid_expires = "&cexpires= priima skaičių su d, h arba m nuo 1m iki 365d, pvz., 7d.&r"
+invalid_label = "&cŽymoje gali būti ne daugiau kaip 64 simboliai.&r"
 invalid_role = "&cNetinkamas vaidmuo: &f{role}&c. Tikėtasi viewer, operator arba admin.&r"
+invalid_scope = "&cNežinoma teisė &f{scope}&c. Teisės yra {scopes}.&r"
+link_copy = "&b&n[Kopijuoti]&r"
+link_copy_hover = "Kopijuoti nuorodą"
+link_details = "&7Teisės {scopes}; baigiasi po {lifetime} nenaudojant; žetonas {id}&r"
+link_open = "&b&n[Atidaryti React Web]&r"
+link_open_hover = "Atidaryti naršyklėje"
+link_ready = "&aNuoroda paruošta. Atidarykite ją per 10 minučių&r"
+link_ready_console = "&aNuoroda paruošta. Atidarykite ją per 10 minučių:&r {link}"
+link_revoke = "&c&n[Atšaukti]&r"
+link_revoke_hover = "Atšaukti šią nuorodą arba baigti jos sukurtą susiejimą"
 mutation_notice = "&eŽiniatinklio pakeitimą atliko &f{actor}&e: &b{target}&e — &f{detail}&e.&r"
-pair_unavailable = "&cSusiejimas žiniatinklyje nepasiekiamas: &f{reason}&r"
+never = "niekada"
 no_tokens = "&bAktyvių žetonų nėra.&r"
-pairing_code = "&bSusiejimo kodas:&r {code}"
-pairing_copy = "&bSusiejimo kodas:&r &e&nSpustelėkite, kad nukopijuotumėte&r"
-pairing_copy_hover = "Nukopijuoti visą susiejimo kodą"
-persist_failed = "&cNepavyko išsaugoti žetono: &f{reason}&r"
+off = "išjungta"
+pair_refused = "&e{label} nepavyko susieti: &f{reason}&r"
+pair_unavailable = "&cSusiejimas žiniatinklyje nepasiekiamas: &f{reason}&r"
+refused_expired = "nuorodos galiojimas baigėsi; sukurkite naują"
+refused_origin = "kilmės {origin} nėra web.toml sąraše allowedOrigins"
+relay_connecting = "{url} jungiamasi"
+relay_registered = "{url} užregistruota"
+relay_waiting = "laukia pirmojo susiejimo"
 revoked = "&bAtšauktas žetonas:&r {id}"
-role = "&bVaidmuo:&r {role}"
-server_fingerprint = "&bServerio kontrolinis atspaudas:&r {fingerprint}"
-token_entry = "&7  {id} | {label} | issuedAt={issued_at}&r"
-token_fingerprint = "&bŽetono kontrolinis atspaudas:&r {fingerprint}"
+role_and_scopes = "&cNaudokite role= arba scopes=, ne abu.&r"
+scopes_need_read = "&cscopes= turi apimti read.&r"
+state_ready = "paruošta"
+status = "&bReact Web&r {state} | klausytojas {listener} | retransliatorius {relay} | žetonų: {tokens}, atvirų nuorodų: {links} | lizdų: {sockets}"
+status_fingerprint = "&7Piršto atspaudas&r {fingerprint}"
+token_entry = "&7  {id} | {label} | {access} | baigiasi {expires} | paskutinį kartą naudota {used} | {client} | lizdų: {sockets}&r"
 token_header = "&bAktyvūs žetonai ({count}):&r"
-token_id = "&bŽetono ID:&r {id}"
 token_not_found = "&cŽetonas nerastas: &f{id}&r"
 update_failed = "&cNepavyko atnaujinti žetonų saugyklos: &f{reason}&r"
 
@@ -469,13 +499,17 @@ description = "Įterptosios React HTTP/WebSocket valdymo API konfigūracija. Pak
 impact = "Nurodykite atvirkštinio tarpinio serverio HTTPS URL, jei klausytuvas pasiekiamas ne vien per localhost. Įterptasis React klausytuvas ir toliau palaiko tik HTTP. Pakeitimai pritaikomi automatiškai išsaugojus web.toml."
 summary = "Viešas bazinis URL, pateikiamas tiesioginiams API klientams."
 
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.allowedorigins]
+impact = "Kiekvienas įrašas yra kilmė: schema, mazgas ir prievadas be kelio; paprastas http tik per grįžtamąjį ryšį. Kitos kilmės puslapis atmetamas su origin_not_allowed. Užklausos be Origin, pvz., retransliatoriaus, nepaveikiamos."
+summary = "Naršyklės kilmės, kurioms leidžiama naudoti tiesioginį klausytoją."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.appurl]
+impact = "Pakeiskite jį savo talpinamu React Web ir įtraukite jo kilmę į allowedOrigins."
+summary = "React Web adresas, kurį atidaro susiejimo nuorodos."
+
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenaddress]
 impact = "Numatytasis adresas :: priima IPv6 ir susietą IPv4 srautą iš vietinio tinklo, konteinerių ir peradresuotų prievadų. Atgalinės kilpos adresą naudokite tik už tame pačiame kompiuteryje veikiančio atvirkštinio tarpinio serverio arba perdavimo tarnybos."
 summary = "IP adresas, su kuriuo susiejama žiniatinklio klausyklė."
-
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.corsorigins]
-impact = "Tuščias sąrašas leidžia visas kilmes. Pridėkite konkrečias kilmes, kad apribotumėte prieigą iš kitų kilmių."
-summary = "Leidžiamų CORS kilmių sąrašas HTTP API."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React pagal numatytuosius nustatymus atveria API su autentifikavimu. Nustatykite false, kad nebūtų atverta HTTP ar WebSocket klausyklė."
@@ -486,8 +520,8 @@ impact = "Jei šis prievadas užimtas, React iš eilės bando kitus 99 prievadus
 summary = "Pageidaujamas žiniatinklio serverio TCP prievadas."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayenabled]
-impact = "Kai true, React prisijungia prie perdavimo tarnybos tarpininko adresu relayUrl, kad palydovinė programa galėtų pasiekti serverius už NAT be prievadų peradresavimo."
-summary = "Įjungia išeinantį debesų perdavimo tarnybos klientą NAT apėjimui."
+impact = "React prisijungia prie relayUrl per pirmą /react web pair ir per kiekvieną paleidimą, kol yra susiejimas. Tada susiejimo nuorodose yra ir retransliatoriaus adresas."
+summary = "Įjungia išeinantį retransliatoriaus klientą, kad naršyklės pasiektų serverį be atviro prievado."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayurl]
 impact = "Skaitoma tik kai relayEnabled yra true. Palikite tuščią, kai perdavimo tarnyba išjungta."
@@ -497,9 +531,13 @@ summary = "Perdavimo tarnybos tarpininko bazinis WSS URL, pvz., wss://relay.arca
 impact = "Kai true, neautentifikuotos GET užklausos atmetamos su 401. false nustatykite tik visiškai patikimose tinklo aplinkose."
 summary = "Reikalauja galiojančio autentifikavimo žetono tik skaitymo HTTP galiniams taškams."
 
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.wspushhz]
-impact = "Didesnės reikšmės padidina siuntimo tikslumą, bet taip pat tinklo ir CPU apkrovą."
-summary = "Tikslinis dažnis (Hz), kuriuo matuoklių atnaujinimai siunčiami per WebSocket ryšius."
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.servername]
+impact = "Tuščias naudoja pirmą MOTD eilutę arba serverio aplanko pavadinimą, kai MOTD yra vanilla numatytasis."
+summary = "Pavadinimas, kurį React Web rodo šiam serveriui."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
+impact = "Kiekvienas naudojimas laiką skaičiuoja iš naujo. /react web pair expires= jį pakeičia vienai nuorodai. Nuo 1 iki 365."
+summary = "Dienos, kurias susiejimas galioja nenaudojamas."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Šiukšlių surinkimo veiksmo konfigūracija. Paprašo JVM surinkti šiukšles ir praneša, kiek kaupo atminties iškart atlaisvinta."

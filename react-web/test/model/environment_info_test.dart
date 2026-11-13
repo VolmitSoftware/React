@@ -127,4 +127,65 @@ void main() {
       );
     });
   });
+
+  group('EnvironmentMount.isSystem', () {
+    EnvironmentMount mount(
+      String path, {
+      String name = 'disk',
+      String type = 'apfs',
+      int total = 1000,
+    }) => EnvironmentMount(
+      name: name,
+      mount: path,
+      description: '',
+      type: type,
+      totalBytes: total,
+      freeBytes: 30,
+      usableBytes: 30,
+    );
+
+    test('storage the server writes to is not a system mount', () {
+      expect(mount('/').isSystem, isFalse);
+      expect(mount('/Volumes/Games').isSystem, isFalse);
+      expect(mount('/home', type: 'ext4').isSystem, isFalse);
+      expect(mount('/run/media/srv/data', type: 'ext4').isSystem, isFalse);
+      expect(mount('C:\\', type: 'NTFS').isSystem, isFalse);
+    });
+
+    test('macOS system volumes, snapshots and pseudo mounts are', () {
+      expect(mount('/System/Volumes/Preboot').isSystem, isTrue);
+      expect(
+        mount(
+          '/System/Volumes/Data/home',
+          name: 'map auto_home',
+          type: 'autofs',
+        ).isSystem,
+        isTrue,
+      );
+      expect(mount('/dev', name: 'devfs', type: 'devfs').isSystem, isTrue);
+      expect(
+        mount('/private/var/run/com.apple.security.cryptexd/mnt/x').isSystem,
+        isTrue,
+      );
+      expect(mount('/System/Volumes/Update/mnt1').isSystem, isTrue);
+      expect(
+        mount('/Volumes/com.apple.TimeMachine.localsnapshots').isSystem,
+        isTrue,
+      );
+    });
+
+    test('Linux pseudo file systems are', () {
+      for (final String type in <String>[
+        'proc',
+        'sysfs',
+        'tmpfs',
+        'overlay',
+        'squashfs',
+      ]) {
+        expect(mount('/x', type: type).isSystem, isTrue, reason: type);
+      }
+      expect(mount('/snap/core/1', type: 'ext4').isSystem, isTrue);
+      expect(mount('/empty', total: 0).isSystem, isTrue);
+    });
+  });
 }

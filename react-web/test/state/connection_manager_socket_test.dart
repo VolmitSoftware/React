@@ -168,8 +168,9 @@ void main() {
 
     test('seq increments on successive WS frames', () async {
       final _FakeMetricsSocket socket = _FakeMetricsSocket();
+      // A poll would never answer here: only the socket's frames count.
       final _FakeMetricsClient client = _FakeMetricsClient(<Object>[
-        _makeSnapshot(),
+        Completer<ServerSnapshot>().future,
       ]);
 
       final ConnectionManager manager = ConnectionManager(
@@ -272,8 +273,8 @@ void main() {
       expect(client.callCount, greaterThan(0));
     });
 
-    test('closing WS stream AFTER prior frames transitions to degraded then '
-        'recovers live via HTTP polling', () async {
+    test('a socket that drops after frames stays live while the fallback '
+        'poll answers (a path switch shows nothing)', () async {
       final Completer<ServerSnapshot> firstPollBlocker =
           Completer<ServerSnapshot>();
       addTearDown(() {
@@ -306,12 +307,33 @@ void main() {
       await socket.closeStream();
       await pump(10);
 
-      // _wsHadFrames was true → _onFailure() called → degraded.
-      expect(manager.state, equals(ConnState.degraded));
+      // Only a failed poll counts: the drop alone changes nothing.
+      expect(manager.state, equals(ConnState.live));
 
       firstPollBlocker.complete(_makeSnapshot(value: 88.0));
       await pump(40);
       expect(manager.state, equals(ConnState.live));
+    });
+
+    test('a socket that drops after frames degrades when the fallback poll '
+        'fails too', () async {
+      final _FakeMetricsSocket socket = _FakeMetricsSocket();
+      final _FakeMetricsClient client = _FakeMetricsClient(<Object>[
+        const ReactUnavailable('down'),
+        Completer<ServerSnapshot>().future,
+      ]);
+      final ConnectionManager manager = ConnectionManager(
+        client,
+        pollInterval: const Duration(milliseconds: 20),
+        socket: socket,
+      );
+      addTearDown(() => manager.dispose());
+      manager.start();
+      socket.emit(_makeSnapshot(value: 1.0));
+      await pump();
+      await socket.closeStream();
+      await pump(10);
+      expect(manager.state, equals(ConnState.degraded));
     });
 
     test(
@@ -421,6 +443,93 @@ void main() {
       secondSocket!.emit(_makeSnapshot(value: 20.0));
       await pump(20);
       expect(manager.state, equals(ConnState.live));
+    });
+
+    test('after a drop the direct path is tried again at 1, 2 and 5 s, '
+        'then at the long interval once the first minute is over', () async {
+      final _FakeMetricsSocket socket = _FakeMetricsSocket();
+      final List<DateTime> asked = <DateTime>[];
+      final ConnectionManager manager = ConnectionManager(
+        _FakeMetricsClient(<Object>[_makeSnapshot()]),
+        pollInterval: const Duration(seconds: 10),
+        socket: socket,
+        socketFactory: () {
+          asked.add(DateTime.now());
+          return null;
+        },
+        socketRetryDelay: const Duration(seconds: 10),
+        reprobeSteps: const <Duration>[
+          Duration(milliseconds: 20),
+          Duration(milliseconds: 40),
+          Duration(milliseconds: 100),
+        ],
+        quickWindow: const Duration(milliseconds: 400),
+      );
+      addTearDown(manager.dispose);
+      manager.start();
+      socket.emit(_makeSnapshot(value: 1.0));
+      await pump();
+
+      final DateTime dropped = DateTime.now();
+      await socket.closeStream();
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+
+      // Each try asks twice: on its timer, and once more right after the
+      // poll it starts answers. Count the tries.
+      final List<int> after = <int>[];
+      for (final DateTime at in asked) {
+        final int ms = at.difference(dropped).inMilliseconds;
+        if (after.isEmpty || ms - after.last > 8) after.add(ms);
+      }
+      expect(after.length, inInclusiveRange(4, 8), reason: '$after');
+      final List<int> gaps = <int>[
+        for (int i = 1; i < after.length; i++) after[i] - after[i - 1],
+      ];
+      expect(gaps.first, lessThan(80), reason: '$after');
+      expect(gaps.where((int gap) => gap > 200), isEmpty, reason: '$after');
+      expect(after.last, lessThan(560), reason: 'none past the window: $after');
+    });
+
+    test('a try that finds the relay still in use polls at once and opens '
+        'the socket as soon as that poll settled on the direct path', () async {
+      final _FakeMetricsSocket first = _FakeMetricsSocket();
+      _FakeMetricsSocket? second;
+      bool directBack = false;
+      DateTime? opened;
+      final ConnectionManager manager = ConnectionManager(
+        _FakeMetricsClient(<Object>[_makeSnapshot()]),
+        pollInterval: const Duration(seconds: 10),
+        socket: first,
+        socketFactory: () {
+          if (!directBack) {
+            // The client races both paths on its next request; the direct
+            // path answers this time.
+            directBack = true;
+            return null;
+          }
+          opened ??= DateTime.now();
+          return second = _FakeMetricsSocket();
+        },
+        socketRetryDelay: const Duration(seconds: 10),
+        reprobeSteps: const <Duration>[
+          Duration(milliseconds: 20),
+          Duration(seconds: 5),
+        ],
+      );
+      addTearDown(() async {
+        manager.dispose();
+        await second?.close();
+      });
+      manager.start();
+      first.emit(_makeSnapshot(value: 1.0));
+      await pump();
+
+      final DateTime dropped = DateTime.now();
+      await first.closeStream();
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(second, isNotNull);
+      expect(opened!.difference(dropped).inMilliseconds, lessThan(250));
     });
 
     test('stop() prevents reconnect from firing after socket drop', () async {

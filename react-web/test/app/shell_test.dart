@@ -1,500 +1,341 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr/jaspr.dart' show Component, DomComponent;
 import 'package:jaspr_router/jaspr_router.dart';
 import 'package:jaspr_test/server_test.dart';
 
+import 'package:react_web/app/app_shell.dart';
+import 'package:react_web/app/fleet_observer.dart';
 import 'package:react_web/app/reactor_app.dart';
+import 'package:react_web/app/routes.dart';
 import 'package:react_web/localization/reactor_locale.dart';
 import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:react_web/model/sampler_sample.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/fleet_live_scope.dart';
 import 'package:react_web/state/fleet_rollup.dart';
+import 'package:react_web/state/fleet_live_scope.dart';
+import 'package:react_web/theme/reactor_stylesheet.dart';
 import 'package:react_web/theme/reactor_theme.dart';
-import 'package:react_web/widget/status_dot.dart';
-import 'package:react_web/widget/language_picker.dart';
+import 'package:react_web/ui/kit/mode.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+const ReactorStylesheet _sheet = ReactorStylesheet();
 
-Widget _wrap(Widget child) => ArcaneThemeProvider(
-  stylesheet: _sheet,
-  child: ReactorThemeScope(
-    brightness: Brightness.dark,
-    onChanged: (Brightness _) {},
-    child: child,
-  ),
+Widget _wrap(Widget child, {ReactorMode mode = ReactorMode.simple}) =>
+    ArcaneThemeProvider(
+      stylesheet: _sheet,
+      child: ReactorThemeScope(
+        brightness: Brightness.dark,
+        onChanged: (Brightness _) {},
+        child: ModeScope(
+          mode: mode,
+          onChanged: (ReactorMode _) {},
+          child: child,
+        ),
+      ),
+    );
+
+const List<ServerEntry> _one = <ServerEntry>[
+  ServerEntry(id: 'srv1', name: 'Skyblock', state: ConnState.live),
+];
+
+Future<String> _render(
+  ServerTester tester,
+  Widget child, {
+  ReactorMode mode = ReactorMode.simple,
+}) async {
+  tester.pumpComponent(_wrap(child, mode: mode));
+  final DocumentResponse response = await tester.request('/');
+  expect(response.statusCode, 200);
+  return response.body;
+}
+
+/// The shell reads its servers from FleetLiveScope, as in the app.
+Widget _shell(List<ServerEntry> servers, String currentPath) => FleetLiveScope(
+  revision: 1,
+  servers: <FleetServerLive>[
+    for (final ServerEntry server in servers)
+      FleetServerLive(id: server.id, name: server.name, state: server.state),
+  ],
+  child: AppShell(currentPath: currentPath),
 );
 
-SamplerSample _sample(String id, double value, String display) => SamplerSample(
-  id: id,
-  name: id,
-  suffix: '',
-  value: value,
-  display: display,
-  min: value,
-  max: value,
-  history: <double>[value],
-);
-
-Finder _domId(String id) => find.byComponentPredicate(
-  (Component component) => component is DomComponent && component.id == id,
-  description: 'DOM element with id $id',
+ServerSnapshot _snapshot(double tps) => ServerSnapshot(
+  byId: <String, SamplerSample>{
+    'ticks-per-second': SamplerSample(
+      id: 'ticks-per-second',
+      name: 'TPS',
+      suffix: '',
+      value: tps,
+      display: '$tps',
+      min: 0,
+      max: 20,
+      history: <double>[tps],
+    ),
+  },
+  at: DateTime.now(),
+  seq: 1,
 );
 
 void main() {
-  group('ReactorApp', () {
-    test('is a StatefulWidget', () {
-      const ReactorApp app = ReactorApp();
-      expect(app, isA<StatefulWidget>());
-    });
-
-    test('kRouteRoot is "/"', () {
-      expect(kRouteRoot, equals('/'));
-    });
-
-    test('kRouteAddServer is "/add-server"', () {
-      expect(kRouteAddServer, equals('/add-server'));
-    });
-
-    test('buildReactorRoutes includes root fleet overview route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasRoot = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteRoot,
-      );
-      expect(
-        hasRoot,
-        isTrue,
-        reason: 'Fleet Overview sidebar item requires / route',
-      );
-    });
-
-    test('buildReactorRoutes includes add-server route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasAddServer = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteAddServer,
-      );
-      expect(
-        hasAddServer,
-        isTrue,
-        reason: 'sidebar "Add Server" requires /add-server route',
-      );
-    });
-
-    test('buildReactorRoutes includes server overview route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasOverview = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerOverview,
-      );
-      expect(
-        hasOverview,
-        isTrue,
-        reason: 'per-server Overview tab requires route',
-      );
-    });
-
-    test('buildReactorRoutes includes server performance route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasPerf = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerPerformance,
-      );
-      expect(
-        hasPerf,
-        isTrue,
-        reason: 'per-server Performance tab requires route',
-      );
-    });
-
-    test('buildReactorRoutes includes server memory route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasMem = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerMemory,
-      );
-      expect(hasMem, isTrue, reason: 'per-server Memory tab requires route');
-    });
-
-    testServer(
-      'ReactorShell with no servers renders "Add Server" sidebar item',
-      (ServerTester tester) async {
-        tester.pumpComponent(_wrap(const ReactorShell()));
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, 200);
-        expect(
-          res.body.contains('Add Server'),
-          isTrue,
-          reason: 'sidebar must contain "Add Server" item',
-        );
-      },
-    );
-
-    for (final Brightness brightness in Brightness.values) {
-      testServer('ReactorShell names the next theme in $brightness', (
-        ServerTester tester,
-      ) async {
-        final String command = brightness == Brightness.dark
-            ? 'Switch to light theme'
-            : 'Switch to dark theme';
-        tester.pumpComponent(
-          ArcaneThemeProvider(
-            stylesheet: _sheet,
-            child: ReactorThemeScope(
-              brightness: brightness,
-              onChanged: (Brightness _) {},
-              child: const ReactorShell(),
-            ),
-          ),
-        );
-        final DocumentResponse response = await tester.request('/');
-
-        expect(response.statusCode, 200);
-        expect(response.body, contains('aria-label="$command"'));
-        expect(response.body, isNot(contains('title="$command"')));
-        expect(
-          response.document!
-              .querySelectorAll('[role="tooltip"]')
-              .map((element) => element.text),
-          contains(command),
-        );
-      });
-    }
-
-    testServer('ReactorShell exposes every supported language at top right', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          ReactorLocaleScope(
-            locale: reactorEnglishLocale,
-            loading: false,
-            onChanged: (String _) async {},
-            child: const ReactorShell(),
-          ),
-        ),
-      );
-      final DocumentResponse response = await tester.request('/');
-
-      expect(response.statusCode, 200);
-      expect(response.body, contains('Open language menu — English'));
-      expect(response.body, contains('aria-expanded="false"'));
-      expect(
-        response.body.lastIndexOf('reactor-language-picker'),
-        greaterThan(response.body.lastIndexOf('Open inspector')),
-      );
-    });
-
-    testComponents('ReactorLanguagePicker opens, selects, and closes', (
-      ComponentTester tester,
-    ) async {
-      String? selected;
-      tester.pumpComponent(
-        _wrap(
-          ReactorLocaleScope(
-            locale: reactorEnglishLocale,
-            loading: false,
-            onChanged: (String locale) async => selected = locale,
-            child: const ReactorLanguagePicker(),
-          ),
-        ),
-      );
-
-      expect(_domId('reactor-language-options'), findsNothing);
-      await tester.click(_domId('reactor-language-trigger'));
-      expect(_domId('reactor-language-options'), findsOneComponent);
-      expect(
-        find.byComponentPredicate(
-          (Component component) =>
-              component is DomComponent &&
-              component.id == 'reactor-language-options' &&
-              component.attributes?['role'] == 'menu' &&
-              component.attributes?['tabindex'] == '-1',
-          description: 'keyboard-managed language menu',
-        ),
-        findsOneComponent,
-      );
-      expect(
-        find.byComponentPredicate(
-          (Component component) =>
-              component is DomComponent &&
-              component.attributes?['role'] == 'menuitemradio' &&
-              component.attributes?['tabindex'] == '-1',
-          description: 'keyboard-managed language radio option',
-        ),
-        findsNComponents(reactorLocales.length),
-      );
-      expect(
-        find.byComponentPredicate(
-          (Component component) =>
-              component is DomComponent &&
-              component.id == 'reactor-language-en_US' &&
-              component.attributes?['aria-checked'] == 'true',
-          description: 'checked active language option',
-        ),
-        findsOneComponent,
-      );
-      expect(
-        find.byComponentPredicate(
-          (Component component) =>
-              component is DomComponent &&
-              component.id == 'reactor-language-he_IL' &&
-              component.attributes?['lang'] == 'he-IL' &&
-              component.attributes?['dir'] == 'rtl',
-          description: 'Hebrew RTL language option',
-        ),
-        findsOneComponent,
-      );
-
-      await tester.click(_domId('reactor-language-de_DE'));
-      expect(selected, 'de_DE');
-      expect(_domId('reactor-language-options'), findsNothing);
-
-      await tester.click(_domId('reactor-language-trigger'));
-      await tester.click(_domId('reactor-language-backdrop'));
-      expect(_domId('reactor-language-options'), findsNothing);
-    });
-
-    testServer('ReactorShell updates its picker copy after a locale switch', (
-      ServerTester tester,
-    ) async {
-      addTearDown(() => reactorLocalizations.installOverlayJson('{}'));
-      final ReactorOverlayResult installed = reactorLocalizations
-          .installOverlayJson(
-            '{"language.open":"Ouvrir le menu des langues — {language}",'
-            '"language.close":"Fermer le menu des langues",'
-            '"language.select":"Choisir la langue"}',
-          );
-      expect(installed.applied, isTrue);
-      tester.pumpComponent(
-        _wrap(
-          ReactorLocaleScope(
-            locale: 'fr_FR',
-            loading: false,
-            onChanged: (String _) async {},
-            child: const ReactorShell(),
-          ),
-        ),
-      );
-      final DocumentResponse response = await tester.request('/');
-
-      expect(response.statusCode, 200);
-      expect(response.body, contains('Ouvrir le menu des langues — Français'));
-    });
-
-    testServer(
-      'routed shell at / renders empty-state body inside the scaffold',
-      (ServerTester tester) async {
-        tester.pumpComponent(_wrap(Router(routes: buildReactorShellRoutes())));
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, 200);
-        expect(
-          res.body.contains('No servers connected'),
-          isTrue,
-          reason:
-              'body must show empty-state title when no servers are connected',
-        );
-        expect(
-          res.body.contains('Add Server'),
-          isTrue,
-          reason: 'sidebar must remain present around the routed body',
-        );
-      },
-    );
-
-    testServer('ReactorShell with a server renders per-server sidebar group', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(
-          ReactorShell(
-            currentPath: '/server/srv1/overview',
-            servers: const <ServerEntry>[
-              ServerEntry(
-                id: 'srv1',
-                name: 'Prod Server',
-                state: ConnState.live,
-              ),
-            ],
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, 200);
-      expect(
-        res.body.contains('Prod Server'),
-        isTrue,
-        reason: 'server name must appear in per-server sidebar group label',
-      );
-      expect(
-        res.body.contains('Performance'),
-        isTrue,
-        reason: 'Performance sub-item must appear for per-server group',
-      );
-      expect(
-        res.body.contains('Memory'),
-        isTrue,
-        reason: 'Memory sub-item must appear for per-server group',
-      );
-    });
-
-    testServer('ReactorShell keeps many servers in a compact selector', (
-      ServerTester tester,
-    ) async {
-      final List<ServerEntry> servers = List<ServerEntry>.generate(
-        24,
-        (int i) =>
-            ServerEntry(id: 'srv-$i', name: 'Server $i', state: ConnState.live),
-      );
-      tester.pumpComponent(
-        _wrap(
-          ReactorShell(servers: servers, currentPath: '/server/srv-7/overview'),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, 200);
-      expect(
-        res.body.contains('Server count: 24'),
-        isTrue,
-        reason: 'large fleets should render as a bounded server selector',
-      );
-      expect(
-        res.body.contains('Server 23'),
-        isTrue,
-        reason: 'the selector should include all paired servers',
-      );
-      expect(
-        'aria-label="Performance"'.allMatches(res.body).length,
-        equals(1),
-        reason: 'workspace navigation should render once for the active server',
-      );
-    });
-
-    testServer('active server inspector renders route context and telemetry', (
-      ServerTester tester,
-    ) async {
-      final ServerSnapshot snapshot = ServerSnapshot(
-        byId: <String, SamplerSample>{
-          'ticks-per-second': _sample('ticks-per-second', 19.7, '19.7 TPS'),
-          'tick-time': _sample('tick-time', 31.2, '31.2 ms'),
-          'players': _sample('players', 12, '12'),
-          'memory-used': _sample('memory-used', 4198, '4.1 GB'),
-          'incident-score': _sample('incident-score', 22, '22 / 100'),
-        },
-        at: DateTime(2026, 8, 21, 12, 34),
-        seq: 42,
-      );
-      tester.pumpComponent(
-        _wrap(
-          FleetLiveScope(
-            servers: <FleetServerLive>[
-              FleetServerLive(
-                id: 'srv1',
-                name: 'Prod Server',
-                state: ConnState.live,
-                snapshot: snapshot,
-                lastSeen: snapshot.at,
-              ),
-            ],
-            revision: 1,
-            child: const ReactorShell(
-              currentPath: '/server/srv1/tweaks',
-              servers: <ServerEntry>[
-                ServerEntry(
-                  id: 'srv1',
-                  name: 'Prod Server',
-                  state: ConnState.live,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      final DocumentResponse response = await tester.request('/');
-      expect(response.statusCode, 200);
-      expect(response.body.contains('Quick telemetry'), isTrue);
-      expect(response.body.contains('Active view'), isTrue);
-      expect(response.body.contains('Tweaks'), isTrue);
-      expect(response.body.contains('Control'), isTrue);
-      expect(response.body.contains('19.7 TPS'), isTrue);
-      expect(response.body.contains('31.2 ms'), isTrue);
-      expect(response.body.contains('4.1 GB'), isTrue);
-      expect(response.body.contains('22 / 100'), isTrue);
-      expect(response.body.contains('#42'), isTrue);
-    });
-
-    testServer(
-      'active server inspector reports unavailable telemetry honestly',
-      (ServerTester tester) async {
-        tester.pumpComponent(
-          _wrap(
-            const ReactorShell(
-              currentPath: '/server/srv1/overview',
-              servers: <ServerEntry>[
-                ServerEntry(
-                  id: 'srv1',
-                  name: 'Prod Server',
-                  state: ConnState.connecting,
-                ),
-              ],
-            ),
-          ),
-        );
-        final DocumentResponse response = await tester.request('/');
-        expect(response.statusCode, 200);
-        expect(response.body.contains('Quick telemetry'), isTrue);
-        expect(response.body.contains('Unavailable'), isTrue);
-      },
-    );
+  test('ReactorApp is a StatefulWidget', () {
+    expect(const ReactorApp(), isA<StatefulWidget>());
   });
 
-  group('StatusDot', () {
-    test('can be constructed for every ConnState value', () {
-      for (final ConnState s in ConnState.values) {
-        expect(() => StatusDot(state: s), returnsNormally);
+  group('AppShell', () {
+    testServer('the server group shows its pages, the switcher and no '
+        'inspector or status bar', (ServerTester tester) async {
+      final String body = await _render(tester, _shell(_one, '/fleet'));
+      expect(body, contains('<nav'));
+      expect(body, contains('All servers'));
+      expect(body, contains('href="/fleet"'));
+      expect(body, contains('href="/alerts"'));
+      expect(body, contains('href="/settings"'));
+      expect(body, isNot(contains('href="/server/srv1/console"')));
+      expect(body, isNot(contains('reactor-inspector')));
+      expect(body, isNot(contains('reactor-status-bar')));
+      expect(body, isNot(contains('reactor-pane-splitter')));
+      expect(body, contains('id="reactor-main"'));
+    });
+
+    testServer('a long server name ends in an ellipsis in the switcher', (
+      ServerTester tester,
+    ) async {
+      const String name = 'Purpur » react-ux-purpur-26-3 (Plugin)';
+      final String body = await _render(
+        tester,
+        _shell(const <ServerEntry>[
+          ServerEntry(id: 'srv1', name: name, state: ConnState.live),
+        ], '/server/srv1'),
+      );
+      final RegExpMatch? label = RegExp(
+        r'<button[^>]*id="ui-switcher-button"[^>]*>.*?<span ([^>]*)>'
+        '${RegExp.escape(name)}</span>',
+        dotAll: true,
+      ).firstMatch(body);
+      expect(label, isNotNull, reason: 'the label is cut in its own span');
+      expect(label!.group(1), contains('title="$name"'));
+      expect(label.group(1), contains('text-overflow: ellipsis'));
+    });
+
+    testServer('a server page lists Monitor, Operate and Configure with '
+        'the current page marked', (ServerTester tester) async {
+      final String body = await _render(
+        tester,
+        _shell(_one, '/server/srv1/tuning'),
+      );
+      for (final String label in <String>['Monitor', 'Operate', 'Configure']) {
+        expect(body, contains(label));
       }
+      for (final String href in <String>[
+        '/server/srv1"',
+        '/server/srv1/performance',
+        '/server/srv1/activity',
+        '/server/srv1/map',
+        '/server/srv1/incidents',
+        '/server/srv1/console',
+        '/server/srv1/actions',
+        '/server/srv1/tuning',
+        '/server/srv1/plugins',
+      ]) {
+        expect(body, contains('href="$href'), reason: href);
+      }
+      expect(
+        RegExp(r'href="/server/srv1/tuning"[^>]*aria-current="page"')
+                .hasMatch(body) ||
+            RegExp(r'aria-current="page"[^>]*href="/server/srv1/tuning"')
+                .hasMatch(body),
+        isTrue,
+      );
+      expect(body, isNot(contains('/server/srv1/metrics')));
     });
 
-    test('labelFor live returns "Live"', () {
-      expect(StatusDot.labelFor(ConnState.live), equals('Live'));
+    testServer('Advanced adds Metrics to the nav', (ServerTester tester) async {
+      final String body = await _render(
+        tester,
+        _shell(_one, '/server/srv1'),
+        mode: ReactorMode.advanced,
+      );
+      expect(body, contains('href="/server/srv1/metrics"'));
     });
 
-    test('labelFor connecting returns "Connecting"', () {
-      expect(StatusDot.labelFor(ConnState.connecting), equals('Connecting'));
-    });
-
-    test('labelFor degraded returns "Degraded"', () {
-      expect(StatusDot.labelFor(ConnState.degraded), equals('Degraded'));
-    });
-
-    test('labelFor offline returns "Offline"', () {
-      expect(StatusDot.labelFor(ConnState.offline), equals('Offline'));
-    });
-
-    testServer('StatusDot renders "Live" label for ConnState.live', (
+    testServer('breadcrumbs name the server and the page', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(StatusDot(state: ConnState.live)));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, 200);
+      final String body = await _render(
+        tester,
+        _shell(_one, '/server/srv1/console'),
+      );
+      expect(body, contains('Skyblock'));
+      expect(body, contains('Console'));
+    });
+
+    testServer('the top bar menu holds theme, mode and language', (
+      ServerTester tester,
+    ) async {
+      final String body = await _render(tester, _shell(_one, '/fleet'));
+      expect(body, contains('More options'));
+      expect(body, contains('Switch to light theme'));
+      expect(body, contains('Switch to Advanced'));
+      expect(body, contains('Select language'));
+    });
+
+    testServer('a server down shows Connection lost and Reconnect on the '
+        'server group pages', (ServerTester tester) async {
+      final String body = await _render(
+        tester,
+        _shell(const <ServerEntry>[
+          ServerEntry(id: 'srv1', name: 'Alpha', state: ConnState.offline),
+        ], '/fleet'),
+      );
+      expect(body, contains('Connection lost'));
+      expect(body, contains('Reconnect'));
+    });
+
+    testServer('a revoked entry does not say Connection lost', (
+      ServerTester tester,
+    ) async {
+      // Reconnecting cannot bring a revoked token back; the group page lists
+      // it under Needs attention with Pair again instead.
+      final String body = await _render(
+        tester,
+        const FleetLiveScope(
+          revision: 1,
+          servers: <FleetServerLive>[
+            FleetServerLive(
+              id: 'srv1',
+              name: 'Alpha',
+              state: ConnState.offline,
+              access: ConnAccess.revoked,
+            ),
+          ],
+          child: AppShell(currentPath: '/fleet'),
+        ),
+      );
+      expect(body, isNot(contains('Connection lost')));
+      expect(body, isNot(contains('Reconnect')));
+    });
+
+    testServer('a degraded server shows Reconnect', (
+      ServerTester tester,
+    ) async {
+      final String body = await _render(
+        tester,
+        _shell(const <ServerEntry>[
+          ServerEntry(id: 'srv1', name: 'Alpha', state: ConnState.degraded),
+        ], '/alerts'),
+      );
+      expect(body, contains('Connection degraded'));
+      expect(body, contains('Reconnect'));
+    });
+
+    testServer('live servers and no servers show no Reconnect', (
+      ServerTester tester,
+    ) async {
       expect(
-        res.body.contains('Live'),
-        isTrue,
-        reason: 'ConnState.live must render "Live" label text',
+        await _render(tester, _shell(_one, '/fleet')),
+        isNot(contains('Reconnect')),
       );
     });
 
-    testServer('StatusDot renders "Offline" label for ConnState.offline', (
+    testServer('the Alerts entry counts open alerts', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(StatusDot(state: ConnState.offline)));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, 200);
-      expect(
-        res.body.contains('Offline'),
-        isTrue,
-        reason: 'ConnState.offline must render "Offline" label text',
+      final String body = await _render(
+        tester,
+        FleetLiveScope(
+          revision: 1,
+          servers: <FleetServerLive>[
+            FleetServerLive(
+              id: 'srv1',
+              name: 'Skyblock',
+              state: ConnState.live,
+              snapshot: _snapshot(2),
+              lastSeen: DateTime.now(),
+            ),
+          ],
+          child: const AppShell(currentPath: '/fleet'),
+        ),
       );
+      expect(body, contains('sidebar-badge'));
+    });
+
+    testServer('the language dialog lists the languages by native name', (
+      ServerTester tester,
+    ) async {
+      final String body = await _render(
+        tester,
+        ReactorLocaleScope(
+          locale: 'en_US',
+          loading: false,
+          onChanged: (String _) async {},
+          child: const LanguageDialog(open: true, onClose: _noop),
+        ),
+      );
+      expect(body, contains('Deutsch'));
+      expect(body, contains('日本語'));
+    });
+  });
+
+  group('routes', () {
+    testServer(
+      '/ with no servers shows the Pairing link field and the command',
+      (ServerTester tester) async {
+        final String body = await _render(
+          tester,
+          Router(routes: buildReactorShellRoutes()),
+        );
+        expect(body, contains(ReactorText.pairLink.english));
+        expect(body, contains('/react web pair'));
+        expect(body, isNot(contains(ReactorText.startContinue.english)));
+        expect(body, contains('<nav'));
+      },
+    );
+
+    testServer('/pair without a link says so and offers the New link field', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_wrap(Router(routes: buildReactorShellRoutes())));
+      final DocumentResponse response = await tester.request('/pair');
+      expect(response.body, contains(ReactorText.pairProblemNotALink.english));
+      expect(response.body, contains(ReactorText.pairNewLink.english));
+    });
+
+    testServer('an unknown server shows Server not connected', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(_wrap(Router(routes: buildReactorShellRoutes())));
+      final DocumentResponse response = await tester.request(
+        '/server/nope/tuning',
+      );
+      expect(response.statusCode, 200);
+      expect(response.body, contains('Server not connected'));
+    });
+
+    test('the table holds every page', () {
+      final List<String> paths = <String>[
+        for (final RouteBase route in buildReactorRoutes())
+          if (route is Route) route.path,
+      ];
+      expect(paths, <String>[
+        '/',
+        '/pair',
+        '/fleet',
+        '/alerts',
+        '/settings',
+        '/server/:id',
+        '/server/:id/performance',
+        '/server/:id/activity',
+        '/server/:id/map',
+        '/server/:id/incidents',
+        '/server/:id/console',
+        '/server/:id/actions',
+        '/server/:id/tuning',
+        '/server/:id/plugins',
+        '/server/:id/metrics',
+      ]);
     });
   });
 }
+
+void _noop() {}

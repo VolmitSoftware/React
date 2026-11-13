@@ -6,13 +6,15 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
+import '../model/log_line.dart';
 import '../model/server_credential.dart';
 import 'direct_web_socket_handshake.dart';
 import 'react_log_socket_interface.dart';
+import 'web_socket_close.dart';
 
 class _WebLogSocket implements ILogSocket {
-  final StreamController<String> _controller =
-      StreamController<String>.broadcast();
+  final StreamController<LogBatch> _controller =
+      StreamController<LogBatch>.broadcast();
   late final web.WebSocket _ws;
   bool _closed = false;
 
@@ -20,6 +22,7 @@ class _WebLogSocket implements ILogSocket {
     final DirectWebSocketHandshake handshake = DirectWebSocketHandshake(
       cred,
       'ws/logs',
+      query: const <String, String>{'batch': '1'},
     );
     _ws = web.WebSocket(handshake.endpoint.toString());
 
@@ -40,9 +43,8 @@ class _WebLogSocket implements ILogSocket {
         try {
           final Map<String, dynamic> json =
               jsonDecode(raw) as Map<String, dynamic>;
-          if (json['type'] == 'log' && json['line'] is String) {
-            _controller.add(json['line'] as String);
-          }
+          final LogBatch? batch = LogBatch.fromFrame(json);
+          if (batch != null) _controller.add(batch);
         } on Object {
           return;
         }
@@ -62,16 +64,17 @@ class _WebLogSocket implements ILogSocket {
 
     _ws.addEventListener(
       'close',
-      ((web.Event _) {
-        if (!_controller.isClosed) {
-          _controller.close();
-        }
+      ((web.CloseEvent event) {
+        if (_controller.isClosed) return;
+        final Exception? error = socketCloseError(event.code);
+        if (error != null) _controller.addError(error);
+        _controller.close();
       }).toJS,
     );
   }
 
   @override
-  Stream<String> get lines => _controller.stream;
+  Stream<LogBatch> get batches => _controller.stream;
 
   @override
   Future<void> close() async {

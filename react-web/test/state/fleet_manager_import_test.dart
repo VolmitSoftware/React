@@ -21,7 +21,6 @@ class _StubClient implements IReactClient {
   @override
   Future<IdentityInfo> identity() async => IdentityInfo(
     serverName: 'Stub',
-    version: '1.0.0',
     folia: false,
     serverId: '127.0.0.1:9696',
   );

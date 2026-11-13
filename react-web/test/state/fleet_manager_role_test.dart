@@ -18,7 +18,6 @@ class _RoleCapableClient implements IReactClient, IRoleClient {
   @override
   Future<IdentityInfo> identity() async => IdentityInfo(
     serverName: 'RoleServer',
-    version: '1.0.0',
     folia: false,
     serverId: '127.0.0.1:9696',
   );
@@ -26,11 +25,21 @@ class _RoleCapableClient implements IReactClient, IRoleClient {
   @override
   Future<ServerSnapshot> metrics() async => throw UnimplementedError();
 
+  int asked = 0;
+  bool failNext = false;
+
   @override
-  Future<RoleInfo> whoami() async => RoleInfo.fromJson(<String, dynamic>{
-    'role': 'admin',
-    'scopes': <String>['read', 'op:execute', 'admin'],
-  });
+  Future<RoleInfo> whoami() async {
+    asked++;
+    if (failNext) {
+      failNext = false;
+      throw StateError('offline');
+    }
+    return RoleInfo.fromJson(<String, dynamic>{
+      'role': 'admin',
+      'scopes': <String>['read', 'op:execute', 'admin'],
+    });
+  }
 }
 
 class _MetricsOnlyClient implements IReactClient {
@@ -40,7 +49,6 @@ class _MetricsOnlyClient implements IReactClient {
   @override
   Future<IdentityInfo> identity() async => IdentityInfo(
     serverName: 'MetricsOnly',
-    version: '1.0.0',
     folia: false,
     serverId: '127.0.0.1:9696',
   );
@@ -77,30 +85,38 @@ FleetManager _seededFleetManager({
 }
 
 void main() {
-  group('FleetManager.roleClientFor', () {
-    test('returns the role-capable client for a known server id', () {
+  group('ServerSession.roles', () {
+    test('asks /whoami once for every page of the session', () async {
       final _RoleCapableClient client = _RoleCapableClient();
       final FleetManager fm = _seededFleetManager(
         storage: InMemoryFleetStorage(),
         clientFactory: (_) => client,
       );
-      expect(fm.roleClientFor('srv-1'), same(client));
+      final IRoleClient roles = fm.sessionFor('srv-1')!.roles!;
+      expect((await roles.whoami()).role, 'admin');
+      expect((await roles.whoami()).role, 'admin');
+      expect(identical(fm.sessionFor('srv-1')!.roles, roles), isTrue);
+      expect(client.asked, 1);
     });
 
-    test('returns null for an unknown id', () {
+    test('asks again after a failed answer', () async {
+      final _RoleCapableClient client = _RoleCapableClient()..failNext = true;
       final FleetManager fm = _seededFleetManager(
         storage: InMemoryFleetStorage(),
-        clientFactory: (_) => _RoleCapableClient(),
+        clientFactory: (_) => client,
       );
-      expect(fm.roleClientFor('no-such-id'), isNull);
+      final IRoleClient roles = fm.sessionFor('srv-1')!.roles!;
+      await expectLater(roles.whoami(), throwsStateError);
+      expect((await roles.whoami()).role, 'admin');
+      expect(client.asked, 2);
     });
 
-    test('returns null when the client is not role-capable', () {
+    test('is null when the client has no role route', () {
       final FleetManager fm = _seededFleetManager(
         storage: InMemoryFleetStorage(),
         clientFactory: (_) => _MetricsOnlyClient(),
       );
-      expect(fm.roleClientFor('srv-1'), isNull);
+      expect(fm.sessionFor('srv-1')!.roles, isNull);
     });
   });
 }

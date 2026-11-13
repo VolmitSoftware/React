@@ -3,12 +3,8 @@ package art.arcane.react.web;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.ConfigApplier;
 import art.arcane.react.api.web.ConfigTreeSerializer;
-import art.arcane.react.api.web.PairingToken;
 import art.arcane.react.api.web.PresetApplier;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebConfiguration;
-import art.arcane.react.api.web.WebSecret;
 import art.arcane.react.api.web.dto.ConfigNodeDto;
 import art.arcane.react.api.web.dto.ConfigSectionDto;
 import art.arcane.react.api.web.dto.IdentityDto;
@@ -55,7 +51,6 @@ public class ConfigRoutesIntegrationTest {
             @Override
             protected IdentityDto resolveIdentity() {
                 IdentityDto dto = new IdentityDto();
-                dto.version = "9.9.9-test";
                 dto.serverName = "TestBrand";
                 dto.folia = false;
                 dto.serverId = "127.0.0.1:0";
@@ -78,19 +73,9 @@ public class ConfigRoutesIntegrationTest {
 
     @Test
     void configRoutesHappyPathAndAuthGuards(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord adminRecord = new TokenRecord("tok-cfg-admin", "admin-device", 1000L, Set.of("read", "op:execute", "admin"), "admin");
-        TokenRecord opRecord = new TokenRecord("tok-cfg-op", "op-device", 1000L, Set.of("read", "op:execute"), "operator");
-        TokenRecord readRecord = new TokenRecord("tok-cfg-read", "read-device", 1000L, Set.of("read"), "viewer");
-        String adminBearer = PairingToken.mint(secret, adminRecord.id(), adminRecord.label(), adminRecord.issuedAt(), adminRecord.scopes());
-        String opBearer = PairingToken.mint(secret, opRecord.id(), opRecord.label(), opRecord.issuedAt(), opRecord.scopes());
-        String readBearer = PairingToken.mint(secret, readRecord.id(), readRecord.label(), readRecord.issuedAt(), readRecord.scopes());
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(adminRecord);
-        store.add(opRecord);
-        store.add(readRecord);
-        store.save(tokensFile);
+        String adminBearer = WebTestTokens.issue(dataFolder, "admin-device", "admin");
+        String opBearer = WebTestTokens.issue(dataFolder, "op-device", "operator");
+        String readBearer = WebTestTokens.issue(dataFolder, "read-device", "viewer");
 
         SampleController sampleController = mock(SampleController.class);
         @SuppressWarnings("unchecked")

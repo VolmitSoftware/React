@@ -96,8 +96,6 @@ void main() {
       expect(cell.score, equals(9.0));
       expect(cell.averageScore, equals(4.25));
       expect(cell.samples, equals(17));
-      expect(cell.containsChunk(-1, -9), isTrue);
-      expect(cell.containsChunk(0, -9), isFalse);
     });
   });
 
@@ -124,13 +122,11 @@ void main() {
       expect(grid.maximumChunkX, equals(-80 + 17 * 8 - 1));
     });
 
-    test('indexes sparse bucket origins and finds containing chunks', () {
+    test('indexes sparse bucket origins', () {
       final HeatmapGrid grid = HeatmapGrid.fromJson(_gridDto());
       expect(grid.indexCells()[(-80, -32)]?.score, equals(7.0));
       expect(grid.cellAtOrigin(-80, -32), isNotNull);
       expect(grid.cellAtOrigin(-79, -31), isNull);
-      expect(grid.cellContaining(-73, -25), isNotNull);
-      expect(grid.cellContaining(-72, -25), isNull);
     });
 
     test('worldBorder is optional and sparse cells may be empty', () {

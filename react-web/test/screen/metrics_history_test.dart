@@ -1,9 +1,10 @@
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
+import 'package:react_web/theme/reactor_stylesheet.dart';
 import 'package:jaspr/jaspr.dart' show Component, DomComponent, StatefulBuilder;
 import 'package:jaspr_test/jaspr_test.dart';
 import 'package:react_web/chart/timeseries_chart.dart';
 import 'package:react_web/model/metric_history.dart';
+import 'package:react_web/model/range_history.dart';
 import 'package:react_web/model/sampler_sample.dart';
 import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/screen/metrics_explorer.dart';
@@ -26,6 +27,10 @@ class _HistoryClient implements IHistoryClient {
           active: true,
         ),
       ];
+
+  @override
+  Future<RangeHistory> metricRange(ChartRange range, {List<String>? ids}) =>
+      throw UnimplementedError();
 
   @override
   Future<MetricHistoryPage> historyPage({
@@ -85,7 +90,7 @@ void main() {
       late void Function(void Function()) rebuild;
       tester.pumpComponent(
         ArcaneThemeProvider(
-          stylesheet: const AsciiStylesheet(),
+          stylesheet: const ReactorStylesheet(),
           child: StatefulBuilder(
             builder:
                 (

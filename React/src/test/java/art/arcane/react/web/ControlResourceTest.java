@@ -1,21 +1,18 @@
 package art.arcane.react.web;
 
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
+import art.arcane.react.api.web.pairing.WebToken;
 import art.arcane.react.api.web.ControlBackend;
 import art.arcane.react.api.web.dto.ControlItemDto;
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.resource.ControlResource;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
-import io.javalin.http.ForbiddenResponse;
+import art.arcane.react.api.web.WebError;
 import io.javalin.http.NotFoundResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,25 +29,18 @@ import static org.mockito.Mockito.when;
 
 public class ControlResourceTest {
 
-    private PairingToken opToken;
-    private PairingToken readToken;
+    private WebToken opToken;
+    private WebToken readToken;
     private FakeControlBackend fakeBackend;
     private ControlResource resource;
 
     @BeforeEach
     void setUp() {
-        byte[] secret = new byte[32];
-        new SecureRandom().nextBytes(secret);
 
-        TokenRecord opRecord = new TokenRecord("tok-op", "op-device", 1000L, Set.of("read", "op:execute"), "operator");
-        TokenRecord readRecord = new TokenRecord("tok-read", "read-device", 1000L, Set.of("read"), "viewer");
-        TokenStore store = TokenStore.inMemory(opRecord, readRecord);
 
-        String opBearer = PairingToken.mint(secret, opRecord.id(), opRecord.label(), opRecord.issuedAt(), opRecord.scopes());
-        String readBearer = PairingToken.mint(secret, readRecord.id(), readRecord.label(), readRecord.issuedAt(), readRecord.scopes());
 
-        opToken = PairingToken.verify(secret, opBearer, store).orElseThrow();
-        readToken = PairingToken.verify(secret, readBearer, store).orElseThrow();
+        opToken = WebTestTokens.token("tok-op", "operator");
+        readToken = WebTestTokens.token("tok-read", "viewer");
 
         fakeBackend = new FakeControlBackend();
         resource = new ControlResource(fakeBackend, "feature", (context, mutation) -> {
@@ -96,7 +86,7 @@ public class ControlResourceTest {
     @Test
     void toggle_with_op_token_sets_enabled_and_returns_envelope() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         when(ctx.pathParam("id")).thenReturn("feature-a");
         when(ctx.bodyAsClass(ControlResource.ToggleBody.class))
                 .thenReturn(new ControlResource.ToggleBody(true));
@@ -116,19 +106,19 @@ public class ControlResourceTest {
     @Test
     void toggle_with_read_only_token_throws_forbidden_and_backend_not_invoked() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(readToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(readToken);
         when(ctx.pathParam("id")).thenReturn("feature-a");
         when(ctx.bodyAsClass(ControlResource.ToggleBody.class))
                 .thenReturn(new ControlResource.ToggleBody(true));
 
-        assertThrows(ForbiddenResponse.class, () -> resource.toggle(ctx));
+        assertThrows(WebError.class, () -> resource.toggle(ctx));
         assertTrue(!fakeBackend.setEnabledCalled);
     }
 
     @Test
     void toggle_with_null_enabled_throws_bad_request() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         when(ctx.pathParam("id")).thenReturn("feature-a");
         when(ctx.bodyAsClass(ControlResource.ToggleBody.class))
                 .thenReturn(new ControlResource.ToggleBody(null));
@@ -139,7 +129,7 @@ public class ControlResourceTest {
     @Test
     void toggle_unknown_id_throws_not_found() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         when(ctx.pathParam("id")).thenReturn("does-not-exist");
         when(ctx.bodyAsClass(ControlResource.ToggleBody.class))
                 .thenReturn(new ControlResource.ToggleBody(false));
@@ -150,7 +140,7 @@ public class ControlResourceTest {
     @Test
     void config_with_op_token_sets_knobs_and_returns_envelope() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         when(ctx.pathParam("id")).thenReturn("feature-a");
         Map<String, Object> knobs = new HashMap<>();
         knobs.put("budgetMs", 40.0);
@@ -171,7 +161,7 @@ public class ControlResourceTest {
     @Test
     void config_with_empty_map_throws_bad_request() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         when(ctx.pathParam("id")).thenReturn("feature-a");
         when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of());
 
@@ -181,11 +171,11 @@ public class ControlResourceTest {
     @Test
     void config_with_read_only_token_throws_forbidden() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(readToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(readToken);
         when(ctx.pathParam("id")).thenReturn("feature-a");
         when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of("budgetMs", 40.0));
 
-        assertThrows(ForbiddenResponse.class, () -> resource.config(ctx));
+        assertThrows(WebError.class, () -> resource.config(ctx));
     }
 
     private static final class FakeControlBackend implements ControlBackend {

@@ -32,7 +32,10 @@ class _RowWindowState<T> extends State<RowWindow<T>> {
       0,
       component.rows.length,
     );
+    // The page's rows, then the pager under them, as shadcn's tables have
+    // it.
     return Widget.fragment(<Widget>[
+      component.builder(component.rows.sublist(start, end)),
       if (pages > 1)
         ArcanePagination(
           currentPage: page,
@@ -44,7 +47,6 @@ class _RowWindowState<T> extends State<RowWindow<T>> {
             () => _page = component.latest && next == pages ? null : next,
           ),
         ),
-      component.builder(component.rows.sublist(start, end)),
     ]);
   }
 }

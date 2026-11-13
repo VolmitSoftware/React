@@ -8,21 +8,26 @@ import '../model/control_item.dart';
 import '../model/environment_info.dart';
 import '../model/heatmap.dart';
 import '../model/identity_info.dart';
+import '../model/log_line.dart';
 import '../model/incident_status.dart';
 import '../model/metric_history.dart';
 import '../model/player_navigation.dart';
 import '../model/plugin_api_pack.dart';
+import '../model/range_history.dart';
 import '../model/relay_frame.dart';
 import '../model/role_info.dart';
 import '../model/server_capabilities.dart';
 import '../model/server_credential.dart';
 import '../model/server_snapshot.dart';
+import '../model/server_summary.dart';
 import '../model/world_settings.dart';
 import '../state/memory_fleet_storage.dart';
 import 'monotonic_counter.dart';
 import 'react_client.dart';
 import 'react_exceptions.dart';
+import 'react_status.dart';
 import 'relay_connection.dart';
+import 'server_proof.dart';
 
 class RelayReactClient
     implements
@@ -32,22 +37,37 @@ class RelayReactClient
         IPlayerClient,
         IControlClient,
         IOperateClient,
+        IActionTicketClient,
+        ILogLineClient,
         IConsoleClient,
         IRoleClient,
+        ISummaryClient,
         IHistoryClient,
-        IPluginApiPackClient {
+        IPluginApiPackClient,
+        IServerPresence {
   final IRelayConnection _connection;
   final ServerCredential _cred;
   final MonotonicCounter _counter;
+  final Future<void> Function(Duration) _sleep;
   bool _closed = false;
 
   RelayReactClient(
     IRelayConnection connection,
     ServerCredential cred, {
     MonotonicCounter? counter,
+    Future<void> Function(Duration)? sleep,
   }) : _connection = connection,
        _cred = cred,
-       _counter = counter ?? MonotonicCounter(InMemoryFleetStorage());
+       _counter = counter ?? MonotonicCounter(InMemoryFleetStorage()),
+       _sleep = sleep ?? ((Duration d) => Future<void>.delayed(d));
+
+  @override
+  Stream<bool> get serverOnline {
+    final IRelayConnection connection = _connection;
+    return connection is IServerPresence
+        ? (connection as IServerPresence).serverOnline
+        : const Stream<bool>.empty();
+  }
 
   @override
   Future<void> close() async {
@@ -62,36 +82,84 @@ class RelayReactClient
     if (mutating) 'X-React-Counter': _counter.next(_cred.id).toString(),
   };
 
+  /// The server proved itself through this relay since the last relay
+  /// failure; only then does the bearer go through it.
+  bool _proven = false;
+  Future<ServerCapabilities>? _proving;
+
+  /// `GET /ping` with a fresh challenge. The answer proves the server when
+  /// it carries the pinned key's signature over the challenge.
+  Future<ServerCapabilities> _greet() async {
+    final String challenge = newChallenge();
+    final RelayResponse response = await _connection.request(
+      method: 'GET',
+      path: '/api/v1/ping',
+      headers: <String, String>{challengeHeader: challenge},
+    );
+    if (_closed) throw const ReactUnavailable('Client closed');
+    final Exception? error = reactErrorFor(response.status, response.body);
+    if (error != null) throw error;
+    final String? key = _cred.serverKey;
+    final String? fingerprint = _cred.fingerprint;
+    _proven =
+        key != null &&
+        fingerprint != null &&
+        await verifyServerProof(
+          response.headers,
+          challenge: challenge,
+          serverKey: key,
+          fingerprint: fingerprint,
+        );
+    return ServerCapabilities.fromJson(_decodeData(response.body));
+  }
+
+  /// One greeting at a time; callers in the meantime share it.
+  Future<ServerCapabilities> _greetOnce() =>
+      _proving ??= _greet().whenComplete(() => _proving = null);
+
+  Future<void> _prove() async {
+    if (_proven) return;
+    await _greetOnce();
+    if (!_proven) {
+      throw const ReactWrongServer('The relay did not prove the server');
+    }
+  }
+
   Future<RelayResponse> _request(
     String method,
     String path, {
     Map<String, Object?>? body,
   }) async {
-    if (_closed) throw const ReactUnavailable('Client closed');
     final bool mutating = method != 'GET';
-    final RelayResponse response = await _connection.request(
-      method: method,
-      path: '/api/v1$path',
-      headers: _headers(mutating: mutating),
-      body: body == null ? null : jsonEncode(body),
-    );
-    if (_closed) throw const ReactUnavailable('Client closed');
-    switch (response.status) {
-      case 200:
-      case 202:
-        return response;
-      case 400:
-        throw ReactBadRequest(_errorMessage(response.body));
-      case 401:
-        throw const ReactAuthException();
-      case 403:
-        throw ReactForbidden(_errorMessage(response.body));
-      case 404:
-        throw ReactNotFound(_errorMessage(response.body));
-      case 409:
-        throw ReactConflict(_errorMessage(response.body));
-      default:
-        throw ReactUnavailable(_errorMessage(response.body));
+    int rateLimitRetries = 0;
+    bool rebased = false;
+    while (true) {
+      if (_closed) throw const ReactUnavailable('Client closed');
+      await _prove();
+      final RelayResponse response = await _connection.request(
+        method: method,
+        path: '/api/v1$path',
+        headers: _headers(mutating: mutating),
+        body: body == null ? null : jsonEncode(body),
+      );
+      if (_closed) throw const ReactUnavailable('Client closed');
+      // The relay lost the server (or its socket): prove it again first.
+      if (response.status >= 502) _proven = false;
+      final Exception? error = reactErrorFor(response.status, response.body);
+      if (error == null) return response;
+      if (error is ReactCounterConflict && mutating && !rebased) {
+        rebased = true;
+        _counter.rebase(_cred.id, error.lastCounter);
+        continue;
+      }
+      if (error is ReactRateLimited &&
+          !mutating &&
+          rateLimitRetries < kMaxRateLimitRetries) {
+        rateLimitRetries++;
+        await _sleep(rateLimitDelay(error.retryAfter));
+        continue;
+      }
+      throw error;
     }
   }
 
@@ -116,15 +184,6 @@ class RelayReactClient
   Future<Map<String, dynamic>> _deleteData(String path) async {
     final RelayResponse response = await _request('DELETE', path);
     return _decodeData(response.body);
-  }
-
-  String _errorMessage(Map<String, dynamic> body) {
-    final Object? error = body['error'];
-    if (error is Map<String, dynamic>) {
-      final Object? message = error['message'];
-      if (message is String) return message;
-    }
-    return 'Request failed';
   }
 
   Map<String, dynamic> _decodeData(Map<String, dynamic> body) {
@@ -153,16 +212,23 @@ class RelayReactClient
         .toList();
   }
 
+  /// Open, so it carries no bearer; its answer also proves the server.
   @override
-  Future<ServerCapabilities> ping() async {
-    final RelayResponse response = await _get('/ping');
-    return ServerCapabilities.fromJson(_decodeData(response.body));
+  Future<ServerCapabilities> ping() {
+    if (_closed) throw const ReactUnavailable('Client closed');
+    return _greetOnce();
   }
 
   @override
   Future<IdentityInfo> identity() async {
     final RelayResponse response = await _get('/identity');
     return IdentityInfo.fromJson(_decodeData(response.body));
+  }
+
+  @override
+  Future<ServerSummary> summary() async {
+    final RelayResponse response = await _get('/summary');
+    return ServerSummary.fromJson(_decodeData(response.body));
   }
 
   @override
@@ -173,7 +239,7 @@ class RelayReactClient
 
   @override
   Future<ServerSnapshot> metrics() async {
-    final RelayResponse response = await _get('/metrics');
+    final RelayResponse response = await _get('/metrics?compact=1');
     return ServerSnapshot.fromJson(response.body);
   }
 
@@ -216,6 +282,19 @@ class RelayReactClient
     }
     final RelayResponse response = await _get(path);
     return MetricHistoryPage.fromJson(_decodeData(response.body));
+  }
+
+  @override
+  Future<RangeHistory> metricRange(
+    ChartRange range, {
+    List<String>? ids,
+  }) async {
+    final String query = <String>[
+      'range=${Uri.encodeQueryComponent(range.id)}',
+      if (ids != null) 'ids=${Uri.encodeQueryComponent(ids.join(','))}',
+    ].join('&');
+    final RelayResponse response = await _get('/metrics/range?$query');
+    return RangeHistory.fromJson(_decodeData(response.body));
   }
 
   @override
@@ -394,6 +473,17 @@ class RelayReactClient
   }
 
   @override
+  Future<ActionTicketStatus> actionTicket(String ticketId) async {
+    final RelayResponse response = await _get(
+      '/actions/tickets/${Uri.encodeComponent(ticketId)}',
+    );
+    final Object? data = response.body['data'];
+    return ActionTicketStatus.fromJson(
+      data is Map<String, dynamic> ? data : response.body,
+    );
+  }
+
+  @override
   Future<IncidentStatus> incidents() async {
     final RelayResponse response = await _get('/incidents');
     return IncidentStatus.fromJson(_decodeData(response.body));
@@ -427,11 +517,19 @@ class RelayReactClient
   }
 
   @override
-  Future<List<String>> logs({int limit = 200}) async {
-    final RelayResponse response = await _get('/logs?limit=$limit');
-    return _decodeList(
-      response.body,
-    ).map((dynamic entry) => entry as String).toList();
+  Future<List<String>> logs({int limit = 200}) async =>
+      (await logLines(limit: limit)).map((LogLine l) => l.text).toList();
+
+  @override
+  Future<List<LogLine>> logLines({int limit = 200, int? after}) async {
+    final String query = after == null
+        ? 'limit=$limit'
+        : 'limit=$limit&after=$after';
+    final RelayResponse response = await _get('/logs?$query');
+    return LogLine.withTrailingSeq(
+      LogLine.listFromJson(_decodeList(response.body)),
+      response.body['lastSeq'],
+    );
   }
 
   @override

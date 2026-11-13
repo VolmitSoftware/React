@@ -1,10 +1,8 @@
 package art.arcane.react.web;
 
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebAuth;
-import art.arcane.react.api.web.WebSecret;
+import art.arcane.react.api.web.WebError;
+import art.arcane.react.api.web.pairing.WebTokens;
 import art.arcane.react.api.web.dto.ErrorEnvelope;
 import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.api.web.relay.RelayLoopbackBridge;
@@ -18,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
+import java.time.Clock;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,13 +37,12 @@ public class RelayLoopbackBridgeTest {
     }
 
     private int startMinimalJavalin(WebAuth auth, IdentityResource identityResource) {
-        javalin = Javalin.create(cfg -> cfg.bundledPlugins.enableCors(
-            cors -> cors.addRule(rule -> rule.anyHost())
-        ));
+        javalin = Javalin.create();
         javalin.exception(HttpResponseException.class, (e, ctx) -> {
             String msg = e.getMessage() == null ? "Error" : e.getMessage();
-            ctx.status(e.getStatus()).json(new ErrorEnvelope(new ErrorEnvelope.Message(msg)));
+            ctx.status(e.getStatus()).json(new ErrorEnvelope(new ErrorEnvelope.Message(WebError.codeFor(e.getStatus()), msg)));
         });
+        javalin.exception(WebError.class, (e, ctx) -> ctx.status(e.status()).json(e.body()));
         javalin.before("/api/v1/identity", auth);
         javalin.get("/api/v1/identity", identityResource::get);
         javalin.start("127.0.0.1", 0);
@@ -53,17 +51,10 @@ public class RelayLoopbackBridgeTest {
 
     @Test
     void dispatchAuthorizedGetReturns200WithData(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord record = new TokenRecord("tok-relay-1", "test-device", 1000L, Set.of("read"), "viewer");
-        String bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(record);
-        store.save(tokensFile);
+        String bearer = WebTestTokens.issue(dataFolder, "test-device", "viewer");
 
-        WebAuth auth = new WebAuth(secret, store);
+        WebAuth auth = new WebAuth(WebTokens.load(dataFolder, Clock.systemUTC()));
         IdentityDto dto = new IdentityDto();
-        dto.version = "1.0.0-relay-test";
         dto.serverName = "RelayTestServer";
         dto.folia = false;
         dto.serverId = "127.0.0.1:25565";
@@ -83,19 +74,14 @@ public class RelayLoopbackBridgeTest {
         assertTrue(response.body().isJsonObject(), "body must be a JSON object");
         JsonObject body = response.body().getAsJsonObject();
         assertTrue(body.has("data"), "200 body must have 'data' field");
-        assertTrue(body.getAsJsonObject("data").has("version"), "data must carry version");
-        assertEquals("1.0.0-relay-test", body.getAsJsonObject("data").get("version").getAsString());
+        assertEquals("RelayTestServer", body.getAsJsonObject("data").get("serverName").getAsString());
     }
 
     @Test
     void dispatchUnauthorizedReturns401Error(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
 
-        WebAuth auth = new WebAuth(secret, store);
+        WebAuth auth = new WebAuth(WebTokens.load(dataFolder, Clock.systemUTC()));
         IdentityDto dto = new IdentityDto();
-        dto.version = "1.0.0-relay-test";
         dto.serverName = "RelayTestServer";
         dto.folia = false;
         dto.serverId = "127.0.0.1:25565";
@@ -119,6 +105,24 @@ public class RelayLoopbackBridgeTest {
             body.getAsJsonObject("error").has("message"),
             "error must have 'message' field, got: " + body
         );
+    }
+
+    @Test
+    void theBrowserOriginIsNotForwardedToTheListener() {
+        java.util.concurrent.atomic.AtomicReference<String> seen = new java.util.concurrent.atomic.AtomicReference<>("unset");
+        javalin = Javalin.create();
+        javalin.get("/api/v1/ping", ctx -> {
+            seen.set(String.valueOf(ctx.header("Origin")));
+            ctx.json(Map.of("data", Map.of()));
+        });
+        javalin.start("127.0.0.1", 0);
+        RelayLoopbackBridge bridge = new RelayLoopbackBridge("http://127.0.0.1:" + javalin.port());
+
+        RelayRequestBridge.RelayResponse response = bridge.dispatch("GET", "/api/v1/ping",
+            Map.of("Origin", "https://evil.example", "Host", "spoofed"), null);
+
+        assertEquals(200, response.status());
+        assertEquals("null", seen.get(), "the relay checks origins itself; the listener sees none");
     }
 
     @Test

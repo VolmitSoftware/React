@@ -6,6 +6,7 @@ import 'package:test/test.dart';
 
 import 'package:react_web/model/heatmap.dart';
 import 'package:react_web/model/identity_info.dart';
+import 'package:react_web/model/range_history.dart';
 import 'package:react_web/model/player_navigation.dart';
 import 'package:react_web/model/relay_frame.dart';
 import 'package:react_web/model/server_credential.dart';
@@ -13,16 +14,26 @@ import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/service/react_exceptions.dart';
 import 'package:react_web/service/relay_connection.dart';
 import 'package:react_web/service/relay_react_client.dart';
+import 'package:react_web/service/server_proof.dart';
 
+import '../support/test_server_key.dart';
+
+late TestServerKey _key;
+
+/// A relay to a server signed by [_key]: `GET /api/v1/ping` with a
+/// challenge answers with the server's proof unless [prove] is off.
 class _FakeRelayConnection implements IRelayConnection {
   String? lastMethod;
   String? lastPath;
   Map<String, String>? lastHeaders;
   Object? lastBody;
+  final List<String> paths = <String>[];
+  final List<Map<String, String>> headersSent = <Map<String, String>>[];
+  bool prove;
 
   final Map<String, RelayResponse> _responses;
 
-  _FakeRelayConnection(this._responses);
+  _FakeRelayConnection(this._responses, {this.prove = true});
 
   @override
   Future<RelayResponse> request({
@@ -31,6 +42,25 @@ class _FakeRelayConnection implements IRelayConnection {
     required Map<String, String> headers,
     Object? body,
   }) async {
+    paths.add(path);
+    headersSent.add(Map<String, String>.from(headers));
+    final String? challenge = headers[challengeHeader];
+    if (path == '/api/v1/ping' &&
+        challenge != null &&
+        !_responses.containsKey(path)) {
+      return RelayResponse(
+        status: 200,
+        body: <String, dynamic>{
+          'data': <String, dynamic>{
+            'protocolVersion': 3,
+            'serverFingerprint': _key.fingerprint,
+            'serverName': 'Lobby',
+            'relayAvailable': true,
+          },
+        },
+        headers: prove ? await _key.proof(challenge) : const <String, String>{},
+      );
+    }
     lastMethod = method;
     lastPath = path;
     lastHeaders = Map<String, String>.from(headers);
@@ -52,13 +82,123 @@ class _FakeRelayConnection implements IRelayConnection {
 }
 
 void main() {
-  const ServerCredential cred = ServerCredential(
-    id: 'srv-1',
-    label: 'Test',
-    host: 'localhost',
-    port: 9696,
-    bearer: 'test-bearer-token',
-  );
+  late ServerCredential cred;
+
+  setUpAll(() async {
+    _key = await TestServerKey.create();
+    cred = ServerCredential(
+      id: 'srv-1',
+      label: 'Test',
+      host: 'localhost',
+      port: 9696,
+      bearer: 'test-bearer-token',
+      serverKey: _key.serverKey,
+      fingerprint: _key.fingerprint,
+    );
+  });
+
+  group('RelayReactClient proof', () {
+    test(
+      'the bearer goes through the relay only after the server proved itself',
+      () async {
+        final _FakeRelayConnection conn = _FakeRelayConnection(
+          <String, RelayResponse>{
+            '/api/v1/whoami': RelayResponse(
+              status: 200,
+              body: <String, dynamic>{
+                'data': <String, dynamic>{
+                  'role': 'admin',
+                  'scopes': <String>['read'],
+                },
+              },
+            ),
+          },
+        );
+        await RelayReactClient(conn, cred).whoami();
+        expect(conn.paths, <String>['/api/v1/ping', '/api/v1/whoami']);
+        expect(conn.headersSent.first.keys, isNot(contains('Authorization')));
+        expect(
+          conn.headersSent.last['Authorization'],
+          'Bearer test-bearer-token',
+        );
+      },
+    );
+
+    test(
+      'a relay that cannot prove the server never sees the bearer',
+      () async {
+        final _FakeRelayConnection conn = _FakeRelayConnection(
+          <String, RelayResponse>{},
+          prove: false,
+        );
+        await expectLater(
+          RelayReactClient(conn, cred).whoami(),
+          throwsA(isA<ReactWrongServer>()),
+        );
+        expect(conn.paths, <String>['/api/v1/ping']);
+        expect(
+          conn.headersSent.any(
+            (Map<String, String> h) => h.containsKey('Authorization'),
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test('proves once, and again after the relay lost the server', () async {
+      final _FakeRelayConnection conn = _FakeRelayConnection(
+        <String, RelayResponse>{
+          '/api/v1/whoami': RelayResponse(
+            status: 503,
+            body: <String, dynamic>{
+              'error': <String, dynamic>{'code': 'server_offline'},
+            },
+          ),
+        },
+      );
+      final RelayReactClient client = RelayReactClient(conn, cred);
+      await expectLater(client.whoami(), throwsA(isA<ReactUnavailable>()));
+      await expectLater(client.whoami(), throwsA(isA<ReactUnavailable>()));
+      expect(conn.paths, <String>[
+        '/api/v1/ping',
+        '/api/v1/whoami',
+        '/api/v1/ping',
+        '/api/v1/whoami',
+      ]);
+    });
+  });
+
+  group('RelayReactClient.metricRange()', () {
+    test('asks the relay for one stored range', () async {
+      final _FakeRelayConnection conn = _FakeRelayConnection(
+        <String, RelayResponse>{
+          '/api/v1/metrics/range?range=1h': RelayResponse(
+            status: 200,
+            body: <String, dynamic>{
+              'data': <String, dynamic>{
+                'range': '1h',
+                'stepMs': 10000,
+                'fromMs': 0,
+                'toMs': 3600000,
+                'series': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'id': 'tick-time',
+                    'values': List<double>.filled(360, 4),
+                  },
+                ],
+              },
+            },
+          ),
+        },
+      );
+
+      final RelayReactClient client = RelayReactClient(conn, cred);
+      final RangeHistory range = await client.metricRange(ChartRange.hour);
+
+      expect(conn.lastPath, equals('/api/v1/metrics/range?range=1h'));
+      expect(range.view(const <String>['tick-time']).times, hasLength(360));
+    });
+  });
 
   group('RelayReactClient.identity()', () {
     test(
@@ -71,7 +211,6 @@ void main() {
               body: <String, dynamic>{
                 'data': <String, dynamic>{
                   'serverName': 'T',
-                  'version': '2.0',
                   'folia': true,
                   'serverId': 'aa:bb',
                 },
@@ -84,7 +223,6 @@ void main() {
         final IdentityInfo info = await client.identity();
 
         expect(info.serverName, equals('T'));
-        expect(info.version, equals('2.0'));
         expect(info.folia, isTrue);
         expect(info.serverId, equals('aa:bb'));
 
@@ -102,7 +240,7 @@ void main() {
     test('returns ServerSnapshot from a timestamped scalar response', () async {
       final _FakeRelayConnection conn = _FakeRelayConnection(
         <String, RelayResponse>{
-          '/api/v1/metrics': RelayResponse(
+          '/api/v1/metrics?compact=1': RelayResponse(
             status: 200,
             body: <String, dynamic>{
               'data': <String, dynamic>{

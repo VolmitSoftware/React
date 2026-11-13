@@ -2,9 +2,7 @@ package art.arcane.react.web;
 
 import art.arcane.react.api.web.ConfigApplier;
 import art.arcane.react.api.web.PresetApplier;
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
+import art.arcane.react.api.web.pairing.WebToken;
 import art.arcane.react.api.web.WebMutation;
 import art.arcane.react.api.web.dto.ConfigSectionDto;
 import art.arcane.react.api.web.dto.ConfigNodeDto;
@@ -12,13 +10,12 @@ import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.resource.ConfigResource;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
-import io.javalin.http.ForbiddenResponse;
+import art.arcane.react.api.web.WebError;
 import io.javalin.http.InternalServerErrorResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedHashMap;
@@ -35,9 +32,9 @@ import static org.mockito.Mockito.when;
 
 public class ConfigResourceTest {
 
-    private PairingToken adminToken;
-    private PairingToken opToken;
-    private PairingToken readToken;
+    private WebToken adminToken;
+    private WebToken opToken;
+    private WebToken readToken;
     private RecordingConfigApplier recordingApplier;
     private RecordingPresetApplier recordingPresetApplier;
     private List<WebMutation> mutations;
@@ -45,21 +42,12 @@ public class ConfigResourceTest {
 
     @BeforeEach
     void setUp() {
-        byte[] secret = new byte[32];
-        new SecureRandom().nextBytes(secret);
 
-        TokenRecord adminRecord = new TokenRecord("tok-cfg-admin", "admin-device", 1000L, Set.of("read", "op:execute", "admin"), "admin");
-        TokenRecord opRecord = new TokenRecord("tok-cfg-op", "op-device", 1000L, Set.of("read", "op:execute"), "operator");
-        TokenRecord readRecord = new TokenRecord("tok-cfg-read", "read-device", 1000L, Set.of("read"), "viewer");
-        TokenStore store = TokenStore.inMemory(adminRecord, opRecord, readRecord);
 
-        String adminBearer = PairingToken.mint(secret, adminRecord.id(), adminRecord.label(), adminRecord.issuedAt(), adminRecord.scopes());
-        String opBearer = PairingToken.mint(secret, opRecord.id(), opRecord.label(), opRecord.issuedAt(), opRecord.scopes());
-        String readBearer = PairingToken.mint(secret, readRecord.id(), readRecord.label(), readRecord.issuedAt(), readRecord.scopes());
 
-        adminToken = PairingToken.verify(secret, adminBearer, store).orElseThrow();
-        opToken = PairingToken.verify(secret, opBearer, store).orElseThrow();
-        readToken = PairingToken.verify(secret, readBearer, store).orElseThrow();
+        adminToken = WebTestTokens.token("tok-cfg-admin", "admin");
+        opToken = WebTestTokens.token("tok-cfg-op", "operator");
+        readToken = WebTestTokens.token("tok-cfg-read", "viewer");
 
         recordingApplier = new RecordingConfigApplier();
         recordingPresetApplier = new RecordingPresetApplier();
@@ -111,7 +99,7 @@ public class ConfigResourceTest {
     @Test
     void put_with_admin_token_applies_values_and_returns_envelope() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(adminToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(adminToken);
         when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of("main.verbose", Boolean.TRUE));
 
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
@@ -129,17 +117,17 @@ public class ConfigResourceTest {
     @Test
     void put_with_op_token_throws_forbidden_and_applier_not_invoked() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of("main.verbose", Boolean.TRUE));
 
-        assertThrows(ForbiddenResponse.class, () -> resource.put(ctx));
+        assertThrows(WebError.class, () -> resource.put(ctx));
         assertTrue(recordingApplier.invocations.isEmpty(), "Applier must not be invoked when op token is used for global config write");
     }
 
     @Test
     void put_with_empty_map_throws_bad_request() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(adminToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(adminToken);
         when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of());
 
         assertThrows(BadRequestResponse.class, () -> resource.put(ctx));
@@ -149,7 +137,7 @@ public class ConfigResourceTest {
     @Test
     void put_rolls_back_prior_values_and_does_not_report_when_a_later_value_fails() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(adminToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(adminToken);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("main.verbose", Boolean.TRUE);
         body.put("main.debug", Boolean.TRUE);
@@ -178,7 +166,7 @@ public class ConfigResourceTest {
     @Test
     void put_restores_the_failed_path_when_its_unconfirmed_write_lands_later() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(adminToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(adminToken);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("main.verbose", Boolean.TRUE);
         body.put("main.debug", Boolean.TRUE);
@@ -212,17 +200,17 @@ public class ConfigResourceTest {
     @Test
     void put_with_read_only_token_throws_forbidden_and_applier_not_invoked() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(readToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(readToken);
         when(ctx.bodyAsClass(Map.class)).thenReturn(Map.of("main.verbose", Boolean.TRUE));
 
-        assertThrows(ForbiddenResponse.class, () -> resource.put(ctx));
+        assertThrows(WebError.class, () -> resource.put(ctx));
         assertTrue(recordingApplier.invocations.isEmpty(), "Applier must not be invoked when scope check fails");
     }
 
     @Test
     void preset_with_admin_token_and_known_name_invokes_preset_applier_and_returns_envelope() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(adminToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(adminToken);
         when(ctx.pathParam("name")).thenReturn("balanced");
 
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
@@ -238,17 +226,17 @@ public class ConfigResourceTest {
     @Test
     void preset_with_op_token_and_known_name_throws_forbidden() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         when(ctx.pathParam("name")).thenReturn("balanced");
 
-        assertThrows(ForbiddenResponse.class, () -> resource.preset(ctx));
+        assertThrows(WebError.class, () -> resource.preset(ctx));
         assertTrue(recordingPresetApplier.invocations.isEmpty(), "PresetApplier must not be invoked when op token is used for global preset");
     }
 
     @Test
     void preset_with_admin_token_and_unknown_name_throws_bad_request_before_applier() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(adminToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(adminToken);
         when(ctx.pathParam("name")).thenReturn("bogus");
 
         assertThrows(BadRequestResponse.class, () -> resource.preset(ctx));
@@ -258,10 +246,10 @@ public class ConfigResourceTest {
     @Test
     void preset_with_read_only_token_and_known_name_throws_forbidden() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(readToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(readToken);
         when(ctx.pathParam("name")).thenReturn("balanced");
 
-        assertThrows(ForbiddenResponse.class, () -> resource.preset(ctx));
+        assertThrows(WebError.class, () -> resource.preset(ctx));
         assertTrue(recordingPresetApplier.invocations.isEmpty(), "PresetApplier must NOT be invoked when scope check fails");
     }
 

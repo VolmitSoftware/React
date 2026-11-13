@@ -1,18 +1,33 @@
+/// Performance > Memory: heap use, pressure and garbage collection, then
+/// the JVM's own heap figures.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 
-import '../chart/timeseries_chart.dart';
+import '../chart/range_chart.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
+import '../model/alert_thresholds.dart';
+import '../model/health.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
+import '../state/fleet_scope.dart';
 import '../state/server_scope.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/gauge.dart';
-import '../widget/section_card.dart';
+import '../ui/kit/metric_tile.dart';
+import '../ui/kit/page.dart';
+import '../ui/kit/mode.dart';
+import '../ui/kit/section.dart';
 import '../widget/server_snapshot_state.dart';
-import '../widget/stat_tile.dart';
+import 'monitor_parts.dart';
+
+/// The JVM's heap figures (the rest of the JVM is under Internals).
+const List<String> kJvmHeapIds = <String>[
+  'jvm-heap-max',
+  'jvm-heap-committed',
+  'jvm-nonheap-used',
+  'jvm-direct-buffer-bytes',
+  'jvm-direct-buffer-count',
+];
 
 class MemoryScreen extends StatelessWidget {
   const MemoryScreen({super.key});
@@ -22,104 +37,80 @@ class MemoryScreen extends StatelessWidget {
     dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    final Widget? statePage = serverSnapshotStatePage(
-      scope: scope,
-      title: reactorText(ReactorText.memoryTitle),
-      subtitle: reactorText(ReactorText.memorySubtitle),
+    if (snapshot == null) return serverSnapshotState(scope: scope);
+
+    final AlertThresholds thresholds =
+        FleetScope.of(context)?.alertStore.thresholds ??
+        AlertThresholds.defaults;
+    final SamplerSample? used = snapshot.sampler('memory-used');
+    final SamplerSample? free = snapshot.sampler('memory-free');
+    final SamplerSample? afterGc = snapshot.sampler('memory-used-after-gc');
+    final SamplerSample? pressure = snapshot.sampler(
+      HealthMetric.memoryPressure.samplerId,
     );
-    if (snapshot == null) return statePage!;
+    final SamplerSample? gcTime = snapshot.sampler('gc-time-percent');
+    final SamplerSample? gcPause = snapshot.sampler('gc-pause-p95');
+    final List<SamplerSample> jvmHeap = samplersOf(snapshot, kJvmHeapIds);
 
-    final SamplerSample? memUsed = snapshot.sampler('memory-used');
-    final SamplerSample? memFree = snapshot.sampler('memory-free');
-    final SamplerSample? memAfterGc = snapshot.sampler('memory-used-after-gc');
-    final SamplerSample? memPressure = snapshot.sampler('memory-pressure');
-    final SamplerSample? gcTimePercent = snapshot.sampler('gc-time-percent');
-    final SamplerSample? gcPauseP95 = snapshot.sampler('gc-pause-p95');
-    final SamplerSample? memGarbage = snapshot.sampler('memory-garbage');
+    final String usedLabel = reactorText(ReactorText.memoryUsed);
+    final String freeLabel = reactorText(ReactorText.memoryFree);
+    final String afterGcLabel = reactorText(ReactorText.memoryAfterGc);
 
-    final List<(String, List<double>)> heapSeries = <(String, List<double>)>[
-      (
-        reactorText(ReactorText.commonMemoryUsed),
-        memUsed?.history ?? const <double>[],
-      ),
-      if (memFree != null)
-        (reactorText(ReactorText.memoryFree), memFree.history),
-      if (memAfterGc != null)
-        (reactorText(ReactorText.memoryAfterGc), memAfterGc.history),
-    ];
-
-    final List<(String, List<double>)> pressureSeries =
-        <(String, List<double>)>[
-          (
-            reactorText(ReactorText.memoryPressure),
-            memPressure?.history ?? const <double>[],
-          ),
-        ];
-
-    final List<(String, List<double>)> gcPauseSeries = <(String, List<double>)>[
-      (
-        reactorText(ReactorText.memoryGcPauseP95),
-        gcPauseP95?.history ?? const <double>[],
-      ),
-    ];
-
-    return ReactorPage(
-      title: reactorText(ReactorText.memoryTitle),
-      subtitle: reactorText(ReactorText.memorySubtitle),
+    // Four tiles a row: the heap, then the collector. The heap's history
+    // is the chart below; the other readings keep their trend line. The
+    // plugin's "memory-pressure" is the allocation rate (bytes per
+    // second); heap in use against the maximum is what the state is.
+    // Simple: the heap in use of its maximum and the heap chart; Advanced
+    // adds the collector and the allocation rate.
+    final bool advanced = ModeScope.advanced(context);
+    return PageStack(
       children: <Widget>[
-        SectionPanel(
-          label: reactorText(ReactorText.memoryHeapUsage),
+        MetricGrid(
           children: <Widget>[
-            TimeseriesChart(series: heapSeries, height: 180),
-            statGrid(<Widget>[
-              StatTile(
-                label: reactorText(ReactorText.commonMemoryUsed),
-                sample: memUsed,
+            if (advanced) ...<Widget>[
+              samplerTile(usedLabel, used),
+              samplerTile(afterGcLabel, afterGc),
+              samplerTile(freeLabel, free),
+              samplerTile(
+                reactorText(ReactorText.memoryPressure),
+                pressure,
+                thresholds: thresholds,
               ),
-              StatTile(
-                label: reactorText(ReactorText.memoryFree),
-                sample: memFree,
+              samplerTile(
+                reactorText(ReactorText.commonGcTime),
+                gcTime,
+                thresholds: thresholds,
               ),
-              StatTile(
-                label: reactorText(ReactorText.memoryAfterGc),
-                sample: memAfterGc,
+              samplerTile(reactorText(ReactorText.memoryGcPauseP95), gcPause),
+              samplerTile(
+                reactorText(ReactorText.memoryAllocation),
+                snapshot.sampler('memory-pressure'),
               ),
-              StatTile(
-                label: reactorText(ReactorText.memoryGarbage),
-                sample: memGarbage,
+            ] else
+              memoryTile(
+                usedLabel,
+                used,
+                pressure: pressure,
+                max: snapshot.sampler('jvm-heap-max'),
               ),
-            ]),
           ],
         ),
-        SectionPanel(
-          label: reactorText(ReactorText.memoryPressure),
-          children: <Widget>[
-            TimeseriesChart(series: pressureSeries, height: 112),
-            statGrid(<Widget>[
-              StatTile(
-                label: reactorText(ReactorText.memoryPressure),
-                sample: memPressure,
-              ),
-              if (gcTimePercent == null)
-                StatTile(
-                  label: reactorText(ReactorText.memoryGcTimePercent),
-                  sample: null,
-                )
-              else
-                Gauge(
-                  label: reactorText(ReactorText.memoryGcTimePercent),
-                  value: gcTimePercent.value,
-                  display: gcTimePercent.display,
-                  max: 100.0,
-                  thresholds: (5.0, 15.0),
-                ),
-            ]),
+        RangeChartCard(
+          title: reactorText(ReactorText.memoryHeapUsage),
+          height: 200,
+          sizes: true,
+          series: <RangeSeries>[
+            RangeSeries(usedLabel, 'memory-used', used),
+            if (free != null) RangeSeries(freeLabel, 'memory-free', free),
+            if (afterGc != null)
+              RangeSeries(afterGcLabel, 'memory-used-after-gc', afterGc),
           ],
         ),
-        SectionPanel(
-          label: reactorText(ReactorText.memoryGcPauseP95),
-          child: TimeseriesChart(series: gcPauseSeries, height: 100),
-        ),
+        if (advanced && jvmHeap.isNotEmpty)
+          PageSection(
+            title: reactorText(ReactorText.memoryJvmHeap),
+            children: <Widget>[MetricGrid(children: namedTiles(jvmHeap))],
+          ),
       ],
     );
   }

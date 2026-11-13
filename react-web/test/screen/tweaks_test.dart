@@ -1,196 +1,93 @@
 library;
 
-import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr_router/jaspr_router.dart';
+import 'package:jaspr/jaspr.dart' show GlobalStateKey;
 import 'package:jaspr_test/server_test.dart';
 
-import 'package:react_web/app/reactor_app.dart';
 import 'package:react_web/model/control_item.dart';
-import 'package:react_web/model/knob.dart';
-import 'package:react_web/model/sampler_sample.dart';
-import 'package:react_web/model/server_snapshot.dart';
-import 'package:react_web/screen/tweaks.dart';
-import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/control_scope.dart';
-import 'package:react_web/state/server_scope.dart';
+import 'package:react_web/screen/optimization.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+import 'support/operate_fakes.dart';
 
-final List<ControlItem> _fakeTweaks = <ControlItem>[
-  const ControlItem(
-    id: 'fast-fluids',
-    name: 'Fast Fluids',
-    category: 'World',
-    enabled: true,
-    description: 'Speeds up fluid simulation.',
-    knobs: <Knob>[
-      Knob(key: 'rate', label: 'Rate', type: KnobType.intType, value: 4),
-    ],
-  ),
-  const ControlItem(
-    id: 'fast-snow',
-    name: 'Fast Snow',
-    category: 'World',
-    enabled: false,
-    description: 'Accelerates snow accumulation.',
-    knobs: <Knob>[],
-  ),
-];
-
-Widget _wrapView(Widget child) =>
-    ArcaneThemeProvider(stylesheet: _sheet, child: child);
-
-Widget _wrapScreen(Widget child) => ArcaneThemeProvider(
-  stylesheet: _sheet,
-  child: ControlScope(
-    client: null,
-    child: ServerScope(
-      snapshot: ServerSnapshot(
-        byId: const <String, SamplerSample>{},
-        at: DateTime(2026),
-        seq: 1,
-      ),
-      state: ConnState.live,
-      child: child,
-    ),
-  ),
-);
+ControlListView _onScreen() =>
+    find.byType(ControlListView).evaluate().single.component as ControlListView;
 
 void main() {
-  group('TweaksScreen route wiring', () {
-    test('kRouteServerTweaks constant is correct', () {
-      expect(kRouteServerTweaks, equals('/server/:id/tweaks'));
-    });
-
-    test('buildReactorRoutes includes server tweaks route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasTweaks = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerTweaks,
-      );
-      expect(
-        hasTweaks,
-        isTrue,
-        reason: 'per-server Tweaks screen requires /server/:id/tweaks route',
-      );
-    });
-  });
-
-  group('TweaksScreen sidebar', () {
-    testServer('ReactorShell with a server renders Tweaks sidebar item', (
+  group('Tweaks screen', () {
+    testServer('without a client it asks for a live connection', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
-        _wrapView(
-          ReactorShell(
-            currentPath: '/server/srv1/tweaks',
-            servers: const <ServerEntry>[
-              ServerEntry(
-                id: 'srv1',
-                name: 'Test Server',
-                state: ConnState.live,
-              ),
-            ],
-          ),
-        ),
+        serverScopes(null, const ControlListScreen.tweaks()),
       );
       final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Tweaks'),
-        isTrue,
-        reason: 'Tweaks sidebar item must appear in per-server sidebar group',
-      );
+      expect(res.body, contains('Tweaks unavailable'));
+      expect(res.body, contains('requires a live connection'));
     });
-  });
 
-  group('TweaksListView render', () {
-    testServer('renders tweak names Fast Fluids and Fast Snow', (
-      ServerTester tester,
+    testComponents('lists the tweaks without the Governors filter', (
+      ComponentTester tester,
+    ) async {
+      final FakeServer server = FakeServer(
+        client: OperateClient(
+          tweaks: <ControlItem>[
+            controlItem('fast-snow', name: 'Fast Snow', category: 'World'),
+          ],
+        ),
+      );
+      tester.pumpComponent(
+        serverScopes(server, const ControlListScreen.tweaks()),
+      );
+      await tester.pump();
+      expect(server.client.calls, contains('GET /tweaks'));
+      expect(server.client.calls, isNot(contains('GET /features')));
+      expect(_onScreen().governors, isFalse);
+      expect(_onScreen().itemLabel, 'Tweak');
+      _onScreen().onToggle!('fast-snow', true);
+      await tester.pump();
+      expect(server.client.calls, contains('PUT /tweaks/fast-snow'));
+    });
+
+    testComponents('an empty list says there are no tweaks', (
+      ComponentTester tester,
     ) async {
       tester.pumpComponent(
-        _wrapView(
-          TweaksListView(
-            items: _fakeTweaks,
-            onToggle: null,
-            onKnobChanged: null,
-          ),
-        ),
+        serverScopes(FakeServer(), const ControlListScreen.tweaks()),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Fast Fluids'),
-        isTrue,
-        reason: 'Fast Fluids tweak name must appear',
-      );
-      expect(
-        res.body.contains('Fast Snow'),
-        isTrue,
-        reason: 'Fast Snow tweak name must appear',
-      );
-      expect(res.body, contains('aria-label="Fast Fluids"'));
-      expect(res.body, contains('aria-label="Fast Snow"'));
+      await tester.pump();
+      expect(_onScreen().emptyMessage, 'No tweaks available');
     });
 
-    testServer('renders knob label Rate in accordion customContent', (
-      ServerTester tester,
+    testComponents('switching servers reloads and writes to the new server', (
+      ComponentTester tester,
     ) async {
+      final FakeServer first = FakeServer(
+        client: OperateClient(tweaks: <ControlItem>[controlItem('fast-snow')]),
+      );
+      final FakeServer second = FakeServer(
+        client: OperateClient(
+          tweaks: <ControlItem>[controlItem('fast-fluids')],
+        ),
+      );
+      final GlobalStateKey<ServerSwitcherState> key =
+          GlobalStateKey<ServerSwitcherState>();
       tester.pumpComponent(
-        _wrapView(
-          TweaksListView(
-            items: _fakeTweaks,
-            onToggle: null,
-            onKnobChanged: null,
-          ),
+        ServerSwitcher(
+          key: key,
+          servers: <FakeServer>[first, second],
+          child: const ControlListScreen.tweaks(),
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Rate'),
-        isTrue,
-        reason: 'knob label Rate must appear in accordion customContent',
-      );
-    });
+      await tester.pump();
+      expect(_onScreen().items.single.id, 'fast-snow');
 
-    testServer('renders Configure (1) row disclosure for tweaks with knobs', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrapView(
-          TweaksListView(
-            items: _fakeTweaks,
-            onToggle: null,
-            onKnobChanged: null,
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Configure (1)'),
-        isTrue,
-        reason:
-            'disclosure label Configure (1) must appear for tweaks with 1 knob',
-      );
-      expect(res.body.contains('<details'), isTrue);
-      expect(res.body.contains('<summary'), isTrue);
-    });
-  });
+      key.currentState!.show(1);
+      await tester.pump();
+      expect(_onScreen().items.single.id, 'fast-fluids');
 
-  group('TweaksScreen no-connection', () {
-    testServer('renders requires a live connection note when client is null', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrapScreen(const TweaksScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('requires a live connection'),
-        isTrue,
-        reason: 'connection note must appear when ControlScope has no client',
-      );
+      _onScreen().onToggle!('fast-fluids', true);
+      await tester.pump();
+      expect(second.client.calls, contains('PUT /tweaks/fast-fluids'));
+      expect(first.client.writes('PUT /tweaks/'), 0);
     });
   });
 }

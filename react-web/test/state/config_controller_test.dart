@@ -57,41 +57,35 @@ class _FakeConfigClient implements IConfigClient {
 
 void main() {
   group('ConfigController.load', () {
-    test('sets tree and clears pending on success', () async {
+    test('sets tree and keeps unsaved edits on success', () async {
       final _FakeConfigClient client = _FakeConfigClient();
       client.configResult = _fakeTree(<String>['tick-rate']);
       int notifyCount = 0;
-      final ConfigController controller = ConfigController(
-        client,
-        onChange: () => notifyCount++,
-      );
+      final ConfigController controller = ConfigController(client)
+        ..addListener(() => notifyCount++);
 
       controller.edit('stale', 99);
       await controller.load();
 
       expect(controller.tree.sections.length, equals(1));
       expect(controller.tree.sections[0].nodes[0].key, equals('tick-rate'));
-      expect(controller.pending, isEmpty);
+      expect(controller.pending, <String, Object?>{'stale': 99});
       expect(controller.loading, isFalse);
       expect(controller.error, isNull);
       expect(notifyCount, greaterThanOrEqualTo(2));
     });
 
-    test('sets error and calls onError on failure', () async {
+    test('sets error and reports the error on failure', () async {
       final _FakeConfigClient client = _FakeConfigClient();
       client.throwOnConfig = true;
-      Object? capturedError;
-      final ConfigController controller = ConfigController(
-        client,
-        onError: (Object e) => capturedError = e,
-      );
+      final ConfigController controller = ConfigController(client);
 
       await controller.load();
 
       expect(controller.tree.sections, isEmpty);
       expect(controller.loading, isFalse);
       expect(controller.error, isA<ReactUnavailable>());
-      expect(capturedError, isA<ReactUnavailable>());
+      expect(controller.error, isA<ReactUnavailable>());
     });
   });
 
@@ -145,35 +139,35 @@ void main() {
       expect(client.applyConfigCallCount, equals(0));
     });
 
-    test('calls onError and retains pending when applyConfig throws', () async {
-      final _FakeConfigClient client = _FakeConfigClient();
-      client.throwOnApplyConfig = true;
-      Object? capturedError;
-      final ConfigController controller = ConfigController(
-        client,
-        onError: (Object e) => capturedError = e,
-      );
+    test(
+      'reports the error and retains pending when applyConfig throws',
+      () async {
+        final _FakeConfigClient client = _FakeConfigClient();
+        client.throwOnApplyConfig = true;
+        Object? capturedError;
+        final ConfigController controller = ConfigController(client);
 
-      controller.edit('a.b', 5);
-      await controller.apply();
+        controller.edit('a.b', 5);
+        capturedError = await controller.apply();
 
-      expect(capturedError, isA<ReactForbidden>());
-      expect(controller.pending, equals(<String, Object?>{'a.b': 5}));
-      expect(controller.dirty, isTrue);
-      expect(controller.saving, isFalse);
-    });
+        expect(capturedError, isA<ReactForbidden>());
+        expect(controller.pending, equals(<String, Object?>{'a.b': 5}));
+        expect(controller.dirty, isTrue);
+        expect(controller.saving, isFalse);
+      },
+    );
   });
 
   group('ConfigController.applyPreset', () {
     test(
-      'calls applyPreset with name, replaces tree, clears pending',
+      'with discardPending calls applyPreset, replaces tree, clears pending',
       () async {
         final _FakeConfigClient client = _FakeConfigClient();
         client.applyPresetResult = _fakeTree(<String>['preset-key']);
         final ConfigController controller = ConfigController(client);
 
         controller.edit('old-key', 42);
-        await controller.applyPreset('balanced');
+        await controller.applyPreset('balanced', discardPending: true);
 
         expect(client.capturedPresetName, equals('balanced'));
         expect(controller.tree.sections[0].nodes[0].key, equals('preset-key'));
@@ -183,16 +177,13 @@ void main() {
       },
     );
 
-    test('calls onError when applyPreset throws', () async {
+    test('reports the error when applyPreset throws', () async {
       final _FakeConfigClient client = _FakeConfigClient();
       client.throwOnApplyPreset = true;
       Object? capturedError;
-      final ConfigController controller = ConfigController(
-        client,
-        onError: (Object e) => capturedError = e,
-      );
+      final ConfigController controller = ConfigController(client);
 
-      await controller.applyPreset('off');
+      capturedError = await controller.applyPreset('off');
 
       expect(capturedError, isA<ReactForbidden>());
       expect(controller.saving, isFalse);

@@ -1,10 +1,9 @@
 package art.arcane.react.web;
 
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebConfiguration;
+import art.arcane.react.api.web.WebRole;
+import art.arcane.react.api.web.pairing.WebTokens;
 import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.api.web.relay.ReactServerIdentity;
 import art.arcane.react.api.web.relay.RelayClient;
@@ -33,7 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.List;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -57,19 +56,21 @@ class WebControllerHotloadTest {
 
     @Test
     void preparationUsesCapturedBytesWithoutRewritingTheFile() throws Exception {
+        // wsPushHz was removed; older files that still carry it must keep loading.
         File source = new File(dataFolder, "web.toml");
         String disk = "listenerEnabled = false\nlistenAddress = \"::\"\n";
         Files.writeString(source.toPath(), disk, StandardCharsets.UTF_8);
 
         WebConfiguration prepared = WebController.prepareHotloadSnapshot(source,
             "listenerEnabled = true\nlistenAddress = \"127.0.0.1\"\nport = 0\n"
-                + "corsOrigins = [\"*\", \"null\"]\nwsPushHz = 20\n");
+                + "corsOrigins = [\"*\"]\nallowedOrigins = [\"HTTP://127.0.0.1:8826\"]\nwsPushHz = 20\n");
 
         Assertions.assertTrue(prepared.isListenerEnabled());
         Assertions.assertEquals("127.0.0.1", prepared.getListenAddress());
         Assertions.assertEquals(0, prepared.getPort());
-        Assertions.assertEquals(List.of("*", "null"), prepared.getCorsOrigins());
-        Assertions.assertEquals(20, prepared.getWsPushHz());
+        Assertions.assertEquals(List.of("http://127.0.0.1:8826"), prepared.getAllowedOrigins());
+        Assertions.assertEquals(WebConfiguration.DEFAULT_APP_URL, prepared.getAppUrl());
+        Assertions.assertEquals(7, prepared.getTokenDays());
         Assertions.assertTrue(prepared.isRequireTokenForReads());
         Assertions.assertEquals(disk, Files.readString(source.toPath(), StandardCharsets.UTF_8));
     }
@@ -81,10 +82,13 @@ class WebControllerHotloadTest {
         "listenerEnabled = true\nlistenAddress = \"\"\n",
         "listenerEnabled = true\nlistenAddress = \"::\"\nport = -1\n",
         "listenerEnabled = true\nlistenAddress = \"::\"\nport = 65536\n",
-        "listenerEnabled = true\nlistenAddress = \"::\"\nwsPushHz = 0\n",
-        "listenerEnabled = true\nlistenAddress = \"::\"\nwsPushHz = 1001\n",
         "listenerEnabled = true\nlistenAddress = \"::\"\nadvertisedUrl = \"ftp://example.com\"\n",
-        "listenerEnabled = true\nlistenAddress = \"::\"\nrelayEnabled = true\nrelayUrl = \"http://example.com\"\n"
+        "listenerEnabled = true\nlistenAddress = \"::\"\nrelayEnabled = true\nrelayUrl = \"http://example.com\"\n",
+        "listenerEnabled = true\nlistenAddress = \"::\"\nallowedOrigins = [\"https://app.example/path\"]\n",
+        "listenerEnabled = true\nlistenAddress = \"::\"\nallowedOrigins = [\"http://192.168.1.5:8080\"]\n",
+        "listenerEnabled = true\nlistenAddress = \"::\"\nappUrl = \"ftp://example.com\"\n",
+        "listenerEnabled = true\nlistenAddress = \"::\"\ntokenDays = 0\n",
+        "listenerEnabled = true\nlistenAddress = \"::\"\ntokenDays = 366\n"
     })
     void preparationRejectsInvalidCurrentConfiguration(String raw) {
         Assertions.assertThrows(IOException.class,
@@ -110,8 +114,7 @@ class WebControllerHotloadTest {
         WebConfiguration updated = configuration();
         updated.setPort(port);
         updated.setRequireTokenForReads(false);
-        updated.setWsPushHz(20);
-        updated.setCorsOrigins(List.of("https://dashboard.example"));
+        updated.setAllowedOrigins(List.of("https://dashboard.example"));
         updated.setAdvertisedUrl("https://dashboard.example/react");
 
         Assertions.assertTrue(controller.applyHotloadSnapshot(updated));
@@ -120,7 +123,7 @@ class WebControllerHotloadTest {
         Assertions.assertNotSame(previousApp, controller.getApp());
         Assertions.assertTrue(previousSendExecutor.isShutdown());
         Assertions.assertTrue(previousPushExecutor.isShutdown());
-        Assertions.assertEquals(20, controller.getConfig().getWsPushHz());
+        Assertions.assertFalse(controller.getConfig().isRequireTokenForReads());
         Assertions.assertEquals("https://dashboard.example/react", controller.resolveDirectUrl());
         HttpResponse<String> response = get("/api/v1/identity", null, "https://dashboard.example");
         Assertions.assertEquals(200, response.statusCode());
@@ -129,26 +132,22 @@ class WebControllerHotloadTest {
     }
 
     @Test
-    void reloadPreservesTokensSecretIdentityAndPersistedAuthBytes() throws Exception {
+    void reloadPreservesTokensIdentityAndPersistedAuthBytes() throws Exception {
         startController();
-        TokenStore tokens = controller.getTokenStore();
-        TokenRecord record = new TokenRecord("hotload-token", "device", 1000L, Set.of("read"), "viewer");
-        tokens.add(record);
-        tokens.save(controller.tokensFile());
-        byte[] persisted = Files.readAllBytes(controller.tokensFile().toPath());
-        byte[] secret = controller.getSecret();
+        WebTokens tokens = controller.getTokens();
+        String bearer = pair(tokens);
+        File store = new File(dataFolder, WebTokens.FILE);
+        byte[] persisted = Files.readAllBytes(store.toPath());
         ReactServerIdentity identity = controller.getIdentity();
-        String bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
         Assertions.assertEquals(200, get("/api/v1/identity", bearer, null).statusCode());
 
         WebConfiguration updated = configuration();
-        updated.setWsPushHz(10);
+        updated.setAllowedOrigins(List.of("https://other.example"));
         Assertions.assertTrue(controller.applyHotloadSnapshot(updated));
 
-        Assertions.assertSame(tokens, controller.getTokenStore());
-        Assertions.assertSame(secret, controller.getSecret());
+        Assertions.assertSame(tokens, controller.getTokens());
         Assertions.assertSame(identity, controller.getIdentity());
-        Assertions.assertArrayEquals(persisted, Files.readAllBytes(controller.tokensFile().toPath()));
+        Assertions.assertArrayEquals(persisted, Files.readAllBytes(store.toPath()));
         Assertions.assertEquals(200, get("/api/v1/identity", bearer, null).statusCode());
         Assertions.assertEquals(401, get("/api/v1/identity", null, null).statusCode());
     }
@@ -156,7 +155,7 @@ class WebControllerHotloadTest {
     @Test
     void disabledListenerCanBeEnabledAgainWithoutDiscardingAuth() throws Exception {
         startController();
-        TokenStore tokens = controller.getTokenStore();
+        WebTokens tokens = controller.getTokens();
         WebConfiguration disabled = configuration();
         disabled.setListenerEnabled(false);
 
@@ -165,15 +164,16 @@ class WebControllerHotloadTest {
         Assertions.assertEquals(0, controller.getBoundPort());
         Assertions.assertNull(controller.getWsPushExecutor());
         Assertions.assertFalse(controller.getConfig().isListenerEnabled());
-        Assertions.assertSame(tokens, controller.getTokenStore());
+        Assertions.assertSame(tokens, controller.getTokens());
         Assertions.assertTrue(controller.applyHotloadSnapshot(configuration()));
-        Assertions.assertSame(tokens, controller.getTokenStore());
+        Assertions.assertSame(tokens, controller.getTokens());
         Assertions.assertEquals(200, get("/api/v1/ping", null, null).statusCode());
     }
 
     @Test
     void relayChangesReplaceTheClientAndDisablingClosesIt() throws Exception {
         startController();
+        pair(controller.getTokens());
         WebConfiguration relayed = configuration();
         relayed.setRelayEnabled(true);
         relayed.setRelayUrl("wss://127.0.0.1:1");
@@ -212,6 +212,7 @@ class WebControllerHotloadTest {
     @Test
     void relayStartupFailureRestoresThePreviousListener() throws Exception {
         startController();
+        pair(controller.getTokens());
         WebConfiguration previous = controller.getConfig();
         controller.failRelayBridge.set(true);
         WebConfiguration updated = configuration();
@@ -242,7 +243,7 @@ class WebControllerHotloadTest {
         startController();
         controller.blockNextBind.set(true);
         WebConfiguration updated = configuration();
-        updated.setWsPushHz(20);
+        updated.setAllowedOrigins(List.of("https://other.example"));
         CompletableFuture<Boolean> application = CompletableFuture.supplyAsync(() -> controller.applyHotloadSnapshot(updated));
         try {
             Assertions.assertTrue(controller.awaitBind.await(5, TimeUnit.SECONDS));
@@ -277,6 +278,35 @@ class WebControllerHotloadTest {
         Assertions.assertEquals(updated, controller.getConfig());
         Assertions.assertEquals(200, get("/api/v1/identity", null, null).statusCode());
         Assertions.assertEquals(1, controller.logger.getHandlers().length);
+    }
+
+    @Test
+    void theRelayDialsOutOnlyOnceSomeonePairs() throws Exception {
+        createController();
+        WebConfiguration relayed = configuration();
+        relayed.setRelayEnabled(true);
+        relayed.setRelayUrl("ws://127.0.0.1:1");
+        controller.setConfig(relayed);
+        controller.start();
+        controller.postStart();
+        controller.awaitStart(5000L);
+        Assertions.assertNull(controller.getRelayClient(), "a server nobody paired never dials out");
+        Assertions.assertEquals(WebController.RelayState.WAITING, controller.status().relay());
+
+        WebController.IssuedLink link = controller.createLink(new WebTokens.Grant("", WebRole.OPERATOR.scopes(), Duration.ofDays(7), "console", Optional.empty()));
+        Assertions.assertNotNull(controller.getRelayClient(), "the first link connects the relay");
+        Assertions.assertTrue(link.url().contains("/pair#RCT3."));
+
+        WebConfiguration other = configuration();
+        other.setRelayEnabled(true);
+        other.setRelayUrl("ws://127.0.0.1:2");
+        Assertions.assertTrue(controller.applyHotloadSnapshot(other));
+        Assertions.assertNotNull(controller.getRelayClient(), "an open link keeps the relay across a listener restart");
+    }
+
+    private static String pair(WebTokens tokens) throws IOException {
+        WebTokens.Link link = tokens.pair(new WebTokens.Grant("device", WebRole.VIEWER.scopes(), Duration.ofDays(7), "console", Optional.empty()));
+        return tokens.redeem(link.tokenId(), link.secret(), Optional.empty()).bearer();
     }
 
     private void startController() throws Exception {
@@ -347,7 +377,6 @@ class WebControllerHotloadTest {
         @Override
         protected IdentityDto resolveIdentity() {
             IdentityDto identity = new IdentityDto();
-            identity.version = "hotload-test";
             identity.serverName = "HotloadTest";
             identity.serverId = "127.0.0.1:0";
             return identity;

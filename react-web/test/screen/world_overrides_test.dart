@@ -1,177 +1,148 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr_router/jaspr_router.dart';
+import 'package:jaspr/jaspr.dart' show GlobalStateKey;
 import 'package:jaspr_test/server_test.dart';
 
-import 'package:react_web/app/reactor_app.dart';
 import 'package:react_web/model/world_settings.dart';
 import 'package:react_web/screen/world_overrides.dart';
-import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/control_scope.dart';
+import 'package:react_web/ui/kit/mode.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+import 'support/operate_fakes.dart';
 
-Widget _wrapView(Widget child) =>
-    ArcaneThemeProvider(stylesheet: _sheet, child: child);
-
-Widget _wrapScreen({required Widget child}) => ArcaneThemeProvider(
-  stylesheet: _sheet,
-  child: ControlScope(client: null, child: child),
-);
-
-final List<WorldSettings> _fakeWorlds = <WorldSettings>[
-  const WorldSettings(
-    key: 'minecraft:world',
-    name: 'world',
-    pressureMode: PressureMode.normal,
-    budgetMs: 50.0,
-    panicMs: 55.0,
-    releaseMs: 45.0,
-  ),
+final List<WorldSettings> _worlds = <WorldSettings>[
+  worldSettings('world', budget: 50),
   const WorldSettings(
     key: 'minecraft:world_nether',
     name: 'world_nether',
     pressureMode: PressureMode.panic,
-    budgetMs: 50.0,
-    panicMs: 55.0,
-    releaseMs: 45.0,
+    budgetMs: 40,
+    panicMs: 45.5,
+    releaseMs: 35,
   ),
 ];
 
+WorldOverridesView _view() =>
+    find.byType(WorldOverridesView).evaluate().single.component
+        as WorldOverridesView;
+
+WorldBudgetSheet _sheet() =>
+    find.byType(WorldBudgetSheet).evaluate().single.component
+        as WorldBudgetSheet;
+
 void main() {
-  group('WorldOverridesScreen route', () {
-    test('kRouteServerWorldOverrides constant is correct', () {
-      expect(kRouteServerWorldOverrides, equals('/server/:id/world-overrides'));
-    });
-
-    test('buildReactorRoutes contains world-overrides route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasRoute = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerWorldOverrides,
-      );
-      expect(
-        hasRoute,
-        isTrue,
-        reason:
-            'World Overrides screen requires /server/:id/world-overrides route',
-      );
-    });
-  });
-
-  group('WorldOverridesScreen sidebar', () {
-    testServer(
-      'ReactorShell with a server renders World Overrides sidebar item',
-      (ServerTester tester) async {
-        tester.pumpComponent(
-          _wrapView(
-            ReactorShell(
-              currentPath: '/server/srv1/world-overrides',
-              servers: const <ServerEntry>[
-                ServerEntry(
-                  id: 'srv1',
-                  name: 'Test Server',
-                  state: ConnState.live,
-                ),
-              ],
-            ),
-          ),
-        );
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, equals(200));
-        expect(
-          res.body.contains('World Overrides'),
-          isTrue,
-          reason:
-              'World Overrides sidebar item must appear in per-server sidebar group',
-        );
-      },
-    );
-  });
-
-  group('WorldOverridesView render', () {
-    testServer(
-      'renders world names, pressure badges, field labels, and values',
-      (ServerTester tester) async {
-        tester.pumpComponent(
-          _wrapView(WorldOverridesView(worlds: _fakeWorlds)),
-        );
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, equals(200));
-        expect(
-          res.body.contains('world'),
-          isTrue,
-          reason: 'world name must appear in rendered HTML',
-        );
-        expect(
-          res.body.contains('world_nether'),
-          isTrue,
-          reason: 'world_nether name must appear in rendered HTML',
-        );
-        expect(
-          res.body.contains('Normal'),
-          isTrue,
-          reason: 'Localized normal pressure badge must appear for world',
-        );
-        expect(
-          res.body.contains('Panic'),
-          isTrue,
-          reason: 'Localized panic pressure badge must appear for world_nether',
-        );
-        expect(
-          res.body.contains('Budget (ms)'),
-          isTrue,
-          reason: 'Budget (ms) field label must appear in rendered HTML',
-        );
-        expect(
-          res.body.contains('Panic (ms)'),
-          isTrue,
-          reason: 'Panic (ms) field label must appear in rendered HTML',
-        );
-        expect(
-          res.body.contains('Release (ms)'),
-          isTrue,
-          reason: 'Release (ms) field label must appear in rendered HTML',
-        );
-        expect(
-          res.body.contains('50'),
-          isTrue,
-          reason: 'budgetMs value 50 must appear in rendered HTML',
-        );
-      },
-    );
-
-    testServer('empty worlds renders No worlds empty state', (
+  group('WorldOverridesView', () {
+    testServer('one row per world with pressure and times', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
-        _wrapView(const WorldOverridesView(worlds: <WorldSettings>[])),
+        ArcaneThemeProvider(
+          stylesheet: testSheet,
+          child: WorldOverridesView(worlds: _worlds),
+        ),
       );
       final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('No worlds'),
-        isTrue,
-        reason: 'No worlds empty state must appear when worlds list is empty',
+      expect(res.body, contains('world_nether'));
+      expect(res.body, contains('Panic'));
+      expect(res.body, contains('Budget (ms)'));
+      expect(res.body, contains('45.5'));
+      expect(res.body, isNot(contains('Edit world')));
+    });
+
+    testServer('Edit shows per world when offered', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        ArcaneThemeProvider(
+          stylesheet: testSheet,
+          child: WorldOverridesView(worlds: _worlds, onEdit: (String _) {}),
+        ),
       );
+      final DocumentResponse res = await tester.request('/');
+      expect(res.body, contains('aria-label="Edit world_nether"'));
     });
   });
 
-  group('WorldOverridesScreen no-connection', () {
-    testServer(
-      'renders require a live connection note when ControlScope client is null',
-      (ServerTester tester) async {
-        tester.pumpComponent(_wrapScreen(child: const WorldOverridesScreen()));
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, equals(200));
-        expect(
-          res.body.contains('require a live connection'),
-          isTrue,
-          reason:
-              'connection note must appear when ControlScope client is null',
-        );
-      },
-    );
+  group('WorldOverridesScreen', () {
+    testServer('without a client it asks for a live connection', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(serverScopes(null, const WorldOverridesScreen()));
+      final DocumentResponse res = await tester.request('/');
+      expect(res.body, contains('World overrides unavailable'));
+    });
+
+    testComponents('editing is Advanced only', (ComponentTester tester) async {
+      tester.pumpComponent(
+        serverScopes(
+          FakeServer(
+            client: OperateClient(worlds: List<WorldSettings>.of(_worlds)),
+          ),
+          const WorldOverridesScreen(),
+          mode: ReactorMode.simple,
+        ),
+      );
+      await tester.pump();
+      expect(_view().worlds, hasLength(2));
+      expect(_view().onEdit, isNull);
+    });
+
+    testComponents('a viewer may open a world but not change it', (
+      ComponentTester tester,
+    ) async {
+      tester.pumpComponent(
+        serverScopes(
+          FakeServer(
+            client: OperateClient(worlds: List<WorldSettings>.of(_worlds)),
+          ),
+          const WorldOverridesScreen(),
+          role: viewerRole,
+        ),
+      );
+      await tester.pump();
+      _view().onEdit!('world');
+      await tester.pump();
+      expect(_sheet().world?.name, 'world');
+      expect(_sheet().onStage, isNull);
+      expect(_sheet().onSave, isNull);
+    });
+
+    testComponents('switching servers reloads and writes to the new server', (
+      ComponentTester tester,
+    ) async {
+      final FakeServer first = FakeServer(
+        client: OperateClient(worlds: <WorldSettings>[worldSettings('alpha')]),
+      );
+      final FakeServer second = FakeServer(
+        client: OperateClient(worlds: <WorldSettings>[worldSettings('beta')]),
+      );
+      final GlobalStateKey<ServerSwitcherState> key =
+          GlobalStateKey<ServerSwitcherState>();
+      tester.pumpComponent(
+        ServerSwitcher(
+          key: key,
+          servers: <FakeServer>[first, second],
+          child: const WorldOverridesScreen(),
+        ),
+      );
+      await tester.pump();
+      expect(_view().worlds.single.name, 'alpha');
+
+      key.currentState!.show(1);
+      await tester.pump();
+      expect(_view().worlds.single.name, 'beta');
+
+      _view().onEdit!('beta');
+      await tester.pump();
+      expect(_sheet().onSave, isNull);
+      _sheet().onStage!('beta', WorldBudget.budget, 30);
+      await tester.pump();
+      expect(second.client.writes('PUT /worlds/'), 0);
+      _sheet().onSave!();
+      await tester.pump();
+      expect(second.client.calls, contains('PUT /worlds/beta'));
+      expect(second.client.worldList.single.budgetMs, 30);
+      expect(first.client.writes('PUT /worlds/'), 0);
+    });
   });
 }

@@ -1,385 +1,310 @@
 library;
 
-import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr/jaspr.dart' show Component, DomComponent;
-import 'package:jaspr_router/jaspr_router.dart';
 import 'package:jaspr_test/server_test.dart';
-
-import 'package:react_web/app/reactor_app.dart';
 import 'package:react_web/localization/reactor_localizations.dart';
-import 'package:react_web/model/sampler_sample.dart';
 import 'package:react_web/model/server_credential.dart';
-import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/screen/fleet_dashboard.dart';
-import 'package:react_web/state/alert_store.dart';
+import 'package:react_web/ui/kit/mode.dart';
+import 'package:react_web/service/react_exceptions.dart';
 import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/fleet_live_scope.dart';
-import 'package:react_web/state/fleet_manager.dart';
 import 'package:react_web/state/fleet_rollup.dart';
-import 'package:react_web/state/fleet_scope.dart';
-import 'package:react_web/state/memory_fleet_storage.dart';
-import 'package:react_web/state/server_tags_store.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+import 'fleet_test_support.dart';
 
-class _FakeFleetController implements FleetController {
-  final InMemoryFleetStorage _storage = InMemoryFleetStorage();
-  final List<String> removedIds = <String>[];
-  late final AlertStore _alertStore = AlertStore(_storage);
-  late final ServerTagsStore _tagsStore = ServerTagsStore(_storage);
+final List<FleetServerLive> _pair = <FleetServerLive>[
+  liveServer(
+    'a',
+    'Alpha',
+    role: 'admin',
+    transport: ServerTransport.direct,
+    samplers: <String, double>{
+      'ticks-per-second': 19.9,
+      'tick-time': 12.0,
+      'players': 10,
+      'incident-score': 10,
+    },
+  ),
+  liveServer(
+    'b',
+    'Beta',
+    transport: ServerTransport.relay,
+    samplers: <String, double>{
+      'ticks-per-second': 9.0,
+      'tick-time': 80.0,
+      'players': 2,
+      'incident-score': 55,
+    },
+  ),
+];
 
-  @override
-  FleetManager get fleetManager => throw UnimplementedError();
-
-  @override
-  ConnectionManager? managerFor(String id) => null;
-
-  @override
-  String? labelFor(String id) => null;
-
-  @override
-  void trackPaired(String id) {}
-
-  @override
-  void removeServer(String id) => removedIds.add(id);
-
-  @override
-  void clearFleet() {}
-
-  @override
-  void importFleet(List<ServerCredential> creds) {}
-
-  @override
-  AlertStore get alertStore => _alertStore;
-
-  @override
-  ServerTagsStore get tagsStore => _tagsStore;
-}
-
-SamplerSample _sample(String id, double value) => SamplerSample(
-  id: id,
-  name: id,
-  suffix: '',
-  value: value,
-  display: value.toString(),
-  min: 0.0,
-  max: 100.0,
-  history: <double>[value],
-);
-
-ServerSnapshot _snapshotFrom(Map<String, double> values) {
-  final Map<String, SamplerSample> byId = <String, SamplerSample>{};
-  for (final MapEntry<String, double> e in values.entries) {
-    byId[e.key] = _sample(e.key, e.value);
-  }
-  return ServerSnapshot(byId: byId, at: DateTime.now(), seq: 1);
-}
-
-FleetServerLive _liveServer(
-  String id,
-  String name, {
-  ConnState state = ConnState.live,
-  Map<String, double>? samplers,
-}) => FleetServerLive(
-  id: id,
-  name: name,
-  state: state,
-  snapshot: samplers != null ? _snapshotFrom(samplers) : null,
-  lastSeen: DateTime.now(),
-);
-
-Widget _wrap(List<FleetServerLive> servers, {_FakeFleetController? ctrl}) {
-  final _FakeFleetController controller = ctrl ?? _FakeFleetController();
-  return ArcaneThemeProvider(
-    stylesheet: _sheet,
-    child: FleetScope(
-      controller: controller,
-      revision: 1,
-      child: FleetLiveScope(
-        servers: servers,
-        revision: 1,
-        child: const FleetDashboardScreen(),
-      ),
+TestFleet _fleet() => TestFleet(
+  servers: <ServerCredential>[
+    testCredential('a', 'Alpha'),
+    testCredential(
+      'b',
+      'Beta',
+      host: '',
+      port: 0,
+      relayUrl: 'wss://relay.example.com',
     ),
-  );
-}
-
-Widget _wrapRouter(List<FleetServerLive> servers) {
-  final _FakeFleetController controller = _FakeFleetController();
-  return ArcaneThemeProvider(
-    stylesheet: _sheet,
-    child: FleetScope(
-      controller: controller,
-      revision: 0,
-      child: FleetLiveScope(
-        servers: servers,
-        revision: 0,
-        child: Router(routes: buildReactorShellRoutes()),
-      ),
-    ),
-  );
-}
-
-Finder _domId(String id) => find.byComponentPredicate(
-  (Component component) => component is DomComponent && component.id == id,
-  description: 'DOM element with id $id',
-);
-
-Finder _dialogSurface() => find.byComponentPredicate(
-  (Component component) =>
-      component is DomComponent &&
-      component.attributes?['data-arcane-surface'] == 'dialog',
-  description: 'open dialog surface',
-);
-
-Finder _dialogButton(String label) => find.descendant(
-  of: _dialogSurface(),
-  matching: find.ancestor(of: find.text(label), matching: find.tag('button')),
+  ],
+  client: (ServerCredential cred) => cred.id == 'a'
+      ? StubClient(role: adminRole)
+      : StubClient(roleError: const ReactForbidden()),
 );
 
 void main() {
   group('FleetDashboardScreen', () {
-    testServer('renders both server names A and B', (
+    testServer('shows the health tiles of the server group', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
-        _wrap(<FleetServerLive>[
-          _liveServer(
-            'a',
-            'A',
-            samplers: <String, double>{
-              'ticks-per-second': 19.9,
-              'players': 10.0,
-            },
-          ),
-          _liveServer(
-            'b',
-            'B',
-            samplers: <String, double>{'ticks-per-second': 9.0, 'players': 2.0},
-          ),
-        ]),
+        fleetHarness(
+          const FleetDashboardScreen(),
+          fleet: _fleet(),
+          servers: _pair,
+        ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('>A<') ||
-            res.body.contains('"A"') ||
-            res.body.contains('&#x41;') ||
-            res.body.contains('>A ') ||
-            (res.body.contains('A') && res.body.contains('B')),
-        isTrue,
-        reason: 'Server name A must appear in rendered HTML',
-      );
-      expect(
-        res.body.contains('B'),
-        isTrue,
-        reason: 'Server name B must appear in rendered HTML',
-      );
+      final String body = (await tester.request('/')).body;
+
+      for (final ReactorText label in <ReactorText>[
+        ReactorText.commonHealthy,
+        ReactorText.fleetWorstTps,
+        ReactorText.fleetWorstMspt,
+        ReactorText.commonPlayers,
+      ]) {
+        expect(body, contains(label.english));
+      }
+      expect(body, contains('1 / 2'), reason: 'Alpha healthy, Beta not');
+      expect(body, contains('>9.0<'), reason: 'worst TPS');
+      expect(body, contains('>80.0<'), reason: 'worst tick time');
+      expect(body, contains('>ms<'));
+      expect(body, contains('>12<'), reason: 'players of both servers');
+      expect(body, contains('ui-metric-grid'));
     });
 
-    testServer('renders a contextual remove control for every server', (
+    testServer('links every row to the server Overview', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
-        _wrap(<FleetServerLive>[_liveServer('a', 'A'), _liveServer('b', 'B')]),
+        fleetHarness(
+          const FleetDashboardScreen(),
+          fleet: _fleet(),
+          servers: _pair,
+        ),
       );
-      final DocumentResponse response = await tester.request('/');
-      final String removeA = reactorText(
-        ReactorText.settingsRemoveServer,
-        <String, Object?>{'server': 'A'},
-      );
-      final String removeB = reactorText(
-        ReactorText.settingsRemoveServer,
-        <String, Object?>{'server': 'B'},
-      );
+      final String body = (await tester.request('/')).body;
 
-      expect(response.statusCode, equals(200));
-      expect(response.body, contains('id="reactor-remove-server-a"'));
-      expect(response.body, contains('aria-label="$removeA"'));
-      expect(response.body, contains('id="reactor-remove-server-b"'));
-      expect(response.body, contains('aria-label="$removeB"'));
+      expect(body, contains('href="/server/a"'));
+      expect(body, contains('href="/server/b"'));
+      expect(body, contains('role="table"'));
+      expect(body, isNot(contains('Remove')), reason: 'removal is in Settings');
     });
 
-    testComponents('cancel preserves servers and confirm removes only A', (
+    testServer('names the transport of each server in Advanced', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        fleetHarness(
+          ModeScope(
+            mode: ReactorMode.advanced,
+            onChanged: (ReactorMode _) {},
+            child: const FleetDashboardScreen(),
+          ),
+          fleet: _fleet(),
+          servers: _pair,
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+
+      expect(body, contains(ReactorText.fleetDirect.english));
+      expect(body, contains(ReactorText.pairRelay.english));
+    });
+
+    testServer('one state per server from the shared verdict', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        fleetHarness(
+          const FleetDashboardScreen(),
+          fleet: _fleet(),
+          servers: _pair,
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+
+      expect(body, contains(ReactorText.commonHealthy.english));
+      expect(body, contains(ReactorText.statusCritical.english));
+      expect(body, isNot(contains(ReactorText.statusElevated.english)));
+    });
+
+    testComponents(
+      'shows each role in Advanced; an old entry asks the server',
+      (ComponentTester tester) async {
+        tester.pumpComponent(
+          fleetHarness(
+            ModeScope(
+              mode: ReactorMode.advanced,
+              onChanged: (ReactorMode _) {},
+              child: const FleetDashboardScreen(),
+            ),
+            fleet: _fleet(),
+            servers: _pair,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(ReactorText.roleAdmin.english), findsOneComponent);
+        expect(
+          find.text(ReactorText.settingsNoAccess.english),
+          findsOneComponent,
+        );
+      },
+    );
+
+    testServer('links servers that need attention to their Incidents', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        fleetHarness(
+          const FleetDashboardScreen(),
+          fleet: _fleet(),
+          servers: _pair,
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+
+      expect(body, contains(ReactorText.fleetNeedsAttention.english));
+      expect(body, contains('href="/server/b/incidents"'));
+      expect(body, isNot(contains('href="/server/a/incidents"')));
+    });
+
+    testServer('shows no Needs attention list when none needs attention', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        fleetHarness(
+          const FleetDashboardScreen(),
+          fleet: _fleet(),
+          servers: <FleetServerLive>[_pair.first],
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+
+      expect(body, isNot(contains(ReactorText.fleetNeedsAttention.english)));
+    });
+
+    testServer('marks an offline server', (ServerTester tester) async {
+      tester.pumpComponent(
+        fleetHarness(
+          const FleetDashboardScreen(),
+          fleet: _fleet(),
+          servers: <FleetServerLive>[
+            liveServer('a', 'Alpha', state: ConnState.offline),
+          ],
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+
+      expect(body, contains(ReactorText.startNotReachable.english));
+      expect(body, contains('href="/server/a/incidents"'));
+    });
+
+    testServer('offers Pair again and Remove for a revoked entry', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        fleetHarness(
+          const FleetDashboardScreen(),
+          fleet: _fleet(),
+          servers: <FleetServerLive>[
+            _pair.first,
+            liveServer(
+              'b',
+              'Beta',
+              state: ConnState.offline,
+              access: ConnAccess.revoked,
+            ),
+          ],
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+
+      expect(body, contains(ReactorText.pairEndedState.english));
+      expect(body, contains(ReactorText.fleetPairAgain.english));
+      expect(
+        body,
+        contains(
+          'aria-label="${reactorText(ReactorText.settingsRemoveServer, <String, Object?>{'server': 'Beta'})}"',
+        ),
+      );
+    });
+
+    testComponents('Remove on a revoked entry asks first', (
       ComponentTester tester,
     ) async {
-      final _FakeFleetController controller = _FakeFleetController();
-      final String removeA = reactorText(
-        ReactorText.settingsRemoveServer,
-        <String, Object?>{'server': 'A'},
-      );
+      final TestFleet fleet = _fleet();
       tester.pumpComponent(
-        _wrap(<FleetServerLive>[
-          _liveServer('a', 'A'),
-          _liveServer('b', 'B'),
-        ], ctrl: controller),
+        fleetHarness(
+          const FleetDashboardScreen(),
+          fleet: fleet,
+          confirms: true,
+          servers: <FleetServerLive>[
+            liveServer(
+              'b',
+              'Beta',
+              state: ConnState.offline,
+              access: ConnAccess.revoked,
+            ),
+          ],
+        ),
       );
       await tester.pump();
 
-      await tester.click(_domId('reactor-remove-server-a'));
-      expect(find.text(removeA), findsOneComponent);
-      expect(
-        find.text(reactorText(ReactorText.settingsRemoveServerMessage)),
-        findsOneComponent,
-      );
-
-      await tester.click(_dialogButton('Cancel'));
-      expect(controller.removedIds, isEmpty);
-      expect(find.text(removeA), findsNothing);
-
-      await tester.click(_domId('reactor-remove-server-a'));
+      // The entry is in the server table and in Needs attention.
       await tester.click(
-        _dialogButton(reactorText(ReactorText.settingsRemove)),
+        buttonNamed(
+          reactorText(ReactorText.settingsRemoveServer, <String, Object?>{
+            'server': 'Beta',
+          }),
+        ).first,
       );
-
-      expect(controller.removedIds, equals(<String>['a']));
-      expect(find.text(removeA), findsNothing);
+      await tester.pump();
+      expect(fleet.removed, isEmpty);
+      await tester.click(confirmButton());
+      await tester.pump();
+      expect(fleet.removed, <String>['b']);
     });
 
-    testServer('renders a TPS value from fleet data', (
+    testServer('offers the tag filter only when servers have tags', (
+      ServerTester tester,
+    ) async {
+      final TestFleet fleet = _fleet();
+      fleet.tagsStore.setTags('a', <String>['eu']);
+      tester.pumpComponent(
+        fleetHarness(
+          const FleetDashboardScreen(),
+          fleet: fleet,
+          servers: _pair,
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+
+      expect(body, contains('id="fleet-tag"'));
+      expect(body, contains('>eu<'));
+    });
+
+    testServer('leads to pairing when nothing is paired', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
-        _wrap(<FleetServerLive>[
-          _liveServer(
-            'a',
-            'A',
-            samplers: <String, double>{
-              'ticks-per-second': 19.9,
-              'players': 10.0,
-            },
-          ),
-          _liveServer(
-            'b',
-            'B',
-            samplers: <String, double>{'ticks-per-second': 9.0, 'players': 2.0},
-          ),
-        ]),
+        fleetHarness(const FleetDashboardScreen(), fleet: TestFleet()),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      final bool hasTpsValue =
-          res.body.contains('9.0') ||
-          res.body.contains('19.9') ||
-          res.body.contains('14.4') ||
-          res.body.contains('9') ||
-          res.body.contains(ReactorText.fleetWorstTps.english) ||
-          res.body.contains(ReactorText.fleetMeanTps.english);
-      expect(
-        hasTpsValue,
-        isTrue,
-        reason: 'A TPS value or label must appear in rendered HTML',
-      );
-    });
+      final String body = (await tester.request('/')).body;
 
-    testServer(
-      'critical server B surfaces destructive indicator or appears in needs-attention',
-      (ServerTester tester) async {
-        tester.pumpComponent(
-          _wrap(<FleetServerLive>[
-            _liveServer(
-              'a',
-              'A',
-              samplers: <String, double>{
-                'ticks-per-second': 19.9,
-                'players': 10.0,
-              },
-            ),
-            _liveServer(
-              'b',
-              'B',
-              samplers: <String, double>{
-                'ticks-per-second': 9.0,
-                'players': 2.0,
-              },
-            ),
-          ]),
-        );
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, equals(200));
-        final bool hasCriticalSignal =
-            res.body.contains('var(--destructive)') ||
-            res.body.contains(ReactorText.statusCritical.english);
-        expect(
-          hasCriticalSignal,
-          isTrue,
-          reason:
-              'Server B (TPS=9, critical health) must surface a critical or needs-attention signal',
-        );
-      },
-    );
-
-    testServer('renders Needs Attention section label', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrap(<FleetServerLive>[
-          _liveServer(
-            'a',
-            'A',
-            samplers: <String, double>{
-              'ticks-per-second': 19.9,
-              'players': 10.0,
-            },
-          ),
-          _liveServer(
-            'b',
-            'B',
-            samplers: <String, double>{'ticks-per-second': 9.0, 'players': 2.0},
-          ),
-        ]),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.toLowerCase().contains('attention') ||
-            res.body.toLowerCase().contains('servers'),
-        isTrue,
-        reason: 'Needs-attention or servers section label must appear',
-      );
-    });
-
-    testServer(
-      'healthy fleet shows All servers healthy in needs-attention section',
-      (ServerTester tester) async {
-        tester.pumpComponent(
-          _wrap(<FleetServerLive>[
-            _liveServer(
-              'a',
-              'A',
-              samplers: <String, double>{
-                'ticks-per-second': 19.9,
-                'players': 5.0,
-              },
-            ),
-          ]),
-        );
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, equals(200));
-        expect(
-          res.body.contains(ReactorText.fleetAllHealthy.english),
-          isTrue,
-          reason:
-              'All servers healthy must appear when no server needs attention',
-        );
-      },
-    );
-  });
-
-  group('FleetDashboardScreen empty fleet (root builder)', () {
-    testServer('empty fleet renders No servers connected via router', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrapRouter(const <FleetServerLive>[]));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains(ReactorText.shellNoServersConnected.english),
-        isTrue,
-        reason:
-            'Root route with empty fleet must show No servers connected empty-state',
-      );
+      expect(body, contains(ReactorText.fleetNoServersPaired.english));
+      expect(body, contains(ReactorText.pairTitle.english));
+      expect(body, contains('ui-empty'));
     });
   });
 }

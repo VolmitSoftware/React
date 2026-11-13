@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:test/test.dart';
 
+import 'package:react_web/model/log_line.dart';
 import 'package:react_web/model/server_credential.dart';
 import 'package:react_web/service/react_log_socket.dart';
 
@@ -22,9 +23,9 @@ void main() {
       expect(socket, isA<ILogSocket>());
     });
 
-    test('lines is a Stream<String>', () {
+    test('batches is a Stream<LogBatch>', () {
       final ILogSocket socket = createLogSocket(_fakeCred());
-      expect(socket.lines, isA<Stream<String>>());
+      expect(socket.batches, isA<Stream<LogBatch>>());
     });
 
     test('close() completes normally', () async {
@@ -32,10 +33,10 @@ void main() {
       await expectLater(socket.close(), completes);
     });
 
-    test('lines stream does not emit errors', () async {
+    test('batches stream does not emit errors', () async {
       final ILogSocket socket = createLogSocket(_fakeCred());
       bool errored = false;
-      final StreamSubscription<String> sub = socket.lines.listen(
+      final StreamSubscription<LogBatch> sub = socket.batches.listen(
         (_) {},
         onError: (_) => errored = true,
       );
@@ -44,9 +45,9 @@ void main() {
       expect(errored, isFalse);
     });
 
-    test('close() after lines subscription completes normally', () async {
+    test('close() after batches subscription completes normally', () async {
       final ILogSocket socket = createLogSocket(_fakeCred());
-      final StreamSubscription<String> sub = socket.lines.listen((_) {});
+      final StreamSubscription<LogBatch> sub = socket.batches.listen((_) {});
       await Future<void>.delayed(Duration.zero);
       await sub.cancel();
       await expectLater(socket.close(), completes);

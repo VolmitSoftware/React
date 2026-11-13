@@ -1,0 +1,247 @@
+/* The app frame and the kit's layout (lib/app, lib/ui/kit). Layout and
+   shadcn tokens only: every control, card, badge and tab is arcane_jaspr's,
+   unstyled here, and its reset zeroes margins and paddings. One spacing
+   token: 1rem between parts, 0.5rem inside a group of controls. */
+
+/* Only the page scrolls; the library resets margins and sizes the
+   document to the window. */
+body { overflow: hidden; }
+
+/* Code, charts, the heatmap and log lines stay left to right in Hebrew. */
+code,
+.reactor-ltr,
+[role="img"],
+[role="grid"],
+[role="log"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* Frame: the sidebar beside the top bar and the page; only the page
+   scrolls. From 760 px down the sidebar is a drawer. The top bar lines up
+   with the sidebar's header. */
+.ui-app {
+  display: grid;
+  height: 100dvh;
+  grid-template: 3.3125rem minmax(0, 1fr) / auto minmax(0, 1fr);
+  grid-template-areas: 'nav top' 'nav page';
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.ui-app.is-compact {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'top' 'page';
+}
+
+.ui-nav { grid-area: nav; min-height: 0; }
+
+.ui-topbar {
+  grid-area: top;
+  display: flex;
+  min-width: 0;
+  padding: 0 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ui-crumbs, .ui-topbar-switcher { min-width: 0; overflow: hidden; }
+
+.ui-page {
+  grid-area: page;
+  overflow: auto;
+  padding: 1.5rem;
+  container: page / inline-size;
+}
+
+.ui-skip {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 60;
+  transform: translateY(-200%);
+}
+.ui-skip:focus-within { transform: none; }
+
+/* Stacks: parts one under the other, each as wide as the page. */
+.ui-page,
+.ui-page-frame,
+.ui-page-body,
+.ui-section,
+.ui-section-body,
+.ui-stack,
+.ui-tabs-page,
+.ui-tab-panel,
+.ui-card-body,
+.ui-stat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 1rem;
+}
+
+.ui-page-frame { gap: 1.5rem; }
+.ui-stat { gap: 0.25rem; }
+
+/* A heading and its actions on one line, never wrapped. A card's or
+   section's buttons take the room the title leaves and fold into "..."
+   (the title never wraps for them); filters, which cannot fold, keep
+   their width and the title wraps instead. A page's toolbar takes its
+   own line from 760 px down. */
+.ui-page-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.5rem 1rem; }
+.ui-section-head, .ui-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; }
+:is(.ui-section-head, .ui-card-head) > :first-child { flex: 0 1 auto; min-width: 0; }
+:is(.ui-section-head, .ui-card-head) > .ui-actions { flex: 1 1 0; min-width: 2rem; }
+:is(.ui-section-head, .ui-card-head) > .ui-actions:has(> .ui-actions-lead) { flex: 0 0 auto; }
+:is(.ui-section-head, .ui-card-head) > .ui-actions:only-child { flex: 1 1 auto; }
+
+/* Rows of controls: one line, 0.5rem apart. */
+.ui-page-title,
+.ui-tip-label,
+.ui-topbar-row,
+.ui-actions,
+.ui-actions-lead,
+.ui-actions-end,
+.ui-note,
+.reactor-row-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ui-page-title, .ui-tip-label { flex-wrap: wrap; }
+.ui-topbar-row, .ui-topbar-gap, .ui-actions, .ui-actions-lead { flex: 1 1 auto; }
+.ui-actions { justify-content: flex-end; gap: 0.5rem; }
+.ui-actions.is-start { justify-content: flex-start; }
+.ui-actions-end { flex: none; }
+
+/* An (i) beside a label or title does not make its line taller. */
+:is([data-slot="field-label"], .ui-tip-label) > .ui-info { margin-block: -0.375rem; }
+
+.ui-page-title h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.ui-section-title, .ui-card-title { font-size: 1rem; font-weight: 600; }
+
+.ui-caption,
+.ui-stat-label,
+.ui-stat-caption,
+.ui-list-row.is-head {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.ui-info-text, .ui-note, .ui-list-cell, .ui-summary { font-size: 0.875rem; }
+
+.ui-tabs { overflow-x: auto; scrollbar-width: none; }
+.ui-menu.is-wide { display: block; width: 100%; }
+
+/* Metric tiles: four columns on wide pages (three for three tiles), two
+   below; one height a row. */
+.ui-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+
+.ui-metric-foot { display: grid; gap: 0.5rem; }
+
+/* Two parts side by side on wide pages (a card beside a chart). */
+.ui-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+
+@container page (min-width: 60rem) {
+  .ui-metric-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ui-metric-grid[data-tiles="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ui-split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* A page's verdict: the state badge, then what drives it. */
+.ui-verdict { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
+
+.ui-metric { display: flex; min-width: 0; }
+.ui-stat-value { font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ui-meter { margin-top: 0.25rem; }
+
+/* A message inside a card: an icon and a line, no box. */
+.ui-note { align-items: flex-start; }
+.ui-note-text { display: grid; flex: 1 1 auto; }
+.ui-note-icon { display: inline-flex; padding-top: 0.125rem; color: var(--info); }
+[data-alert="warning"] > .ui-note-icon { color: var(--warning); }
+[data-alert="error"] > .ui-note-icon { color: var(--destructive); }
+[data-alert="ok"] > .ui-note-icon { color: var(--success); }
+
+/* Data list: one grid; every row takes its tracks (subgrid), so an `auto`
+   column of row buttons is as wide as its widest cell everywhere. Rows
+   stack ("label value") when the list is narrower than its columns need
+   (data-stack, in rem): the name, then a trailing control and the row's
+   buttons in two shared columns, so they line up from row to row; numbers
+   never wrap and words never break. */
+.ui-list-host { container: list / inline-size; }
+
+.ui-list {
+  display: grid;
+  grid-template-columns: var(--ui-list-cols);
+  column-gap: 1rem;
+}
+
+.ui-list-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.625rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.ui-list-row:first-child { border-top: 0; padding-top: 0; }
+.ui-list-row.is-head { font-weight: 500; }
+.ui-list-cell { min-width: 0; overflow-wrap: break-word; }
+.ui-list-cell.is-numeric { text-align: end; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ui-list-link { display: block; min-width: 0; color: inherit; font-weight: 500; text-decoration: none; }
+.ui-list-link:hover { text-decoration: underline; }
+
+@container list (max-width: 24rem) { .ui-list[data-stack="24"] { --stacked: 1; grid-template-columns: minmax(0, 1fr) auto auto; } }
+@container list (max-width: 32rem) { .ui-list[data-stack="32"] { --stacked: 1; grid-template-columns: minmax(0, 1fr) auto auto; } }
+@container list (max-width: 40rem) { .ui-list[data-stack="40"] { --stacked: 1; grid-template-columns: minmax(0, 1fr) auto auto; } }
+@container list (max-width: 48rem) { .ui-list[data-stack="48"] { --stacked: 1; grid-template-columns: minmax(0, 1fr) auto auto; } }
+@container list (max-width: 56rem) { .ui-list[data-stack="56"] { --stacked: 1; grid-template-columns: minmax(0, 1fr) auto auto; } }
+@container list (max-width: 64rem) { .ui-list[data-stack="64"] { --stacked: 1; grid-template-columns: minmax(0, 1fr) auto auto; } }
+
+@container style(--stacked: 1) {
+  .ui-list-row { gap: 0.25rem 1rem; }
+  .ui-list-cell { grid-column: 1 / -1; }
+  .ui-list-cell[role="rowheader"] { grid-area: 1 / 1; }
+  .ui-list-cell.is-trailing { grid-area: 1 / 2; }
+  .ui-list-cell.is-actions { grid-area: 1 / 3; }
+  .ui-list-row.is-head + .ui-list-row { border-top: 0; padding-top: 0; }
+  .ui-list-cell[data-label] { display: flex; justify-content: space-between; gap: 1rem; text-align: end; }
+  .ui-list-cell[data-label]::before { flex: none; content: attr(data-label); color: var(--muted-foreground); }
+  .ui-list-row.is-head { display: none; }
+  .ui-list-cell[data-label] .reactor-one-line { white-space: normal; }
+}
+
+@media (max-width: 760px) {
+  .ui-topbar { padding: 0 0.75rem; }
+  .ui-page { padding: 1rem; }
+
+  .ui-page-header { grid-template-columns: minmax(0, 1fr); }
+
+  /* A head's filters take their own line under the title. */
+  :is(.ui-section-head, .ui-card-head):has(> .ui-actions > .ui-actions-lead) { flex-wrap: wrap; }
+  :is(.ui-section-head, .ui-card-head) > .ui-actions:has(> .ui-actions-lead) { flex: 1 1 100%; }
+
+  /* Footers stack full width, the primary on top. */
+  .ui-actions.is-footer,
+  .ui-actions.is-footer .ui-actions-end {
+    flex: 1 1 auto;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .ui-actions.is-footer .ui-actions-end > * { width: 100%; }
+
+}

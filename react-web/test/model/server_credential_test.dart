@@ -53,7 +53,7 @@ void main() {
         bearer: 'tok',
       );
       expect(cred.relayUrl, isNull);
-      expect(cred.serverPubKey, isNull);
+      expect(cred.serverKey, isNull);
       expect(cred.fingerprint, isNull);
     });
 
@@ -65,12 +65,12 @@ void main() {
         port: 7979,
         bearer: 'tok',
         relayUrl: 'wss://relay.example.com',
-        serverPubKey: 'AAABBB',
+        serverKey: 'AAABBB',
         fingerprint: 'aa:bb:cc',
       );
       final ServerCredential copy = cred.copyWith(label: 'New');
       expect(copy.relayUrl, equals('wss://relay.example.com'));
-      expect(copy.serverPubKey, equals('AAABBB'));
+      expect(copy.serverKey, equals('AAABBB'));
       expect(copy.fingerprint, equals('aa:bb:cc'));
     });
 
@@ -82,16 +82,16 @@ void main() {
         port: 7979,
         bearer: 'tok',
         relayUrl: 'wss://old.relay.com',
-        serverPubKey: 'OldKey',
+        serverKey: 'OldKey',
         fingerprint: 'old:fp',
       );
       final ServerCredential copy = cred.copyWith(
         relayUrl: 'wss://new.relay.com',
-        serverPubKey: 'NewKey',
+        serverKey: 'NewKey',
         fingerprint: 'new:fp',
       );
       expect(copy.relayUrl, equals('wss://new.relay.com'));
-      expect(copy.serverPubKey, equals('NewKey'));
+      expect(copy.serverKey, equals('NewKey'));
       expect(copy.fingerprint, equals('new:fp'));
     });
 
@@ -103,13 +103,13 @@ void main() {
         port: 7979,
         bearer: 'tok',
         relayUrl: 'wss://relay.example.com',
-        serverPubKey: 'pubkey123',
+        serverKey: 'pubkey123',
         fingerprint: 'ab:cd:ef',
       );
       final Map<String, dynamic> json = cred.toJson();
       final ServerCredential restored = ServerCredential.fromJson(json);
       expect(restored.relayUrl, equals('wss://relay.example.com'));
-      expect(restored.serverPubKey, equals('pubkey123'));
+      expect(restored.serverKey, equals('pubkey123'));
       expect(restored.fingerprint, equals('ab:cd:ef'));
     });
 
@@ -124,7 +124,7 @@ void main() {
       };
       final ServerCredential cred = ServerCredential.fromJson(json);
       expect(cred.relayUrl, isNull);
-      expect(cred.serverPubKey, isNull);
+      expect(cred.serverKey, isNull);
       expect(cred.fingerprint, isNull);
     });
   });

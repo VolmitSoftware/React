@@ -23,6 +23,7 @@
 #
 # === משתנים ===
 # יש לשמור על שמות המשתנים ולהשתמש רק במשתנים הקיימים בכל הודעה.
+#   {access}  התפקיד או ההרשאות של צימוד React Web
 #   {action}  שם הפעולה או כיוון התאמת הצבע
 #   {actions}  מספר הפעולות בתור או רשימת שמות הפעולות שהוחרגו
 #   {active}  מספר התכונות או הכוונונים הפעילים
@@ -41,7 +42,7 @@
 #   {before}  ערך תצורה, הודעת שפה או שימוש בערימה לפני שינוי
 #   {checked}  מספר הדוגמים שנבדקו
 #   {chunks}  מספר הצ'אנקים שהושפעו מפעולה
-#   {code}  קוד צימוד לממשק האינטרנט
+#   {client}  שם הדפדפן שממנו נוצר צימוד React Web
 #   {command}  נתיב הפקודה
 #   {count}  מספר הרשומות, המודולים, השינויים או ממצאי הבדיקה
 #   {current}  מספר העמוד הנוכחי
@@ -57,6 +58,7 @@
 #   {entities}  מספר הישויות שהושפעו מפעולה
 #   {entry}  רשומה בציר הזמן של האינטגרציה
 #   {exceptions}  חריגות React שתועדו במהלך סבב בדיקת עומס
+#   {expires}  מתי צימוד React Web מסתיים ללא שימוש
 #   {fail}  מספר הבדיקות שנכשלו
 #   {file}  שם קובץ תצורה, שפה או API של תוסף
 #   {fingerprint}  טביעת אצבע של השרת או של אסימון אינטרנט
@@ -80,14 +82,17 @@
 #   {incident}  מזהה פעולת האירוע הרקורסיבית שהוחרגה מחבילת בדיקות הפיתוח
 #   {index}  מספר השלב הנוכחי בחבילת בדיקות הפיתוח
 #   {invalid}  מספר הדוגמים עם קריאות לא תקינות
-#   {issued_at}  זמן יצירת אסימון האינטרנט
 #   {item}  שם או מזהה הפריט
 #   {items}  מספר ישויות הפריטים שמוזגו
 #   {kept}  עריכות מקומיות שנשמרו בעדכון שפה
 #   {key}  מפתח פרמטר פקודה, מפתח תצורה או מזהה הודעת שפה
 #   {label}  תווית של בדיקת ביצועים, מדד, הגדרה, פקודה או אסימון אינטרנט
+#   {lifetime}  משך צימוד React Web ללא שימוש
 #   {line}  מספר השורה הנערכת בהודעה מרובת שורות
 #   {lines}  מספר שורות יומן השרת שנסרקו
+#   {link}  קישור צימוד React Web
+#   {links}  מספר קישורי צימוד React Web שעוד לא נפתחו
+#   {listener}  הכתובת שאליה מאזין React Web קשור
 #   {loaded}  מספר הצ'אנקים שנטענו לראשונה במהלך טעינה מקדימה
 #   {locale}  קוד השפה המוצגת, הנבחרת או הנערכת
 #   {matched}  עולמות שמצב השמירה האוטומטית שלהם תואם לקו הבסיס של הבדיקה
@@ -105,6 +110,7 @@
 #   {offenders}  מספר הדוגמים שמחזירים ערכים לא סופיים
 #   {options}  ערכי התצורה המותרים
 #   {p95}  האחוזון ה-95 של זמן הטיק בבדיקת עומס, ב-ms
+#   {origin}  מקור הדפדפן של בקשה
 #   {parameter}  שם פרמטר הפקודה
 #   {parameters}  פרמטרי פקודה שלא נעשה בהם שימוש
 #   {pass}  מספר הבדיקות שעברו
@@ -128,6 +134,7 @@
 #   {react_errors}  מספר שורות השגיאה של React שנמצאו ביומן השרת
 #   {reason}  הסבר לכשל, לדחייה או למצב לא זמין
 #   {registered}  מספר המודולים הרשומים
+#   {relay}  מצב הממסר של React Web
 #   {remaining}  הזמן שנותר עד בדיקת השפות הבאה
 #   {removed_first}  האם הכיבוי הראשון הסיר תכונה מהמרשם הפעיל
 #   {removed_second}  האם כיבוי חוזר הסיר תכונה מהמרשם הפעיל
@@ -137,6 +144,7 @@
 #   {sampler}  שם או מזהה הדוגם
 #   {samplers}  רשימת דוגמי האינטגרציה או הדוגמים שנכשלו
 #   {scope}  תחום המפה או תחום הגדרת המרחק
+#   {scopes}  ההרשאות של צימוד React Web
 #   {score}  ציון בדיקת הביצועים
 #   {seconds}  ספירה לאחור או משך בדיקת עומס בשניות
 #   {section}  מקטע בהגדרות או בעורך השפות
@@ -145,6 +153,7 @@
 #   {since_run}  שגיאות שדווחו מאז תחילת הבדיקה הנוכחית
 #   {size}  מידות מרביות או פעילות של קיר המפות
 #   {skip}  מספר הבדיקות שדולגו
+#   {sockets}  מספר שקעי React Web הפתוחים
 #   {spawn_y}  הגובה שבו נוצר בלוק בדיקת הכבידה
 #   {state}  מצב פעולה או חבילת API של תוסף
 #   {status}  מצב האינטגרציה או תווית מצב התצורה
@@ -159,6 +168,7 @@
 #   {tier}  דרגת החומרה בנוהל תגובה לאירוע
 #   {timing}  זמן קריאות חוזרות של יכולת, באלפיות שנייה לדקה
 #   {to}  מספר הרשומה האחרונה בעמוד הנוכחי
+#   {tokens}  מספר הדפדפנים המצומדים ל־React Web
 #   {total}  סך הרשומות, המודולים, העולמות, הבדיקות או הזיכרון בהודעה
 #   {type}  סוג פרמטר פקודה, ערך תצורה, מפה או מרחק
 #   {unavailable}  מספר ידיות גשר NMS שאינן זמינות
@@ -225,12 +235,12 @@ root = "פקודת השורש של React"
 test = "הרצת בדיקות אימות ובדיקות עומס של React"
 "test.load" = "הרצת בדיקת עומס סינתטית בשני סבבים"
 "test.run" = "הרצת חבילת האימות של React"
-version = "הצגת גרסת React"
 distance = "הגדרת מרחק צפייה, סימולציה או שליחת צ'אנקים לשרת, לעולם או לשחקן"
 web = "ניהול אסימוני גישה ל-WebUI של React"
-"web.list" = "הצגת אסימוני WebUI פעילים"
-"web.pair" = "יצירת אסימון צימוד ל-WebUI"
-"web.revoke" = "ביטול אסימון WebUI"
+"web.pair" = "יצירת קישור צימוד חד־פעמי ל־React Web"
+"web.revoke" = "ביטול אסימון או קישור שעוד לא נפתח"
+"web.status" = "הצגת המאזין, הממסר וטביעת האצבע"
+"web.tokens" = "רשימת הדפדפנים המצומדים"
 language = "בחירת השפה שלך או שפת השרת"
 
 [command.parameter]
@@ -267,9 +277,11 @@ target = "עולם או שחקן היעד; כברירת מחדל נלקח ההק
 value = "מרחק בצ'אנקים; השתמשו ב־‎-1 כאשר נתמכת ירושה של ההגדרה"
 
 [command.parameter.web]
-id = "מזהה האסימון לביטול"
+expires = "משך הצימוד ללא שימוש, למשל 7d"
+id = "מזהה אסימון, או all"
 label = "תווית קריאה לאדם עבור האסימון הזה"
 role = "תפקיד עבור אסימון זה: viewer, operator או admin"
+scopes = "הרשאות במקום תפקיד, למשל read,op:execute"
 
 [command.runtime]
 chunk_not_sampled = "&cהצ'אנק הזה עדיין לא נדגם. נסה שוב בעוד שנייה.&r"
@@ -347,21 +359,39 @@ threading_folia = "(Folia עם תהליכונים לפי אזור)"
 threading_standard = ""
 
 [command.runtime.web]
+fingerprint_copy_hover = "העתקת טביעת האצבע"
+invalid_expires = "&cexpires= מקבל מספר עם d, h או m, מ־1m עד 365d, למשל 7d.&r"
+invalid_label = "&cתווית מכילה עד 64 תווים.&r"
 invalid_role = "&cתפקיד לא חוקי: &f{role}&c. הערכים הצפויים: viewer, operator או admin.&r"
+invalid_scope = "&cהרשאה לא מוכרת &f{scope}&c. ההרשאות הן {scopes}.&r"
+link_copy = "&b&n[העתקה]&r"
+link_copy_hover = "העתקת הקישור"
+link_details = "&7הרשאות {scopes}; מסתיים אחרי {lifetime} ללא שימוש; אסימון {id}&r"
+link_open = "&b&n[פתיחת React Web]&r"
+link_open_hover = "פתיחה בדפדפן"
+link_ready = "&aהקישור מוכן. יש לפתוח אותו תוך 10 דקות&r"
+link_ready_console = "&aהקישור מוכן. יש לפתוח אותו תוך 10 דקות:&r {link}"
+link_revoke = "&c&n[ביטול]&r"
+link_revoke_hover = "ביטול הקישור הזה, או סיום הצימוד שנוצר בו"
 mutation_notice = "&eשינוי אינטרנט מאת &f{actor}&e: &b{target}&e — &f{detail}&e.&r"
-pair_unavailable = "&cצימוד האינטרנט אינו זמין: &f{reason}&r"
+never = "אף פעם"
 no_tokens = "&bאין אסימונים פעילים.&r"
-pairing_code = "&bקוד צימוד:&r {code}"
-pairing_copy = "&bקוד צימוד:&r &e&nלחץ להעתקה&r"
-pairing_copy_hover = "העתק את קוד הצימוד המלא"
-persist_failed = "&cשמירת האסימון נכשלה: &f{reason}&r"
+off = "כבוי"
+pair_refused = "&e{label} לא הצליח להצטמד: &f{reason}&r"
+pair_unavailable = "&cצימוד האינטרנט אינו זמין: &f{reason}&r"
+refused_expired = "תוקף הקישור פג; יש ליצור חדש"
+refused_origin = "המקור {origin} אינו ב־allowedOrigins בקובץ web.toml"
+relay_connecting = "{url} מתחבר"
+relay_registered = "{url} רשום"
+relay_waiting = "ממתין לצימוד הראשון"
 revoked = "&bהאסימון בוטל:&r {id}"
-role = "&bתפקיד:&r {role}"
-server_fingerprint = "&bטביעת אצבע של השרת:&r {fingerprint}"
-token_entry = "&7  {id} | {label} | issuedAt={issued_at}&r"
-token_fingerprint = "&bטביעת אצבע של האסימון:&r {fingerprint}"
+role_and_scopes = "&cיש להשתמש ב־role= או ב־scopes=, לא בשניהם.&r"
+scopes_need_read = "&cscopes= חייב לכלול read.&r"
+state_ready = "מוכן"
+status = "&bReact Web&r {state} | מאזין {listener} | ממסר {relay} | {tokens} אסימונים, {links} קישורים פתוחים | {sockets} שקעים"
+status_fingerprint = "&7טביעת אצבע&r {fingerprint}"
+token_entry = "&7  {id} | {label} | {access} | פג {expires} | שימוש אחרון {used} | {client} | {sockets} שקעים&r"
 token_header = "&bאסימונים פעילים ({count}):&r"
-token_id = "&bמזהה אסימון:&r {id}"
 token_not_found = "&cהאסימון לא נמצא: &f{id}&r"
 update_failed = "&cעדכון מאגר האסימונים נכשל: &f{reason}&r"
 
@@ -469,13 +499,17 @@ description = "תצורת ממשק הניהול HTTP/WebSocket המובנה של
 impact = "יש להגדיר את כתובת ה-HTTPS של שרת מתווך הפוך אם המאזין נגיש מחוץ ל-localhost. המאזין המובנה של React ממשיך לתמוך ב-HTTP בלבד. השינויים חלים אוטומטית בשמירת web.toml."
 summary = "כתובת הבסיס הציבורית הנמסרת ללקוחות API המתחברים ישירות."
 
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.allowedorigins]
+impact = "כל רשומה היא מקור: סכימה, מארח ופורט, בלי נתיב; http פשוט רק בלולאה מקומית. דף ממקור אחר נדחה עם origin_not_allowed. בקשות בלי Origin, כמו של הממסר, אינן מושפעות."
+summary = "מקורות דפדפן שמורשים להשתמש במאזין הישיר."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.appurl]
+impact = "יש לשנות אותה ל־React Web שמתארח אצלך ולהוסיף את המקור שלו ל־allowedOrigins."
+summary = "כתובת React Web שקישורי הצימוד פותחים."
+
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenaddress]
 impact = "כתובת ברירת המחדל :: מקבלת תעבורת IPv6 ו־IPv4 ממופה מרשת מקומית, ממכולות ומניתוב פורטים. השתמשו בכתובת לולאה חוזרת רק מאחורי שרת מתווך הפוך או ממסר באותו מחשב."
 summary = "כתובת ה־IP שאליה מאזין האינטרנט נקשר."
-
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.corsorigins]
-impact = "רשימה ריקה מאפשרת את כל המקורות. הוסף מקורות ספציפיים כדי להגביל גישה בין-מקורות."
-summary = "רשימת מקורות CORS מותרים עבור ה-API של HTTP."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React פותח כברירת מחדל API הדורש אימות. הערך false מונע פתיחת מאזין HTTP או WebSocket."
@@ -486,8 +520,8 @@ impact = "אם היציאה תפוסה, React מנסה את 99 היציאות ה
 summary = "יציאת ה־TCP המועדפת לשרת האינטרנט."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayenabled]
-impact = "כשהערך true, React מתחבר למתווך הממסר בכתובת relayUrl כדי שאפליקציית הליווי תוכל להגיע לשרתים שמאחורי NAT בלי העברת פורטים."
-summary = "מפעיל את לקוח ממסר הענן היוצא למעבר דרך NAT."
+impact = "React מתחבר ל־relayUrl ב־/react web pair הראשון, ובכל הפעלה כל עוד קיים צימוד. קישורי הצימוד כוללים אז גם את כתובת הממסר."
+summary = "מפעיל את לקוח הממסר היוצא כדי שדפדפנים יגיעו לשרת בלי פורט פתוח."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayurl]
 impact = "נקרא רק כשהערך של relayEnabled הוא true. השאר ריק כשהממסר מושבת."
@@ -497,9 +531,13 @@ summary = "כתובת ה-WSS הבסיסית של מתווך הממסר, לדוג
 impact = "כשהערך true, בקשות GET ללא אימות נדחות עם 401. הגדר ל-false רק בסביבות רשת מהימנות לחלוטין."
 summary = "דורש אסימון אימות תקף עבור נקודות קצה HTTP לקריאה בלבד."
 
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.wspushhz]
-impact = "ערכים גבוהים יותר מגדילים את נאמנות הדחיפה, אך גם את העומס על הרשת ועל ה-CPU."
-summary = "התדר המטרה (Hz) שבו עדכוני דוגמים נדחפים דרך חיבורי WebSocket."
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.servername]
+impact = "ריק משתמש בשורה הראשונה של ה־MOTD, או בשם תיקיית השרת כשה־MOTD הוא ברירת המחדל של vanilla."
+summary = "השם ש־React Web מציג לשרת הזה."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
+impact = "כל שימוש מתחיל את הזמן מחדש. /react web pair expires= גובר עליו עבור קישור אחד. מ־1 עד 365."
+summary = "מספר הימים שצימוד נמשך ללא שימוש."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "תצורה של פעולת איסוף האשפה. מבקשת איסוף אשפה ב-JVM ומדווחת על הערימה שפונתה מיד."

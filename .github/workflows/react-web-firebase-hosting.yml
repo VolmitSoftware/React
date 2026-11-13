@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  ARCANE_JASPR_REF: 12d250c4c8d6fa1040eaf6a95f38917be572631c
+  ARCANE_JASPR_REF: 3ead0982285a4514279c4fab931a3ea40eb08b8d
   DART_VERSION: 3.13.5
   FIREBASE_PROJECT_ID: react-web-plugin
   FIREBASE_TOOLS_VERSION: 15.25.1
@@ -47,7 +47,7 @@ jobs:
         if: steps.cache-arcane-jaspr.outputs.cache-hit != 'true'
         uses: actions/checkout@v6
         with:
-          repository: ArcaneArts/arcane_jaspr
+          repository: TimeZone-LLC/arcane_jaspr
           ref: ${{ env.ARCANE_JASPR_REF }}
           path: react-web/.deps/arcane_jaspr
 
@@ -87,11 +87,7 @@ jobs:
 
       - name: Build client
         working-directory: react-web
-        run: |
-          REACT_WEB_VERSION="$(sed -n 's/^version: //p' pubspec.yaml)"
-          dart run jaspr_cli:jaspr build \
-            --dart-define=REACT_WEB_VERSION="$REACT_WEB_VERSION" \
-            --dart-define=REACT_WEB_COMMIT="${GITHUB_SHA:0:7}"
+        run: dart run jaspr_cli:jaspr build
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3

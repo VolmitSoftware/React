@@ -18,6 +18,35 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 final RegExp _serverIdPattern = RegExp(r'^[0-9a-f]{64}$');
 
+/// WebSocket close code a restarting relay sends every agent and browser, so
+/// each reconnects at once instead of backing off. The WebSocket library only
+/// sends 1000 or 3000-4999, so this is 4012, after 1012 "service restart".
+const int relayRestartCloseCode = 4012;
+
+/// Every open agent and browser socket of one relay process, so a shutdown
+/// can tell each of them the relay is restarting before the process exits.
+final class RelayConnections {
+  final Set<_ChannelSink> _open = <_ChannelSink>{};
+
+  int get openCount => _open.length;
+
+  /// Closes every socket with [relayRestartCloseCode] and waits up to
+  /// [timeout] for the close frames to leave.
+  Future<void> closeAll({Duration timeout = const Duration(seconds: 1)}) async {
+    final List<_ChannelSink> open = List<_ChannelSink>.of(_open);
+    // Stop every send first: closing an agent would otherwise queue an
+    // offline status frame to its browsers while they are being closed.
+    for (final _ChannelSink sink in open) {
+      sink._restarting = true;
+    }
+    final List<Future<void>> closing = <Future<void>>[
+      for (final _ChannelSink sink in open) sink.closeForRestart(),
+    ];
+    _open.clear();
+    await Future.wait(closing).timeout(timeout, onTimeout: () => <void>[]);
+  }
+}
+
 final class _ChannelSink implements RelaySink {
   final WebSocketChannel _channel;
   final int _maximumQueuedMessages;
@@ -25,12 +54,21 @@ final class _ChannelSink implements RelaySink {
   bool _draining = false;
   bool _closing = false;
   bool _closed = false;
+  bool _restarting = false;
+  Completer<void>? _drainWaiter;
 
   _ChannelSink(this._channel, this._maximumQueuedMessages);
 
+  bool get congested => _queue.length * 4 >= _maximumQueuedMessages;
+
+  Future<void> whenDrained() {
+    if (_queue.isEmpty || _closed) return Future<void>.value();
+    return (_drainWaiter ??= Completer<void>()).future;
+  }
+
   @override
   void send(RelayFrame frame) {
-    if (_closing || _closed) return;
+    if (_closing || _closed || _restarting) return;
     if (_queue.length >= _maximumQueuedMessages) {
       closeWithError('outbound queue limit exceeded');
       return;
@@ -41,7 +79,7 @@ final class _ChannelSink implements RelaySink {
 
   @override
   void closeWithError(String message) {
-    if (_closing || _closed) return;
+    if (_closing || _closed || _restarting) return;
     _closing = true;
     if (_queue.length >= _maximumQueuedMessages) _queue.clear();
     _queue.add(
@@ -57,6 +95,33 @@ final class _ChannelSink implements RelaySink {
     _closed = true;
     _closing = true;
     _queue.clear();
+    _notifyDrained();
+  }
+
+  /// Drops anything queued and closes with [relayRestartCloseCode].
+  Future<void> closeForRestart() async {
+    if (_closed) return;
+    _restarting = true;
+    _queue.clear();
+    // A frame already handed to the socket must finish before the close.
+    while (_draining) {
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+    }
+    if (_closed) return;
+    _closed = true;
+    _closing = true;
+    _notifyDrained();
+    try {
+      await _channel.sink.close(relayRestartCloseCode, 'relay restarting');
+    } on Object {
+      // The socket is already gone.
+    }
+  }
+
+  void _notifyDrained() {
+    final Completer<void>? waiter = _drainWaiter;
+    _drainWaiter = null;
+    waiter?.complete();
   }
 
   void _startDrain() {
@@ -78,6 +143,7 @@ final class _ChannelSink implements RelaySink {
     } finally {
       _draining = false;
     }
+    if (_queue.isEmpty || _closed) _notifyDrained();
     if (_closing && !_closed && _queue.isEmpty) {
       _closed = true;
       await _channel.sink.close(4008, 'relay policy violation');
@@ -109,28 +175,26 @@ final class _MessageRateLimiter {
 }
 
 final class _ConnectionGuard {
-  final RelayLimits _limits;
+  final int _maxFrameBytes;
   final RelaySink _sink;
-  late final _MessageRateLimiter _rateLimiter;
+  final _MessageRateLimiter _rateLimiter;
 
-  _ConnectionGuard(this._limits, this._sink) {
-    _rateLimiter = _MessageRateLimiter(
-      _limits.maxMessagesPerWindow,
-      _limits.messageRateWindow,
-    );
-  }
+  _ConnectionGuard(RelayLimits limits, int maxMessagesPerWindow, this._sink)
+    : _maxFrameBytes = limits.maxFrameBytes,
+      _rateLimiter = _MessageRateLimiter(
+        maxMessagesPerWindow,
+        limits.messageRateWindow,
+      );
+
+  bool allowMessage() => _rateLimiter.allow();
 
   RelayFrame? decode(Object? message) {
     if (message is! String) {
       _sink.closeWithError('binary frames are not supported');
       return null;
     }
-    if (utf8.encode(message).length > _limits.maxFrameBytes) {
+    if (utf8.encode(message).length > _maxFrameBytes) {
       _sink.closeWithError('frame size limit exceeded');
-      return null;
-    }
-    if (!_rateLimiter.allow()) {
-      _sink.closeWithError('message rate limit exceeded');
       return null;
     }
     final RelayFrame? frame = RelayFrame.decode(message);
@@ -185,6 +249,18 @@ final class _AppSocketSession {
     _broker.routeFromApp(serverId, _sink, frame);
   }
 
+  void onRateLimited(RelayFrame frame) {
+    final String? serverId = _serverId;
+    final String? requestId = frame.requestId;
+    if (_disconnected ||
+        serverId == null ||
+        frame.type != RelayFrameType.route ||
+        requestId == null) {
+      return;
+    }
+    _broker.rejectRateLimited(serverId, _sink, requestId);
+  }
+
   void onDisconnect() {
     if (_disconnected) return;
     _disconnected = true;
@@ -206,6 +282,7 @@ Future<HttpServer> startRelayServer({
   HandshakeVerifier? verifier,
   RelayLimits limits = const RelayLimits(),
   Iterable<String>? allowedAppOrigins,
+  RelayConnections? connections,
 }) async {
   final RelayBroker effectiveBroker = broker ?? RelayBroker(limits: limits);
   final RelayLimits effectiveLimits = effectiveBroker.limits;
@@ -218,9 +295,14 @@ Future<HttpServer> startRelayServer({
   final Handler agentWsHandler = webSocketHandler((WebSocketChannel channel) {
     final _ChannelSink sink = _ChannelSink(
       channel,
-      effectiveLimits.maxOutboundQueueMessages,
+      effectiveLimits.maxAgentOutboundQueueMessages,
     );
-    final _ConnectionGuard guard = _ConnectionGuard(effectiveLimits, sink);
+    connections?._open.add(sink);
+    final _ConnectionGuard guard = _ConnectionGuard(
+      effectiveLimits,
+      effectiveLimits.maxAgentMessagesPerWindow,
+      sink,
+    );
     final AgentSession session = AgentSession(
       broker: effectiveBroker,
       verifier: effectiveVerifier,
@@ -235,6 +317,11 @@ Future<HttpServer> startRelayServer({
           session.onDisconnect();
           return;
         }
+        if (!guard.allowMessage()) {
+          session.onDisconnect();
+          sink.closeWithError('message rate limit exceeded');
+          return;
+        }
         processing = processing.then((_) => session.onFrame(frame)).onError((
           Object error,
           StackTrace stackTrace,
@@ -244,10 +331,12 @@ Future<HttpServer> startRelayServer({
         });
       },
       onDone: () {
+        connections?._open.remove(sink);
         sink.markClosed();
         session.onDisconnect();
       },
       onError: (Object error, StackTrace stackTrace) {
+        connections?._open.remove(sink);
         sink.markClosed();
         session.onDisconnect();
       },
@@ -260,26 +349,40 @@ Future<HttpServer> startRelayServer({
         channel,
         effectiveLimits.maxOutboundQueueMessages,
       );
-      final _ConnectionGuard guard = _ConnectionGuard(effectiveLimits, sink);
+      connections?._open.add(sink);
+      final _ConnectionGuard guard = _ConnectionGuard(
+        effectiveLimits,
+        effectiveLimits.maxAppMessagesPerWindow,
+        sink,
+      );
       final _AppSocketSession session = _AppSocketSession(
         broker: effectiveBroker,
         sink: sink,
         subscriptionTimeout: effectiveLimits.subscriptionTimeout,
       );
-      channel.stream.listen(
+      late final StreamSubscription<Object?> subscription;
+      subscription = channel.stream.listen(
         (Object? message) {
           final RelayFrame? frame = guard.decode(message);
           if (frame == null) {
             session.onDisconnect();
             return;
           }
-          session.onFrame(frame);
+          if (guard.allowMessage()) {
+            session.onFrame(frame);
+          } else {
+            session.onRateLimited(frame);
+          }
+          // Stop reading until queued replies flush instead of overflowing.
+          if (sink.congested) subscription.pause(sink.whenDrained());
         },
         onDone: () {
+          connections?._open.remove(sink);
           sink.markClosed();
           session.onDisconnect();
         },
         onError: (Object error, StackTrace stackTrace) {
+          connections?._open.remove(sink);
           sink.markClosed();
           session.onDisconnect();
         },

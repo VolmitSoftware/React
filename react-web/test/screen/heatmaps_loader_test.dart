@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 import 'package:react_web/model/heatmap.dart';
 import 'package:react_web/model/role_info.dart';
-import 'package:react_web/screen/heatmaps.dart';
+import 'package:react_web/screen/heatmaps_viewport.dart';
 import 'package:react_web/service/react_client.dart';
 import 'package:react_web/service/react_exceptions.dart';
 import 'package:react_web/state/connection_manager.dart';
@@ -178,6 +178,44 @@ void main() {
       expect(fitted.centerChunkX, equals(-17));
       expect(fitted.centerChunkZ, equals(-33));
       expect(fitted.radius, equals(32));
+    });
+  });
+
+  group('heatmapViewportWith', () {
+    test('sets one number and keeps the rest of the view', () {
+      final HeatmapViewport? moved = heatmapViewportWith(
+        _viewport,
+        HeatmapField.centerZ,
+        ' -40 ',
+      );
+      expect(moved?.centerChunkZ, equals(-40));
+      expect(moved?.centerChunkX, equals(31));
+      expect(moved?.radius, equals(8));
+      expect(moved?.world, equals('minecraft:world_nether'));
+    });
+
+    test('rejects text that is not a whole number', () {
+      expect(heatmapViewportWith(_viewport, HeatmapField.centerX, ''), isNull);
+      expect(
+        heatmapViewportWith(_viewport, HeatmapField.centerX, '1.5'),
+        isNull,
+      );
+    });
+
+    test('keeps the radius inside its bounds', () {
+      expect(heatmapViewportWith(_viewport, HeatmapField.radius, '0'), isNull);
+      expect(
+        heatmapViewportWith(
+          _viewport,
+          HeatmapField.radius,
+          '${heatmapMaximumRadius + 1}',
+        ),
+        isNull,
+      );
+      expect(
+        heatmapViewportWith(_viewport, HeatmapField.radius, '16')?.radius,
+        equals(16),
+      );
     });
   });
 

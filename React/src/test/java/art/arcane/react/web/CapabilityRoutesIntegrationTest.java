@@ -1,9 +1,7 @@
 package art.arcane.react.web;
 
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebConfiguration;
-import art.arcane.react.api.web.WebSecret;
 import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.WebController;
@@ -43,9 +41,6 @@ public class CapabilityRoutesIntegrationTest {
 
     @Test
     void pingIsUnauthenticatedAndExposesOnlyPublicCapabilities(@TempDir File dataFolder) throws Exception {
-        WebSecret.load(dataFolder);
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore.fromToml(tokensFile).save(tokensFile);
 
         WebConfiguration config = new WebConfiguration();
         config.setListenerEnabled(true);
@@ -72,8 +67,9 @@ public class CapabilityRoutesIntegrationTest {
         JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
         assertEquals(Set.of("data"), root.keySet());
         JsonObject data = root.getAsJsonObject("data");
-        assertEquals(Set.of("protocolVersion", "serverFingerprint", "relayAvailable"), data.keySet());
-        assertEquals(2, data.get("protocolVersion").getAsInt());
+        assertEquals(Set.of("protocolVersion", "serverFingerprint", "serverName", "relayAvailable"), data.keySet());
+        assertEquals(3, data.get("protocolVersion").getAsInt());
+        assertEquals(dataFolder.getName(), data.get("serverName").getAsString(), "no MOTD and no serverName: the folder name");
         assertTrue(data.get("serverFingerprint").getAsString().matches("[0-9a-f]{64}"));
         assertEquals(controller.getIdentity().fingerprint(), data.get("serverFingerprint").getAsString());
         assertFalse(data.get("relayAvailable").getAsBoolean());
@@ -96,7 +92,6 @@ public class CapabilityRoutesIntegrationTest {
             @Override
             protected IdentityDto resolveIdentity() {
                 IdentityDto dto = new IdentityDto();
-                dto.version = "9.9.9-test";
                 dto.serverName = "SensitiveName";
                 dto.folia = false;
                 dto.serverId = "sensitive.example.net:25565";

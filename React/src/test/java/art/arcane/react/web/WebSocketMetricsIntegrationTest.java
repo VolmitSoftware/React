@@ -2,11 +2,7 @@ package art.arcane.react.web;
 
 import art.arcane.react.api.rendering.Graph;
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebConfiguration;
-import art.arcane.react.api.web.WebSecret;
 import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.WebController;
@@ -46,6 +42,8 @@ import static org.mockito.Mockito.when;
 
 public class WebSocketMetricsIntegrationTest {
 
+    private static final long METRICS_POLL_MILLIS = 100L;
+
     private WebController controller;
     private final List<String> injectedGraphKeys = new ArrayList<>();
     private final Semaphore metricsPushCycles = new Semaphore(0);
@@ -59,13 +57,12 @@ public class WebSocketMetricsIntegrationTest {
 
             @Override
             protected ScheduledExecutorService createWsPushExecutor() {
-                return new CountingPushExecutor(config.getWsPushHz(), metricsPushCycles);
+                return new CountingPushExecutor(METRICS_POLL_MILLIS, metricsPushCycles);
             }
 
             @Override
             protected IdentityDto resolveIdentity() {
                 IdentityDto dto = new IdentityDto();
-                dto.version = "9.9.9-test";
                 dto.serverName = "TestBrand";
                 dto.folia = true;
                 dto.serverId = "127.0.0.1:0";
@@ -96,13 +93,7 @@ public class WebSocketMetricsIntegrationTest {
 
     @Test
     void it_pushes_live_metrics_frame_to_authorized_socket(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord record = new TokenRecord("tok-ws-1", "ws-device", 1000L, Set.of("read"), "viewer");
-        String bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
-        File tokens = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokens);
-        store.add(record);
-        store.save(tokens);
+        String bearer = WebTestTokens.issue(dataFolder, "policy-device", "viewer");
 
         FakeSampler s1 = new FakeSampler("ws-tick-time", 42.0, "ms", new double[]{40.0, 41.0, 42.0});
         FakeSampler s2 = new FakeSampler("ws-tps", 20.0, "", new double[]{20.0, 20.0, 20.0});
@@ -118,7 +109,6 @@ public class WebSocketMetricsIntegrationTest {
         config.setListenerEnabled(true);
         config.setListenAddress("127.0.0.1");
         config.setPort(0);
-        config.setWsPushHz(20);
 
         controller = buildController(config, dataFolder, sampleController);
         controller.start();
@@ -178,14 +168,11 @@ public class WebSocketMetricsIntegrationTest {
         assertEquals(2, samplers.size(), "Expected samplers array of length 2; got: " + samplers.size());
 
         JsonObject firstSampler = samplers.get(0).getAsJsonObject();
-        assertTrue(firstSampler.has("id"), "Sampler entry must have 'id'; got: " + firstSampler);
-        assertTrue(firstSampler.has("value"), "Sampler entry must have 'value'; got: " + firstSampler);
-        assertFalse(firstSampler.has("history"), "Scalar frame must omit duplicated history; got: " + firstSampler);
-        assertTrue(firstSampler.has("available"), "Sampler entry must carry availability; got: " + firstSampler);
-        assertFalse(firstSampler.has("diagnostics"), "unsupported diagnostics must be omitted");
+        assertEquals(Set.of("id", "name", "suffix", "value", "display"), firstSampler.keySet(),
+            "Live frames carry only the fields a page draws; got: " + firstSampler);
         JsonObject secondSampler = samplers.get(1).getAsJsonObject();
-        assertEquals(12, secondSampler.getAsJsonObject("diagnostics").size());
-        assertEquals(0L, secondSampler.getAsJsonObject("diagnostics").get("attempts").getAsLong());
+        assertFalse(secondSampler.has("diagnostics"), "diagnostics stay on GET /api/v1/metrics");
+        assertTrue(data.getAsJsonObject("revisions").has("features"), "Frame data must carry revisions");
     }
 
     @Test
@@ -204,7 +191,6 @@ public class WebSocketMetricsIntegrationTest {
         config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setRequireTokenForReads(true);
-        config.setWsPushHz(20);
 
         controller = buildController(config, dataFolder, sampleController);
         controller.start();
@@ -272,7 +258,6 @@ public class WebSocketMetricsIntegrationTest {
         config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setRequireTokenForReads(false);
-        config.setWsPushHz(20);
 
         controller = buildController(config, dataFolder, sampleController);
         controller.start();
@@ -326,13 +311,7 @@ public class WebSocketMetricsIntegrationTest {
 
     @Test
     void query_bearer_does_not_authenticate_without_first_frame(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord record = new TokenRecord("tok-ws-query", "query-device", 1000L, Set.of("read"), "viewer");
-        String bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
-        File tokens = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokens);
-        store.add(record);
-        store.save(tokens);
+        String bearer = WebTestTokens.issue(dataFolder, "policy-device", "viewer");
 
         FakeSampler sampler = new FakeSampler("ws-query-tick", 12.0, "ms", new double[]{12.0});
         SampleController sampleController = mock(SampleController.class);
@@ -346,7 +325,6 @@ public class WebSocketMetricsIntegrationTest {
         config.setListenAddress("127.0.0.1");
         config.setPort(0);
         config.setRequireTokenForReads(true);
-        config.setWsPushHz(20);
 
         controller = buildController(config, dataFolder, sampleController);
         controller.start();
@@ -391,13 +369,7 @@ public class WebSocketMetricsIntegrationTest {
 
     @Test
     void malformed_and_repeated_auth_frames_close_with_1008(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord record = new TokenRecord("tok-ws-policy", "policy-device", 1000L, Set.of("read"), "viewer");
-        String bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
-        File tokens = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokens);
-        store.add(record);
-        store.save(tokens);
+        String bearer = WebTestTokens.issue(dataFolder, "policy-device", "viewer");
 
         SampleController sampleController = mock(SampleController.class);
         @SuppressWarnings("unchecked")
@@ -497,13 +469,13 @@ public class WebSocketMetricsIntegrationTest {
         private final long pushPeriodMillis;
         private final Semaphore cycles;
 
-        private CountingPushExecutor(int pushHz, Semaphore cycles) {
+        private CountingPushExecutor(long pushPeriodMillis, Semaphore cycles) {
             super(1, runnable -> {
                 Thread thread = new Thread(runnable, "react-ws-push");
                 thread.setDaemon(true);
                 return thread;
             });
-            this.pushPeriodMillis = Math.max(1L, 1000L / Math.max(1, pushHz));
+            this.pushPeriodMillis = pushPeriodMillis;
             this.cycles = cycles;
         }
 

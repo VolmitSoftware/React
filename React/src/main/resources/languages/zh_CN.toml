@@ -23,6 +23,7 @@
 #
 # === 变量 ===
 # 请勿更改变量名，仅使用各消息中原有的变量。
+#   {access}  React Web 配对的角色或权限
 #   {action}  操作名称或颜色调整方向
 #   {actions}  队列中的操作数或已排除的操作名称列表
 #   {active}  活跃的功能或调优项数量
@@ -41,7 +42,7 @@
 #   {before}  更改前的配置值、语言消息或堆使用量
 #   {checked}  已检查的采样器数量
 #   {chunks}  受操作影响的区块数量
-#   {code}  网页配对码
+#   {client}  建立 React Web 配对的浏览器名称
 #   {command}  命令路径
 #   {count}  条目、模块、更改或测试发现的数量
 #   {current}  当前页码
@@ -57,6 +58,7 @@
 #   {entities}  受操作影响的实体数量
 #   {entry}  集成时间线条目
 #   {exceptions}  一轮负载测试中记录的 React 异常
+#   {expires}  React Web 配对在未使用时结束的时间
 #   {fail}  未通过的检查数量
 #   {file}  配置、语言或插件 API 文件名
 #   {fingerprint}  服务器或网页令牌指纹
@@ -80,14 +82,17 @@
 #   {incident}  从开发测试套件排除的递归事件操作标识符
 #   {index}  开发测试套件的当前步骤编号
 #   {invalid}  读数无效的采样器数量
-#   {issued_at}  网页令牌创建时间
 #   {item}  物品名称或标识符
 #   {items}  已合并的物品实体数量
 #   {kept}  语言更新中保留的本地修改数
 #   {key}  命令参数键、配置键或语言消息 ID
 #   {label}  基准测试、指标、设置、命令或网页令牌标签
+#   {lifetime}  React Web 配对在未使用时持续的时长
 #   {line}  正在编辑的多行消息中的行号
 #   {lines}  已扫描的服务器日志行数
+#   {link}  React Web 配对链接
+#   {links}  尚未打开的 React Web 配对链接数量
+#   {listener}  React Web 监听器绑定的地址
 #   {loaded}  预热期间新加载的区块数量
 #   {locale}  正在显示、选择或编辑的语言代码
 #   {matched}  自动保存状态与测试基线一致的世界
@@ -105,6 +110,7 @@
 #   {offenders}  返回非有限值的采样器数量
 #   {options}  允许的配置值
 #   {p95}  负载测试中刻耗时的第 95 百分位数，单位为 ms
+#   {origin}  请求所来自的浏览器来源
 #   {parameter}  命令参数名称
 #   {parameters}  已忽略的命令参数
 #   {pass}  通过的检查数量
@@ -128,6 +134,7 @@
 #   {react_errors}  服务器日志中发现的 React 错误行数
 #   {reason}  失败、拒绝或不可用状态的原因
 #   {registered}  已注册的模块数量
+#   {relay}  React Web 中继状态
 #   {remaining}  距下次语言检查的剩余时间
 #   {removed_first}  首次停用是否将功能从活跃注册表移除
 #   {removed_second}  再次停用是否将功能从活跃注册表移除
@@ -137,6 +144,7 @@
 #   {sampler}  采样器名称或标识符
 #   {samplers}  集成采样器或发生故障的采样器列表
 #   {scope}  地图范围或距离设置的作用范围
+#   {scopes}  React Web 配对的权限
 #   {score}  基准测试得分
 #   {seconds}  倒计时或负载测试时长，单位为秒
 #   {section}  配置或语言编辑器分区
@@ -145,6 +153,7 @@
 #   {since_run}  本次测试开始以来报告的错误
 #   {size}  地图墙的最大或当前使用尺寸
 #   {skip}  已跳过的检查数量
+#   {sockets}  打开的 React Web 套接字数量
 #   {spawn_y}  重力测试方块的生成高度
 #   {state}  操作或插件 API 包的状态
 #   {status}  集成状态或配置状态标签
@@ -159,6 +168,7 @@
 #   {tier}  事件响应手册的严重性级别
 #   {timing}  每分钟能力回调耗时，单位为毫秒
 #   {to}  当前页面的最后一个条目编号
+#   {tokens}  已配对的 React Web 浏览器数量
 #   {total}  消息中的条目、模块、世界、检查或内存总量
 #   {type}  命令参数、配置值、地图或距离类型
 #   {unavailable}  不可用的 NMS 桥接句柄数量
@@ -225,12 +235,12 @@ root = "React 根命令"
 test = "运行 React 验证和负载测试"
 "test.load" = "运行两轮合成负载测试"
 "test.run" = "运行 React 验证套件"
-version = "显示 React 版本"
 distance = "设置服务器、世界或玩家的视野、模拟或发送距离"
 web = "管理 React WebUI 访问令牌"
-"web.list" = "列出活动的 WebUI 令牌"
-"web.pair" = "创建 WebUI 配对令牌"
-"web.revoke" = "撤销 WebUI 令牌"
+"web.pair" = "创建一次性 React Web 配对链接"
+"web.revoke" = "撤销令牌，或取消尚未打开的链接"
+"web.status" = "显示监听器、中继和指纹"
+"web.tokens" = "列出已配对的浏览器"
 language = "选择个人语言或服务器语言"
 
 [command.parameter]
@@ -267,9 +277,11 @@ target = "目标世界或玩家；默认采用命令执行者的当前环境"
 value = "以区块为单位的距离；支持继承设置时可使用 -1"
 
 [command.parameter.web]
-id = "要撤销的令牌 ID"
+expires = "配对在未使用时持续多久，例如 7d"
+id = "令牌 ID，或 all"
 label = "此令牌的可读标签"
 role = "此令牌的角色：viewer、operator 或 admin"
+scopes = "代替角色的权限，例如 read,op:execute"
 
 [command.runtime]
 chunk_not_sampled = "&c此区块尚未采样。请稍后一秒再查看。&r"
@@ -347,21 +359,39 @@ threading_folia = "(Folia 区域线程)"
 threading_standard = ""
 
 [command.runtime.web]
+fingerprint_copy_hover = "复制指纹"
+invalid_expires = "&cexpires= 接受带 d、h 或 m 的数字，范围 1m 到 365d，例如 7d。&r"
+invalid_label = "&c标签最多 64 个字符。&r"
 invalid_role = "&c角色无效：&f{role}&c。应为 viewer、operator 或 admin。&r"
+invalid_scope = "&c未知权限 &f{scope}&c。可用权限：{scopes}。&r"
+link_copy = "&b&n[复制]&r"
+link_copy_hover = "复制链接"
+link_details = "&7权限 {scopes}；未使用 {lifetime} 后结束；令牌 {id}&r"
+link_open = "&b&n[打开 React Web]&r"
+link_open_hover = "在浏览器中打开"
+link_ready = "&a链接已就绪。请在 10 分钟内打开&r"
+link_ready_console = "&a链接已就绪。请在 10 分钟内打开：&r {link}"
+link_revoke = "&c&n[撤销]&r"
+link_revoke_hover = "取消此链接，或结束它建立的配对"
 mutation_notice = "&e网页更改者 &f{actor}&e：&b{target}&e — &f{detail}&e。&r"
-pair_unavailable = "&c网页配对不可用：&f{reason}&r"
+never = "从未"
 no_tokens = "&b没有活动令牌。&r"
-pairing_code = "&b配对码：&r {code}"
-pairing_copy = "&b配对码：&r &e&n点击复制&r"
-pairing_copy_hover = "复制完整配对代码"
-persist_failed = "&c无法持久化令牌：&f{reason}&r"
+off = "关闭"
+pair_refused = "&e{label} 无法配对：&f{reason}&r"
+pair_unavailable = "&c网页配对不可用：&f{reason}&r"
+refused_expired = "链接已过期；请创建新链接"
+refused_origin = "来源 {origin} 不在 web.toml 的 allowedOrigins 中"
+relay_connecting = "{url} 连接中"
+relay_registered = "{url} 已注册"
+relay_waiting = "等待第一次配对"
 revoked = "&b已撤销的令牌 :&r {id}"
-role = "&b角色 :&r {role}"
-server_fingerprint = "&b服务器指纹 :&r {fingerprint}"
-token_entry = "&7  {id} | {label} | issuedAt={issued_at}&r"
-token_fingerprint = "&b令牌指纹：&r {fingerprint}"
+role_and_scopes = "&c请使用 role= 或 scopes=，不要同时使用。&r"
+scopes_need_read = "&cscopes= 必须包含 read。&r"
+state_ready = "就绪"
+status = "&bReact Web&r {state} | 监听器 {listener} | 中继 {relay} | {tokens} 个令牌，{links} 个未打开链接 | {sockets} 个套接字"
+status_fingerprint = "&7指纹&r {fingerprint}"
+token_entry = "&7  {id} | {label} | {access} | 到期 {expires} | 上次使用 {used} | {client} | {sockets} 个套接字&r"
 token_header = "&b活动令牌 ({count})：&r"
-token_id = "&b令牌 ID:&r {id}"
 token_not_found = "&c找不到令牌：&f{id}&r"
 update_failed = "&c更新令牌存储失败 : &f{reason}&r"
 
@@ -469,13 +499,17 @@ description = "React 内置 HTTP/WebSocket 管理 API 的配置。保存 web.tom
 impact = "如果监听器可从 localhost 以外访问，请将此项设为反向代理的 HTTPS URL。React 内置监听器仍仅支持 HTTP。保存 web.toml 后会自动应用更改。"
 summary = "向直接连接的 API 客户端公布的公共基础 URL。"
 
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.allowedorigins]
+impact = "每一项都是一个来源：协议、主机和端口，不含路径；普通 http 仅限回环地址。来自其他来源的页面会以 origin_not_allowed 被拒绝。没有 Origin 的请求（例如中继发出的）不受影响。"
+summary = "允许使用直连监听器的浏览器来源。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.appurl]
+impact = "改为你自己托管的 React Web，并把它的来源加入 allowedOrigins。"
+summary = "配对链接打开的 React Web 地址。"
+
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenaddress]
 impact = "默认通配地址 :: 接受通过局域网、容器及端口转发访问的 IPv6 和 IPv4 映射流量。仅在同一主机上的反向代理或中继后使用回环地址。"
 summary = "网页监听器绑定的 IP 地址。"
-
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.corsorigins]
-impact = "空列表表示允许所有来源。添加具体来源可限制跨源访问。"
-summary = "HTTP API 允许的 CORS 来源列表。"
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React 默认开放需要身份验证的 API。设为 false 则不绑定 HTTP 或 WebSocket 监听器。"
@@ -486,8 +520,8 @@ impact = "如果此端口被占用，React 会按顺序尝试接下来的 99 个
 summary = "网页服务器优先使用的 TCP 端口。"
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayenabled]
-impact = "为 true 时，React 会连接到 relayUrl 处的中继代理，使配套应用无需端口转发即可访问 NAT 后的服务器。"
-summary = "启用用于 NAT 穿透的出站云中继客户端。"
+impact = "React 会在第一次 /react web pair 时连接 relayUrl，并在存在配对期间每次启动时连接。配对链接随后也会带上中继地址。"
+summary = "启用出站中继客户端，让浏览器无需开放端口即可访问此服务器。"
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayurl]
 impact = "仅在 relayEnabled 为 true 时读取。禁用中继时请留空。"
@@ -497,9 +531,13 @@ summary = "中继代理的 WSS 基础 URL，例如 wss://relay.arcane.art; /agen
 impact = "为 true 时，未经认证的 GET 请求会被以 401 拒绝。仅在完全可信的网络环境中设为 false。"
 summary = "只读 HTTP 端点需要有效的认证令牌。"
 
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.wspushhz]
-impact = "值越高，推送保真度越高，但网络和 CPU 开销也越大。"
-summary = "通过 WebSocket 连接推送采样器更新的目标频率（Hz）。"
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.servername]
+impact = "留空时使用 MOTD 的第一行；如果 MOTD 是原版默认值，则使用服务器文件夹名称。"
+summary = "React Web 为此服务器显示的名称。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
+impact = "每次使用都会重新计时。/react web pair expires= 可为单个链接覆盖此值。范围 1 到 365。"
+summary = "配对在未使用时持续的天数。"
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "垃圾回收操作的配置。请求 JVM 垃圾回收并报告立即回收的堆内存。"

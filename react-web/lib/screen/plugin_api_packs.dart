@@ -1,22 +1,36 @@
+/// Plugins > API packs: the metric packs installed on the server, one row
+/// each, with their load errors. Admins write a pack in a sheet, validate
+/// and install it; Delete asks first. Advanced lists every pack metric with
+/// its availability.
 library;
-
-import 'dart:async';
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
-import 'package:jaspr/jaspr.dart' show Component;
+import 'package:jaspr/jaspr.dart' show Component, ListenableBuilder;
 
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/plugin_api_pack.dart';
-import '../model/role_info.dart';
 import '../service/react_client.dart';
 import '../state/connection_manager.dart';
-import '../state/plugin_api_pack_scope.dart';
-import '../state/role_scope.dart';
+import '../state/plugin_api_packs_controller.dart';
 import '../state/server_scope.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/role_badge.dart';
+import '../state/server_session.dart';
+import '../state/server_session_scope.dart';
+import '../ui/kit/action_row.dart';
+import '../ui/kit/alert.dart';
+import '../ui/kit/badge.dart';
+import '../ui/kit/card.dart';
+import '../ui/kit/confirm_dialog.dart';
+import '../ui/kit/data_list.dart';
+import '../ui/kit/menu.dart';
+import '../ui/kit/mode.dart';
+import '../ui/kit/page.dart';
+import '../ui/kit/role_gate.dart';
+import '../ui/kit/sheet.dart';
+import '../ui/kit/states.dart';
+import '../ui/error_text.dart';
+import 'actions.dart' show serverNameOf;
 
 const String _kNewPackTemplate = '''schema = "react.plugin-api/v1"
 id = "community.example"
@@ -44,6 +58,288 @@ key = "example.metric"
 foliaSafe = true
 ''';
 
+/// A pack's state as a badge: the plugin's word in sentence case.
+StatusBadge packStateBadge(String state) {
+  final String words = state.toLowerCase().replaceAll('_', ' ');
+  final String label = words.isEmpty
+      ? state
+      : '${words[0].toUpperCase()}${words.substring(1)}';
+  final BadgeTone tone = switch (state) {
+    'HEALTHY' => BadgeTone.ok,
+    'DEGRADED' || 'LOADING' || 'TARGET_MISSING' => BadgeTone.warning,
+    'QUARANTINED' || 'INVALID' || 'INCOMPATIBLE' => BadgeTone.error,
+    _ => BadgeTone.neutral,
+  };
+  return StatusBadge(label, tone: tone);
+}
+
+/// A row's name over its caption. A caption that is one id (a sampler id)
+/// stays on one line with an ellipsis instead of breaking at its hyphens.
+Widget _nameCell(String name, String caption, {bool oneLine = false}) =>
+    dom.div(classes: 'reactor-row-name', <Widget>[
+      dom.div(classes: 'reactor-row-title', <Widget>[
+        dom.span(<Widget>[Component.text(name)]),
+      ]),
+      dom.p(classes: 'ui-caption', <Widget>[
+        oneLine ? oneLineText(caption) : Component.text(caption),
+      ]),
+    ]);
+
+/// The packs, their folder and load errors. [onNew], [onEdit] and
+/// [onDelete] are null for a role or connection that may not change packs.
+class PluginApiCatalogView extends StatelessWidget {
+  const PluginApiCatalogView({
+    required this.catalog,
+    this.loading = false,
+    this.onRefresh,
+    this.onNew,
+    this.onEdit,
+    this.onDelete,
+    super.key,
+  });
+
+  final PluginApiCatalog catalog;
+  final bool loading;
+  final void Function()? onRefresh;
+  final void Function()? onNew;
+  final void Function(PluginApiPack pack)? onEdit;
+  final void Function(PluginApiPack pack)? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
+    final void Function(PluginApiPack)? edit = onEdit;
+    final void Function(PluginApiPack)? delete = onDelete;
+    return AppCard(
+      title: reactorText(ReactorText.pluginApiCatalog),
+      tip: reactorText(ReactorText.pluginApiSubtitle),
+      actions: ActionRow(
+        dense: true,
+        label: reactorText(ReactorText.pluginApiCatalog),
+        secondary: <RowAction>[
+          RowAction(
+            reactorText(ReactorText.pluginApiRefresh),
+            loading ? null : onRefresh,
+            icon: ArcaneIcon.refreshCw(),
+          ),
+        ],
+        primary: RowAction(reactorText(ReactorText.pluginApiNew), onNew),
+      ),
+      children: <Widget>[
+        dom.p(classes: 'ui-caption', <Widget>[
+          Component.text('${reactorText(ReactorText.pluginApiFolder)}: '),
+          dom.code(breakablePath(serverFolder(catalog.folder))),
+        ]),
+        DataList<PluginApiPack>(
+          label: reactorText(ReactorText.pluginApiCatalog),
+          items: catalog.packs,
+          emptyMessage: reactorText(ReactorText.pluginApiNone),
+          columns: <ListColumn<PluginApiPack>>[
+            ListColumn<PluginApiPack>(
+              reactorText(ReactorText.pluginApiColumnPack),
+              (PluginApiPack pack) => _nameCell(
+                pack.name,
+                <String>[
+                  pack.id,
+                  pack.version,
+                  if (pack.trusted) reactorText(ReactorText.pluginApiTrusted),
+                ].join(' · '),
+              ),
+              width: 'minmax(0, 1fr)',
+            ),
+            ListColumn<PluginApiPack>(
+              reactorText(ReactorText.pluginApiTarget),
+              (PluginApiPack pack) => Component.text(
+                pack.targetVersion.isEmpty
+                    ? pack.targetPlugin
+                    : '${pack.targetPlugin} ${pack.targetVersion}',
+              ),
+              width: 'minmax(0, 12rem)',
+            ),
+            ListColumn<PluginApiPack>(
+              reactorText(ReactorText.commonState),
+              (PluginApiPack pack) => packStateBadge(pack.state),
+              width: '8rem',
+            ),
+            ListColumn<PluginApiPack>(
+              reactorText(ReactorText.pluginApiMetrics),
+              (PluginApiPack pack) => Component.text(
+                '${pack.metrics.where((PluginApiMetric m) => m.available).length}/${pack.metrics.length}',
+              ),
+              numeric: true,
+              width: '5rem',
+            ),
+          ],
+          // One row pattern: the main action as a button, the rest (the
+          // destructive one asks first) in the row's "..." menu.
+          actions: (PluginApiPack pack) => <RowAction>[
+            RowAction(
+              reactorText(ReactorText.pluginApiEdit),
+              edit == null ? null : () => edit(pack),
+              attributes: <String, String>{
+                'aria-label':
+                    '${reactorText(ReactorText.pluginApiEdit)} ${pack.name}',
+              },
+            ),
+          ],
+          more: (PluginApiPack pack) => <AppMenuEntry>[
+            AppMenuEntry(
+              reactorText(ReactorText.pluginApiDelete),
+              delete == null ? null : () => delete(pack),
+              icon: ArcaneIcon.trash2(),
+              destructive: true,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Every metric of every pack and whether it reports (Advanced).
+class PluginApiMetricsList extends StatelessWidget {
+  const PluginApiMetricsList({required this.packs, super.key});
+
+  final List<PluginApiPack> packs;
+
+  static StatusBadge _state(PluginApiMetric metric) => metric.available
+      ? StatusBadge(
+          reactorText(ReactorText.pluginApiAvailable),
+          tone: BadgeTone.ok,
+        )
+      : StatusBadge(
+          reactorText(ReactorText.pluginApiUnavailable),
+          tone: metric.quarantined ? BadgeTone.error : BadgeTone.warning,
+        );
+
+  @override
+  Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
+    final List<(PluginApiPack, PluginApiMetric)> rows =
+        <(PluginApiPack, PluginApiMetric)>[
+          for (final PluginApiPack pack in packs)
+            for (final PluginApiMetric metric in pack.metrics) (pack, metric),
+        ];
+    return DataList<(PluginApiPack, PluginApiMetric)>(
+      label: reactorText(ReactorText.pluginApiMetrics),
+      title: reactorText(ReactorText.pluginApiMetrics),
+      items: rows,
+      emptyMessage: reactorText(ReactorText.pluginApiNone),
+      columns: <ListColumn<(PluginApiPack, PluginApiMetric)>>[
+        ListColumn<(PluginApiPack, PluginApiMetric)>(
+          reactorText(ReactorText.pluginApiColumnMetric),
+          ((PluginApiPack, PluginApiMetric) row) =>
+              _nameCell(row.$2.displayName, row.$2.samplerId, oneLine: true),
+          width: 'minmax(0, 1fr)',
+        ),
+        ListColumn<(PluginApiPack, PluginApiMetric)>(
+          reactorText(ReactorText.pluginApiColumnPack),
+          ((PluginApiPack, PluginApiMetric) row) => Component.text(row.$1.name),
+          width: 'minmax(0, 12rem)',
+        ),
+        ListColumn<(PluginApiPack, PluginApiMetric)>(
+          reactorText(ReactorText.commonState),
+          ((PluginApiPack, PluginApiMetric) row) => _state(row.$2),
+          width: '8rem',
+        ),
+        ListColumn<(PluginApiPack, PluginApiMetric)>(
+          reactorText(ReactorText.pluginApiColumnSource),
+          // The reason it is not available is the State column's.
+          ((PluginApiPack, PluginApiMetric) row) =>
+              Component.text(row.$2.available ? row.$2.sourceType : '--'),
+          width: 'minmax(0, 10rem)',
+        ),
+      ],
+    );
+  }
+}
+
+/// The pack being written: its TOML, the last check, Validate and Install.
+class PluginApiEditorSheet extends StatelessWidget {
+  const PluginApiEditorSheet({
+    required this.draft,
+    required this.title,
+    required this.onChanged,
+    required this.onClose,
+    this.validation,
+    this.saving = false,
+    this.editing = false,
+    this.onValidate,
+    this.onInstall,
+    super.key,
+  });
+
+  /// The TOML; null closes the sheet.
+  final String? draft;
+  final String title;
+  final PluginApiValidationResult? validation;
+  final bool saving;
+
+  /// An installed pack is edited (Save), not a new one (Install).
+  final bool editing;
+  final void Function(String text) onChanged;
+  final void Function() onClose;
+  final void Function()? onValidate;
+  final void Function()? onInstall;
+
+  @override
+  Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
+    final PluginApiValidationResult? result = validation;
+    return Sheet(
+      open: draft != null,
+      title: title,
+      onClose: onClose,
+      footer: DialogFooter(
+        secondary: <RowAction>[
+          RowAction(
+            reactorText(ReactorText.pluginApiValidate),
+            saving ? null : onValidate,
+          ),
+        ],
+        cancel: RowAction(reactorText(ReactorText.commonCancel), onClose),
+        primary: RowAction(
+          reactorText(
+            editing
+                ? ReactorText.configEditorSave
+                : ReactorText.pluginApiInstall,
+          ),
+          saving ? null : onInstall,
+          loading: saving,
+        ),
+      ),
+      child: dom.div(classes: 'ui-stack', <Widget>[
+        // Code: monospace, as tall as the sheet allows, no grip.
+        TextArea(
+          label: reactorText(ReactorText.pluginApiContent),
+          value: draft ?? '',
+          rows: 18,
+          resize: TextAreaResize.none,
+          minHeight: 'max(18rem, calc(100dvh - 12.5rem))',
+          styles: const ArcaneStyleData(fontFamily: FontFamily.mono),
+          fullWidth: true,
+          onChanged: onChanged,
+        ),
+        if (result != null)
+          AppAlert(
+            tone: result.valid ? AlertTone.ok : AlertTone.error,
+            title: reactorText(
+              result.valid
+                  ? ReactorText.pluginApiValid
+                  : ReactorText.pluginApiInvalid,
+            ),
+            message: result.valid
+                ? '${result.id} · ${result.metricCount} ${reactorText(ReactorText.pluginApiMetrics).toLowerCase()}'
+                : result.message,
+            live: true,
+          ),
+      ]),
+    );
+  }
+}
+
+/// The packs of the server the page belongs to, from its session; the
+/// draft being written lives here until Install.
 class PluginApiPacksScreen extends StatefulWidget {
   const PluginApiPacksScreen({super.key});
 
@@ -52,390 +348,198 @@ class PluginApiPacksScreen extends StatefulWidget {
 }
 
 class _PluginApiPacksScreenState extends State<PluginApiPacksScreen> {
-  IPluginApiPackClient? _client;
-  PluginApiCatalog? _catalog;
   PluginApiValidationResult? _validation;
-  Object? _error;
   String? _draft;
-  String? _editingId;
-  String? _pendingDeleteId;
-  bool _loading = false;
-  bool _saving = false;
+  String? _editingName;
+
+  /// The session the view state belongs to; another server starts over.
+  String? _session;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final IPluginApiPackClient? client = PluginApiPackScope.of(context)?.client;
-    if (client != null && client != _client) {
-      _client = client;
-      unawaited(_load());
-    }
+    final String? session = ServerSessionScope.of(context)?.key;
+    if (session == _session) return;
+    _session = session;
+    _draft = null;
+    _editingName = null;
+    _validation = null;
   }
 
-  Future<void> _load() async {
-    final IPluginApiPackClient? client = _client;
-    if (client == null || _loading) return;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final PluginApiCatalog catalog = await client.pluginApiPacks();
-      if (!mounted) return;
-      setState(() => _catalog = catalog);
-    } on Object catch (error) {
-      if (!mounted) return;
-      setState(() => _error = error);
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+  bool get _canMutate =>
+      RoleGate.allows(context, RoleNeed.admin) &&
+      ServerScope.of(context)?.state == ConnState.live;
+
+  void _open(String content, String? name) => setState(() {
+    _draft = content;
+    _editingName = name;
+    _validation = null;
+  });
+
+  void _close() => setState(() {
+    _draft = null;
+    _editingName = null;
+    _validation = null;
+  });
+
+  void _failed(ReactorText title, Object error) {
+    if (!mounted) return;
+    ArcaneSonner.error(
+      reactorText(title),
+      description: localizedReactorError(error),
+    );
   }
 
-  Future<void> _validate() async {
-    final IPluginApiPackClient? client = _client;
+  Future<PluginApiValidationResult?> _validate(
+    PluginApiPacksController controller,
+  ) async {
     final String? draft = _draft;
-    if (client == null || draft == null || _saving) return;
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
+    if (draft == null || controller.saving) return null;
     try {
-      final PluginApiValidationResult result = await client
-          .validatePluginApiPack(draft);
-      if (!mounted) return;
-      setState(() => _validation = result);
+      final PluginApiValidationResult result = await controller.validate(draft);
+      if (mounted) setState(() => _validation = result);
+      return result;
     } on Object catch (error) {
-      if (!mounted) return;
-      setState(() => _error = error);
-    } finally {
-      if (mounted) setState(() => _saving = false);
+      _failed(ReactorText.pluginApiInvalid, error);
+      return null;
     }
   }
 
-  Future<void> _install() async {
+  Future<void> _install(PluginApiPacksController controller) async {
     if (!_canMutate) return;
-    await _validate();
-    final PluginApiValidationResult? validation = _validation;
+    final PluginApiValidationResult? result = await _validate(controller);
     final String? draft = _draft;
-    final IPluginApiPackClient? client = _client;
-    if (validation == null ||
-        !validation.valid ||
-        draft == null ||
-        client == null) {
-      return;
-    }
-    setState(() => _saving = true);
+    if (result == null || !result.valid || draft == null || !mounted) return;
     try {
-      await client.installPluginApiPack(validation.id, draft);
+      await controller.install(result.id, draft);
       if (!mounted) return;
-      setState(() {
-        _draft = null;
-        _editingId = null;
-        _validation = null;
-      });
+      _close();
       ArcaneSonner.success(reactorText(ReactorText.pluginApiInstalled));
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      await _load();
     } on Object catch (error) {
-      if (!mounted) return;
-      setState(() => _error = error);
-    } finally {
-      if (mounted) setState(() => _saving = false);
+      _failed(ReactorText.pluginApiLoadFailed, error);
     }
   }
 
-  Future<void> _remove(String id) async {
+  Future<void> _delete(
+    PluginApiPacksController controller,
+    PluginApiPack pack,
+  ) async {
     if (!_canMutate) return;
-    if (_pendingDeleteId != id) {
-      setState(() => _pendingDeleteId = id);
-      return;
-    }
-    final IPluginApiPackClient? client = _client;
-    if (client == null) return;
-    setState(() => _saving = true);
+    final bool yes = await askToConfirm(
+      title: reactorText(
+        ReactorText.pluginApiConfirmDeleteTitle,
+        <String, Object?>{'pack': pack.name, 'server': serverNameOf(context)},
+      ),
+      confirmLabel: reactorText(ReactorText.pluginApiDelete),
+      destructive: true,
+    );
+    if (!yes || !mounted || controller.disposed) return;
     try {
-      final PluginApiCatalog catalog = await client.removePluginApiPack(id);
-      if (!mounted) return;
-      setState(() {
-        _catalog = catalog;
-        _pendingDeleteId = null;
-        if (_editingId == id) {
-          _editingId = null;
-          _draft = null;
-        }
-      });
-      ArcaneSonner.success(reactorText(ReactorText.pluginApiRemoved));
+      await controller.remove(pack.id);
+      if (mounted) {
+        ArcaneSonner.success(reactorText(ReactorText.pluginApiRemoved));
+      }
     } on Object catch (error) {
-      if (!mounted) return;
-      setState(() => _error = error);
-    } finally {
-      if (mounted) setState(() => _saving = false);
+      _failed(ReactorText.pluginApiLoadFailed, error);
     }
-  }
-
-  bool get _canMutate {
-    final RoleInfo? role = RoleScope.of(context)?.role;
-    return role != null &&
-        role.isAdmin &&
-        ServerScope.of(context)?.state == ConnState.live;
   }
 
   @override
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
-    final RoleInfo? role = RoleScope.of(context)?.role;
-    final bool adminGated = role != null && !role.isAdmin;
-    final bool connectionReadOnly =
-        ServerScope.of(context)?.state != ConnState.live;
-    final PluginApiCatalog? catalog = _catalog;
-    final Object? error = _error;
-    return ReactorPage(
-      title: reactorText(ReactorText.pluginApiTitle),
-      subtitle: reactorText(ReactorText.pluginApiSubtitle),
-      leading: RoleBadge(role: role),
-      actions: dom.div(
-        styles: const dom.Styles(
-          raw: <String, String>{'display': 'flex', 'gap': '0.5rem'},
-        ),
-        <Widget>[
-          Button.secondary(
-            label: reactorText(ReactorText.pluginApiRefresh),
-            size: ButtonSize.small,
-            disabled: _loading,
-            onPressed: _loading ? null : _load,
-          ),
-          Button.primary(
-            label: reactorText(ReactorText.pluginApiNew),
-            size: ButtonSize.small,
-            disabled: adminGated || connectionReadOnly,
-            onPressed: adminGated || connectionReadOnly
-                ? null
-                : () => setState(() {
-                    _draft = _kNewPackTemplate;
-                    _editingId = null;
-                    _validation = null;
-                  }),
-          ),
-        ],
-      ),
+    final ServerSession? session = ServerSessionScope.of(context);
+    if (session == null || !session.supports<IPluginApiPackClient>()) {
+      return ServerScope.of(context)?.state == ConnState.connecting
+          ? LoadingState(label: reactorText(ReactorText.pluginApiLoading))
+          : EmptyState(
+              message: reactorText(ReactorText.pluginApiLoadFailed),
+              description: reactorText(ReactorText.pluginApiLiveRequired),
+            );
+    }
+    final PluginApiPacksController controller = session.packs;
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (BuildContext context) => _body(context, controller),
+    );
+  }
+
+  Widget _body(BuildContext context, PluginApiPacksController controller) {
+    final PluginApiCatalog? catalog = controller.catalog;
+    final Object? error = controller.error;
+    if (catalog == null) {
+      return error == null
+          ? LoadingState(label: reactorText(ReactorText.pluginApiLoading))
+          : ErrorState(
+              title: reactorText(ReactorText.pluginApiLoadFailed),
+              message: localizedReactorError(error),
+              onRetry: controller.load,
+            );
+    }
+    final bool canMutate = _canMutate && !controller.saving;
+    return PageStack(
       children: <Widget>[
-        if (adminGated)
-          ReactorNotice(
-            title: reactorText(ReactorText.commonRequiresAdminRole),
-            message: reactorText(ReactorText.pluginApiAdminRequired),
-            status: ReactorStatus.warning,
-          )
-        else if (connectionReadOnly)
-          ReactorNotice(
-            title: reactorText(ReactorText.commonUnavailable),
-            message: reactorText(ReactorText.pluginApiLiveRequired),
-            status: ReactorStatus.warning,
-          ),
         if (error != null)
-          ReactorNotice(
+          ErrorState(
             title: reactorText(ReactorText.pluginApiLoadFailed),
             message: localizedReactorError(error),
-            status: ReactorStatus.critical,
-            action: Button.secondary(
-              label: reactorText(ReactorText.commonRetry),
-              size: ButtonSize.small,
-              onPressed: _load,
-            ),
+            onRetry: controller.load,
           ),
-        if (_draft != null) _editor(),
-        if (_loading && catalog == null)
-          ReactorLoadingState(label: reactorText(ReactorText.pluginApiLoading))
-        else if (catalog != null)
-          ..._catalogSections(catalog),
-      ],
-    );
-  }
-
-  Widget _editor() {
-    final PluginApiValidationResult? validation = _validation;
-    return SectionPanel(
-      label: reactorText(ReactorText.pluginApiEditor),
-      description: reactorText(ReactorText.pluginApiEditorDescription),
-      trailing: Button.ghost(
-        label: reactorText(ReactorText.pluginApiCancel),
-        size: ButtonSize.small,
-        onPressed: () => setState(() {
-          _draft = null;
-          _editingId = null;
-          _validation = null;
-        }),
-      ),
-      children: <Widget>[
-        TextArea(
-          label: reactorText(ReactorText.pluginApiContent),
-          value: _draft,
-          rows: 22,
-          minHeight: '28rem',
-          onChanged: (String value) => setState(() {
-            _draft = value;
+        // A file that does not load: the stock destructive alert, on the
+        // page above the card (never a box inside it).
+        for (final PluginApiValidationError broken in catalog.errors)
+          AppAlert(
+            tone: AlertTone.error,
+            title: broken.fileName,
+            message: broken.message,
+          ),
+        PluginApiCatalogView(
+          catalog: catalog,
+          loading: controller.loading,
+          onRefresh: controller.load,
+          onNew: canMutate ? () => _open(_kNewPackTemplate, null) : null,
+          onEdit: canMutate
+              ? (PluginApiPack pack) => _open(pack.rawContent, pack.name)
+              : null,
+          onDelete: canMutate
+              ? (PluginApiPack pack) => _delete(controller, pack)
+              : null,
+        ),
+        ModeGate(child: PluginApiMetricsList(packs: catalog.packs)),
+        PluginApiEditorSheet(
+          draft: _draft,
+          title: _editingName ?? reactorText(ReactorText.pluginApiNew),
+          editing: _editingName != null,
+          validation: _validation,
+          saving: controller.saving,
+          onChanged: (String text) => setState(() {
+            _draft = text;
             _validation = null;
           }),
-        ),
-        if (validation != null)
-          ReactorNotice(
-            title: reactorText(
-              validation.valid
-                  ? ReactorText.pluginApiValid
-                  : ReactorText.pluginApiInvalid,
-            ),
-            message: validation.valid
-                ? '${validation.id} · ${validation.metricCount} ${reactorText(ReactorText.pluginApiMetrics).toLowerCase()}'
-                : validation.message,
-            status: validation.valid
-                ? ReactorStatus.healthy
-                : ReactorStatus.critical,
-          ),
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{'display': 'flex', 'gap': '0.5rem'},
-          ),
-          <Widget>[
-            Button.secondary(
-              label: reactorText(ReactorText.pluginApiValidate),
-              size: ButtonSize.small,
-              disabled: _saving,
-              onPressed: _saving ? null : _validate,
-            ),
-            Button.primary(
-              label: reactorText(ReactorText.pluginApiInstall),
-              size: ButtonSize.small,
-              disabled: _saving || !_canMutate,
-              onPressed: _saving || !_canMutate ? null : _install,
-            ),
-          ],
+          onClose: _close,
+          onValidate: () => _validate(controller),
+          onInstall: _canMutate ? () => _install(controller) : null,
         ),
       ],
     );
   }
+}
 
-  List<Widget> _catalogSections(PluginApiCatalog catalog) => <Widget>[
-    SectionPanel(
-      label: reactorText(ReactorText.pluginApiFolder),
-      child: dom.code(<Widget>[Component.text(catalog.folder)]),
-    ),
-    if (catalog.errors.isNotEmpty)
-      SectionPanel(
-        label: reactorText(ReactorText.pluginApiErrors),
-        children: catalog.errors
-            .map(
-              (PluginApiValidationError error) => ReactorNotice(
-                title: error.fileName,
-                message: error.message,
-                status: ReactorStatus.critical,
-              ),
-            )
-            .toList(growable: false),
-      ),
-    SectionPanel(
-      label: reactorText(ReactorText.pluginApiCatalog),
-      children: catalog.packs.isEmpty
-          ? <Widget>[
-              ReactorEmptyState(
-                title: reactorText(ReactorText.pluginApiNone),
-                description: reactorText(ReactorText.pluginApiNoneDescription),
-                icon: ArcaneIcon.packageOpen(size: IconSize.sm),
-              ),
-            ]
-          : catalog.packs.map(_pack).toList(growable: false),
-    ),
+/// [path] from the server's own folder on ("plugins/React/plugin-apis"),
+/// so the page shows where the packs live without the host's directories.
+String serverFolder(String path) {
+  final String slashed = path.replaceAll(r'\', '/');
+  final int at = slashed.lastIndexOf('/plugins/');
+  return at < 0 ? slashed : slashed.substring(at + 1);
+}
+
+/// [path] with a line-break opportunity after every "/": a long folder
+/// wraps on a phone instead of widening the page, and copies unchanged.
+List<Widget> breakablePath(String path) {
+  final List<String> parts = path.split('/');
+  return <Widget>[
+    for (int i = 0; i < parts.length; i++) ...<Widget>[
+      Component.text(i < parts.length - 1 ? '${parts[i]}/' : parts[i]),
+      if (i < parts.length - 1) Component.element(tag: 'wbr'),
+    ],
   ];
-
-  Widget _pack(PluginApiPack pack) {
-    final ReactorStatus status = switch (pack.state) {
-      'HEALTHY' => ReactorStatus.healthy,
-      'DEGRADED' || 'LOADING' || 'TARGET_MISSING' => ReactorStatus.warning,
-      'QUARANTINED' || 'INVALID' || 'INCOMPATIBLE' => ReactorStatus.critical,
-      _ => ReactorStatus.neutral,
-    };
-    return SectionPanel(
-      label: pack.name,
-      description: '${pack.id} · v${pack.version}',
-      trailing: dom.div(
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'display': 'flex',
-            'gap': '0.4rem',
-            'align-items': 'center',
-          },
-        ),
-        <Widget>[
-          reactorBadge(pack.state.toLowerCase().replaceAll('_', ' '), status),
-          Button.secondary(
-            label: reactorText(ReactorText.pluginApiEdit),
-            size: ButtonSize.small,
-            disabled: !_canMutate,
-            onPressed: !_canMutate
-                ? null
-                : () => setState(() {
-                    _editingId = pack.id;
-                    _draft = pack.rawContent;
-                    _validation = null;
-                  }),
-          ),
-          Button.destructive(
-            label: reactorText(
-              _pendingDeleteId == pack.id
-                  ? ReactorText.pluginApiConfirmDelete
-                  : ReactorText.pluginApiDelete,
-            ),
-            size: ButtonSize.small,
-            disabled: !_canMutate || _saving,
-            onPressed: !_canMutate || _saving ? null : () => _remove(pack.id),
-          ),
-        ],
-      ),
-      children: <Widget>[
-        dom.div(<Widget>[
-          Component.text(
-            '${reactorText(ReactorText.pluginApiTarget)}: ${pack.targetPlugin}'
-            '${pack.targetVersion.isEmpty ? '' : ' ${pack.targetVersion}'} · '
-            '${reactorText(ReactorText.pluginApiMetrics)}: ${pack.metrics.length}'
-            '${pack.trusted ? ' · ${reactorText(ReactorText.pluginApiTrusted)}' : ''}',
-          ),
-        ]),
-        dom.div(<Widget>[Component.text(pack.detail)]),
-        if (pack.metrics.isNotEmpty)
-          reactorGrid(
-            minWidth: '220px',
-            gap: '0.5rem',
-            children: pack.metrics
-                .map((PluginApiMetric metric) {
-                  final ReactorStatus metricStatus = metric.available
-                      ? ReactorStatus.healthy
-                      : metric.quarantined
-                      ? ReactorStatus.critical
-                      : ReactorStatus.warning;
-                  return MetricCard(
-                    title: metric.displayName,
-                    status: metricStatus,
-                    badge: reactorBadge(
-                      reactorText(
-                        metric.available
-                            ? ReactorText.pluginApiAvailable
-                            : ReactorText.pluginApiUnavailable,
-                      ),
-                      metricStatus,
-                    ),
-                    child: dom.div(<Widget>[
-                      dom.code(<Widget>[Component.text(metric.samplerId)]),
-                      dom.div(<Widget>[
-                        Component.text(
-                          metric.available
-                              ? metric.sourceType
-                              : metric.availabilityReason,
-                        ),
-                      ]),
-                    ]),
-                  );
-                })
-                .toList(growable: false),
-          ),
-      ],
-    );
-  }
 }

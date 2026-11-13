@@ -139,21 +139,32 @@ void main() {
       expect(alerts, isEmpty);
     });
 
-    test('incident-score 70 produces warning', () {
-      final ServerSnapshot snapshot = _snapshotFrom(<String, double>{
-        'incident-score': 70.0,
-      });
-      final List<FleetAlert> alerts = AlertEngine.computeForServer(
-        serverId: 's1',
-        serverName: 'Server 1',
-        snapshot: snapshot,
-        thresholds: _thresholds,
-        now: _now,
-      );
-      expect(alerts.length, equals(1));
-      expect(alerts.first.severity, equals(AlertSeverity.warning));
-      expect(alerts.first.metricId, equals('incident-score'));
-    });
+    test(
+      'incident-score 60 warns and 70 is critical, as the tiles read it',
+      () {
+        final ServerSnapshot snapshot = _snapshotFrom(<String, double>{
+          'incident-score': 60.0,
+        });
+        final List<FleetAlert> alerts = AlertEngine.computeForServer(
+          serverId: 's1',
+          serverName: 'Server 1',
+          snapshot: snapshot,
+          thresholds: _thresholds,
+          now: _now,
+        );
+        expect(alerts.length, equals(1));
+        expect(alerts.first.severity, equals(AlertSeverity.warning));
+        expect(alerts.first.metricId, equals('incident-score'));
+        final List<FleetAlert> critical = AlertEngine.computeForServer(
+          serverId: 's1',
+          serverName: 'Server 1',
+          snapshot: _snapshotFrom(<String, double>{'incident-score': 70.0}),
+          thresholds: _thresholds,
+          now: _now,
+        );
+        expect(critical.single.severity, equals(AlertSeverity.critical));
+      },
+    );
 
     test('incident-score 30 produces no alert', () {
       final ServerSnapshot snapshot = _snapshotFrom(<String, double>{
@@ -229,9 +240,9 @@ void main() {
       expect(alerts, isEmpty);
     });
 
-    test('memory-pressure 95 produces warning', () {
+    test('heap utilization 95 produces a memory warning', () {
       final ServerSnapshot snapshot = _snapshotFrom(<String, double>{
-        'memory-pressure': 95.0,
+        'jvm-heap-utilization': 95.0,
       });
       final List<FleetAlert> alerts = AlertEngine.computeForServer(
         serverId: 's1',
@@ -242,12 +253,28 @@ void main() {
       );
       expect(alerts.length, equals(1));
       expect(alerts.first.severity, equals(AlertSeverity.warning));
-      expect(alerts.first.metricId, equals('memory-pressure'));
+      expect(alerts.first.metricId, equals('jvm-heap-utilization'));
     });
 
-    test('memory-pressure 50 produces no alert', () {
+    test('heap utilization 50 produces no alert', () {
       final ServerSnapshot snapshot = _snapshotFrom(<String, double>{
-        'memory-pressure': 50.0,
+        'jvm-heap-utilization': 50.0,
+      });
+      final List<FleetAlert> alerts = AlertEngine.computeForServer(
+        serverId: 's1',
+        serverName: 'Server 1',
+        snapshot: snapshot,
+        thresholds: _thresholds,
+        now: _now,
+      );
+      expect(alerts, isEmpty);
+    });
+
+    test('allocation rate in bytes per second raises no memory alert', () {
+      // The plugin's memory-pressure sampler is the JVM allocation rate.
+      final ServerSnapshot snapshot = _snapshotFrom(<String, double>{
+        'memory-pressure': 83614412.0,
+        'jvm-heap-utilization': 72.4,
       });
       final List<FleetAlert> alerts = AlertEngine.computeForServer(
         serverId: 's1',

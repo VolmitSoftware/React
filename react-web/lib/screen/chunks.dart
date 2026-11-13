@@ -1,3 +1,5 @@
+/// Activity > Chunks: loading and generation, the time listeners spend on
+/// them, persistence and what keeps chunks resident.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
@@ -8,12 +10,14 @@ import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/section_card.dart';
+import '../ui/kit/card.dart';
+import '../ui/kit/metric_tile.dart';
+import '../ui/kit/page.dart';
+import '../ui/kit/section.dart';
 import '../widget/server_snapshot_state.dart';
-import '../widget/stat_tile.dart';
+import 'monitor_parts.dart';
 
-const List<String> _kChunkResidencyIds = <String>[
+const List<String> kChunkResidencyIds = <String>[
   'chunks-force-loaded',
   'chunk-tickets',
   'chunk-unloads',
@@ -28,99 +32,70 @@ class ChunksScreen extends StatelessWidget {
     dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    final Widget? statePage = serverSnapshotStatePage(
-      scope: scope,
-      title: reactorText(ReactorText.chunksTitle),
-      subtitle: reactorText(ReactorText.chunksSubtitle),
-    );
-    if (snapshot == null) return statePage!;
+    if (snapshot == null) return serverSnapshotState(scope: scope);
 
-    final SamplerSample? chunks = snapshot.sampler('chunks');
-    final SamplerSample? chunksLoaded = snapshot.sampler('chunks-loaded');
-    final SamplerSample? chunksGenerated = snapshot.sampler('chunks-generated');
-    final SamplerSample? chunkLoadMs = snapshot.sampler('chunk-load-listener-ms');
-    final SamplerSample? chunkGenMs = snapshot.sampler('chunk-gen-listener-ms');
-    final SamplerSample? worldSaveEventInterval = snapshot.sampler(
-      'world-save-event-interval',
+    final SamplerSample? loadMs = snapshot.sampler('chunk-load-listener-ms');
+    final SamplerSample? genMs = snapshot.sampler('chunk-gen-listener-ms');
+    final List<SamplerSample> residency = samplersOf(
+      snapshot,
+      kChunkResidencyIds,
     );
-    final SamplerSample? pdcWriteBatcher = snapshot.sampler(
-      'pdc-write-batcher',
-    );
-    final List<SamplerSample> residency = _kChunkResidencyIds
-        .map(snapshot.sampler)
-        .whereType<SamplerSample>()
-        .toList(growable: false);
 
-    final List<(String, List<double>)> timeSeries = <(String, List<double>)>[
-      (
-        reactorText(ReactorText.chunksLoadListenerMs),
-        chunkLoadMs?.history ?? const <double>[],
-      ),
-      (
-        reactorText(ReactorText.chunksGenListenerMs),
-        chunkGenMs?.history ?? const <double>[],
-      ),
-    ];
-
-    return ReactorPage(
-      title: reactorText(ReactorText.chunksTitle),
-      subtitle: reactorText(ReactorText.chunksSubtitle),
+    return PageStack(
       children: <Widget>[
-        SectionPanel(
-          label: reactorText(ReactorText.chunksListenerTime),
+        MetricGrid(
           children: <Widget>[
-            TimeseriesChart(series: timeSeries, height: 160),
-            statGrid(<Widget>[
-              StatTile(
-                label: reactorText(ReactorText.commonChunks),
-                sample: chunks,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.chunksLoadedPerSecond),
-                sample: chunksLoaded,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.chunksGeneratedPerSecond),
-                sample: chunksGenerated,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.chunksLoadListenerTime),
-                sample: chunkLoadMs,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.chunksGenListenerTime),
-                sample: chunkGenMs,
-              ),
-            ]),
+            samplerTile(
+              reactorText(ReactorText.commonChunks),
+              snapshot.sampler('chunks'),
+            ),
+            samplerTile(
+              reactorText(ReactorText.chunksLoadedPerSecond),
+              snapshot.sampler('chunks-loaded'),
+            ),
+            samplerTile(
+              reactorText(ReactorText.chunksGeneratedPerSecond),
+              snapshot.sampler('chunks-generated'),
+            ),
           ],
         ),
-        SectionPanel(
-          label: reactorText(ReactorText.chunksPersistence),
-          flush: true,
-          child: statGrid(<Widget>[
-            StatTile(
-              label:
-                  worldSaveEventInterval?.name ??
+        ChartCard(
+          title: reactorText(ReactorText.chunksListenerTime),
+          child: TimeseriesChart(
+            unit: 'ms',
+            series: <(String, List<double>)>[
+              (
+                reactorText(ReactorText.chunksLoadListenerTime),
+                loadMs?.history ?? const <double>[],
+              ),
+              (
+                reactorText(ReactorText.chunksGenListenerTime),
+                genMs?.history ?? const <double>[],
+              ),
+            ],
+          ),
+        ),
+        PageSection(
+          title: reactorText(ReactorText.chunksPersistence),
+          children: <Widget>[
+            MetricGrid(
+              children: <Widget>[
+                samplerTile(
                   reactorText(ReactorText.chunksWorldSaveEventInterval),
-              sample: worldSaveEventInterval,
+                  snapshot.sampler('world-save-event-interval'),
+                ),
+                samplerTile(
+                  reactorText(ReactorText.chunksPdcBatcher),
+                  snapshot.sampler('pdc-write-batcher'),
+                ),
+              ],
             ),
-            StatTile(
-              label: reactorText(ReactorText.chunksPdcBatcher),
-              sample: pdcWriteBatcher,
-            ),
-          ]),
+          ],
         ),
         if (residency.isNotEmpty)
-          SectionPanel(
-            label: reactorText(ReactorText.chunksResidency),
-            flush: true,
-            child: statGrid(
-              residency
-                  .map((SamplerSample sample) {
-                    return StatTile(label: sample.name, sample: sample);
-                  })
-                  .toList(growable: false),
-            ),
+          PageSection(
+            title: reactorText(ReactorText.chunksResidency),
+            children: <Widget>[MetricGrid(children: namedTiles(residency))],
           ),
       ],
     );

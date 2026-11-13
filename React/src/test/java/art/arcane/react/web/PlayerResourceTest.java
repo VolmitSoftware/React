@@ -1,9 +1,7 @@
 package art.arcane.react.web;
 
-import art.arcane.react.api.web.PairingToken;
+import art.arcane.react.api.web.pairing.WebToken;
 import art.arcane.react.api.web.PlayerBackend;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebMutation;
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.OnlinePlayerDto;
@@ -12,13 +10,12 @@ import art.arcane.react.api.web.resource.PlayerResource;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.ConflictResponse;
 import io.javalin.http.Context;
-import io.javalin.http.ForbiddenResponse;
+import art.arcane.react.api.web.WebError;
 import io.javalin.http.NotFoundResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,42 +34,18 @@ public class PlayerResourceTest {
 
     private static final UUID PLAYER_ID = UUID.fromString("12345678-1234-5678-9234-567812345678");
 
-    private PairingToken adminToken;
-    private PairingToken operatorToken;
-    private PairingToken viewerToken;
+    private WebToken adminToken;
+    private WebToken operatorToken;
+    private WebToken viewerToken;
     private FakePlayerBackend backend;
     private AtomicReference<WebMutation> mutation;
     private PlayerResource resource;
 
     @BeforeEach
     void setUp() {
-        byte[] secret = new byte[32];
-        new SecureRandom().nextBytes(secret);
-        TokenRecord adminRecord = new TokenRecord(
-            "tok-player-admin",
-            "admin-device",
-            1000L,
-            Set.of("read", "op:execute", "admin"),
-            "admin"
-        );
-        TokenRecord operatorRecord = new TokenRecord(
-            "tok-player-op",
-            "operator-device",
-            1000L,
-            Set.of("read", "op:execute"),
-            "operator"
-        );
-        TokenRecord viewerRecord = new TokenRecord(
-            "tok-player-viewer",
-            "viewer-device",
-            1000L,
-            Set.of("read"),
-            "viewer"
-        );
-        TokenStore store = TokenStore.inMemory(adminRecord, operatorRecord, viewerRecord);
-        adminToken = verified(secret, adminRecord, store);
-        operatorToken = verified(secret, operatorRecord, store);
-        viewerToken = verified(secret, viewerRecord, store);
+        adminToken = WebTestTokens.token("tok-player-admin", "admin");
+        operatorToken = WebTestTokens.token("tok-player-op", "operator");
+        viewerToken = WebTestTokens.token("tok-player-viewer", "viewer");
         backend = new FakePlayerBackend();
         mutation = new AtomicReference<>();
         resource = new PlayerResource(backend, (context, reported) -> mutation.set(reported));
@@ -81,7 +54,7 @@ public class PlayerResourceTest {
     @Test
     void adminListsOnlinePlayers() {
         Context context = mock(Context.class);
-        when(context.<PairingToken>attribute("token")).thenReturn(adminToken);
+        when(context.<WebToken>attribute("token")).thenReturn(adminToken);
         ArgumentCaptor<Object> response = ArgumentCaptor.forClass(Object.class);
 
         resource.list(context);
@@ -95,21 +68,21 @@ public class PlayerResourceTest {
     @Test
     void viewerCannotListPlayersOrReachBackend() {
         Context context = mock(Context.class);
-        when(context.<PairingToken>attribute("token")).thenReturn(viewerToken);
+        when(context.<WebToken>attribute("token")).thenReturn(viewerToken);
 
-        assertThrows(ForbiddenResponse.class, () -> resource.list(context));
+        assertThrows(WebError.class, () -> resource.list(context));
         assertEquals(0, backend.listCalls);
     }
 
     @Test
     void operatorCannotListOrTeleportPlayers() {
         Context listContext = mock(Context.class);
-        when(listContext.<PairingToken>attribute("token")).thenReturn(operatorToken);
-        assertThrows(ForbiddenResponse.class, () -> resource.list(listContext));
+        when(listContext.<WebToken>attribute("token")).thenReturn(operatorToken);
+        assertThrows(WebError.class, () -> resource.list(listContext));
 
         Context teleportContext = mock(Context.class);
-        when(teleportContext.<PairingToken>attribute("token")).thenReturn(operatorToken);
-        assertThrows(ForbiddenResponse.class, () -> resource.teleport(teleportContext));
+        when(teleportContext.<WebToken>attribute("token")).thenReturn(operatorToken);
+        assertThrows(WebError.class, () -> resource.teleport(teleportContext));
         verify(teleportContext, never()).bodyAsClass(Map.class);
         assertEquals(0, backend.listCalls);
         assertEquals(0, backend.queueCalls);
@@ -199,9 +172,9 @@ public class PlayerResourceTest {
     @Test
     void viewerAuthorizationRunsBeforeBodyOrBackendWork() {
         Context context = mock(Context.class);
-        when(context.<PairingToken>attribute("token")).thenReturn(viewerToken);
+        when(context.<WebToken>attribute("token")).thenReturn(viewerToken);
 
-        assertThrows(ForbiddenResponse.class, () -> resource.teleport(context));
+        assertThrows(WebError.class, () -> resource.teleport(context));
         verify(context, never()).bodyAsClass(Map.class);
         assertEquals(0, backend.queueCalls);
     }
@@ -215,24 +188,14 @@ public class PlayerResourceTest {
         );
     }
 
-    private static Context teleportContext(PairingToken token, Map<String, Object> body) {
+    private static Context teleportContext(WebToken token, Map<String, Object> body) {
         Context context = mock(Context.class);
-        when(context.<PairingToken>attribute("token")).thenReturn(token);
+        when(context.<WebToken>attribute("token")).thenReturn(token);
         when(context.pathParam("id")).thenReturn(PLAYER_ID.toString());
         when(context.bodyAsClass(Map.class)).thenReturn(body);
         return context;
     }
 
-    private static PairingToken verified(byte[] secret, TokenRecord record, TokenStore store) {
-        String bearer = PairingToken.mint(
-            secret,
-            record.id(),
-            record.label(),
-            record.issuedAt(),
-            record.scopes()
-        );
-        return PairingToken.verify(secret, bearer, store).orElseThrow();
-    }
 
     private static final class FakePlayerBackend implements PlayerBackend {
 

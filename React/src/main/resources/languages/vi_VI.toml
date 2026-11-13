@@ -23,6 +23,7 @@
 #
 # === Biến ===
 # Giữ nguyên tên biến và chỉ dùng những biến có sẵn trong từng thông báo.
+#   {access}  Vai trò hoặc quyền của một ghép nối React Web
 #   {action}  Tên hành động hoặc hướng điều chỉnh màu
 #   {actions}  Số hành động trong hàng đợi hoặc danh sách tên hành động bị loại trừ
 #   {active}  Số tính năng hoặc tinh chỉnh đang hoạt động
@@ -41,7 +42,7 @@
 #   {before}  Giá trị cấu hình, thông điệp ngôn ngữ hoặc mức dùng bộ nhớ heap trước thay đổi
 #   {checked}  Số bộ lấy mẫu đã kiểm tra
 #   {chunks}  Số vùng khối chịu tác động của một hành động
-#   {code}  Mã ghép nối web
+#   {client}  Tên trình duyệt đã tạo một ghép nối React Web
 #   {command}  Đường dẫn lệnh
 #   {count}  Số mục, mô-đun, thay đổi hoặc phát hiện trong kiểm thử
 #   {current}  Số trang hiện tại
@@ -57,6 +58,7 @@
 #   {entities}  Số thực thể chịu tác động của một hành động
 #   {entry}  Mục trong dòng thời gian tích hợp
 #   {exceptions}  Các ngoại lệ React ghi nhận trong một lượt kiểm thử tải
+#   {expires}  Khi nào một ghép nối React Web kết thúc nếu không dùng
 #   {fail}  Số phép kiểm tra thất bại
 #   {file}  Tên tệp cấu hình, ngôn ngữ hoặc API phần bổ trợ
 #   {fingerprint}  Dấu vân tay máy chủ hoặc mã truy cập web
@@ -80,14 +82,17 @@
 #   {incident}  Định danh hành động sự cố đệ quy bị loại khỏi bộ kiểm thử dành cho nhà phát triển
 #   {index}  Số thứ tự bước hiện tại trong bộ kiểm thử dành cho nhà phát triển
 #   {invalid}  Số bộ lấy mẫu có kết quả đo không hợp lệ
-#   {issued_at}  Thời điểm tạo mã truy cập web
 #   {item}  Tên hoặc định danh vật phẩm
 #   {items}  Số thực thể vật phẩm đã gộp
 #   {kept}  Chỉnh sửa cục bộ được giữ lại sau bản cập nhật ngôn ngữ
 #   {key}  Khóa tham số lệnh, khóa cấu hình hoặc định danh thông điệp ngôn ngữ
 #   {label}  Nhãn kiểm thử hiệu năng, chỉ số, thiết lập, lệnh hoặc mã truy cập web
+#   {lifetime}  Thời gian một ghép nối React Web kéo dài khi không dùng
 #   {line}  Số dòng đang sửa trong thông điệp nhiều dòng
 #   {lines}  Số dòng nhật ký máy chủ đã quét
+#   {link}  Liên kết ghép nối React Web
+#   {links}  Số liên kết ghép nối React Web chưa mở
+#   {listener}  Địa chỉ mà trình lắng nghe React Web gắn vào
 #   {loaded}  Số vùng khối mới được tải trong giai đoạn tải trước
 #   {locale}  Mã ngôn ngữ đang hiển thị, chọn hoặc sửa
 #   {matched}  Các thế giới có trạng thái tự lưu khớp với trạng thái cơ sở của kiểm thử
@@ -105,6 +110,7 @@
 #   {offenders}  Số bộ lấy mẫu trả về giá trị không hữu hạn
 #   {options}  Các giá trị cấu hình được chấp nhận
 #   {p95}  Phân vị thứ 95 của thời gian nhịp trong kiểm thử tải, tính bằng ms
+#   {origin}  Nguồn trình duyệt của một yêu cầu
 #   {parameter}  Tên tham số lệnh
 #   {parameters}  Các tham số lệnh bị bỏ qua
 #   {pass}  Số phép kiểm tra thành công
@@ -128,6 +134,7 @@
 #   {react_errors}  Số dòng lỗi React tìm thấy trong nhật ký máy chủ
 #   {reason}  Giải thích lỗi, việc từ chối hoặc trạng thái không khả dụng
 #   {registered}  Số mô-đun đã đăng ký
+#   {relay}  Trạng thái chuyển tiếp của React Web
 #   {remaining}  Thời gian còn lại đến lần kiểm tra ngôn ngữ tiếp theo
 #   {removed_first}  Lần vô hiệu hóa đầu tiên có xóa tính năng khỏi danh sách đăng ký đang hoạt động hay không
 #   {removed_second}  Lần vô hiệu hóa lặp lại có xóa tính năng khỏi danh sách đăng ký đang hoạt động hay không
@@ -137,6 +144,7 @@
 #   {sampler}  Tên hoặc định danh bộ lấy mẫu
 #   {samplers}  Danh sách bộ lấy mẫu tích hợp hoặc bộ lấy mẫu bị lỗi
 #   {scope}  Phạm vi bản đồ hoặc phạm vi thiết lập khoảng cách
+#   {scopes}  Quyền của một ghép nối React Web
 #   {score}  Điểm kiểm thử hiệu năng
 #   {seconds}  Thời lượng đếm ngược hoặc kiểm thử tải, tính bằng giây
 #   {section}  Mục cấu hình hoặc mục trong trình chỉnh sửa ngôn ngữ
@@ -145,6 +153,7 @@
 #   {since_run}  Các lỗi được báo từ khi bắt đầu kiểm thử hiện tại
 #   {size}  Kích thước tối đa hoặc kích thước đang dùng của tường bản đồ
 #   {skip}  Số phép kiểm tra bị bỏ qua
+#   {sockets}  Số socket React Web đang mở
 #   {spawn_y}  Độ cao khối kiểm thử trọng lực được tạo ra
 #   {state}  Trạng thái hành động hoặc gói API phần bổ trợ
 #   {status}  Nhãn trạng thái tích hợp hoặc cấu hình
@@ -159,6 +168,7 @@
 #   {tier}  Mức độ nghiêm trọng của kịch bản xử lý sự cố
 #   {timing}  Thời gian gọi lại kỹ năng mỗi phút, tính bằng mili giây
 #   {to}  Số thứ tự mục cuối cùng trên trang hiện tại
+#   {tokens}  Số trình duyệt đã ghép nối với React Web
 #   {total}  Tổng số mục, mô-đun, thế giới, phép kiểm tra hoặc dung lượng bộ nhớ trong thông điệp
 #   {type}  Loại tham số lệnh, giá trị cấu hình, bản đồ hoặc khoảng cách
 #   {unavailable}  Số điểm truy cập cầu nối NMS không khả dụng
@@ -225,12 +235,12 @@ root = "Lệnh gốc của React"
 test = "Chạy kiểm tra hợp lệ và kiểm thử tải của React"
 "test.load" = "Chạy kiểm thử tải tổng hợp hai lượt"
 "test.run" = "Chạy bộ kiểm tra hợp lệ của React"
-version = "Hiển thị phiên bản React"
 distance = "Đặt khoảng cách nhìn, mô phỏng hoặc gửi chunk cho máy chủ, thế giới hoặc người chơi"
 web = "Quản lý mã truy cập WebUI của React"
-"web.list" = "Liệt kê các mã truy cập WebUI đang hoạt động"
-"web.pair" = "Tạo mã ghép nối WebUI"
-"web.revoke" = "Thu hồi mã truy cập WebUI"
+"web.pair" = "Tạo liên kết ghép nối React Web dùng một lần"
+"web.revoke" = "Thu hồi một token hoặc hủy một liên kết chưa mở"
+"web.status" = "Hiện trình lắng nghe, chuyển tiếp và dấu vân tay"
+"web.tokens" = "Liệt kê các trình duyệt đã ghép nối"
 language = "Chọn ngôn ngữ của bạn hoặc của máy chủ"
 
 [command.parameter]
@@ -267,9 +277,11 @@ target = "Thế giới hoặc người chơi đích; mặc định theo ngữ c�
 value = "Khoảng cách tính bằng chunk; dùng -1 khi hỗ trợ kế thừa thiết lập"
 
 [command.parameter.web]
-id = "ID của mã truy cập cần thu hồi"
+expires = "Thời gian ghép nối kéo dài khi không dùng, ví dụ 7d"
+id = "ID token, hoặc all"
 label = "Nhãn dễ đọc cho mã truy cập này"
 role = "Vai trò của mã truy cập này: viewer, operator hoặc admin"
+scopes = "Quyền thay cho vai trò, ví dụ read,op:execute"
 
 [command.runtime]
 chunk_not_sampled = "&cChunk này chưa được lấy mẫu. Hãy kiểm tra lại sau một giây.&r"
@@ -347,21 +359,39 @@ threading_folia = "(Folia đa luồng theo vùng)"
 threading_standard = ""
 
 [command.runtime.web]
+fingerprint_copy_hover = "Sao chép dấu vân tay"
+invalid_expires = "&cexpires= nhận một số kèm d, h hoặc m, từ 1m đến 365d, ví dụ 7d.&r"
+invalid_label = "&cNhãn có tối đa 64 ký tự.&r"
 invalid_role = "&cVai trò không hợp lệ: &f{role}&c. Cần viewer, operator hoặc admin.&r"
+invalid_scope = "&cQuyền không xác định &f{scope}&c. Các quyền là {scopes}.&r"
+link_copy = "&b&n[Sao chép]&r"
+link_copy_hover = "Sao chép liên kết"
+link_details = "&7Quyền {scopes}; kết thúc sau {lifetime} không dùng; token {id}&r"
+link_open = "&b&n[Mở React Web]&r"
+link_open_hover = "Mở trong trình duyệt"
+link_ready = "&aLiên kết đã sẵn sàng. Hãy mở trong vòng 10 phút&r"
+link_ready_console = "&aLiên kết đã sẵn sàng. Hãy mở trong vòng 10 phút:&r {link}"
+link_revoke = "&c&n[Thu hồi]&r"
+link_revoke_hover = "Hủy liên kết này, hoặc kết thúc ghép nối mà nó đã tạo"
 mutation_notice = "&eThay đổi web bởi &f{actor}&e: &b{target}&e — &f{detail}&e.&r"
-pair_unavailable = "&cKhông thể ghép nối web: &f{reason}&r"
+never = "chưa bao giờ"
 no_tokens = "&bKhông có mã truy cập nào đang hoạt động.&r"
-pairing_code = "&bMã ghép nối:&r {code}"
-pairing_copy = "&bMã ghép nối:&r &e&nNhấp để sao chép&r"
-pairing_copy_hover = "Sao chép toàn bộ mã ghép nối"
-persist_failed = "&cKhông thể lưu mã truy cập: &f{reason}&r"
+off = "tắt"
+pair_refused = "&e{label} không ghép nối được: &f{reason}&r"
+pair_unavailable = "&cKhông thể ghép nối web: &f{reason}&r"
+refused_expired = "liên kết đã hết hạn; hãy tạo liên kết mới"
+refused_origin = "nguồn {origin} không có trong allowedOrigins của web.toml"
+relay_connecting = "{url} đang kết nối"
+relay_registered = "{url} đã đăng ký"
+relay_waiting = "chờ lần ghép nối đầu tiên"
 revoked = "&bĐã thu hồi mã truy cập:&r {id}"
-role = "&bVai trò:&r {role}"
-server_fingerprint = "&bDấu vân tay máy chủ:&r {fingerprint}"
-token_entry = "&7  {id} | {label} | issuedAt={issued_at}&r"
-token_fingerprint = "&bDấu vân tay mã truy cập:&r {fingerprint}"
+role_and_scopes = "&cDùng role= hoặc scopes=, không dùng cả hai.&r"
+scopes_need_read = "&cscopes= phải có read.&r"
+state_ready = "sẵn sàng"
+status = "&bReact Web&r {state} | trình lắng nghe {listener} | chuyển tiếp {relay} | {tokens} token, {links} liên kết đang mở | {sockets} socket"
+status_fingerprint = "&7Dấu vân tay&r {fingerprint}"
+token_entry = "&7  {id} | {label} | {access} | hết hạn {expires} | dùng lần cuối {used} | {client} | {sockets} socket&r"
 token_header = "&bMã truy cập đang hoạt động ({count}):&r"
-token_id = "&bID mã truy cập:&r {id}"
 token_not_found = "&cKhông tìm thấy mã truy cập: &f{id}&r"
 update_failed = "&cKhông thể cập nhật kho mã truy cập: &f{reason}&r"
 
@@ -469,13 +499,17 @@ description = "Cấu hình API quản lý HTTP/WebSocket tích hợp của React
 impact = "Đặt URL HTTPS của proxy ngược nếu trình lắng nghe có thể được truy cập từ bên ngoài localhost. Trình lắng nghe tích hợp của React vẫn chỉ hỗ trợ HTTP. Thay đổi được áp dụng tự động khi lưu web.toml."
 summary = "URL cơ sở công khai được thông báo cho các máy khách API kết nối trực tiếp."
 
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.allowedorigins]
+impact = "Mỗi mục là một nguồn: lược đồ, máy chủ và cổng, không có đường dẫn; http thường chỉ trên loopback. Trang từ nguồn khác bị từ chối với origin_not_allowed. Yêu cầu không có Origin, như của bộ chuyển tiếp, không bị ảnh hưởng."
+summary = "Các nguồn trình duyệt được phép dùng trình lắng nghe trực tiếp."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.appurl]
+impact = "Đổi thành React Web bạn tự lưu trữ và thêm nguồn của nó vào allowedOrigins."
+summary = "Địa chỉ React Web mà liên kết ghép nối mở ra."
+
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenaddress]
 impact = "Địa chỉ đại diện mặc định :: chấp nhận lưu lượng IPv6 và IPv4 ánh xạ từ LAN, container và chuyển tiếp cổng. Chỉ dùng địa chỉ loopback khi đặt sau proxy ngược hoặc máy chủ chuyển tiếp trên cùng máy."
 summary = "Địa chỉ IP mà trình lắng nghe web liên kết tới."
-
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.corsorigins]
-impact = "Danh sách rỗng cho phép mọi nguồn gốc. Thêm các nguồn gốc cụ thể để hạn chế truy cập từ nguồn khác."
-summary = "Danh sách các nguồn gốc CORS được phép cho API HTTP."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React mặc định mở API có xác thực. Đặt false để không mở trình lắng nghe HTTP hoặc WebSocket."
@@ -486,8 +520,8 @@ impact = "Nếu cổng này đang được sử dụng, React lần lượt th�
 summary = "Cổng TCP ưu tiên cho máy chủ web."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayenabled]
-impact = "Khi bật (true), React kết nối tới máy chủ trung chuyển relay tại relayUrl để ứng dụng đồng hành có thể truy cập các máy chủ nằm sau NAT mà không cần chuyển tiếp cổng."
-summary = "Bật máy khách relay đám mây chiều đi để vượt NAT."
+impact = "React kết nối tới relayUrl ở lần /react web pair đầu tiên, và ở mỗi lần khởi động khi còn ghép nối. Khi đó liên kết ghép nối cũng mang địa chỉ chuyển tiếp."
+summary = "Bật trình khách chuyển tiếp đi ra để trình duyệt đến được máy chủ mà không cần mở cổng."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayurl]
 impact = "Chỉ được đọc khi relayEnabled là true. Để trống khi relay bị tắt."
@@ -497,9 +531,13 @@ summary = "URL WSS gốc của máy chủ trung chuyển relay, ví dụ wss://r
 impact = "Khi bật (true), các yêu cầu GET chưa xác thực bị từ chối với mã 401. Chỉ đặt false trong môi trường mạng hoàn toàn đáng tin cậy."
 summary = "Yêu cầu mã xác thực hợp lệ cho các điểm cuối HTTP chỉ đọc."
 
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.wspushhz]
-impact = "Giá trị cao hơn tăng độ chính xác của dữ liệu đẩy nhưng cũng tăng chi phí mạng và CPU."
-summary = "Tần số (Hz) mục tiêu mà các cập nhật của bộ lấy mẫu được đẩy qua kết nối WebSocket."
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.servername]
+impact = "Để trống thì dùng dòng đầu của MOTD, hoặc tên thư mục máy chủ khi MOTD là mặc định của vanilla."
+summary = "Tên mà React Web hiển thị cho máy chủ này."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
+impact = "Mỗi lần dùng sẽ tính lại thời gian. /react web pair expires= thay giá trị này cho một liên kết. Từ 1 đến 365."
+summary = "Số ngày một ghép nối kéo dài khi không dùng."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Cấu hình cho hành động Thu gom rác. Yêu cầu JVM thu gom rác và báo cáo ngay lượng heap được thu hồi."

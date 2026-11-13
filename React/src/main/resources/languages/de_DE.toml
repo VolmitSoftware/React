@@ -23,6 +23,7 @@
 #
 # === Variablen ===
 # Variablennamen unverändert lassen und nur die Variablen der jeweiligen Nachricht verwenden.
+#   {access}  Rolle oder Berechtigungen einer React-Web-Kopplung
 #   {action}  Aktionsname oder Richtung der Farbanpassung
 #   {actions}  Anzahl eingereihter Aktionen oder Liste ausgeschlossener Aktionsnamen
 #   {active}  Anzahl aktiver Funktionen oder Tweaks
@@ -41,7 +42,7 @@
 #   {before}  Konfigurationswert, Sprachnachricht oder Heap-Belegung vor einer Änderung
 #   {checked}  Anzahl geprüfter Sampler
 #   {chunks}  Anzahl der von einer Aktion betroffenen Chunks
-#   {code}  Web-Kopplungscode
+#   {client}  Browsername, von dem eine React-Web-Kopplung stammt
 #   {command}  Befehlspfad
 #   {count}  Anzahl der Einträge, Module, Änderungen oder Testergebnisse
 #   {current}  Aktuelle Seitennummer
@@ -57,6 +58,7 @@
 #   {entities}  Anzahl der von einer Aktion betroffenen Entitäten
 #   {entry}  Eintrag in der Integrationszeitleiste
 #   {exceptions}  Während eines Lasttestdurchlaufs aufgezeichnete React-Ausnahmen
+#   {expires}  Wann eine React-Web-Kopplung ohne Nutzung endet
 #   {fail}  Anzahl fehlgeschlagener Prüfungen
 #   {file}  Dateiname einer Konfiguration, Sprache oder Plugin-API
 #   {fingerprint}  Fingerabdruck des Servers oder Web-Tokens
@@ -80,14 +82,17 @@
 #   {incident}  Kennung der aus dem Entwicklertest ausgeschlossenen rekursiven Vorfallaktion
 #   {index}  Nummer des aktuellen Schritts im Entwicklertest
 #   {invalid}  Anzahl der Sampler mit ungültigen Messwerten
-#   {issued_at}  Erstellungszeit des Web-Tokens
 #   {item}  Name oder Kennung des Gegenstands
 #   {items}  Anzahl zusammengeführter Gegenstandsentitäten
 #   {kept}  Bei einer Sprachaktualisierung behaltene lokale Änderungen
 #   {key}  Befehlsparameterschlüssel, Konfigurationsschlüssel oder Sprachnachrichten-ID
 #   {label}  Bezeichnung eines Benchmarks, Messwerts, einer Einstellung, eines Befehls oder Web-Tokens
+#   {lifetime}  Wie lange eine React-Web-Kopplung ohne Nutzung besteht
 #   {line}  Nummer der bearbeiteten Zeile in einer mehrzeiligen Nachricht
 #   {lines}  Anzahl durchsuchter Serverprotokollzeilen
+#   {link}  React-Web-Kopplungslink
+#   {links}  Anzahl noch nicht geöffneter React-Web-Kopplungslinks
+#   {listener}  Adresse, an die der React-Web-Listener gebunden ist
 #   {loaded}  Anzahl der beim Vorladen neu geladenen Chunks
 #   {locale}  Angezeigter, ausgewählter oder bearbeiteter Sprachcode
 #   {matched}  Welten, deren automatischer Speicherzustand dem Referenzzustand des Tests entspricht
@@ -105,6 +110,7 @@
 #   {offenders}  Anzahl der Sampler, die nicht endliche Werte zurückgeben
 #   {options}  Zulässige Konfigurationswerte
 #   {p95}  95. Perzentil der Tickdauer während eines Lasttests in ms
+#   {origin}  Browser-Ursprung einer Anfrage
 #   {parameter}  Name des Befehlsparameters
 #   {parameters}  Ignorierte Befehlsparameter
 #   {pass}  Anzahl bestandener Prüfungen
@@ -128,6 +134,7 @@
 #   {react_errors}  Anzahl der im Serverprotokoll gefundenen React-Fehlerzeilen
 #   {reason}  Erklärung eines Fehlers, einer Ablehnung oder einer Nichtverfügbarkeit
 #   {registered}  Anzahl registrierter Module
+#   {relay}  Zustand des React-Web-Relays
 #   {remaining}  Verbleibende Wartezeit bis zur nächsten Sprachprüfung
 #   {removed_first}  Ob die erste Deaktivierung eine Funktion aus der aktiven Registrierung entfernt hat
 #   {removed_second}  Ob die wiederholte Deaktivierung eine Funktion aus der aktiven Registrierung entfernt hat
@@ -137,6 +144,7 @@
 #   {sampler}  Name oder Kennung des Samplers
 #   {samplers}  Liste der Integrationssampler oder fehlerhaften Sampler
 #   {scope}  Geltungsbereich der Karte oder Distanzeinstellung
+#   {scopes}  Berechtigungen einer React-Web-Kopplung
 #   {score}  Benchmark-Punktzahl
 #   {seconds}  Countdown oder Lasttestdauer in Sekunden
 #   {section}  Konfigurationsabschnitt oder Abschnitt des Spracheneditors
@@ -145,6 +153,7 @@
 #   {since_run}  Seit Beginn des aktuellen Tests gemeldete Fehler
 #   {size}  Maximale oder aktive Abmessungen der Kartenwand
 #   {skip}  Anzahl übersprungener Prüfungen
+#   {sockets}  Anzahl offener React-Web-Sockets
 #   {spawn_y}  Höhe, auf der der Block für den Schwerkrafttest erzeugt wurde
 #   {state}  Zustand einer Aktion oder eines Plugin-API-Pakets
 #   {status}  Bezeichnung des Integrationsstatus oder Konfigurationszustands
@@ -159,6 +168,7 @@
 #   {tier}  Schweregrad des Vorfallablaufs
 #   {timing}  Zeit für Fähigkeits-Callbacks in Millisekunden pro Minute
 #   {to}  Nummer des letzten Eintrags auf der aktuellen Seite
+#   {tokens}  Anzahl gekoppelter React-Web-Browser
 #   {total}  Gesamtzahl der Einträge, Module, Welten, Prüfungen oder Speichermenge in der Nachricht
 #   {type}  Typ des Befehlsparameters, Konfigurationswerts, der Karte oder Distanz
 #   {unavailable}  Anzahl nicht verfügbarer NMS-Bridge-Handles
@@ -225,12 +235,12 @@ root = "Der React-Hauptbefehl"
 test = "React-Validierung und Lasttests ausführen"
 "test.load" = "Einen synthetischen Lasttest mit zwei Durchläufen ausführen"
 "test.run" = "Die React-Validierungssuite ausführen"
-version = "Die React-Version anzeigen"
 distance = "Sicht-, Simulations- oder Sendedistanz für den Server, eine Welt oder einen Spieler festlegen"
 web = "React-WebUI-Zugriffstoken verwalten"
-"web.list" = "Aktive WebUI-Token auflisten"
-"web.pair" = "Ein WebUI-Kopplungstoken erstellen"
-"web.revoke" = "Ein WebUI-Token widerrufen"
+"web.pair" = "Einen einmaligen React-Web-Kopplungslink erstellen"
+"web.revoke" = "Ein Token widerrufen oder einen noch nicht geöffneten Link abbrechen"
+"web.status" = "Listener, Relay und Fingerabdruck anzeigen"
+"web.tokens" = "Gekoppelte Browser auflisten"
 language = "Wählen Sie Ihre Sprache oder die Serversprache"
 
 [command.parameter]
@@ -267,9 +277,11 @@ target = "Zielwelt oder Zielspieler; standardmäßig wird der Kontext des Befehl
 value = "Distanz in Chunks; -1 verwenden, wenn Vererbung unterstützt wird"
 
 [command.parameter.web]
-id = "Zu widerrufende Token-ID"
+expires = "Wie lange die Kopplung ohne Nutzung besteht, etwa 7d"
+id = "Token-ID oder all"
 label = "Menschenlesbare Bezeichnung für dieses Token"
 role = "Rolle für dieses Token: viewer, operator oder admin"
+scopes = "Berechtigungen statt einer Rolle, etwa read,op:execute"
 
 [command.runtime]
 chunk_not_sampled = "&cDieser Chunk wurde noch nicht gemessen. Bitte in einer Sekunde erneut prüfen.&r"
@@ -347,21 +359,39 @@ threading_folia = "(Folia, regionsbasiertes Threading)"
 threading_standard = ""
 
 [command.runtime.web]
+fingerprint_copy_hover = "Fingerabdruck kopieren"
+invalid_expires = "&cexpires= erwartet eine Zahl mit d, h oder m, von 1m bis 365d, etwa 7d.&r"
+invalid_label = "&cEine Bezeichnung hat höchstens 64 Zeichen.&r"
 invalid_role = "&cUngültige Rolle: &f{role}&c. Erwartet: viewer, operator oder admin.&r"
+invalid_scope = "&cUnbekannte Berechtigung &f{scope}&c. Berechtigungen: {scopes}.&r"
+link_copy = "&b&n[Kopieren]&r"
+link_copy_hover = "Link kopieren"
+link_details = "&7Berechtigungen {scopes}; endet nach {lifetime} ohne Nutzung; Token {id}&r"
+link_open = "&b&n[React Web öffnen]&r"
+link_open_hover = "Im Browser öffnen"
+link_ready = "&aLink bereit. Innerhalb von 10 Minuten öffnen&r"
+link_ready_console = "&aLink bereit. Innerhalb von 10 Minuten öffnen:&r {link}"
+link_revoke = "&c&n[Widerrufen]&r"
+link_revoke_hover = "Diesen Link abbrechen oder die damit erstellte Kopplung beenden"
 mutation_notice = "&eWebänderung durch &f{actor}&e: &b{target}&e — &f{detail}&e.&r"
-pair_unavailable = "&cWeb-Kopplung nicht verfügbar: &f{reason}&r"
+never = "nie"
 no_tokens = "&bKeine aktiven Token.&r"
-pairing_code = "&bKopplungscode:&r {code}"
-pairing_copy = "&bKopplungscode:&r &e&nZum Kopieren klicken&r"
-pairing_copy_hover = "Vollständigen Kopplungscode kopieren"
-persist_failed = "&cToken konnte nicht gespeichert werden: &f{reason}&r"
+off = "aus"
+pair_refused = "&e{label} konnte nicht koppeln: &f{reason}&r"
+pair_unavailable = "&cWeb-Kopplung nicht verfügbar: &f{reason}&r"
+refused_expired = "der Link ist abgelaufen; einen neuen erstellen"
+refused_origin = "Ursprung {origin} steht nicht in allowedOrigins in web.toml"
+relay_connecting = "{url} verbindet"
+relay_registered = "{url} registriert"
+relay_waiting = "wartet auf die erste Kopplung"
 revoked = "&bToken widerrufen:&r {id}"
-role = "&bRolle:&r {role}"
-server_fingerprint = "&bServer-Fingerabdruck:&r {fingerprint}"
-token_entry = "&7  {id} | {label} | issuedAt={issued_at}&r"
-token_fingerprint = "&bToken-Fingerabdruck:&r {fingerprint}"
+role_and_scopes = "&crole= oder scopes= verwenden, nicht beides.&r"
+scopes_need_read = "&cscopes= muss read enthalten.&r"
+state_ready = "bereit"
+status = "&bReact Web&r {state} | Listener {listener} | Relay {relay} | {tokens} Token, {links} offene Links | {sockets} Sockets"
+status_fingerprint = "&7Fingerabdruck&r {fingerprint}"
+token_entry = "&7  {id} | {label} | {access} | läuft ab {expires} | zuletzt genutzt {used} | {client} | {sockets} Sockets&r"
 token_header = "&bAktive Token ({count}):&r"
-token_id = "&bToken-ID:&r {id}"
 token_not_found = "&cToken nicht gefunden: &f{id}&r"
 update_failed = "&cToken-Speicher konnte nicht aktualisiert werden: &f{reason}&r"
 
@@ -469,13 +499,17 @@ description = "Konfiguration der eingebetteten HTTP/WebSocket-Verwaltungs-API vo
 impact = "Hier die HTTPS-URL eines Reverse-Proxys eintragen, wenn der Listener außerhalb von localhost erreichbar ist. Der eingebettete Listener von React unterstützt weiterhin nur HTTP. Änderungen werden beim Speichern von web.toml automatisch übernommen."
 summary = "Öffentliche Basis-URL, die direkten API-Clients bekannt gegeben wird."
 
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.allowedorigins]
+impact = "Jeder Eintrag ist ein Ursprung: Schema, Host und Port ohne Pfad; einfaches http nur auf Loopback. Eine Seite von einem anderen Ursprung wird mit origin_not_allowed abgelehnt. Anfragen ohne Origin, etwa vom Relay, sind nicht betroffen."
+summary = "Browser-Ursprünge, die den direkten Listener nutzen dürfen."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.appurl]
+impact = "Auf ein selbst gehostetes React Web ändern und dessen Ursprung zu allowedOrigins hinzufügen."
+summary = "Adresse von React Web, die Kopplungslinks öffnen."
+
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenaddress]
 impact = "Die Standard-Wildcard :: akzeptiert IPv6- und IPv4-gemappten Verkehr für LAN-, Container- und Portweiterleitungszugriffe. Eine Loopback-Adresse nur hinter einem Reverse-Proxy oder Relay auf demselben Host verwenden."
 summary = "IP-Adresse, an die sich der Web-Listener bindet."
-
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.corsorigins]
-impact = "Eine leere Liste erlaubt alle Ursprünge. Fügen Sie bestimmte Ursprünge hinzu, um den Cross-Origin-Zugriff zu beschränken."
-summary = "Liste der zulässigen CORS-Ursprünge für die HTTP-API."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React öffnet die authentifizierte API standardmäßig. Mit false wird kein HTTP- oder WebSocket-Listener geöffnet."
@@ -486,8 +520,8 @@ impact = "Ist dieser Port belegt, versucht React der Reihe nach die nächsten 99
 summary = "Bevorzugter TCP-Port für den Webserver."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayenabled]
-impact = "Bei true verbindet sich React mit dem Relay-Broker unter relayUrl, damit die Begleit-App Server hinter NAT ohne Portweiterleitung erreichen kann."
-summary = "Aktiviert den ausgehenden Cloud-Relay-Client für NAT-Traversal."
+impact = "React verbindet sich beim ersten /react web pair mit relayUrl und bei jedem Start, solange eine Kopplung besteht. Kopplungslinks enthalten dann auch die Relay-Adresse."
+summary = "Aktiviert den ausgehenden Relay-Client, damit Browser diesen Server ohne offenen Port erreichen."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayurl]
 impact = "Wird nur gelesen, wenn relayEnabled true ist. Bei deaktiviertem Relay leer lassen."
@@ -497,9 +531,13 @@ summary = "Basis-WSS-URL des Relay-Brokers, z. B. wss://relay.arcane.art; der Pf
 impact = "Bei true werden nicht authentifizierte GET-Anfragen mit 401 abgelehnt. Setzen Sie den Wert nur in vollständig vertrauenswürdigen Netzwerkumgebungen auf false."
 summary = "Erfordert ein gültiges Auth-Token für schreibgeschützte HTTP-Endpunkte."
 
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.wspushhz]
-impact = "Höhere Werte erhöhen die Push-Genauigkeit, aber auch den Netzwerk- und CPU-Aufwand."
-summary = "Zielfrequenz (Hz), mit der Messwertsammler-Updates über WebSocket-Verbindungen gesendet werden."
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.servername]
+impact = "Leer verwendet die erste Zeile der MOTD oder den Namen des Serverordners, wenn die MOTD der Vanilla-Standard ist."
+summary = "Name, den React Web für diesen Server anzeigt."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
+impact = "Jede Nutzung startet die Zeit neu. /react web pair expires= überschreibt den Wert für einen Link. 1 bis 365."
+summary = "Tage, die eine Kopplung ohne Nutzung besteht."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Konfiguration der Aktion Collect Garbage. Fordert die JVM-Speicherbereinigung an und meldet den sofort freigegebenen Heap."

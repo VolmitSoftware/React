@@ -54,7 +54,6 @@ class WebControllerListenerBindingTest {
       @Override
       protected IdentityDto resolveIdentity() {
         IdentityDto identity = new IdentityDto();
-        identity.version = "listener-test";
         identity.serverName = "ListenerTest";
         identity.folia = false;
         identity.serverId = "[::1]:0";

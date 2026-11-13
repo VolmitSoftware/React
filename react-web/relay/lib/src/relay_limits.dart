@@ -2,11 +2,13 @@ final class RelayLimits {
   static const int defaultMaxFrameBytes = 1024 * 1024;
 
   final int maxFrameBytes;
-  final int maxMessagesPerWindow;
+  final int maxAppMessagesPerWindow;
+  final int maxAgentMessagesPerWindow;
   final Duration messageRateWindow;
   final int maxPendingRequestsPerApp;
   final int maxPendingRequestsGlobal;
   final int maxOutboundQueueMessages;
+  final int maxAgentOutboundQueueMessages;
   final Duration handshakeTimeout;
   final Duration subscriptionTimeout;
   final Duration requestTimeout;
@@ -14,11 +16,13 @@ final class RelayLimits {
 
   const RelayLimits({
     this.maxFrameBytes = defaultMaxFrameBytes,
-    this.maxMessagesPerWindow = 120,
+    this.maxAppMessagesPerWindow = 240,
+    this.maxAgentMessagesPerWindow = 5000,
     this.messageRateWindow = const Duration(seconds: 1),
     this.maxPendingRequestsPerApp = 64,
     this.maxPendingRequestsGlobal = 4096,
     this.maxOutboundQueueMessages = 128,
+    this.maxAgentOutboundQueueMessages = 4096,
     this.handshakeTimeout = const Duration(seconds: 10),
     this.subscriptionTimeout = const Duration(seconds: 10),
     this.requestTimeout = const Duration(seconds: 10),
@@ -29,8 +33,17 @@ final class RelayLimits {
     if (maxFrameBytes < 1024 || maxFrameBytes > 16 * 1024 * 1024) {
       throw ArgumentError.value(maxFrameBytes, 'maxFrameBytes');
     }
-    if (maxMessagesPerWindow < 1 || maxMessagesPerWindow > 10000) {
-      throw ArgumentError.value(maxMessagesPerWindow, 'maxMessagesPerWindow');
+    if (maxAppMessagesPerWindow < 1 || maxAppMessagesPerWindow > 10000) {
+      throw ArgumentError.value(
+        maxAppMessagesPerWindow,
+        'maxAppMessagesPerWindow',
+      );
+    }
+    if (maxAgentMessagesPerWindow < 1 || maxAgentMessagesPerWindow > 100000) {
+      throw ArgumentError.value(
+        maxAgentMessagesPerWindow,
+        'maxAgentMessagesPerWindow',
+      );
     }
     if (messageRateWindow <= Duration.zero ||
         messageRateWindow > const Duration(minutes: 1)) {
@@ -53,6 +66,13 @@ final class RelayLimits {
       throw ArgumentError.value(
         maxOutboundQueueMessages,
         'maxOutboundQueueMessages',
+      );
+    }
+    if (maxAgentOutboundQueueMessages < 1 ||
+        maxAgentOutboundQueueMessages > 65536) {
+      throw ArgumentError.value(
+        maxAgentOutboundQueueMessages,
+        'maxAgentOutboundQueueMessages',
       );
     }
     _validateDuration(handshakeTimeout, 'handshakeTimeout');

@@ -4,14 +4,17 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
+import 'package:react_web/theme/reactor_stylesheet.dart';
 import 'package:jaspr/jaspr.dart' show GlobalStateKey;
 import 'package:jaspr_test/server_test.dart';
 
-import 'package:react_web/app/reactor_app.dart';
+import 'package:react_web/app/fleet_observer.dart';
 import 'package:react_web/model/identity_info.dart';
+import 'package:react_web/model/server_capabilities.dart';
 import 'package:react_web/model/server_credential.dart';
+import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:react_web/model/server_snapshot.dart';
+import 'package:react_web/service/react_exceptions.dart';
 import 'package:react_web/service/react_client.dart';
 import 'package:react_web/state/alert_store.dart';
 import 'package:react_web/state/connection_manager.dart';
@@ -20,7 +23,9 @@ import 'package:react_web/state/fleet_scope.dart';
 import 'package:react_web/state/memory_fleet_storage.dart';
 import 'package:react_web/state/server_tags_store.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+import '../state/support/fake_react_client.dart';
+
+const ReactorStylesheet _sheet = ReactorStylesheet();
 
 Widget _wrap(Widget child) =>
     ArcaneThemeProvider(stylesheet: _sheet, child: child);
@@ -42,13 +47,31 @@ class _StubReactClient implements IReactClient {
   @override
   Future<IdentityInfo> identity() async => const IdentityInfo(
     serverName: 'Paper',
-    version: '1.21.11',
     folia: false,
     serverId: 'server-1',
   );
 
   @override
   Future<ServerSnapshot> metrics() => _snapshot.future;
+}
+
+/// Answers the fingerprint check and counts metrics requests, so a test can
+/// tell whether an entry's connection was started.
+class _PingingClient extends _StubReactClient implements IPingClient {
+  int metricsCalls = 0;
+
+  @override
+  Future<ServerCapabilities> ping() async => const ServerCapabilities(
+    protocolVersion: 2,
+    serverFingerprint: 'fp-paper',
+    relayAvailable: false,
+  );
+
+  @override
+  Future<ServerSnapshot> metrics() {
+    metricsCalls++;
+    return super.metrics();
+  }
 }
 
 FleetManager _fleetManager(InMemoryFleetStorage storage) => FleetManager(
@@ -153,6 +176,37 @@ void main() {
       expect(res.statusCode, 200);
     });
 
+    testServer('an ended pairing says so and offers a New link field', (
+      ServerTester tester,
+    ) async {
+      final FakeReactClient client = FakeReactClient();
+      client.metricsError = const ReactRevoked();
+      final ConnectionManager manager = ConnectionManager(client);
+      manager.start();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(manager.access, ConnAccess.revoked);
+
+      tester.pumpComponent(
+        _wrap(
+          LiveServerScope(
+            serverId: 'srv',
+            manager: manager,
+            child: const Text('page'),
+          ),
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+      manager.dispose();
+
+      expect(body, contains(ReactorText.pairEnded.english));
+      expect(body, contains(ReactorText.pairNewLink.english));
+      expect(
+        body,
+        isNot(contains(ReactorText.shellReconnect.english)),
+        reason: 'reconnecting cannot bring a revoked token back',
+      );
+    });
+
     testComponents('removing a tracked server clears its persisted state', (
       ComponentTester tester,
     ) async {
@@ -183,6 +237,59 @@ void main() {
       expect(AlertStore(storage).isResolved('${_credential.id}/mspt'), isFalse);
     });
 
+    testComponents('pairing a listed server again connects the new pairing', (
+      ComponentTester tester,
+    ) async {
+      final InMemoryFleetStorage storage = InMemoryFleetStorage();
+      final List<_PingingClient> clients = <_PingingClient>[];
+      final FleetManager fleet = FleetManager(
+        storage: storage,
+        clientFactory: (ServerCredential _) {
+          final _PingingClient client = _PingingClient();
+          clients.add(client);
+          return client;
+        },
+      );
+      final GlobalStateKey<ReactorFleetObserverState> key =
+          GlobalStateKey<ReactorFleetObserverState>();
+      tester.pumpComponent(
+        _wrap(ReactorFleetObserver(key: key, fleetManager: fleet)),
+      );
+      await tester.pump();
+      final ReactorFleetObserverState state = key.currentState!;
+
+      const ServerCredential paired = ServerCredential(
+        id: 'first',
+        label: 'Paper',
+        host: 'localhost',
+        port: 8111,
+        bearer: 'rct-1.first-signature',
+        fingerprint: 'fp-paper',
+      );
+      final String id = fleet.add(paired);
+      state.trackPaired(id);
+      await tester.pump();
+
+      const ServerCredential again = ServerCredential(
+        id: 'second',
+        label: 'Paper',
+        host: 'localhost',
+        port: 8111,
+        bearer: 'tok_second.second-secret',
+        fingerprint: 'fp-paper',
+      );
+      final String replaced = fleet.add(again);
+      state.trackPaired(replaced);
+      await tester.pump();
+
+      expect(replaced, id);
+      expect(
+        clients.last.metricsCalls,
+        greaterThan(0),
+        reason: 'the replacing entry must start its connection',
+      );
+    });
+
     testComponents(
       'removing an untracked server still clears its persisted state',
       (ComponentTester tester) async {
@@ -195,7 +302,7 @@ void main() {
           _wrap(ReactorFleetObserver(key: key, fleetManager: fleet)),
         );
         await tester.pump();
-        await fleet.add(_credential);
+        fleet.add(_credential);
         ServerTagsStore(storage).setTags(_credential.id, <String>['survival']);
         final ReactorFleetObserverState state = key.currentState!;
         state.alertStore.ack('${_credential.id}/tps');

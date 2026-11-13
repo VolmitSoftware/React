@@ -1,190 +1,221 @@
+/// Tuning > Worlds, below the chart: each world's tick budget and pressure.
+/// Advanced edits a world's budget, panic and release times in a sheet and
+/// sends them with Save.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
-import 'package:jaspr/jaspr.dart' show Component;
+import 'package:jaspr/jaspr.dart' show Component, ListenableBuilder;
 
-import '../model/role_info.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
+import '../model/knob.dart';
+import '../model/role_info.dart';
 import '../model/world_settings.dart';
 import '../service/react_client.dart';
 import '../state/connection_manager.dart';
-import '../state/control_scope.dart';
 import '../state/role_scope.dart';
 import '../state/server_scope.dart';
+import '../state/server_session.dart';
+import '../state/server_session_scope.dart';
 import '../state/world_overrides_controller.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/role_badge.dart';
+import '../ui/kit/action_row.dart';
+import '../ui/kit/alert.dart';
+import '../ui/kit/badge.dart';
+import '../ui/kit/data_list.dart';
+import '../ui/kit/mode.dart';
+import '../ui/kit/page.dart';
+import '../ui/kit/sheet.dart';
+import '../ui/kit/states.dart';
+import '../ui/error_text.dart';
+import '../widget/knob_editor.dart';
 
+/// Which of a world's times an edit sets.
+enum WorldBudget { budget, panic, release }
+
+String _ms(double value) =>
+    value == value.roundToDouble() ? value.toInt().toString() : '$value';
+
+Widget pressureBadge(PressureMode mode) => switch (mode) {
+  PressureMode.normal => StatusBadge(
+    reactorText(ReactorText.pressureNormal),
+    tone: BadgeTone.ok,
+  ),
+  PressureMode.pressure => StatusBadge(
+    reactorText(ReactorText.pressurePressure),
+    tone: BadgeTone.warning,
+  ),
+  PressureMode.panic => StatusBadge(
+    reactorText(ReactorText.pressurePanic),
+    tone: BadgeTone.error,
+  ),
+};
+
+/// The worlds as rows. [onEdit] adds an Edit button per row (Advanced);
+/// null leaves the list read only.
 class WorldOverridesView extends StatelessWidget {
-  final List<WorldSettings> worlds;
-  final void Function(
-    String name, {
-    double? budgetMs,
-    double? panicMs,
-    double? releaseMs,
-  })?
-  onSetBudget;
-  final bool readOnly;
-  final Widget? roleBadge;
-  final Widget? notice;
-
   const WorldOverridesView({
     required this.worlds,
-    this.onSetBudget,
-    this.readOnly = false,
-    this.roleBadge,
-    this.notice,
+    this.onEdit,
+    this.budgets = true,
     super.key,
   });
 
-  Widget _pressureBadge(PressureMode mode) {
-    return switch (mode) {
-      PressureMode.normal => reactorBadge(
-        reactorText(ReactorText.pressureNormal),
-        ReactorStatus.healthy,
+  final List<WorldSettings> worlds;
+  final void Function(String name)? onEdit;
+
+  /// The three times per world (Advanced, where they can be edited);
+  /// Simple lists each world and its state.
+  final bool budgets;
+
+  @override
+  Widget build(BuildContext context) {
+    dependOnReactorLocale(context);
+    final void Function(String)? edit = onEdit;
+    return DataList<WorldSettings>(
+      label: reactorText(ReactorText.worldOverridesTitle),
+      title: reactorText(ReactorText.worldOverridesTitle),
+      items: worlds,
+      emptyMessage: reactorText(ReactorText.worldOverridesNoWorlds),
+      columns: <ListColumn<WorldSettings>>[
+        ListColumn<WorldSettings>.text(
+          reactorText(ReactorText.worldOverridesColumnWorld),
+          (WorldSettings world) => world.name,
+          width: 'minmax(8rem, 1fr)',
+        ),
+        ListColumn<WorldSettings>(
+          reactorText(ReactorText.commonState),
+          (WorldSettings world) => pressureBadge(world.pressureMode),
+          width: '7rem',
+        ),
+        if (budgets) ...<ListColumn<WorldSettings>>[
+          ListColumn<WorldSettings>(
+            reactorText(ReactorText.worldOverridesBudgetMs),
+            (WorldSettings world) => Component.text(_ms(world.budgetMs)),
+            numeric: true,
+            width: '7rem',
+          ),
+          ListColumn<WorldSettings>(
+            reactorText(ReactorText.worldOverridesPanicMs),
+            (WorldSettings world) => Component.text(_ms(world.panicMs)),
+            numeric: true,
+            width: '7rem',
+          ),
+          ListColumn<WorldSettings>(
+            reactorText(ReactorText.worldOverridesReleaseMs),
+            (WorldSettings world) => Component.text(_ms(world.releaseMs)),
+            numeric: true,
+            width: '7rem',
+          ),
+        ],
+      ],
+      actions: edit != null
+          ? (WorldSettings world) => <RowAction>[
+              RowAction(
+                reactorText(ReactorText.worldOverridesEdit),
+                () => edit(world.name),
+                attributes: <String, String>{
+                  'aria-label':
+                      '${reactorText(ReactorText.worldOverridesEdit)} ${world.name}',
+                },
+              ),
+            ]
+          : null,
+    );
+  }
+}
+
+/// One world's three times, staged as they are typed and sent together by
+/// Save; Cancel drops them. A world the server changed meanwhile says so.
+class WorldBudgetSheet extends StatelessWidget {
+  const WorldBudgetSheet({
+    required this.world,
+    required this.onCancel,
+    this.onStage,
+    this.onSave,
+    this.changedOnServer = false,
+    super.key,
+  });
+
+  final WorldSettings? world;
+  final void Function() onCancel;
+
+  /// Null shows the fields disabled.
+  final void Function(String name, WorldBudget which, double value)? onStage;
+
+  /// Null while nothing is staged (or the role may not write).
+  final void Function()? onSave;
+  final bool changedOnServer;
+
+  Widget _field(WorldSettings world, WorldBudget which) {
+    final (String key, ReactorText label, double value) = switch (which) {
+      WorldBudget.budget => (
+        'budget',
+        ReactorText.worldOverridesBudgetMs,
+        world.budgetMs,
       ),
-      PressureMode.pressure => reactorBadge(
-        reactorText(ReactorText.pressurePressure),
-        ReactorStatus.warning,
+      WorldBudget.panic => (
+        'panic',
+        ReactorText.worldOverridesPanicMs,
+        world.panicMs,
       ),
-      PressureMode.panic => reactorBadge(
-        reactorText(ReactorText.pressurePanic),
-        ReactorStatus.critical,
+      WorldBudget.release => (
+        'release',
+        ReactorText.worldOverridesReleaseMs,
+        world.releaseMs,
       ),
     };
+    final void Function(String, WorldBudget, double)? stage = onStage;
+    return KnobEditor(
+      knob: Knob(
+        key: '${world.name}-$key',
+        label: reactorText(label),
+        type: KnobType.doubleType,
+        value: value,
+      ),
+      disabled: stage == null,
+      onChanged: stage == null
+          ? null
+          : (Object? next) {
+              if (next is num && next >= 0) {
+                stage(world.name, which, next.toDouble());
+              }
+            },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
-    if (worlds.isEmpty) {
-      return ReactorPage(
-        title: reactorText(ReactorText.worldOverridesTitle),
-        subtitle: reactorText(ReactorText.worldOverridesSubtitle),
-        leading: roleBadge,
-        children: <Widget>[
-          ?notice,
-          ReactorEmptyState(
-            title: reactorText(ReactorText.worldOverridesNoWorlds),
-            description: reactorText(
-              ReactorText.worldOverridesNoWorldsDescription,
-            ),
-            icon: ArcaneIcon.globe(size: IconSize.sm),
-          ),
-        ],
-      );
-    }
-    return ReactorPage(
-      title: reactorText(ReactorText.worldOverridesTitle),
-      subtitle: reactorText(ReactorText.worldOverridesSubtitle),
-      leading: roleBadge,
-      children: <Widget>[
-        ?notice,
-        SectionPanel(
-          label: reactorText(ReactorText.worldOverridesSection),
-          flush: true,
-          child: dom.div(
-            styles: const dom.Styles(
-              raw: <String, String>{
-                'display': 'flex',
-                'flex-direction': 'column',
-              },
-            ),
-            <Widget>[
-              for (final WorldSettings world in worlds) _worldRow(world),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _worldRow(WorldSettings world) {
-    return dom.section(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'flex-direction': 'column',
-          'gap': '0.65rem',
-          'padding': '0.7rem 0.75rem',
-          'border-bottom': '1px solid $kReactorHairline',
-        },
+    final WorldSettings? shown = world;
+    return Sheet(
+      open: shown != null,
+      title: shown?.name ?? '',
+      onClose: onCancel,
+      footer: DialogFooter(
+        cancel: RowAction(reactorText(ReactorText.commonCancel), onCancel),
+        primary: RowAction(reactorText(ReactorText.configEditorSave), onSave),
       ),
-      <Widget>[
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{
-              'display': 'flex',
-              'align-items': 'center',
-              'justify-content': 'space-between',
-              'gap': '0.75rem',
-            },
-          ),
-          <Widget>[
-            dom.strong(
-              styles: const dom.Styles(
-                raw: <String, String>{'font-size': '0.82rem'},
+      child: shown == null
+          ? const Component.fragment(<Widget>[])
+          : dom.div(classes: 'ui-stack', <Widget>[
+              if (changedOnServer)
+                AppAlert(
+                  tone: AlertTone.warning,
+                  message: reactorText(ReactorText.optimizationChangedOnServer),
+                ),
+              ArcaneFieldGroup(
+                children: <Widget>[
+                  for (final WorldBudget which in WorldBudget.values)
+                    _field(shown, which),
+                ],
               ),
-              <Widget>[Component.text(world.name)],
-            ),
-            _pressureBadge(world.pressureMode),
-          ],
-        ),
-        dom.div(
-          styles: const dom.Styles(
-            raw: <String, String>{
-              'display': 'grid',
-              'grid-template-columns': 'repeat(auto-fit, minmax(180px, 1fr))',
-              'gap': '0.65rem',
-            },
-          ),
-          <Widget>[
-            _numberField(
-              label: reactorText(ReactorText.worldOverridesBudgetMs),
-              value: world.budgetMs,
-              onValue: (double value) =>
-                  onSetBudget?.call(world.name, budgetMs: value),
-            ),
-            _numberField(
-              label: reactorText(ReactorText.worldOverridesPanicMs),
-              value: world.panicMs,
-              onValue: (double value) =>
-                  onSetBudget?.call(world.name, panicMs: value),
-            ),
-            _numberField(
-              label: reactorText(ReactorText.worldOverridesReleaseMs),
-              value: world.releaseMs,
-              onValue: (double value) =>
-                  onSetBudget?.call(world.name, releaseMs: value),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _numberField({
-    required String label,
-    required double value,
-    required void Function(double value) onValue,
-  }) {
-    return TextInput(
-      label: label,
-      type: TextInputType.number,
-      value: value.toString(),
-      disabled: readOnly,
-      onChanged: readOnly
-          ? null
-          : (String input) {
-              final double? parsed = double.tryParse(input.trim());
-              if (parsed != null) onValue(parsed);
-            },
+            ]),
     );
   }
 }
 
+/// The worlds of the server the page belongs to, from its session.
 class WorldOverridesScreen extends StatefulWidget {
   const WorldOverridesScreen({super.key});
 
@@ -193,120 +224,113 @@ class WorldOverridesScreen extends StatefulWidget {
 }
 
 class _WorldOverridesScreenState extends State<WorldOverridesScreen> {
-  IControlClient? _client;
-  WorldOverridesController? _controller;
-  bool _started = false;
+  String? _editing;
+
+  /// The session the view state belongs to; another server starts over.
+  String? _session;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final IControlClient? c = ControlScope.of(context)?.client;
-    if (c != null && !_started) {
-      _started = true;
-      _client = c;
-      _controller = WorldOverridesController(
-        c,
-        onChange: () => setState(() {}),
-        onError: (Object e) => ArcaneSonner.error(
-          reactorText(ReactorText.commonUpdateFailed),
-          description: localizedReactorError(e),
-        ),
+    final String? session = ServerSessionScope.of(context)?.key;
+    if (session == _session) return;
+    _session = session;
+    _editing = null;
+  }
+
+  bool get _live => ServerScope.of(context)?.state == ConnState.live;
+
+  void _stage(
+    WorldOverridesController controller,
+    String name,
+    WorldBudget which,
+    double value,
+  ) => switch (which) {
+    WorldBudget.budget => controller.stageBudget(name, budgetMs: value),
+    WorldBudget.panic => controller.stageBudget(name, panicMs: value),
+    WorldBudget.release => controller.stageBudget(name, releaseMs: value),
+  };
+
+  Future<void> _save(WorldOverridesController controller, String name) async {
+    setState(() => _editing = null);
+    if (!_live) return;
+    final Object? error = await controller.commitBudget(name);
+    if (error != null && mounted) {
+      ArcaneSonner.error(
+        reactorText(ReactorText.commonUpdateFailed),
+        description: localizedReactorError(error),
       );
-      _controller!.load();
     }
+  }
+
+  void _cancel(WorldOverridesController controller, String name) {
+    controller.discardBudget(name);
+    setState(() => _editing = null);
   }
 
   @override
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
-    final ServerScope? server = ServerScope.of(context);
-    if (server?.state == ConnState.connecting && _client == null) {
-      return _statePage(
-        ReactorLoadingState(
-          label: reactorText(ReactorText.commonLoadingWorlds),
-        ),
-      );
+    final ServerSession? session = ServerSessionScope.of(context);
+    if (session == null || !session.supports<IControlClient>()) {
+      return ServerScope.of(context)?.state == ConnState.connecting
+          ? LoadingState(label: reactorText(ReactorText.commonLoadingWorlds))
+          : EmptyState(
+              message: reactorText(ReactorText.worldOverridesUnavailable),
+              description: reactorText(ReactorText.worldOverridesLiveRequired),
+            );
     }
-    if (_client == null) {
-      return _statePage(
-        ReactorNotice(
-          title: reactorText(ReactorText.worldOverridesUnavailable),
-          message: reactorText(ReactorText.worldOverridesLiveRequired),
-          status: ReactorStatus.critical,
-        ),
-      );
-    }
-
-    final WorldOverridesController controller = _controller!;
-
-    if (controller.loading && controller.worlds.isEmpty) {
-      return _statePage(
-        ReactorLoadingState(
-          label: reactorText(ReactorText.commonLoadingWorlds),
-        ),
-      );
-    }
-
-    final Object? error = controller.error;
-    if (error != null && controller.worlds.isEmpty) {
-      return _statePage(
-        ReactorNotice(
-          title: reactorText(ReactorText.commonUpdateFailed),
-          message: localizedReactorError(error),
-          status: ReactorStatus.critical,
-          action: Button.secondary(
-            label: reactorText(ReactorText.commonRetry),
-            size: ButtonSize.small,
-            onPressed: controller.load,
-          ),
-        ),
-      );
-    }
-
-    final RoleInfo? role = RoleScope.of(context)?.role;
-    final bool readOnly = readOnlyFor(role) || server?.state != ConnState.live;
-
-    final Widget? notice = error != null
-        ? ReactorNotice(
-            title: reactorText(ReactorText.commonUpdateFailed),
-            message: localizedReactorError(error),
-            status: ReactorStatus.warning,
-            action: Button.secondary(
-              label: reactorText(ReactorText.commonRetry),
-              size: ButtonSize.small,
-              onPressed: controller.load,
-            ),
-          )
-        : null;
-    return WorldOverridesView(
-      worlds: controller.worlds,
-      readOnly: readOnly,
-      roleBadge: RoleBadge(role: role),
-      notice: notice,
-      onSetBudget: readOnly
-          ? null
-          : (
-              String name, {
-              double? budgetMs,
-              double? panicMs,
-              double? releaseMs,
-            }) {
-              if (ServerScope.of(context)?.state != ConnState.live) return;
-              controller.setBudget(
-                name,
-                budgetMs: budgetMs,
-                panicMs: panicMs,
-                releaseMs: releaseMs,
-              );
-            },
+    final WorldOverridesController controller = session.worlds;
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (BuildContext context) => _body(context, controller),
     );
   }
 
-  Widget _statePage(Widget state) {
-    return ReactorPage(
-      title: reactorText(ReactorText.worldOverridesTitle),
-      subtitle: reactorText(ReactorText.worldOverridesSubtitle),
-      children: <Widget>[state],
+  Widget _body(BuildContext context, WorldOverridesController controller) {
+    if (controller.loading && controller.worlds.isEmpty) {
+      return LoadingState(label: reactorText(ReactorText.commonLoadingWorlds));
+    }
+    final Object? error = controller.error;
+    if (error != null && controller.worlds.isEmpty) {
+      return ErrorState(
+        title: reactorText(ReactorText.worldOverridesUnavailable),
+        message: localizedReactorError(error),
+        onRetry: controller.load,
+      );
+    }
+    final RoleInfo? role = RoleScope.of(context)?.role;
+    final bool writable = _live && !readOnlyFor(role);
+    final bool advanced = ModeScope.advanced(context);
+    WorldSettings? editing;
+    for (final WorldSettings world in controller.worlds) {
+      if (world.name == _editing) editing = world;
+    }
+    final String? name = editing?.name;
+    return PageStack(
+      children: <Widget>[
+        WorldOverridesView(
+          worlds: controller.worlds,
+          budgets: advanced,
+          onEdit: advanced
+              ? (String name) => setState(() => _editing = name)
+              : null,
+        ),
+        WorldBudgetSheet(
+          world: advanced ? editing : null,
+          changedOnServer: name != null && controller.changedOnServer(name),
+          onCancel: name == null
+              ? () => setState(() => _editing = null)
+              : () => _cancel(controller, name),
+          onStage: writable
+              ? (String world, WorldBudget which, double value) =>
+                    _stage(controller, world, which, value)
+              : null,
+          onSave: writable && name != null && controller.hasStaged(name)
+              ? () => _save(controller, name)
+              : null,
+        ),
+      ],
     );
   }
 }

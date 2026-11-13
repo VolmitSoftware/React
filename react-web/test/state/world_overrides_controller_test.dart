@@ -104,8 +104,7 @@ void main() {
       int notifyCount = 0;
       final WorldOverridesController controller = WorldOverridesController(
         client,
-        onChange: () => notifyCount++,
-      );
+      )..addListener(() => notifyCount++);
 
       await controller.load();
 
@@ -117,23 +116,20 @@ void main() {
       expect(notifyCount, greaterThanOrEqualTo(2));
     });
 
-    test('sets error and calls onError on failure', () async {
+    test('sets error and reports the error on failure', () async {
       final _FakeControlClient client = _FakeControlClient();
       client.throwOnWorlds = true;
-      Object? capturedError;
       int notifyCount = 0;
       final WorldOverridesController controller = WorldOverridesController(
         client,
-        onChange: () => notifyCount++,
-        onError: (Object e) => capturedError = e,
-      );
+      )..addListener(() => notifyCount++);
 
       await controller.load();
 
       expect(controller.worlds, isEmpty);
       expect(controller.loading, isFalse);
       expect(controller.error, isA<ReactUnavailable>());
-      expect(capturedError, isA<ReactUnavailable>());
+      expect(controller.error, isA<ReactUnavailable>());
       expect(notifyCount, greaterThanOrEqualTo(2));
     });
   });
@@ -145,13 +141,12 @@ void main() {
       client.worldsResult = <WorldSettings>[
         _world('overworld', budgetMs: 50.0),
       ];
-      client.onSetWorld =
-          (
-            String name, {
-            double? budgetMs,
-            double? panicMs,
-            double? releaseMs,
-          }) => completer.future;
+      client.onSetWorld = (
+        String name, {
+        double? budgetMs,
+        double? panicMs,
+        double? releaseMs,
+      }) => completer.future;
 
       final WorldOverridesController controller = WorldOverridesController(
         client,
@@ -189,13 +184,12 @@ void main() {
         _world('overworld', budgetMs: 50.0),
       ];
       final WorldSettings serverResult = _world('overworld', budgetMs: 75.0);
-      client.onSetWorld =
-          (
-            String name, {
-            double? budgetMs,
-            double? panicMs,
-            double? releaseMs,
-          }) async => serverResult;
+      client.onSetWorld = (
+        String name, {
+        double? budgetMs,
+        double? panicMs,
+        double? releaseMs,
+      }) async => serverResult;
 
       final WorldOverridesController controller = WorldOverridesController(
         client,
@@ -214,27 +208,27 @@ void main() {
 
   group('WorldOverridesController.setBudget rollback', () {
     test(
-      'restores previous budgetMs and calls onError on server failure',
+      'restores previous budgetMs and reports the error on server failure',
       () async {
         final _FakeControlClient client = _FakeControlClient();
         client.worldsResult = <WorldSettings>[
           _world('overworld', budgetMs: 50.0),
         ];
-        client.onSetWorld =
-            (
-              String name, {
-              double? budgetMs,
-              double? panicMs,
-              double? releaseMs,
-            }) async => throw const ReactConflict();
+        client.onSetWorld = (
+          String name, {
+          double? budgetMs,
+          double? panicMs,
+          double? releaseMs,
+        }) async => throw const ReactConflict();
 
-        Object? capturedError;
         final WorldOverridesController controller = WorldOverridesController(
           client,
-          onError: (Object e) => capturedError = e,
         );
         await controller.load();
-        await controller.setBudget('overworld', budgetMs: 75.0);
+        final Object? capturedError = await controller.setBudget(
+          'overworld',
+          budgetMs: 75.0,
+        );
 
         expect(
           controller.worlds

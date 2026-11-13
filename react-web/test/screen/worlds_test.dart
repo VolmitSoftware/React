@@ -1,127 +1,83 @@
 library;
 
-import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr_router/jaspr_router.dart';
+import 'package:jaspr/jaspr.dart' show GlobalStateKey;
+import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:jaspr_test/server_test.dart';
 
-import 'package:react_web/app/reactor_app.dart';
-import 'package:react_web/model/sampler_sample.dart';
-import 'package:react_web/model/server_snapshot.dart';
+import 'package:react_web/chart/timeseries_chart.dart';
 import 'package:react_web/screen/worlds.dart';
 import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/server_scope.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
-
-SamplerSample _sample(
-  String id,
-  double value, {
-  String suffix = 'ms',
-  double max = 50.0,
-}) => SamplerSample(
-  id: id,
-  name: id,
-  value: value,
-  display: value.toString(),
-  suffix: suffix,
-  min: 0.0,
-  max: max,
-  history: <double>[value, value * 0.9, value * 1.1],
-);
-
-ServerSnapshot _fakeSnapshot() {
-  final List<SamplerSample> samples = <SamplerSample>[
-    _sample('top-world-mspt', 18.2),
-    _sample('per-world-tick-time', 12.5),
-    _sample('top-chunk-cost', 2.1),
-  ];
-  final Map<String, SamplerSample> byId = <String, SamplerSample>{
-    for (final SamplerSample s in samples) s.id: s,
-  };
-  return ServerSnapshot(byId: byId, at: DateTime.now(), seq: 1);
-}
-
-Widget _wrap(Widget child) => ArcaneThemeProvider(
-  stylesheet: _sheet,
-  child: ServerScope(
-    snapshot: _fakeSnapshot(),
-    state: ConnState.live,
-    child: child,
-  ),
-);
+import 'support/operate_fakes.dart';
 
 void main() {
   group('WorldsScreen', () {
-    testServer('renders Top World MSPT section heading', (
+    testServer('draws world tick time as a chart in its card', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const WorldsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Top World MSPT'),
-        isTrue,
-        reason: 'Top World MSPT section heading must appear in rendered HTML',
+      tester.pumpComponent(
+        serverScopes(
+          FakeServer(
+            snapshot: snapshotWith(<String, double>{
+              'top-world-mspt': 18.2,
+              'per-world-tick-time': 9.5,
+            }),
+          ),
+          const WorldsScreen(),
+        ),
       );
+      final DocumentResponse res = await tester.request('/');
+      expect(res.statusCode, 200);
+      expect(res.body, contains(ReactorText.commonTopWorldMspt.english));
+      expect(res.body, contains('data-chart-card'));
+      expect(res.body, contains('role="img"'));
+      expect(res.body, contains('Top world MSPT'));
+      expect(res.body, contains('ms'));
     });
 
-    testServer('renders Per-World Tick Time stat tile label', (
+    testServer('waits for the first snapshot while connecting', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const WorldsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Per-World Tick Time'),
-        isTrue,
-        reason:
-            'Per-World Tick Time stat tile label must appear in rendered HTML',
+      tester.pumpComponent(
+        serverScopes(
+          FakeServer(),
+          const WorldsScreen(),
+          state: ConnState.connecting,
+        ),
       );
+      final DocumentResponse res = await tester.request('/');
+      expect(res.body, contains('ui-loading'));
     });
 
-    testServer('renders top-world-mspt value 18.2', (
-      ServerTester tester,
+    testComponents('shows the new server after a switch', (
+      ComponentTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const WorldsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('18.2'),
-        isTrue,
-        reason: 'top-world-mspt value 18.2 must appear in rendered HTML',
+      final GlobalStateKey<ServerSwitcherState> key =
+          GlobalStateKey<ServerSwitcherState>();
+      tester.pumpComponent(
+        ServerSwitcher(
+          key: key,
+          servers: <FakeServer>[
+            FakeServer(
+              snapshot: snapshotWith(<String, double>{'top-world-mspt': 11}),
+            ),
+            FakeServer(
+              snapshot: snapshotWith(<String, double>{
+                'top-world-mspt': 77,
+              }, seq: 2),
+            ),
+          ],
+          child: const WorldsScreen(),
+        ),
       );
-    });
-
-    testServer('renders deferred breakdown placeholder text', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrap(const WorldsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Per-world tick budgets moved to World Overrides'),
-        isTrue,
-        reason: 'deferred breakdown placeholder must appear in rendered HTML',
-      );
-    });
-  });
-
-  group('WorldsScreen route wiring', () {
-    test('kRouteServerWorlds constant is correct', () {
-      expect(kRouteServerWorlds, equals('/server/:id/worlds'));
-    });
-
-    test('buildReactorRoutes includes server worlds route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasWorlds = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerWorlds,
-      );
-      expect(
-        hasWorlds,
-        isTrue,
-        reason: 'per-server Worlds tab requires /server/:id/worlds route',
-      );
+      await tester.pump();
+      TimeseriesChart chart() =>
+          find.byType(TimeseriesChart).evaluate().single.component
+              as TimeseriesChart;
+      expect(chart().series.first.$2.last, 11);
+      key.currentState!.show(1);
+      await tester.pump();
+      expect(chart().series.first.$2.last, 77);
     });
   });
 }

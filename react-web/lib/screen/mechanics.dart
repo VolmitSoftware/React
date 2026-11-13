@@ -1,17 +1,19 @@
+/// Activity > Mechanics: redstone, hoppers, physics and fluids, and what
+/// React's optimizations saved.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 
-import '../chart/timeseries_chart.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/section_card.dart';
+import '../ui/kit/metric_tile.dart';
+import '../ui/kit/page.dart';
+import '../ui/kit/section.dart';
 import '../widget/server_snapshot_state.dart';
-import '../widget/stat_tile.dart';
+import 'monitor_parts.dart';
 
 class MechanicsScreen extends StatelessWidget {
   const MechanicsScreen({super.key});
@@ -21,151 +23,82 @@ class MechanicsScreen extends StatelessWidget {
     dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    final Widget? statePage = serverSnapshotStatePage(
-      scope: scope,
-      title: reactorText(ReactorText.mechanicsTitle),
-      subtitle: reactorText(ReactorText.mechanicsSubtitle),
-    );
-    if (snapshot == null) return statePage!;
+    if (snapshot == null) return serverSnapshotState(scope: scope);
 
-    final SamplerSample? redstone = snapshot.sampler('redstone');
-    final SamplerSample? redstoneBurstRate = snapshot.sampler(
-      'redstone-burst-rate',
-    );
-    final SamplerSample? redstoneEventSpan = snapshot.sampler(
-      'redstone-event-span',
+    MetricTile tile(ReactorText label, String id) =>
+        samplerTile(reactorText(label), snapshot.sampler(id));
+
+    final SamplerSample? redstoneSpan = snapshot.sampler('redstone-event-span');
+    final String redstoneSpanLabel = reactorText(
+      ReactorText.mechanicsRedstoneEventSpan,
     );
 
-    final SamplerSample? hopper = snapshot.sampler('hopper');
-    final SamplerSample? hopperEventSpan = snapshot.sampler(
-      'hopper-event-span',
-    );
-    final SamplerSample? hopperChainCoalescing = snapshot.sampler(
-      'hopper-chain-coalescing',
-    );
-
-    final SamplerSample? physics = snapshot.sampler('physics');
-    final SamplerSample? physicsEventSpan = snapshot.sampler(
-      'physics-event-span',
-    );
-    final SamplerSample? fluid = snapshot.sampler('fluid');
-    final SamplerSample? fluidEventSpan = snapshot.sampler('fluid-event-span');
-
-    final SamplerSample? cropFastForward = snapshot.sampler(
-      'crop-fast-forward',
-    );
-    final SamplerSample? lazyGravitySkipped = snapshot.sampler(
-      'lazy-gravity-skipped',
-    );
-    final SamplerSample? spawnerLightCacheSkipped = snapshot.sampler(
-      'spawner-light-cache-skipped',
-    );
-    final SamplerSample? explosionPacketReduction = snapshot.sampler(
-      'explosion-packet-reduction',
-    );
-
-    final List<(String, List<double>)> redstoneEventSeries =
-        <(String, List<double>)>[
-          (
-            redstoneEventSpan?.name ??
-                reactorText(ReactorText.mechanicsRedstoneEventSpan),
-            redstoneEventSpan?.history ?? const <double>[],
-          ),
-        ];
-
-    return ReactorPage(
-      title: reactorText(ReactorText.mechanicsTitle),
-      subtitle: reactorText(ReactorText.mechanicsSubtitle),
+    return PageStack(
       children: <Widget>[
-        SectionPanel(
-          label: reactorText(ReactorText.commonRedstone),
+        PageSection(
+          title: reactorText(ReactorText.commonRedstone),
           children: <Widget>[
-            TimeseriesChart(series: redstoneEventSeries, height: 120),
-            statGrid(<Widget>[
-              StatTile(
-                label: reactorText(ReactorText.commonRedstone),
-                sample: redstone,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.mechanicsBurstRate),
-                sample: redstoneBurstRate,
-              ),
-              StatTile(
-                label:
-                    redstoneEventSpan?.name ??
-                    reactorText(ReactorText.mechanicsRedstoneEventSpan),
-                sample: redstoneEventSpan,
-              ),
-            ]),
+            MetricGrid(
+              children: <Widget>[
+                tile(ReactorText.mechanicsUpdates, 'redstone'),
+                tile(ReactorText.mechanicsBurstRate, 'redstone-burst-rate'),
+                samplerTile(redstoneSpanLabel, redstoneSpan),
+              ],
+            ),
           ],
         ),
-        SectionPanel(
-          label: reactorText(ReactorText.commonHoppers),
-          flush: true,
-          child: statGrid(<Widget>[
-            StatTile(
-              label: reactorText(ReactorText.commonHoppers),
-              sample: hopper,
+        PageSection(
+          title: reactorText(ReactorText.commonHoppers),
+          children: <Widget>[
+            MetricGrid(
+              children: <Widget>[
+                tile(ReactorText.mechanicsUpdates, 'hopper'),
+                tile(ReactorText.mechanicsHopperEventSpan, 'hopper-event-span'),
+                tile(
+                  ReactorText.mechanicsChainCoalescing,
+                  'hopper-chain-coalescing',
+                ),
+              ],
             ),
-            StatTile(
-              label:
-                  hopperEventSpan?.name ??
-                  reactorText(ReactorText.mechanicsHopperEventSpan),
-              sample: hopperEventSpan,
-            ),
-            StatTile(
-              label: reactorText(ReactorText.mechanicsChainCoalescing),
-              sample: hopperChainCoalescing,
-            ),
-          ]),
+          ],
         ),
-        SectionPanel(
-          label: reactorText(ReactorText.mechanicsPhysicsFluids),
-          flush: true,
-          child: statGrid(<Widget>[
-            StatTile(
-              label: reactorText(ReactorText.commonPhysics),
-              sample: physics,
+        PageSection(
+          title: reactorText(ReactorText.mechanicsPhysicsFluids),
+          children: <Widget>[
+            MetricGrid(
+              children: <Widget>[
+                tile(ReactorText.commonPhysics, 'physics'),
+                tile(
+                  ReactorText.mechanicsPhysicsEventSpan,
+                  'physics-event-span',
+                ),
+                tile(ReactorText.commonFluid, 'fluid'),
+                tile(ReactorText.mechanicsFluidEventSpan, 'fluid-event-span'),
+              ],
             ),
-            StatTile(
-              label:
-                  physicsEventSpan?.name ??
-                  reactorText(ReactorText.mechanicsPhysicsEventSpan),
-              sample: physicsEventSpan,
-            ),
-            StatTile(
-              label: reactorText(ReactorText.commonFluid),
-              sample: fluid,
-            ),
-            StatTile(
-              label:
-                  fluidEventSpan?.name ??
-                  reactorText(ReactorText.mechanicsFluidEventSpan),
-              sample: fluidEventSpan,
-            ),
-          ]),
+          ],
         ),
-        SectionPanel(
-          label: reactorText(ReactorText.commonOptimizations),
-          flush: true,
-          child: statGrid(<Widget>[
-            StatTile(
-              label: reactorText(ReactorText.mechanicsCropFastForward),
-              sample: cropFastForward,
+        PageSection(
+          title: reactorText(ReactorText.commonOptimizations),
+          children: <Widget>[
+            MetricGrid(
+              children: <Widget>[
+                tile(ReactorText.mechanicsCropFastForward, 'crop-fast-forward'),
+                tile(
+                  ReactorText.mechanicsLazyGravitySkipped,
+                  'lazy-gravity-skipped',
+                ),
+                tile(
+                  ReactorText.mechanicsSpawnerLightCacheSkipped,
+                  'spawner-light-cache-skipped',
+                ),
+                tile(
+                  ReactorText.mechanicsExplosionPacketReduction,
+                  'explosion-packet-reduction',
+                ),
+              ],
             ),
-            StatTile(
-              label: reactorText(ReactorText.mechanicsLazyGravitySkipped),
-              sample: lazyGravitySkipped,
-            ),
-            StatTile(
-              label: reactorText(ReactorText.mechanicsSpawnerLightCacheSkipped),
-              sample: spawnerLightCacheSkipped,
-            ),
-            StatTile(
-              label: reactorText(ReactorText.mechanicsExplosionPacketReduction),
-              sample: explosionPacketReduction,
-            ),
-          ]),
+          ],
         ),
       ],
     );

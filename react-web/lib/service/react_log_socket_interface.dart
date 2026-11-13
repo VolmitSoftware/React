@@ -1,10 +1,10 @@
 library;
 
-import '../model/server_credential.dart';
+import '../model/log_line.dart';
 
 abstract interface class ILogSocket {
-  Stream<String> get lines;
+  /// Batches in server order. Ends when the socket closes; a revoked token
+  /// surfaces as a `ReactRevoked` error first.
+  Stream<LogBatch> get batches;
   Future<void> close();
 }
-
-typedef LogSocketFactory = ILogSocket Function(ServerCredential cred);

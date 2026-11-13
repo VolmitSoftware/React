@@ -25,7 +25,6 @@ public class WebControllerIdentityTest {
             @Override
             protected IdentityDto resolveIdentity() {
                 IdentityDto dto = new IdentityDto();
-                dto.version = "0.0.0-test";
                 dto.serverName = "TestServer";
                 dto.folia = false;
                 dto.serverId = "127.0.0.1:25565";

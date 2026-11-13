@@ -1,42 +1,88 @@
+/// Server group > Compare: one metric across the live servers, best first
+/// ([MetricPolarity]): where lower is better (tick time, memory, incident
+/// score, GC, ping) the lowest value ranks first and the highest is flagged.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr/component/input/native_select.dart';
-import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
-import '../chart/timeseries_chart.dart';
+import '../app/paths.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
+import '../model/metric_polarity.dart';
+import '../model/reading.dart';
 import '../model/sampler_sample.dart';
-import '../state/connection_manager.dart';
+import '../model/units.dart';
 import '../state/fleet_live_scope.dart';
 import '../state/fleet_rollup.dart';
-import '../ui/reactor_ui.dart';
+import '../ui/kit/action_row.dart';
+import '../ui/kit/card.dart';
+import '../ui/kit/data_list.dart';
+import '../ui/kit/states.dart';
+import 'form_parts.dart';
 
-const List<String> _kComparableMetrics = <String>[
-  'ticks-per-second',
-  'tick-time',
-  'players',
-  'entities',
-  'chunks',
-  'memory-used',
-  'incident-score',
-  'gc-time-percent',
-  'player-ping-p95',
+/// A metric the servers can be compared on, by its sampler id.
+typedef ComparableMetric = ({String id, ReactorText label});
+
+const List<ComparableMetric> comparableMetrics = <ComparableMetric>[
+  (id: 'ticks-per-second', label: ReactorText.overviewTps),
+  (id: 'tick-time', label: ReactorText.commonTickTime),
+  (id: 'players', label: ReactorText.commonPlayers),
+  (id: 'entities', label: ReactorText.commonEntities),
+  (id: 'chunks', label: ReactorText.commonChunks),
+  (id: 'memory-used', label: ReactorText.commonMemoryUsed),
+  (id: 'incident-score', label: ReactorText.commonIncidentScore),
+  (id: 'gc-time-percent', label: ReactorText.commonGcTime),
+  (id: 'player-ping-p95', label: ReactorText.commonPingP95),
 ];
 
-typedef _ServerMetricEntry = ({
-  String id,
-  String name,
-  double value,
-  String display,
-  String suffix,
-  List<double> history,
-});
+/// One server's reading of the picked metric.
+typedef MetricReading = ({String id, String name, SamplerSample sample});
 
-bool _hasComparableSnapshot(FleetServerLive server) =>
-    currentFleetSnapshot(server) != null;
+/// The readings of [metricId] on [servers], one per server: an entry paired
+/// twice (two tokens) is read once.
+List<MetricReading> readMetric(List<FleetServerLive> servers, String metricId) {
+  final Set<String> seen = <String>{};
+  return <MetricReading>[
+    for (final FleetServerLive server in servers)
+      if (currentFleetSnapshot(server)?.sampler(metricId)
+          case final SamplerSample sample when seen.add(server.serverKey))
+        (id: server.id, name: server.name, sample: sample),
+  ];
+}
+
+/// [readings] of [metricId] best first: lowest first where lower is better.
+/// Servers that read the same on screen ("20" and "20") are a tie and stay
+/// in name order, so the list does not reshuffle on noise.
+List<MetricReading> rankReadings(
+  List<MetricReading> readings,
+  String metricId,
+) => List<MetricReading>.of(readings)
+  ..sort((MetricReading a, MetricReading b) {
+    if (readingOf(a.sample).text == readingOf(b.sample).text) {
+      return a.name.compareTo(b.name);
+    }
+    final int byValue = MetricPolarity.compareBestFirst(
+      metricId,
+      a.sample.value,
+      b.sample.value,
+    );
+    return byValue != 0 ? byValue : a.name.compareTo(b.name);
+  });
+
+/// The rank of each of [ranked] (from [rankReadings]): a tie shares the
+/// rank, and the next one skips past it (1, 1, 3).
+List<int> competitionRanks(List<MetricReading> ranked) {
+  final List<int> ranks = <int>[];
+  for (int index = 0; index < ranked.length; index++) {
+    final bool tie =
+        index > 0 &&
+        readingOf(ranked[index].sample).text ==
+            readingOf(ranked[index - 1].sample).text;
+    ranks.add(tie ? ranks.last : index + 1);
+  }
+  return ranks;
+}
 
 class ComparisonScreen extends StatefulWidget {
   const ComparisonScreen({super.key});
@@ -46,277 +92,100 @@ class ComparisonScreen extends StatefulWidget {
 }
 
 class _ComparisonScreenState extends State<ComparisonScreen> {
-  String _selectedMetric = 'ticks-per-second';
-  Set<String>? _selectedServerIds;
+  static const String _metricSelectId = 'compare-metric';
+
+  String _metricId = comparableMetrics.first.id;
 
   @override
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
     final List<FleetServerLive> servers =
-        FleetLiveScope.of(context)?.servers ?? <FleetServerLive>[];
-
-    final Set<String> selectedIds =
-        _selectedServerIds ?? servers.map((FleetServerLive s) => s.id).toSet();
-
-    final Set<String> presentMetrics = <String>{};
-    for (final FleetServerLive srv in servers) {
-      if (_hasComparableSnapshot(srv)) {
-        for (final String id in _kComparableMetrics) {
-          if (srv.snapshot!.sampler(id) != null) presentMetrics.add(id);
-        }
-      }
-    }
-
-    final List<String> availableMetrics = _kComparableMetrics
-        .where((String m) => presentMetrics.contains(m))
-        .toList();
-    final List<_ServerMetricEntry> activeEntries = servers
-        .where(
-          (FleetServerLive s) =>
-              selectedIds.contains(s.id) &&
-              _hasComparableSnapshot(s) &&
-              s.snapshot?.sampler(_selectedMetric) != null,
-        )
-        .map((FleetServerLive s) {
-          final SamplerSample sample = s.snapshot!.sampler(_selectedMetric)!;
-          return (
-            id: s.id,
-            name: s.name,
-            value: sample.value,
-            display: sample.display,
-            suffix: sample.suffix,
-            history: sample.history,
-          );
-        })
-        .toList();
-
-    final List<_ServerMetricEntry> leaderboard =
-        List<_ServerMetricEntry>.from(activeEntries)..sort(
-          (_ServerMetricEntry a, _ServerMetricEntry b) =>
-              b.value.compareTo(a.value),
-        );
-
-    final List<(String, List<double>)> chartSeries = activeEntries
-        .map((_ServerMetricEntry e) => (e.name, e.history))
-        .toList();
-
-    final bool isEmpty = activeEntries.isEmpty;
-    final int selectedServerCount = servers
-        .where((FleetServerLive server) => selectedIds.contains(server.id))
-        .length;
-    final int selectedComparableCount = servers
-        .where(
-          (FleetServerLive server) =>
-              selectedIds.contains(server.id) && _hasComparableSnapshot(server),
-        )
-        .length;
-    final int selectedUnavailableCount =
-        selectedServerCount - selectedComparableCount;
-
-    return ReactorPage(
-      title: reactorText(ReactorText.comparisonTitle),
-      subtitle: reactorText(ReactorText.comparisonSubtitle),
-      actions: _metricFilter(availableMetrics),
-      children: <Widget>[
-        SectionPanel(
-          label: reactorText(ReactorText.comparisonServers),
-          description: servers.isEmpty
-              ? reactorText(ReactorText.comparisonPairServers)
-              : selectedUnavailableCount > 0
-              ? reactorText(
-                  ReactorText.comparisonSelectionWithUnavailable,
-                  <String, Object?>{
-                    'selected': selectedServerCount,
-                    'total': servers.length,
-                    'unavailable': selectedUnavailableCount,
-                  },
-                )
-              : reactorText(
-                  ReactorText.comparisonSelectedCount,
-                  <String, Object?>{
-                    'selected': selectedServerCount,
-                    'total': servers.length,
-                  },
-                ),
-          flush: true,
-          children: <Widget>[
-            _serverSelector(servers: servers, selectedIds: selectedIds),
-            if (isEmpty)
-              ReactorEmptyState(
-                title: servers.isEmpty
-                    ? reactorText(ReactorText.comparisonNoServers)
-                    : selectedServerCount == 0
-                    ? reactorText(ReactorText.comparisonNoneSelected)
-                    : reactorText(ReactorText.comparisonNoData),
-                description: servers.isEmpty
-                    ? reactorText(ReactorText.comparisonPairOne)
-                    : selectedServerCount == 0
-                    ? reactorText(ReactorText.comparisonSelectServers)
-                    : selectedComparableCount == 0
-                    ? reactorText(ReactorText.comparisonOfflineOrWaiting)
-                    : reactorText(ReactorText.comparisonMetricMissing),
-              )
-            else ...<Widget>[
-              dom.div(classes: 'reactor-comparison-ranking', <Widget>[
-                dom.div(classes: 'reactor-subsection-heading', <Widget>[
-                  reactorEyebrow(
-                    reactorText(ReactorText.comparisonLeaderboard),
-                  ),
-                ]),
-                _leaderboardTable(leaderboard),
-              ]),
-              dom.div(classes: 'reactor-comparison-chart', <Widget>[
-                dom.div(classes: 'reactor-subsection-heading', <Widget>[
-                  reactorEyebrow(reactorText(ReactorText.comparisonOverlay)),
-                ]),
-                TimeseriesChart(series: chartSeries, height: 240),
-              ]),
-            ],
-          ],
-        ),
-      ],
+        FleetLiveScope.of(context)?.servers ?? const <FleetServerLive>[];
+    final ComparableMetric metric = comparableMetrics.firstWhere(
+      (ComparableMetric each) => each.id == _metricId,
     );
-  }
+    final List<MetricReading> readings = readMetric(servers, metric.id);
+    final List<MetricReading> ranked = rankReadings(readings, metric.id);
+    final List<int> ranks = competitionRanks(ranked);
+    final MetricPolarity polarity = MetricPolarity.of(metric.id);
 
-  Widget _metricFilter(List<String> availableMetrics) {
-    return dom.div(
-      styles: const dom.Styles(
-        raw: <String, String>{
-          'display': 'flex',
-          'align-items': 'center',
-          'gap': '0.6rem',
-        },
+    final String metricName = reactorText(metric.label);
+    // The unit goes in the header when every reading shares it; sizes on
+    // servers of different scale ("812 MB", "3.0 GB") keep theirs.
+    final Set<String> units = <String>{
+      for (final MetricReading reading in ranked)
+        readingOf(reading.sample).unit,
+    };
+    final String? unit = units.length == 1
+        ? unitBeside(metricName, units.single)
+        : null;
+    final Widget picker = FilterSelect(
+      id: _metricSelectId,
+      label: reactorText(ReactorText.comparisonMetric),
+      value: metric.id,
+      options: <ArcaneSelectOption>[
+        for (final ComparableMetric each in comparableMetrics)
+          ArcaneSelectOption(label: reactorText(each.label), value: each.id),
+      ],
+      onChanged: (String id) => setState(() => _metricId = id),
+    );
+
+    // One card: the metric to compare in its head, the servers ranked
+    // under it (the place as a number; the unit once, in the header).
+    return AppCard(
+      title: reactorText(ReactorText.comparisonLeaderboard),
+      tip: switch (polarity) {
+        MetricPolarity.lowerIsBetter => reactorText(
+          ReactorText.comparisonLowerBetter,
+        ),
+        MetricPolarity.higherIsBetter => reactorText(
+          ReactorText.comparisonHigherBetter,
+        ),
+        MetricPolarity.neutral => null,
+      },
+      actions: ActionRow(
+        dense: true,
+        label: reactorText(ReactorText.comparisonMetric),
+        leading: <Widget>[picker],
       ),
-      <Widget>[
-        reactorEyebrow(reactorText(ReactorText.comparisonMetric)),
-        if (availableMetrics.isEmpty)
-          reactorBadge(
-            reactorText(ReactorText.comparisonNoSampledMetrics),
-            ReactorStatus.neutral,
-          )
+      children: <Widget>[
+        if (servers.isEmpty)
+          EmptyState(message: reactorText(ReactorText.fleetNoServersPaired))
+        else if (ranked.isEmpty)
+          EmptyState(message: reactorText(ReactorText.comparisonNoData))
         else
-          ArcaneNativeSelect(
-            size: ComponentSize.sm,
-            options: <ArcaneSelectOption>[
-              if (!availableMetrics.contains(_selectedMetric))
-                ArcaneSelectOption(
-                  label: reactorText(
-                    ReactorText.comparisonMetricUnavailable,
-                    <String, Object?>{'metric': _selectedMetric},
-                  ),
-                  value: _selectedMetric,
+          DataList<MetricReading>(
+            label: reactorText(ReactorText.comparisonLeaderboard),
+            items: ranked,
+            href: (MetricReading reading) => serverPath(reading.id),
+            columns: <ListColumn<MetricReading>>[
+              ListColumn<MetricReading>.text(
+                reactorText(ReactorText.commonServer),
+                (MetricReading reading) => reading.name,
+                width: 'minmax(0, 2fr)',
+              ),
+              if (ranked.length > 1 && polarity != MetricPolarity.neutral)
+                ListColumn<MetricReading>(
+                  reactorText(ReactorText.comparisonRank),
+                  (MetricReading reading) =>
+                      Component.text('${ranks[ranked.indexOf(reading)]}'),
+                  numeric: true,
+                  width: '4rem',
                 ),
-              ...availableMetrics.map(
-                (String m) => ArcaneSelectOption(label: m, value: m),
+              ListColumn<MetricReading>(
+                unit == null ? metricName : '$metricName ($unit)',
+                (MetricReading reading) {
+                  final Reading shown = readingOf(reading.sample);
+                  return Component.text(
+                    units.length == 1 ? shown.value : shown.text,
+                  );
+                },
+                numeric: true,
+                width: 'minmax(0, 1fr)',
               ),
             ],
-            value: _selectedMetric,
-            onChanged: (String v) => setState(() => _selectedMetric = v),
           ),
       ],
     );
-  }
-
-  Widget _serverSelector({
-    required List<FleetServerLive> servers,
-    required Set<String> selectedIds,
-  }) {
-    return dom.div(
-      classes: 'reactor-comparison-selector reactor-filter-bar',
-      <Widget>[
-        for (final FleetServerLive srv in servers)
-          ArcaneCheckbox(
-            label: _serverLabel(srv),
-            checked: selectedIds.contains(srv.id),
-            onChanged: (bool checked) {
-              setState(() {
-                final Set<String> next = Set<String>.from(selectedIds);
-                if (checked) {
-                  next.add(srv.id);
-                } else {
-                  next.remove(srv.id);
-                }
-                _selectedServerIds = next;
-              });
-            },
-          ),
-      ],
-    );
-  }
-
-  String _serverLabel(FleetServerLive server) {
-    if (server.state == ConnState.offline) {
-      return reactorText(ReactorText.comparisonServerOffline, <String, Object?>{
-        'server': server.name,
-      });
-    }
-    if (server.state == ConnState.connecting) {
-      return reactorText(
-        ReactorText.comparisonServerConnecting,
-        <String, Object?>{'server': server.name},
-      );
-    }
-    if (server.state == ConnState.degraded) {
-      return server.snapshot == null
-          ? reactorText(
-              ReactorText.comparisonServerDegradedEmpty,
-              <String, Object?>{'server': server.name},
-            )
-          : reactorText(
-              ReactorText.comparisonServerDegradedCached,
-              <String, Object?>{'server': server.name},
-            );
-    }
-    if (server.snapshot == null) {
-      return reactorText(
-        ReactorText.comparisonServerAwaiting,
-        <String, Object?>{'server': server.name},
-      );
-    }
-    return server.name;
-  }
-
-  Widget _leaderboardTable(List<_ServerMetricEntry> ranked) {
-    return dom.div(classes: 'reactor-table reactor-leaderboard-table', <Widget>[
-      for (int i = 0; i < ranked.length; i++)
-        _leaderboardRow(rank: i + 1, entry: ranked[i]),
-    ]);
-  }
-
-  Widget _leaderboardRow({
-    required int rank,
-    required _ServerMetricEntry entry,
-  }) {
-    return dom.div(classes: 'reactor-leaderboard-row', <Widget>[
-      dom.div(
-        styles: const dom.Styles(
-          raw: <String, String>{
-            'min-width': '2rem',
-            'font-size': '0.75rem',
-            'color': 'var(--muted-foreground)',
-            'font-weight': '600',
-          },
-        ),
-        <Widget>[Component.text('#$rank')],
-      ),
-      dom.div(
-        styles: const dom.Styles(
-          raw: <String, String>{'flex': '1', 'font-size': '0.875rem'},
-        ),
-        <Widget>[Component.text(entry.name)],
-      ),
-      dom.div(
-        styles: const dom.Styles(
-          raw: <String, String>{'font-size': '0.875rem', 'font-weight': '500'},
-        ),
-        <Widget>[
-          Component.text(
-            entry.suffix.isEmpty
-                ? entry.display
-                : '${entry.display} ${entry.suffix}',
-          ),
-        ],
-      ),
-    ]);
   }
 }

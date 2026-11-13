@@ -1,8 +1,10 @@
 library;
 
 import 'dart:convert';
+
 import 'package:crypto/crypto.dart';
 import 'package:test/test.dart';
+import 'package:react_web/model/pairing_link.dart';
 import 'package:react_web/service/relay_identity.dart';
 
 void main() {
@@ -36,70 +38,15 @@ void main() {
 
   final String pubKeyBase64 = base64Url.encode(x509Bytes);
 
-  group('RelayIdentity.fingerprint', () {
+  group('keyFingerprint', () {
     test('computes full lowercase SHA-256 hex over X509 bytes', () {
-      final String fp = RelayIdentity.fingerprint(pubKeyBase64);
+      final String fp = keyFingerprint(pubKeyBase64);
       expect(fp, equals(expectedFingerprint));
       expect(fp, hasLength(64));
     });
 
-    test('matches hardcoded vector for known input', () {
-      final List<int> known = <int>[
-        0x30,
-        0x2a,
-        0x30,
-        0x05,
-        0x06,
-        0x03,
-        0x2b,
-        0x65,
-        0x70,
-        0x03,
-        0x21,
-        0x00,
-        0x01,
-        0x02,
-        0x03,
-        0x04,
-        0x05,
-        0x06,
-        0x07,
-        0x08,
-        0x09,
-        0x0a,
-        0x0b,
-        0x0c,
-        0x0d,
-        0x0e,
-        0x0f,
-        0x10,
-        0x11,
-        0x12,
-        0x13,
-        0x14,
-        0x15,
-        0x16,
-        0x17,
-        0x18,
-        0x19,
-        0x1a,
-        0x1b,
-        0x1c,
-        0x1d,
-        0x1e,
-        0x1f,
-        0x20,
-      ];
-      final String expected = buildExpectedFingerprint(known);
-      final String actual = RelayIdentity.fingerprint(base64Url.encode(known));
-      expect(actual, equals(expected));
-    });
-
-    test('returns false-safe empty string on bad base64 input', () {
-      expect(
-        () => RelayIdentity.fingerprint('!!!not-base64!!!'),
-        returnsNormally,
-      );
+    test('is empty for text that is not base64url', () {
+      expect(keyFingerprint('!!!not-base64!!!'), isEmpty);
     });
   });
 
@@ -129,66 +76,6 @@ void main() {
           identityServerId: 'ff:ee:dd:cc:bb:aa:11:00',
         ),
         isFalse,
-      );
-    });
-  });
-
-  group('RelayIdentity.codeConsistent', () {
-    test('both null returns true', () {
-      expect(
-        RelayIdentity.codeConsistent(serverPubKey: null, fingerprint: null),
-        isTrue,
-      );
-    });
-
-    test('matching pubkey/fingerprint pair returns true', () {
-      final String fp = RelayIdentity.fingerprint(pubKeyBase64);
-      expect(
-        RelayIdentity.codeConsistent(
-          serverPubKey: pubKeyBase64,
-          fingerprint: fp,
-        ),
-        isTrue,
-      );
-    });
-
-    test('altered fingerprint returns false', () {
-      expect(
-        RelayIdentity.codeConsistent(
-          serverPubKey: pubKeyBase64,
-          fingerprint: 'tampered:fingerprint:value',
-        ),
-        isFalse,
-      );
-    });
-
-    test('pubkey set but fingerprint null returns false', () {
-      expect(
-        RelayIdentity.codeConsistent(
-          serverPubKey: pubKeyBase64,
-          fingerprint: null,
-        ),
-        isFalse,
-      );
-    });
-
-    test('fingerprint set but pubkey null returns false', () {
-      expect(
-        RelayIdentity.codeConsistent(
-          serverPubKey: null,
-          fingerprint: 'aa:bb:cc:dd:ee:ff:00:11',
-        ),
-        isFalse,
-      );
-    });
-
-    test('never throws on decode error', () {
-      expect(
-        () => RelayIdentity.codeConsistent(
-          serverPubKey: '!!!bad-base64!!!',
-          fingerprint: 'some:fp',
-        ),
-        returnsNormally,
       );
     });
   });

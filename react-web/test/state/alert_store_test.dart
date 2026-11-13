@@ -35,14 +35,6 @@ void main() {
       AlertStore(storage).ack('s1/x');
       expect(AlertStore(storage).isAcked('s1/x'), isTrue);
     });
-
-    test('unack removes from persisted storage', () {
-      final InMemoryFleetStorage storage = InMemoryFleetStorage();
-      final AlertStore store = AlertStore(storage);
-      store.ack('s1/x');
-      store.unack('s1/x');
-      expect(AlertStore(storage).isAcked('s1/x'), isFalse);
-    });
   });
 
   group('AlertStore.thresholds persistence', () {
@@ -76,19 +68,38 @@ void main() {
       expect(open.map((FleetAlert a) => a.key), contains('s1/y'));
     });
 
-    test('unresolve restores alert to open feed', () {
+    test('a cleared alert shows again once it ended and came back', () {
       final InMemoryFleetStorage storage = InMemoryFleetStorage();
       final AlertStore store = AlertStore(storage);
-      store.resolve('s1/x');
-      store.unresolve('s1/x');
-      final List<FleetAlert> open = store.reconcile(<FleetAlert>[
-        _alert('s1', 'x'),
-        _alert('s1', 'y'),
-      ]);
+      store
+        ..resolve('s1/x')
+        ..ack('s1/x');
       expect(
-        open.map((FleetAlert a) => a.key),
-        containsAll(<String>['s1/x', 's1/y']),
+        store.reconcile(
+          <FleetAlert>[_alert('s1', 'x')],
+          reporting: <String>{'s1'},
+        ),
+        isEmpty,
       );
+      store.reconcile(const <FleetAlert>[], reporting: <String>{'s1'});
+      expect(AlertStore(storage).isResolved('s1/x'), isFalse);
+      expect(AlertStore(storage).isAcked('s1/x'), isFalse);
+      expect(
+        store
+            .reconcile(
+              <FleetAlert>[_alert('s1', 'x')],
+              reporting: <String>{'s1'},
+            )
+            .map((FleetAlert a) => a.key),
+        contains('s1/x'),
+      );
+    });
+
+    test('a server without data keeps its cleared alerts', () {
+      final AlertStore store = AlertStore(InMemoryFleetStorage())
+        ..resolve('s1/x');
+      store.reconcile(const <FleetAlert>[], reporting: <String>{'s2'});
+      expect(store.isResolved('s1/x'), isTrue);
     });
 
     test('reconcile orders critical before warning', () {

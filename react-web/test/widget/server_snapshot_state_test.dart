@@ -1,7 +1,7 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
+import 'package:react_web/theme/reactor_stylesheet.dart';
 import 'package:jaspr_test/server_test.dart';
 
 import 'package:react_web/screen/chunks.dart';
@@ -20,7 +20,7 @@ import 'package:react_web/screen/worlds.dart';
 import 'package:react_web/state/connection_manager.dart';
 import 'package:react_web/state/server_scope.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+const ReactorStylesheet _sheet = ReactorStylesheet();
 
 Widget _wrap(Widget child, ConnState state) => ArcaneThemeProvider(
   stylesheet: _sheet,
@@ -56,7 +56,7 @@ void main() {
         expect(response.statusCode, equals(200));
         expect(response.body, contains('No telemetry snapshot'));
         expect(response.body, contains('after React reconnects'));
-        expect(response.body, isNot(contains('is-loading')));
+        expect(response.body, isNot(contains('ui-loading')));
       });
 
       testServer('${entry.name} is terminal while degraded', (
@@ -68,7 +68,7 @@ void main() {
         expect(response.statusCode, equals(200));
         expect(response.body, contains('No telemetry snapshot'));
         expect(response.body, contains('after the connection recovers'));
-        expect(response.body, isNot(contains('is-loading')));
+        expect(response.body, isNot(contains('ui-loading')));
       });
     }
 
@@ -80,7 +80,7 @@ void main() {
       final DocumentResponse response = await tester.request('/');
       expect(response.statusCode, equals(200));
       expect(response.body, contains('Waiting for telemetry'));
-      expect(response.body, contains('is-loading'));
+      expect(response.body, contains('ui-loading'));
     });
 
     testServer('live waits specifically for its first snapshot', (
@@ -94,7 +94,7 @@ void main() {
         response.body,
         contains('Waiting for the first telemetry snapshot'),
       );
-      expect(response.body, contains('is-loading'));
+      expect(response.body, contains('ui-loading'));
     });
   });
 }

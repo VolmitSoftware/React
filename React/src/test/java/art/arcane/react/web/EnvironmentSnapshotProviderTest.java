@@ -14,7 +14,6 @@ public class EnvironmentSnapshotProviderTest {
 
     private IdentityDto fakeIdentity() {
         IdentityDto dto = new IdentityDto();
-        dto.version = "9.9.9-test";
         dto.serverName = "TestBrand";
         dto.folia = true;
         dto.serverId = "127.0.0.1:0";
@@ -32,7 +31,7 @@ public class EnvironmentSnapshotProviderTest {
 
     @Test
     void snapshotCpuIsNonNullAndCoresMatchRuntime() {
-        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, this::fakeTelemetry);
+        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, () -> "Paper 26.3", this::fakeTelemetry);
         EnvironmentDto dto = provider.snapshot();
 
         assertNotNull(dto.cpu, "cpu must not be null");
@@ -42,7 +41,7 @@ public class EnvironmentSnapshotProviderTest {
 
     @Test
     void snapshotMemoryIsNonNullAndPhysicalTotalPositive() {
-        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, this::fakeTelemetry);
+        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, () -> "Paper 26.3", this::fakeTelemetry);
         EnvironmentDto dto = provider.snapshot();
 
         assertNotNull(dto.memory, "memory must not be null");
@@ -51,7 +50,7 @@ public class EnvironmentSnapshotProviderTest {
 
     @Test
     void snapshotJvmIsNonNullAndVersionNonBlank() {
-        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, this::fakeTelemetry);
+        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, () -> "Paper 26.3", this::fakeTelemetry);
         EnvironmentDto dto = provider.snapshot();
 
         assertNotNull(dto.jvm, "jvm must not be null");
@@ -62,12 +61,12 @@ public class EnvironmentSnapshotProviderTest {
 
     @Test
     void snapshotServerFieldsMatchInjectedIdentity() {
-        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, this::fakeTelemetry);
+        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, () -> "Paper 26.3", this::fakeTelemetry);
         EnvironmentDto dto = provider.snapshot();
 
         assertNotNull(dto.server, "server must not be null");
         assertEquals("TestBrand", dto.server.brand, "server.brand must match injected identity serverName");
-        assertEquals("9.9.9-test", dto.server.version, "server.version must match injected identity version");
+        assertEquals("Paper 26.3", dto.server.version, "server.version is the server software version, never React's");
         assertTrue(dto.server.folia, "server.folia must match injected identity folia");
         assertNotNull(dto.disks, "disks must not be null");
         assertNotNull(dto.mounts, "mounts must not be null");

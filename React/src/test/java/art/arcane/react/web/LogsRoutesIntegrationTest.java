@@ -1,12 +1,8 @@
 package art.arcane.react.web;
 
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.api.web.PairingToken;
 import art.arcane.react.api.web.RingLogHandler;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
 import art.arcane.react.api.web.WebConfiguration;
-import art.arcane.react.api.web.WebSecret;
 import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.WebController;
@@ -63,7 +59,6 @@ public class LogsRoutesIntegrationTest {
             @Override
             protected IdentityDto resolveIdentity() {
                 IdentityDto dto = new IdentityDto();
-                dto.version = "9.9.9-test";
                 dto.serverName = "TestBrand";
                 dto.folia = false;
                 dto.serverId = "127.0.0.1:0";
@@ -92,10 +87,6 @@ public class LogsRoutesIntegrationTest {
         config.setPort(0);
         config.setRequireTokenForReads(true);
 
-        WebSecret.load(dataFolder);
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
-        store.save(tokensFile);
 
         controller = buildController(config, dataFolder);
         controller.start();
@@ -117,16 +108,8 @@ public class LogsRoutesIntegrationTest {
 
     @Test
     void get_logs_requires_console_read_and_captures_server_console(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord adminRecord = new TokenRecord("tok-admin-logs", "admin-device", 1000L, Set.of("read"), "admin");
-        TokenRecord viewerRecord = new TokenRecord("tok-viewer-logs", "viewer-device", 1000L, Set.of("read"), "viewer");
-        String adminBearer = PairingToken.mint(secret, adminRecord.id(), adminRecord.label(), adminRecord.issuedAt(), adminRecord.scopes());
-        String viewerBearer = PairingToken.mint(secret, viewerRecord.id(), viewerRecord.label(), viewerRecord.issuedAt(), viewerRecord.scopes());
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(adminRecord);
-        store.add(viewerRecord);
-        store.save(tokensFile);
+        String adminBearer = WebTestTokens.issue(dataFolder, "ws-device", "admin");
+        String viewerBearer = WebTestTokens.issue(dataFolder, "viewer-device", "viewer");
 
         WebConfiguration config = new WebConfiguration();
         config.setListenerEnabled(true);
@@ -188,13 +171,7 @@ public class LogsRoutesIntegrationTest {
 
     @Test
     void ws_logs_delivers_frame_to_authorized_client(@TempDir File dataFolder) throws Exception {
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord adminRecord = new TokenRecord("tok-ws-logs", "ws-device", 1000L, Set.of("read"), "admin");
-        String adminBearer = PairingToken.mint(secret, adminRecord.id(), adminRecord.label(), adminRecord.issuedAt(), adminRecord.scopes());
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(adminRecord);
-        store.save(tokensFile);
+        String adminBearer = WebTestTokens.issue(dataFolder, "ws-device", "admin");
 
         WebConfiguration config = new WebConfiguration();
         config.setListenerEnabled(true);
@@ -273,13 +250,7 @@ public class LogsRoutesIntegrationTest {
         config.setPort(0);
         config.setRequireTokenForReads(true);
 
-        byte[] secret = WebSecret.load(dataFolder);
-        TokenRecord viewerRecord = new TokenRecord("tok-ws-viewer", "viewer-device", 1000L, Set.of("read"), "viewer");
-        String viewerBearer = PairingToken.mint(secret, viewerRecord.id(), viewerRecord.label(), viewerRecord.issuedAt(), viewerRecord.scopes());
-        File tokensFile = new File(dataFolder, "web/tokens.toml");
-        TokenStore store = TokenStore.fromToml(tokensFile);
-        store.add(viewerRecord);
-        store.save(tokensFile);
+        String viewerBearer = WebTestTokens.issue(dataFolder, "viewer-device", "viewer");
 
         controller = buildController(config, dataFolder);
         controller.start();

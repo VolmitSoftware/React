@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
+import 'package:react_web/theme/reactor_stylesheet.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component, DomComponent, EventCallback;
 import 'package:jaspr_test/server_test.dart';
@@ -51,7 +51,7 @@ class _LocaleSwitchHarnessState extends State<_LocaleSwitchHarness> {
 
   void _switchToGerman() {
     final ReactorOverlayResult result = reactorLocalizations.installOverlayJson(
-      '{"shell.fleet_control_plane":"Servergruppen-Leitstand"}',
+      '{"shell.all_servers":"Alle Server"}',
     );
     if (!result.applied) {
       throw StateError(result.error ?? 'Could not install test catalog.');
@@ -100,7 +100,7 @@ class _StatefulLocalizedProbeState extends State<_StatefulLocalizedProbe> {
         const <Widget>[],
       ),
       dom.span(<Widget>[
-        Component.text(reactorText(ReactorText.shellFleetControlPlane)),
+        Component.text(reactorText(ReactorText.shellAllServers)),
       ]),
       dom.span(<Widget>[Component.text('probe-count:$_count')]),
     ]);
@@ -331,30 +331,20 @@ void main() {
 
     test('the static document exclusively owns title and description', () {
       final String html = File('web/index.html').readAsStringSync();
-      final String appSource = File(
-        'lib/app/reactor_app.dart',
-      ).readAsStringSync();
+      final String appSource = File('lib/app/reactor_app.dart')
+          .readAsStringSync();
       final String platformSource = File(
         'lib/localization/reactor_locale_platform_web.dart',
       ).readAsStringSync();
       final int arcaneAppStart = appSource.indexOf('ArcaneApp(');
-      final int nextClassStart = appSource.indexOf(
-        'class LiveServerScope',
-        arcaneAppStart,
-      );
 
       expect(arcaneAppStart, isNonNegative);
-      expect(nextClassStart, greaterThan(arcaneAppStart));
-      final String arcaneAppSource = appSource.substring(
-        arcaneAppStart,
-        nextClassStart,
-      );
+      final String arcaneAppSource = appSource.substring(arcaneAppStart);
 
       expect(RegExp(r'<title>').allMatches(html), hasLength(1));
       expect(
-        RegExp(
-          r'<meta\s+name="description"\s+content="[^"]*">',
-        ).allMatches(html),
+        RegExp(r'<meta\s+name="description"\s+content="[^"]*">')
+            .allMatches(html),
         hasLength(1),
       );
       expect(
@@ -372,18 +362,18 @@ void main() {
       expect(platformSource, contains("_setMeta('meta[name=\"description\"]'"));
     });
 
-    test('command and pairing-code inputs stay left-to-right', () {
+    test('command and pairing link inputs stay left-to-right', () {
       final String logsSource = File('lib/screen/logs.dart').readAsStringSync();
-      final String addServerSource = File(
-        'lib/screen/add_server.dart',
-      ).readAsStringSync();
+      final String pairSource = File('lib/screen/pairing/pair_link_form.dart')
+          .readAsStringSync();
 
       expect(
         logsSource,
         contains("attributes: const <String, String>{'dir': 'ltr'}"),
       );
+      expect(pairSource, contains("'dir': 'ltr'"));
       expect(
-        addServerSource,
+        pairSource,
         contains("attributes: const <String, String>{'dir': 'ltr'}"),
       );
     });
@@ -395,13 +385,13 @@ void main() {
         addTearDown(() => reactorLocalizations.installOverlayJson('{}'));
         tester.pumpComponent(const _LocaleSwitchHarness());
 
-        expect(find.text('Server group control console'), findsOneComponent);
+        expect(find.text('All servers'), findsOneComponent);
         await tester.click(_domId('increment-probe'));
         expect(find.text('probe-count:1'), findsOneComponent);
 
         await tester.click(_domId('switch-locale'));
-        expect(find.text('Servergruppen-Leitstand'), findsOneComponent);
-        expect(find.text('Server group control console'), findsNothing);
+        expect(find.text('Alle Server'), findsOneComponent);
+        expect(find.text('All servers'), findsNothing);
         expect(find.text('probe-count:1'), findsOneComponent);
       },
     );
@@ -412,7 +402,7 @@ void main() {
   ) async {
     tester.pumpComponent(
       const ArcaneThemeProvider(
-        stylesheet: AsciiStylesheet(),
+        stylesheet: ReactorStylesheet(),
         child: ArcaneDirection(
           value: ArcaneDirectionValue.rtl,
           children: <Widget>[dom.div(<Widget>[])],

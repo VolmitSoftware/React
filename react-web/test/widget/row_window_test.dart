@@ -1,10 +1,10 @@
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
+import 'package:react_web/theme/reactor_stylesheet.dart';
 import 'package:jaspr_test/jaspr_test.dart';
 import 'package:react_web/widget/row_window.dart';
 
 Widget _window(List<int> rows, {bool latest = false}) => ArcaneThemeProvider(
-  stylesheet: const AsciiStylesheet(),
+  stylesheet: const ReactorStylesheet(),
   child: RowWindow<int>(
     rows: rows,
     latest: latest,

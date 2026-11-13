@@ -32,8 +32,6 @@ public class DirectorCommandControllerLegacyParityTest {
         DirectorRuntimeEngine engine = DirectorEngineFactory.create(new CommandReact());
         DirectorRuntimeNode root = engine.getRoot();
 
-        assertExactPath(root, "version");
-        assertExactPath(root, "v");
         assertExactPath(root, "benchmark", "cpu");
         assertExactPath(root, "benchmark", "processor");
         assertExactPath(root, "bench", "processor");

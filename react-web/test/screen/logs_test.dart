@@ -1,237 +1,234 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr_router/jaspr_router.dart';
+import 'package:jaspr/jaspr.dart' show Element, GlobalStateKey;
 import 'package:jaspr_test/server_test.dart';
 
-import 'package:react_web/app/reactor_app.dart';
-import 'package:react_web/model/sampler_sample.dart';
-import 'package:react_web/model/server_snapshot.dart';
+import 'package:react_web/model/role_info.dart';
 import 'package:react_web/screen/logs.dart';
+import 'package:react_web/service/react_exceptions.dart';
 import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/operate_scope.dart';
-import 'package:react_web/state/server_scope.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+import 'support/operate_fakes.dart';
 
-Widget _wrapView(Widget child) =>
-    ArcaneThemeProvider(stylesheet: _sheet, child: child);
+const List<String> _lines = <String>[
+  '[12:00:01 INFO]: Server started',
+  '[12:00:02 WARN]: Can\'t keep up!',
+  '[12:00:03 ERROR]: Could not save chunk',
+  '\tat net.minecraft.Chunk.save(Chunk.java:12)',
+  '[DEBUG] tick 4',
+];
 
-Widget _wrapScreen(Widget child) => ArcaneThemeProvider(
-  stylesheet: _sheet,
-  child: OperateScope(
-    client: null,
-    logSocketFactory: null,
-    child: ServerScope(
-      snapshot: ServerSnapshot(
-        byId: const <String, SamplerSample>{},
-        at: DateTime(2026),
-        seq: 1,
-      ),
-      state: ConnState.live,
-      child: child,
-    ),
-  ),
-);
+LogViewport _viewport() =>
+    find.byType(LogViewport).evaluate().single.component as LogViewport;
+
+TextInput _commandBox() => find
+    .byType(TextInput)
+    .evaluate()
+    .map((Element element) => element.component as TextInput)
+    .singleWhere(
+      (TextInput input) => input.attributes?['aria-label'] == 'Command',
+    );
 
 void main() {
-  group('LogsScreen route wiring', () {
-    test('kRouteServerLogs constant is correct', () {
-      expect(kRouteServerLogs, equals('/server/:id/logs'));
+  group('log levels', () {
+    test('reads the level from the line prefix', () {
+      expect(logLevelOf('[12:00:01 WARN]: x'), LogLevel.warn);
+      expect(logLevelOf('[12:00:01 WARNING]: x'), LogLevel.warn);
+      expect(logLevelOf('[ERROR] x'), LogLevel.error);
+      expect(logLevelOf('[12:00:01 SEVERE]: x'), LogLevel.error);
+      expect(logLevelOf('[12:00:01 INFO]: an ERROR later'), LogLevel.info);
+      expect(logLevelOf('[TRACE] x'), LogLevel.debug);
+      expect(logLevelOf('plain text'), isNull);
     });
 
-    test('buildReactorRoutes includes server logs route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasLogs = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerLogs,
-      );
+    test('a line without a level belongs to the line above', () {
       expect(
-        hasLogs,
-        isTrue,
-        reason: 'per-server Logs screen requires /server/:id/logs route',
+        levelledLines(_lines).map(((String, LogLevel) e) => e.$2),
+        <LogLevel>[
+          LogLevel.info,
+          LogLevel.warn,
+          LogLevel.error,
+          LogLevel.error,
+          LogLevel.debug,
+        ],
       );
+    });
+
+    test('filters by level and text', () {
+      expect(filterLogLines(_lines, level: LogLevel.error), hasLength(2));
+      expect(filterLogLines(_lines, query: 'CHUNK'), hasLength(2));
+      expect(
+        filterLogLines(_lines, level: LogLevel.warn, query: 'chunk'),
+        isEmpty,
+      );
+      expect(filterLogLines(_lines), hasLength(5));
     });
   });
 
-  group('LogsScreen sidebar', () {
-    testServer('ReactorShell with a server renders Logs sidebar item', (
+  group('LogsScreen', () {
+    testServer('without a client it asks for a live connection', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(serverScopes(null, const LogsScreen()));
+      final DocumentResponse res = await tester.request('/');
+      expect(res.body, contains('Logs unavailable'));
+      expect(res.body, contains('Logs require a live connection.'));
+    });
+
+    testServer('a role without console:read gets No access', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
-        _wrapView(
-          ReactorShell(
-            currentPath: '/server/srv1/logs',
-            servers: const <ServerEntry>[
-              ServerEntry(
-                id: 'srv1',
-                name: 'Test Server',
-                state: ConnState.live,
-              ),
-            ],
-          ),
-        ),
+        serverScopes(FakeServer(), const LogsScreen(), role: operatorRole),
       );
       final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Logs'),
-        isTrue,
-        reason: 'Logs sidebar item must appear in per-server sidebar group',
-      );
+      expect(res.body, contains('No access'));
+      expect(res.body, isNot(contains('role="log"')));
     });
-  });
 
-  group('LogsScreen no-connection', () {
-    testServer('renders live connection note when client is null', (
-      ServerTester tester,
+    testComponents('a refused log read says No access instead of no lines', (
+      ComponentTester tester,
     ) async {
-      tester.pumpComponent(_wrapScreen(const LogsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('live connection'),
-        isTrue,
-        reason: 'connection note must appear when OperateScope has no client',
+      final OperateClient client = OperateClient(logs: _lines)
+        ..logsError = const ReactForbidden();
+      tester.pumpComponent(
+        serverScopes(
+          FakeServer(client: client, socket: FakeLogSocket()),
+          const LogsScreen(),
+        ),
       );
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await tester.pump();
+      expect(find.text('No access'), findsComponents);
+      expect(find.byType(LogViewport), findsNothing);
     });
-  });
 
-  group('LogsView render', () {
-    testServer('renders the authenticated server console', (
-      ServerTester tester,
+    testComponents('a failed log read offers Retry, which loads the lines', (
+      ComponentTester tester,
     ) async {
+      final OperateClient client = OperateClient(logs: _lines)
+        ..logsError = const ReactUnavailable();
       tester.pumpComponent(
-        _wrapView(
-          LogsView(
-            lines: const <String>[],
-            paused: false,
-            levelFilter: 'ALL',
-            onPause: null,
-            onClear: null,
-            onLevelFilter: null,
-          ),
+        serverScopes(
+          FakeServer(client: client, socket: FakeLogSocket()),
+          const LogsScreen(),
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(res.body.contains('Server Console'), isTrue);
-      expect(res.body.contains('console:execute'), isTrue);
-      expect(res.body.contains('Run Command'), isTrue);
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await tester.pump();
+      expect(find.text('Logs unavailable'), findsOneComponent);
+      client.logsError = null;
+      find
+          .byType(Button)
+          .evaluate()
+          .map((Element element) => element.component as Button)
+          .singleWhere((Button button) => button.label == 'Retry')
+          .onPressed!();
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await tester.pump();
+      expect(_viewport().lines, hasLength(5));
     });
 
-    testServer('renders log line content', (ServerTester tester) async {
-      tester.pumpComponent(
-        _wrapView(
-          LogsView(
-            lines: const <String>['[INFO] hello'],
-            paused: false,
-            levelFilter: 'ALL',
-            onPause: null,
-            onClear: null,
-            onLevelFilter: null,
-          ),
-        ),
+    testComponents('shows the lines and follows new ones', (
+      ComponentTester tester,
+    ) async {
+      final FakeServer server = FakeServer(
+        client: OperateClient(logs: _lines),
+        socket: FakeLogSocket(),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('hello'),
-        isTrue,
-        reason: 'log line content must appear',
-      );
+      tester.pumpComponent(serverScopes(server, const LogsScreen()));
+      await tester.pump();
+      expect(_viewport().lines, hasLength(5));
+      server.socket!.add('[12:00:09 INFO]: Player joined');
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      await tester.pump();
+      expect(_viewport().lines.last.$1, contains('Player joined'));
     });
 
-    testServer('renders Pause control when not paused', (
-      ServerTester tester,
+    testComponents('the command box needs console:execute', (
+      ComponentTester tester,
     ) async {
       tester.pumpComponent(
-        _wrapView(
-          LogsView(
-            lines: const <String>[],
-            paused: false,
-            levelFilter: 'ALL',
-            onPause: null,
-            onClear: null,
-            onLevelFilter: null,
+        serverScopes(
+          FakeServer(
+            client: OperateClient(logs: _lines),
+            socket: FakeLogSocket(),
+          ),
+          const LogsScreen(),
+          role: const RoleInfo(
+            role: 'custom',
+            scopes: <String>['read', 'console:read'],
           ),
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
+      await tester.pump();
+      expect(_viewport().lines, hasLength(5));
       expect(
-        res.body.contains('Pause'),
-        isTrue,
-        reason: 'Pause button must appear when not paused',
+        find
+            .byType(TextInput)
+            .evaluate()
+            .where(
+              (Element element) =>
+                  (element.component as TextInput).attributes?['aria-label'] ==
+                  'Command',
+            ),
+        isEmpty,
       );
     });
 
-    testServer('renders Resume control when paused', (
-      ServerTester tester,
+    testComponents('the command box is off while not live', (
+      ComponentTester tester,
     ) async {
       tester.pumpComponent(
-        _wrapView(
-          LogsView(
-            lines: const <String>[],
-            paused: true,
-            levelFilter: 'ALL',
-            onPause: null,
-            onClear: null,
-            onLevelFilter: null,
+        serverScopes(
+          FakeServer(
+            client: OperateClient(logs: _lines),
+            socket: FakeLogSocket(),
           ),
+          const LogsScreen(),
+          state: ConnState.degraded,
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Resume'),
-        isTrue,
-        reason: 'Resume button must appear when paused',
-      );
+      await tester.pump();
+      expect(_commandBox().disabled, isTrue);
     });
 
-    testServer('renders Clear control', (ServerTester tester) async {
+    testComponents('switching servers swaps the log and the command target', (
+      ComponentTester tester,
+    ) async {
+      final FakeServer first = FakeServer(
+        client: OperateClient(logs: <String>['[INFO] alpha']),
+        socket: FakeLogSocket(),
+      );
+      final FakeServer second = FakeServer(
+        client: OperateClient(logs: <String>['[INFO] beta']),
+        socket: FakeLogSocket(),
+      );
+      final GlobalStateKey<ServerSwitcherState> key =
+          GlobalStateKey<ServerSwitcherState>();
       tester.pumpComponent(
-        _wrapView(
-          LogsView(
-            lines: const <String>[],
-            paused: false,
-            levelFilter: 'ALL',
-            onPause: null,
-            onClear: null,
-            onLevelFilter: null,
-          ),
+        ServerSwitcher(
+          key: key,
+          servers: <FakeServer>[first, second],
+          child: const LogsScreen(),
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Clear'),
-        isTrue,
-        reason: 'Clear button must appear in toolbar',
-      );
-    });
+      await tester.pump();
+      expect(_viewport().lines.single.$1, '[INFO] alpha');
 
-    testServer('renders Level select', (ServerTester tester) async {
-      tester.pumpComponent(
-        _wrapView(
-          LogsView(
-            lines: const <String>[],
-            paused: false,
-            levelFilter: 'ALL',
-            onPause: null,
-            onClear: null,
-            onLevelFilter: null,
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Level'),
-        isTrue,
-        reason: 'Level select label must appear in toolbar',
-      );
+      key.currentState!.show(1);
+      await tester.pump();
+      expect(_viewport().lines.single.$1, '[INFO] beta');
+
+      _commandBox().onChanged!('say hello');
+      await tester.pump();
+      _commandBox().onSubmitted!('say hello');
+      await tester.pump();
+      expect(second.client.commands, <String>['say hello']);
+      expect(first.client.commands, isEmpty);
     });
   });
 }

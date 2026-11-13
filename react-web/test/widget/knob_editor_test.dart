@@ -1,16 +1,22 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
+import 'package:react_web/theme/reactor_stylesheet.dart';
 import 'package:jaspr_test/server_test.dart';
 
+import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:react_web/model/knob.dart';
 import 'package:react_web/widget/knob_editor.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+const ReactorStylesheet _sheet = ReactorStylesheet();
 
 Widget _wrap(Widget child) =>
     ArcaneThemeProvider(stylesheet: _sheet, child: child);
+
+/// The opening tag of the first element whose tag matches [tag] and that
+/// carries [attribute].
+String _openingTag(String html, String tag, String attribute) =>
+    RegExp('<$tag\\b[^>]*$attribute[^>]*>').firstMatch(html)?.group(0) ?? '';
 
 void main() {
   group('KnobEditor rendering', () {
@@ -144,5 +150,72 @@ void main() {
         );
       },
     );
+  });
+
+  group('KnobEditor fields', () {
+    testServer('a number knob is a library field whose label names its box', (
+      ServerTester tester,
+    ) async {
+      const Knob knob = Knob(
+        key: 'max-stack',
+        label: 'Max Stack',
+        type: KnobType.intType,
+        value: 64,
+        doc: 'Most items per stack',
+      );
+      tester.pumpComponent(_wrap(const KnobEditor(knob: knob)));
+      final String body = (await tester.request('/')).body;
+      expect(
+        _openingTag(body, 'div', 'data-slot="field"'),
+        contains('data-orientation="vertical"'),
+      );
+      expect(_openingTag(body, 'label', 'for="knob-max-stack"'), isNotEmpty);
+      expect(_openingTag(body, 'input', 'id="knob-max-stack"'), isNotEmpty);
+      expect(body, isNot(contains('ui-field')));
+    });
+
+    testServer(
+      'a switch knob is a horizontal field whose label names the switch',
+      (ServerTester tester) async {
+        const Knob knob = Knob(
+          key: 'stack-mobs',
+          label: 'Stack Mobs',
+          type: KnobType.boolType,
+          value: true,
+        );
+        tester.pumpComponent(_wrap(const KnobEditor(knob: knob)));
+        final String body = (await tester.request('/')).body;
+        expect(
+          _openingTag(body, 'div', 'data-slot="field"'),
+          contains('data-orientation="horizontal"'),
+        );
+        expect(_openingTag(body, 'label', 'for="knob-stack-mobs"'), isNotEmpty);
+        expect(
+          _openingTag(body, 'button', 'role="switch"'),
+          contains('id="knob-stack-mobs"'),
+        );
+      },
+    );
+
+    testServer('a setting the server changed says so inside its field', (
+      ServerTester tester,
+    ) async {
+      const Knob knob = Knob(
+        key: 'view-distance',
+        label: 'View distance',
+        type: KnobType.intType,
+        value: 8,
+      );
+      tester.pumpComponent(
+        _wrap(const KnobEditor(knob: knob, changedOnServer: true)),
+      );
+      final String body = (await tester.request('/')).body;
+      final int field = body.indexOf('data-slot="field"');
+      final int warning = body.indexOf(
+        ReactorText.optimizationChangedOnServer.english,
+      );
+      expect(field, greaterThanOrEqualTo(0));
+      expect(warning, greaterThan(body.indexOf('id="knob-view-distance"')));
+    });
   });
 }

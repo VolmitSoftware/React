@@ -3,18 +3,24 @@ package art.arcane.react.api.web.resource;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.HistoryCursorCodec;
 import art.arcane.react.api.web.MetricsSerializer;
+import art.arcane.react.api.web.WebRevisions;
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.MetricHistoryDescriptorDto;
 import art.arcane.react.api.web.dto.MetricHistoryPageDto;
 import art.arcane.react.api.web.dto.MetricHistorySeriesDto;
+import art.arcane.react.api.web.dto.MetricRangeDto;
+import art.arcane.react.api.web.dto.MetricRangeSeriesDto;
 import art.arcane.react.api.web.dto.SamplerDto;
 import art.arcane.react.core.controller.HistoryController;
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.core.history.ChartHistory;
+import art.arcane.react.core.history.ChartRange;
 import art.arcane.react.core.history.HistoryPoint;
 import art.arcane.react.core.history.HistoryQueryResult;
 import art.arcane.react.core.history.HistoryQuerySeries;
 import art.arcane.react.core.history.MetricDescriptor;
 import art.arcane.react.core.history.MetricSnapshot;
+import art.arcane.react.core.history.MetricSnapshotValue;
 import art.arcane.react.util.project.registry.Registry;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
@@ -30,11 +36,13 @@ import java.util.Set;
 
 public class MetricsResource {
     private static final long DEFAULT_RANGE_MS = 24L * 60L * 60L * 1_000L;
+    private static final int MAX_RANGE_IDS = 64;
 
     private final SampleController samplers;
     private final HistoryController history;
     private final MetricsSerializer serializer;
     private volatile CachedSnapshot cachedSnapshot;
+    private volatile CachedLiveFrame cachedLiveFrame;
 
     public MetricsResource(
         SampleController samplers,
@@ -47,26 +55,91 @@ public class MetricsResource {
     }
 
     public SnapshotResponse snapshotData() {
+        WebRevisions.Snapshot revisions = WebRevisions.current();
         MetricSnapshot snapshot = history == null ? MetricSnapshot.empty() : history.latestObserved();
         if (!snapshot.values().isEmpty()) {
-            return snapshotResponse(snapshot);
+            return snapshotResponse(snapshot, revisions);
         }
         cachedSnapshot = null;
+        return registrySnapshot(revisions);
+    }
 
+    private SnapshotResponse registrySnapshot(WebRevisions.Snapshot revisions) {
         Registry<Sampler> registry = samplers == null ? null : samplers.getSamplers();
         if (registry == null) {
-            return new SnapshotResponse(0L, System.currentTimeMillis(), new SamplerDto[0]);
+            return new SnapshotResponse(0L, System.currentTimeMillis(), new SamplerDto[0], revisions);
         }
         Collection<Sampler> all = registry.all();
         List<SamplerDto> data = new ArrayList<>(all.size());
         for (Sampler sampler : all) {
             data.add(serializer.toDto(sampler));
         }
-        return new SnapshotResponse(0L, System.currentTimeMillis(), data.toArray(new SamplerDto[0]));
+        return new SnapshotResponse(0L, System.currentTimeMillis(), data.toArray(new SamplerDto[0]), revisions);
+    }
+
+    /**
+     * The live frame pushed over {@code /ws/metrics}: available samplers only, no metadata or
+     * diagnostics. Returns the same instance until the snapshot or the revisions change.
+     */
+    public LiveFrame liveFrame() {
+        WebRevisions.Snapshot revisions = WebRevisions.current();
+        MetricSnapshot snapshot = history == null ? MetricSnapshot.empty() : history.latestObserved();
+        if (snapshot.values().isEmpty()) {
+            cachedLiveFrame = null;
+            SnapshotResponse fallback = registrySnapshot(revisions);
+            return new LiveFrame(fallback.sequence(), fallback.capturedAtMs(), liveSamples(fallback.samplers()), revisions);
+        }
+        CachedLiveFrame cached = cachedLiveFrame;
+        if (cached != null && cached.source() == snapshot && cached.frame().revisions() == revisions) {
+            return cached.frame();
+        }
+        synchronized (this) {
+            cached = cachedLiveFrame;
+            if (cached != null && cached.source() == snapshot && cached.frame().revisions() == revisions) {
+                return cached.frame();
+            }
+            LiveSampleDto[] samples = cached != null && cached.source() == snapshot
+                ? cached.frame().samplers()
+                : liveSamples(snapshot);
+            LiveFrame frame = new LiveFrame(snapshot.sequence(), snapshot.capturedAtMs(), samples, revisions);
+            cachedLiveFrame = new CachedLiveFrame(snapshot, frame);
+            return frame;
+        }
     }
 
     public void snapshot(Context context) {
+        if ("1".equals(context.queryParam("compact"))) {
+            context.json(new Envelope<>(liveFrame()));
+            return;
+        }
         context.json(new Envelope<>(snapshotData()));
+    }
+
+    private static LiveSampleDto[] liveSamples(MetricSnapshot snapshot) {
+        int available = 0;
+        for (MetricSnapshotValue value : snapshot.values()) {
+            if (value.available()) {
+                available++;
+            }
+        }
+        LiveSampleDto[] samples = new LiveSampleDto[available];
+        int index = 0;
+        for (MetricSnapshotValue value : snapshot.values()) {
+            if (value.available()) {
+                samples[index++] = new LiveSampleDto(value.id(), value.name(), value.suffix(), value.value(), value.display());
+            }
+        }
+        return samples;
+    }
+
+    private static LiveSampleDto[] liveSamples(SamplerDto[] samplers) {
+        List<LiveSampleDto> samples = new ArrayList<>(samplers.length);
+        for (SamplerDto sampler : samplers) {
+            if (sampler.available) {
+                samples.add(new LiveSampleDto(sampler.id, sampler.name, sampler.suffix, sampler.value, sampler.display));
+            }
+        }
+        return samples.toArray(new LiveSampleDto[0]);
     }
 
     public void historyCatalog(Context context) {
@@ -75,9 +148,11 @@ public class MetricsResource {
             return;
         }
         List<MetricDescriptor> descriptors = history.descriptors();
+        MetricSnapshot latest = history.latest();
         MetricHistoryDescriptorDto[] data = new MetricHistoryDescriptorDto[descriptors.size()];
         for (int index = 0; index < descriptors.size(); index++) {
             MetricDescriptor descriptor = descriptors.get(index);
+            MetricSnapshotValue live = latest.value(descriptor.id());
             data[index] = new MetricHistoryDescriptorDto(
                 descriptor.id(),
                 descriptor.name(),
@@ -88,7 +163,9 @@ public class MetricsResource {
                 descriptor.metadata().intervalMs(),
                 descriptor.metadata().windowMs(),
                 descriptor.metadata().quality(),
-                descriptor.metadata().unit()
+                descriptor.metadata().unit(),
+                live != null && live.available(),
+                live == null || live.available() ? null : live.unavailableReason()
             );
         }
         context.json(new Envelope<>(data));
@@ -152,21 +229,71 @@ public class MetricsResource {
         )));
     }
 
-    private SnapshotResponse snapshotResponse(MetricSnapshot snapshot) {
+    public void range(Context context) {
+        if (history == null) {
+            throw new ServiceUnavailableResponse("Metric history is not available");
+        }
+        ChartRange range = ChartRange.byId(context.queryParam("range"));
+        if (range == null) {
+            throw new BadRequestResponse("range must be one of 1h, 6h or 24h");
+        }
+        List<String> ids = parseRangeIds(context.queryParam("ids"));
+        ChartHistory.Window window = history.chartRange(range, ids, System.currentTimeMillis());
+        MetricRangeSeriesDto[] series = new MetricRangeSeriesDto[window.series().size()];
+        for (int index = 0; index < series.length; index++) {
+            ChartHistory.Series value = window.series().get(index);
+            series[index] = new MetricRangeSeriesDto(value.id(), value.values());
+        }
+        context.json(new Envelope<>(new MetricRangeDto(
+            range.id(),
+            range.stepMs(),
+            window.fromMs(),
+            window.toMs(),
+            series
+        )));
+    }
+
+    private static List<String> parseRangeIds(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        Set<String> ids = new LinkedHashSet<>();
+        for (String candidate : raw.split(",")) {
+            String id = candidate.strip();
+            if (id.isEmpty()) {
+                continue;
+            }
+            if (id.length() > 256) {
+                throw new BadRequestResponse("Metric ids must be at most 256 characters");
+            }
+            ids.add(id);
+            if (ids.size() > MAX_RANGE_IDS) {
+                throw new BadRequestResponse("ids must contain at most " + MAX_RANGE_IDS + " metrics");
+            }
+        }
+        return List.copyOf(ids);
+    }
+
+    private SnapshotResponse snapshotResponse(MetricSnapshot snapshot, WebRevisions.Snapshot revisions) {
         CachedSnapshot cached = cachedSnapshot;
-        if (cached != null && cached.source() == snapshot) {
+        if (cached != null && cached.source() == snapshot && cached.response().revisions() == revisions) {
             return cached.response();
         }
         synchronized (this) {
             cached = cachedSnapshot;
             if (cached != null && cached.source() == snapshot) {
-                return cached.response();
+                if (cached.response().revisions() == revisions) {
+                    return cached.response();
+                }
+                SnapshotResponse response = cached.response().withRevisions(revisions);
+                cachedSnapshot = new CachedSnapshot(snapshot, response);
+                return response;
             }
             SamplerDto[] data = new SamplerDto[snapshot.values().size()];
             for (int index = 0; index < snapshot.values().size(); index++) {
                 data[index] = serializer.toDto(snapshot.values().get(index));
             }
-            SnapshotResponse response = new SnapshotResponse(snapshot.sequence(), snapshot.capturedAtMs(), data);
+            SnapshotResponse response = new SnapshotResponse(snapshot.sequence(), snapshot.capturedAtMs(), data, revisions);
             cachedSnapshot = new CachedSnapshot(snapshot, response);
             return response;
         }
@@ -334,7 +461,29 @@ public class MetricsResource {
     private record CachedSnapshot(MetricSnapshot source, SnapshotResponse response) {
     }
 
-    public record SnapshotResponse(long sequence, long capturedAtMs, SamplerDto[] samplers) {
+    private record CachedLiveFrame(MetricSnapshot source, LiveFrame frame) {
+    }
+
+    public record SnapshotResponse(
+        long sequence,
+        long capturedAtMs,
+        SamplerDto[] samplers,
+        WebRevisions.Snapshot revisions
+    ) {
+        SnapshotResponse withRevisions(WebRevisions.Snapshot current) {
+            return new SnapshotResponse(sequence, capturedAtMs, samplers, current);
+        }
+    }
+
+    public record LiveFrame(
+        long sequence,
+        long capturedAtMs,
+        LiveSampleDto[] samplers,
+        WebRevisions.Snapshot revisions
+    ) {
+    }
+
+    public record LiveSampleDto(String id, String name, String suffix, double value, String display) {
     }
 
     private record QueryPage(

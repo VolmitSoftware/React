@@ -110,8 +110,7 @@ void main() {
       final ControlListController controller = ControlListController(
         client,
         isTweaks: false,
-        onChange: () => notifyCount++,
-      );
+      )..addListener(() => notifyCount++);
 
       await controller.load();
 
@@ -123,24 +122,21 @@ void main() {
       expect(notifyCount, greaterThanOrEqualTo(2));
     });
 
-    test('sets error and calls onError on failure', () async {
+    test('sets error and reports the error on failure', () async {
       final _FakeControlClient client = _FakeControlClient();
       client.throwOnFeatures = true;
-      Object? capturedError;
       int notifyCount = 0;
       final ControlListController controller = ControlListController(
         client,
         isTweaks: false,
-        onChange: () => notifyCount++,
-        onError: (Object e) => capturedError = e,
-      );
+      )..addListener(() => notifyCount++);
 
       await controller.load();
 
       expect(controller.items, isEmpty);
       expect(controller.loading, isFalse);
       expect(controller.error, isA<ReactUnavailable>());
-      expect(capturedError, isA<ReactUnavailable>());
+      expect(controller.error, isA<ReactUnavailable>());
       expect(notifyCount, greaterThanOrEqualTo(2));
     });
   });
@@ -180,8 +176,7 @@ void main() {
       expect(
         controller.items.firstWhere((ControlItem i) => i.id == 'a').enabled,
         isTrue,
-        reason:
-            'optimistic update must be visible synchronously before server responds',
+        reason: 'optimistic update must be visible synchronously before server responds',
       );
 
       completer.complete(_item('a', enabled: true));
@@ -216,7 +211,7 @@ void main() {
 
   group('ControlListController.toggle rollback', () {
     test(
-      'restores previous value and calls onError on server failure',
+      'restores previous value and reports the error on server failure',
       () async {
         final _FakeControlClient client = _FakeControlClient();
         client.featuresResult = <ControlItem>[_item('a', enabled: false)];
@@ -227,10 +222,9 @@ void main() {
         final ControlListController controller = ControlListController(
           client,
           isTweaks: false,
-          onError: (Object e) => capturedError = e,
         );
         await controller.load();
-        await controller.toggle('a', true);
+        capturedError = await controller.toggle('a', true);
 
         expect(
           controller.items.firstWhere((ControlItem i) => i.id == 'a').enabled,
@@ -242,7 +236,7 @@ void main() {
     );
   });
 
-  group('ControlListController.setKnob optimism', () {
+  group('ControlListController.commitKnobs optimism', () {
     test('applies optimistic knob value before server responds', () async {
       final Knob initialKnob = _knob('speed', 10);
       final _FakeControlClient client = _FakeControlClient();
@@ -259,7 +253,8 @@ void main() {
       );
       await controller.load();
 
-      final Future<void> pending = controller.setKnob('a', 'speed', 99);
+      controller.stageKnob('a', 'speed', 99);
+      final Future<void> pending = controller.commitKnobs('a');
 
       final ControlItem optimisticItem = controller.items.firstWhere(
         (ControlItem i) => i.id == 'a',
@@ -293,18 +288,19 @@ void main() {
       client.featuresResult = <ControlItem>[
         _item('a', knobs: <Knob>[initialKnob]),
       ];
-      client.onSetFeatureConfig =
-          (String id, Map<String, Object?> knobs) async =>
-              throw const ReactUnavailable();
+      client.onSetFeatureConfig = (
+        String id,
+        Map<String, Object?> knobs,
+      ) async => throw const ReactUnavailable();
 
       Object? capturedError;
       final ControlListController controller = ControlListController(
         client,
         isTweaks: false,
-        onError: (Object e) => capturedError = e,
       );
       await controller.load();
-      await controller.setKnob('a', 'speed', 99);
+      controller.stageKnob('a', 'speed', 99);
+      capturedError = await controller.commitKnobs('a');
 
       expect(
         controller.items
@@ -320,38 +316,34 @@ void main() {
   });
 
   group('ControlListController.setAll', () {
-    test(
-      'toggles only items whose enabled differs and calls setFeatureEnabled correct count',
-      () async {
-        final _FakeControlClient client = _FakeControlClient();
-        client.featuresResult = <ControlItem>[
-          _item('a', enabled: false),
-          _item('b', enabled: true),
-          _item('c', enabled: false),
-        ];
-        client.onSetFeatureEnabled = (String id, bool enabled) async =>
-            _item(id, enabled: enabled);
+    test('toggles only items whose enabled differs and calls setFeatureEnabled correct count', () async {
+      final _FakeControlClient client = _FakeControlClient();
+      client.featuresResult = <ControlItem>[
+        _item('a', enabled: false),
+        _item('b', enabled: true),
+        _item('c', enabled: false),
+      ];
+      client.onSetFeatureEnabled = (String id, bool enabled) async =>
+          _item(id, enabled: enabled);
 
-        final ControlListController controller = ControlListController(
-          client,
-          isTweaks: false,
-        );
-        await controller.load();
-        await controller.setAll(true);
+      final ControlListController controller = ControlListController(
+        client,
+        isTweaks: false,
+      );
+      await controller.load();
+      await controller.setAll(true);
 
-        expect(
-          controller.items.every((ControlItem i) => i.enabled),
-          isTrue,
-          reason: 'all items must be enabled after setAll(true)',
-        );
-        expect(
-          client.setFeatureEnabledCallCount,
-          equals(2),
-          reason:
-              'setFeatureEnabled must be called only for items that changed',
-        );
-      },
-    );
+      expect(
+        controller.items.every((ControlItem i) => i.enabled),
+        isTrue,
+        reason: 'all items must be enabled after setAll(true)',
+      );
+      expect(
+        client.setFeatureEnabledCallCount,
+        equals(2),
+        reason: 'setFeatureEnabled must be called only for items that changed',
+      );
+    });
   });
 
   group('ControlListController.enabledCount', () {

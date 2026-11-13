@@ -1,23 +1,18 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr_router/jaspr_router.dart';
+import 'package:jaspr/jaspr.dart' show GlobalStateKey;
 import 'package:jaspr_test/server_test.dart';
 
-import 'package:react_web/app/reactor_app.dart';
+import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:react_web/model/config_tree.dart';
 import 'package:react_web/model/knob.dart';
 import 'package:react_web/screen/config_editor.dart';
-import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/operate_scope.dart';
+import 'package:react_web/ui/kit/mode.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+import 'support/operate_fakes.dart';
 
-Widget _wrapView(Widget child) =>
-    ArcaneThemeProvider(stylesheet: _sheet, child: child);
-
-ConfigTree _fakeTree() => const ConfigTree(
+ConfigTree _tree(int tickRate) => ConfigTree(
   sections: <ConfigSection>[
     ConfigSection(
       name: 'Performance',
@@ -26,11 +21,11 @@ ConfigTree _fakeTree() => const ConfigTree(
           key: 'tick-rate',
           label: 'Tick Rate',
           type: KnobType.intType,
-          value: 20,
+          value: tickRate,
         ),
       ],
     ),
-    ConfigSection(
+    const ConfigSection(
       name: 'Entity',
       nodes: <Knob>[
         Knob(
@@ -44,180 +39,231 @@ ConfigTree _fakeTree() => const ConfigTree(
   ],
 );
 
+Widget _wrap(Widget child) =>
+    ArcaneThemeProvider(stylesheet: testSheet, child: child);
+
+ConfigSectionsCard _sections() =>
+    find.byType(ConfigSectionsCard).evaluate().single.component
+        as ConfigSectionsCard;
+
+ConfigPresetsCard _presets() =>
+    find.byType(ConfigPresetsCard).evaluate().single.component
+        as ConfigPresetsCard;
+
 void main() {
-  group('ConfigEditorScreen route wiring', () {
-    test('kRouteServerConfig constant is correct', () {
-      expect(kRouteServerConfig, equals('/server/:id/config'));
+  group('ConfigSectionsCard', () {
+    testServer('every section with its settings, unsaved values shown', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(
+          ConfigSectionsCard(
+            tree: _tree(20),
+            pending: const <String, Object?>{'tick-rate': 25},
+            onEdit: (String _, Object? _) {},
+            onSave: () {},
+            onDiscard: () {},
+          ),
+        ),
+      );
+      final DocumentResponse res = await tester.request('/');
+      expect(res.body, contains('Performance'));
+      expect(res.body, contains('Max Entities'));
+      expect(res.body, contains('value="25"'));
+      expect(res.body, contains('Save'));
+      expect(res.body, contains(ReactorText.commonCancel.english));
+      expect(res.body, isNot(contains('data-disabled="true"')));
     });
 
-    test('buildReactorRoutes includes server config route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasConfig = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerConfig,
+    testServer('section names from react.toml read in sentence case', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _wrap(
+          ConfigSectionsCard(
+            tree: const ConfigTree(
+              sections: <ConfigSection>[
+                ConfigSection(name: 'general', nodes: <Knob>[]),
+                ConfigSection(name: 'monitoring', nodes: <Knob>[]),
+              ],
+            ),
+            pending: const <String, Object?>{},
+            onEdit: (String _, Object? _) {},
+            onSave: () {},
+            onDiscard: () {},
+          ),
+        ),
       );
+      final DocumentResponse res = await tester.request('/');
+      expect(res.body, contains('>General<'));
+      expect(res.body, contains('>Monitoring<'));
+      expect(res.body, isNot(contains('>general<')));
+    });
+
+    testServer('Save and Cancel wait for an edit', (ServerTester tester) async {
+      tester.pumpComponent(
+        _wrap(
+          ConfigSectionsCard(
+            tree: _tree(20),
+            pending: const <String, Object?>{},
+            onEdit: (String _, Object? _) {},
+            onSave: () {},
+            onDiscard: () {},
+          ),
+        ),
+      );
+      final DocumentResponse res = await tester.request('/');
       expect(
-        hasConfig,
-        isTrue,
-        reason: 'Config Editor screen requires /server/:id/config route',
+        RegExp('data-disabled="true"').allMatches(res.body).length,
+        greaterThanOrEqualTo(2),
       );
+    });
+
+    testServer('an empty tree says so', (ServerTester tester) async {
+      tester.pumpComponent(
+        _wrap(
+          const ConfigSectionsCard(
+            tree: ConfigTree(),
+            pending: <String, Object?>{},
+          ),
+        ),
+      );
+      final DocumentResponse res = await tester.request('/');
+      expect(res.body, contains('No configuration sections'));
     });
   });
 
-  group('ConfigEditorScreen sidebar', () {
-    testServer('ReactorShell with a server renders Config Editor sidebar item', (
+  group('ConfigEditorScreen', () {
+    testServer('without a client it asks for a live connection', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(
-        _wrapView(
-          ReactorShell(
-            currentPath: '/server/srv1/config',
-            servers: const <ServerEntry>[
-              ServerEntry(
-                id: 'srv1',
-                name: 'Test Server',
-                state: ConnState.live,
-              ),
-            ],
-          ),
-        ),
-      );
+      tester.pumpComponent(serverScopes(null, const ConfigEditorScreen()));
       final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Config Editor'),
-        isTrue,
-        reason:
-            'Config Editor sidebar item must appear in per-server sidebar group',
-      );
+      expect(res.body, contains('Configuration unavailable'));
     });
-  });
 
-  group('ConfigEditorView render', () {
-    testServer('renders both section names Performance and Entity', (
-      ServerTester tester,
+    testComponents('Simple shows the presets only', (
+      ComponentTester tester,
     ) async {
       tester.pumpComponent(
-        _wrapView(
-          ConfigEditorView(
-            tree: _fakeTree(),
-            pending: const <String, Object?>{},
-          ),
+        serverScopes(
+          FakeServer(client: OperateClient(config: _tree(20))),
+          const ConfigEditorScreen(),
+          mode: ReactorMode.simple,
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Performance'),
-        isTrue,
-        reason: 'Performance section name must appear',
-      );
-      expect(
-        res.body.contains('Entity'),
-        isTrue,
-        reason: 'Entity section name must appear',
-      );
+      await tester.pump();
+      expect(find.byType(ConfigPresetsCard), findsOneComponent);
+      expect(find.byType(ConfigSectionsCard), findsNothing);
     });
 
-    testServer('renders node labels Tick Rate and Max Entities', (
-      ServerTester tester,
+    testComponents('an operator may not change the config', (
+      ComponentTester tester,
     ) async {
       tester.pumpComponent(
-        _wrapView(
-          ConfigEditorView(
-            tree: _fakeTree(),
-            pending: const <String, Object?>{},
-          ),
+        serverScopes(
+          FakeServer(client: OperateClient(config: _tree(20))),
+          const ConfigEditorScreen(),
+          role: operatorRole,
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Tick Rate'),
-        isTrue,
-        reason: 'Tick Rate node label must appear',
-      );
-      expect(
-        res.body.contains('Max Entities'),
-        isTrue,
-        reason: 'Max Entities node label must appear',
-      );
+      await tester.pump();
+      expect(_presets().onPreset, isNull);
+      expect(_sections().onEdit, isNull);
+      expect(_sections().onSave, isNull);
     });
 
-    testServer('renders Off Light Balanced High preset buttons', (
-      ServerTester tester,
+    testComponents('edits wait for Save, then go out together', (
+      ComponentTester tester,
     ) async {
-      tester.pumpComponent(
-        _wrapView(
-          ConfigEditorView(
-            tree: _fakeTree(),
-            pending: const <String, Object?>{},
-          ),
-        ),
+      final FakeServer server = FakeServer(
+        client: OperateClient(config: _tree(20)),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Off'),
-        isTrue,
-        reason: 'Off preset button must appear',
-      );
-      expect(
-        res.body.contains('Light'),
-        isTrue,
-        reason: 'Light preset button must appear',
-      );
-      expect(
-        res.body.contains('Balanced'),
-        isTrue,
-        reason: 'Balanced preset button must appear',
-      );
-      expect(
-        res.body.contains('High'),
-        isTrue,
-        reason: 'High preset button must appear',
-      );
+      tester.pumpComponent(serverScopes(server, const ConfigEditorScreen()));
+      await tester.pump();
+      _sections().onEdit!('tick-rate', 30);
+      await tester.pump();
+      expect(_sections().pending, <String, Object?>{'tick-rate': 30});
+      expect(server.client.writes('PUT /config'), 0);
+      _sections().onSave!();
+      await tester.pump();
+      expect(server.client.calls, contains('PUT /config'));
     });
 
-    testServer('renders Apply Changes button', (ServerTester tester) async {
-      tester.pumpComponent(
-        _wrapView(
-          ConfigEditorView(
-            tree: _fakeTree(),
-            pending: const <String, Object?>{},
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Apply Changes'),
-        isTrue,
-        reason: 'Apply Changes button must appear',
-      );
-    });
-  });
-
-  group('ConfigEditorScreen null client', () {
-    testServer('renders live-connection note when OperateScope client is null', (
-      ServerTester tester,
+    testComponents('a preset over unsaved edits asks first', (
+      ComponentTester tester,
     ) async {
+      final FakeServer server = FakeServer(
+        client: OperateClient(config: _tree(20)),
+      );
+      tester.pumpComponent(serverScopes(server, const ConfigEditorScreen()));
+      await tester.pump();
+      _presets().onPreset!('light');
+      await tester.pump();
+      expect(server.client.calls, contains('POST /config/preset/light'));
+
+      _sections().onEdit!('tick-rate', 30);
+      await tester.pump();
+      _presets().onPreset!('high');
+      await tester.pump();
+      expect(server.client.calls, isNot(contains('POST /config/preset/high')));
+      expect(_sections().pending, isNotEmpty);
+    });
+
+    testComponents('a preset over unsaved edits applies after a yes', (
+      ComponentTester tester,
+    ) async {
+      final FakeServer server = FakeServer(
+        client: OperateClient(config: _tree(20)),
+      );
       tester.pumpComponent(
-        _wrapView(
-          OperateScope(
-            client: null,
-            logSocketFactory: null,
-            child: const ConfigEditorScreen(),
-          ),
+        withConfirmHost(serverScopes(server, const ConfigEditorScreen())),
+      );
+      await tester.pump();
+      _sections().onEdit!('tick-rate', 30);
+      await tester.pump();
+      _presets().onPreset!('high');
+      await tester.pump();
+      await answerConfirm(tester, yes: true);
+      expect(server.client.calls, contains('POST /config/preset/high'));
+      expect(_sections().pending, isEmpty);
+      await unmount(tester);
+    });
+
+    testComponents('switching servers reloads and saves to the new server', (
+      ComponentTester tester,
+    ) async {
+      final FakeServer first = FakeServer(
+        client: OperateClient(config: _tree(20)),
+      );
+      final FakeServer second = FakeServer(
+        client: OperateClient(config: _tree(40)),
+      );
+      final GlobalStateKey<ServerSwitcherState> key =
+          GlobalStateKey<ServerSwitcherState>();
+      tester.pumpComponent(
+        ServerSwitcher(
+          key: key,
+          servers: <FakeServer>[first, second],
+          child: const ConfigEditorScreen(),
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('requires a live connection'),
-        isTrue,
-        reason:
-            'live-connection note must appear when OperateScope client is null',
-      );
+      await tester.pump();
+      expect(_sections().tree.node('tick-rate')!.value, 20);
+      _sections().onEdit!('tick-rate', 21);
+      await tester.pump();
+
+      key.currentState!.show(1);
+      await tester.pump();
+      expect(_sections().tree.node('tick-rate')!.value, 40);
+      expect(_sections().pending, isEmpty);
+
+      _sections().onEdit!('tick-rate', 45);
+      await tester.pump();
+      _sections().onSave!();
+      await tester.pump();
+      expect(second.client.calls, contains('PUT /config'));
+      expect(first.client.writes('PUT /config'), 0);
     });
   });
 }

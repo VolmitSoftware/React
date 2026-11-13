@@ -39,20 +39,10 @@ class AlertStore {
     _persistSet(_ackedKey, _acked);
   }
 
-  void unack(String key) {
-    _acked.remove(key);
-    _persistSet(_ackedKey, _acked);
-  }
-
   bool isResolved(String key) => _resolved.contains(key);
 
   void resolve(String key) {
     _resolved.add(key);
-    _persistSet(_resolvedKey, _resolved);
-  }
-
-  void unresolve(String key) {
-    _resolved.remove(key);
     _persistSet(_resolvedKey, _resolved);
   }
 
@@ -68,11 +58,19 @@ class AlertStore {
     _persistSet(_resolvedKey, _resolved);
   }
 
-  List<FleetAlert> reconcile(List<FleetAlert> live) {
+  /// The open alerts of [live], minus the cleared ones. A cleared or
+  /// acknowledged alert of a server in [reporting] (servers with data now)
+  /// that is no longer raised is forgotten, so its next occurrence shows
+  /// again; servers without data keep theirs.
+  List<FleetAlert> reconcile(
+    List<FleetAlert> live, {
+    Set<String> reporting = const <String>{},
+  }) {
     final Set<String> liveKeys = <String>{};
     for (final FleetAlert a in live) {
       liveKeys.add(a.key);
     }
+    _forgetEnded(liveKeys, reporting);
 
     final Set<String> staleKeys = _firstSeenByKey.keys
         .where((String k) => !liveKeys.contains(k))
@@ -92,9 +90,8 @@ class AlertStore {
     }
 
     open.sort((FleetAlert a, FleetAlert b) {
-      final int rankCmp = alertSeverityRank(
-        b.severity,
-      ).compareTo(alertSeverityRank(a.severity));
+      final int rankCmp = alertSeverityRank(b.severity)
+          .compareTo(alertSeverityRank(a.severity));
       if (rankCmp != 0) return rankCmp;
       final int nameCmp = a.serverName.compareTo(b.serverName);
       if (nameCmp != 0) return nameCmp;
@@ -102,6 +99,23 @@ class AlertStore {
     });
 
     return open;
+  }
+
+  void _forgetEnded(Set<String> liveKeys, Set<String> reporting) {
+    if (reporting.isEmpty) return;
+    bool ended(String key) {
+      final int slash = key.indexOf('/');
+      return slash > 0 &&
+          reporting.contains(key.substring(0, slash)) &&
+          !liveKeys.contains(key);
+    }
+
+    final int resolved = _resolved.length;
+    final int acked = _acked.length;
+    _resolved.removeWhere(ended);
+    _acked.removeWhere(ended);
+    if (_resolved.length != resolved) _persistSet(_resolvedKey, _resolved);
+    if (_acked.length != acked) _persistSet(_ackedKey, _acked);
   }
 
   Set<String> detectNewCriticalForServer(

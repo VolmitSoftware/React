@@ -2,17 +2,16 @@ package art.arcane.react.web;
 
 import art.arcane.react.api.web.ActionBackend;
 import art.arcane.react.api.web.ActionDispatcher;
+import art.arcane.react.api.web.ActionTicketRegistry;
 import art.arcane.react.api.web.AuditLog;
 import art.arcane.react.api.web.BukkitWebMutationReporter;
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
+import art.arcane.react.api.web.pairing.WebToken;
 import art.arcane.react.api.web.dto.ActionDescriptorDto;
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.resource.ActionResource;
 import io.javalin.http.ConflictResponse;
 import io.javalin.http.Context;
-import io.javalin.http.ForbiddenResponse;
+import art.arcane.react.api.web.WebError;
 import io.javalin.http.NotFoundResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +19,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,9 +39,9 @@ public class ActionResourceTest {
     @TempDir
     File tmpDir;
 
-    private PairingToken adminToken;
-    private PairingToken opToken;
-    private PairingToken readToken;
+    private WebToken adminToken;
+    private WebToken opToken;
+    private WebToken readToken;
     private FakeActionBackend fakeBackend;
     private FakeActionDispatcher fakeDispatcher;
     private AuditLog audit;
@@ -51,21 +49,12 @@ public class ActionResourceTest {
 
     @BeforeEach
     void setUp() {
-        byte[] secret = new byte[32];
-        new SecureRandom().nextBytes(secret);
 
-        TokenRecord adminRecord = new TokenRecord("tok-admin", "admin-device", 1000L, Set.of("read", "op:execute", "admin"), "admin");
-        TokenRecord opRecord = new TokenRecord("tok-op", "op-device", 1000L, Set.of("read", "op:execute"), "operator");
-        TokenRecord readRecord = new TokenRecord("tok-read", "read-device", 1000L, Set.of("read"), "viewer");
-        TokenStore store = TokenStore.inMemory(adminRecord, opRecord, readRecord);
 
-        String adminBearer = PairingToken.mint(secret, adminRecord.id(), adminRecord.label(), adminRecord.issuedAt(), adminRecord.scopes());
-        String opBearer = PairingToken.mint(secret, opRecord.id(), opRecord.label(), opRecord.issuedAt(), opRecord.scopes());
-        String readBearer = PairingToken.mint(secret, readRecord.id(), readRecord.label(), readRecord.issuedAt(), readRecord.scopes());
 
-        adminToken = PairingToken.verify(secret, adminBearer, store).orElseThrow();
-        opToken = PairingToken.verify(secret, opBearer, store).orElseThrow();
-        readToken = PairingToken.verify(secret, readBearer, store).orElseThrow();
+        adminToken = WebTestTokens.token("tok-admin", "admin");
+        opToken = WebTestTokens.token("tok-op", "operator");
+        readToken = WebTestTokens.token("tok-read", "viewer");
 
         fakeBackend = new FakeActionBackend();
         fakeDispatcher = new FakeActionDispatcher("tkt-1", "queued");
@@ -75,7 +64,7 @@ public class ActionResourceTest {
                 r.run();
             }
         };
-        resource = new ActionResource(fakeBackend, fakeDispatcher, new BukkitWebMutationReporter(audit));
+        resource = new ActionResource(fakeBackend, fakeDispatcher, new BukkitWebMutationReporter(audit), new ActionTicketRegistry(() -> { }));
     }
 
     @Test
@@ -91,7 +80,7 @@ public class ActionResourceTest {
     @Test
     void execute_non_destructive_with_op_token_returns_202_and_ticket() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         when(ctx.pathParam("id")).thenReturn("action-hopper-network-normalize");
         when(ctx.bodyAsClass(ActionResource.ExecuteBody.class))
                 .thenReturn(new ActionResource.ExecuteBody(Map.of(), null));
@@ -122,7 +111,7 @@ public class ActionResourceTest {
     @Test
     void execute_destructive_with_admin_token_without_confirm_throws_conflict_and_dispatcher_not_invoked() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(adminToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(adminToken);
         when(ctx.pathParam("id")).thenReturn("purge-entities");
         when(ctx.bodyAsClass(ActionResource.ExecuteBody.class))
                 .thenReturn(new ActionResource.ExecuteBody(Map.of(), null));
@@ -134,7 +123,7 @@ public class ActionResourceTest {
     @Test
     void execute_destructive_with_admin_token_confirm_true_returns_202() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(adminToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(adminToken);
         when(ctx.pathParam("id")).thenReturn("purge-entities");
         when(ctx.bodyAsClass(ActionResource.ExecuteBody.class))
                 .thenReturn(new ActionResource.ExecuteBody(Map.of(), true));
@@ -150,19 +139,19 @@ public class ActionResourceTest {
     @Test
     void execute_destructive_with_op_token_throws_forbidden_and_dispatcher_not_invoked() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         when(ctx.pathParam("id")).thenReturn("purge-entities");
         when(ctx.bodyAsClass(ActionResource.ExecuteBody.class))
                 .thenReturn(new ActionResource.ExecuteBody(Map.of(), true));
 
-        assertThrows(ForbiddenResponse.class, () -> resource.execute(ctx));
+        assertThrows(WebError.class, () -> resource.execute(ctx));
         assertFalse(fakeDispatcher.dispatched);
     }
 
     @Test
     void execute_unknown_id_throws_not_found() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(opToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(opToken);
         when(ctx.pathParam("id")).thenReturn("does-not-exist");
         when(ctx.bodyAsClass(ActionResource.ExecuteBody.class))
                 .thenReturn(new ActionResource.ExecuteBody(Map.of(), null));
@@ -173,12 +162,12 @@ public class ActionResourceTest {
     @Test
     void execute_with_read_only_token_throws_forbidden_and_dispatcher_not_invoked() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(readToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(readToken);
         when(ctx.pathParam("id")).thenReturn("action-hopper-network-normalize");
         when(ctx.bodyAsClass(ActionResource.ExecuteBody.class))
                 .thenReturn(new ActionResource.ExecuteBody(Map.of(), null));
 
-        assertThrows(ForbiddenResponse.class, () -> resource.execute(ctx));
+        assertThrows(WebError.class, () -> resource.execute(ctx));
         assertFalse(fakeDispatcher.dispatched);
     }
 

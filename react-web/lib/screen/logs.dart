@@ -1,203 +1,142 @@
+/// Console: the server's live log and, with `console:execute`, the command
+/// box. The log viewport is the page's one scrolling region; it follows the
+/// newest line until the reader scrolls up. Pause holds new lines back
+/// without losing them; a dropped stream shows Reconnecting.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
-import 'package:jaspr/jaspr.dart' show Component;
+import 'package:jaspr/jaspr.dart' show Component, ListenableBuilder, kIsWeb;
+import 'package:universal_web/web.dart' as web;
 
-import '../service/react_client.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/role_info.dart';
-import '../service/react_log_socket.dart';
+import '../service/react_client.dart';
+import '../service/react_exceptions.dart';
 import '../state/connection_manager.dart';
 import '../state/log_controller.dart';
-import '../state/operate_scope.dart';
 import '../state/role_scope.dart';
 import '../state/server_scope.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/row_window.dart';
+import '../state/server_session.dart';
+import '../state/server_session_scope.dart';
+import '../ui/kit/action_row.dart';
+import '../ui/kit/alert.dart';
+import '../ui/kit/browser.dart';
+import '../ui/kit/menu.dart';
+import '../ui/kit/page.dart';
+import '../ui/kit/role_gate.dart';
+import '../ui/kit/states.dart';
+import '../ui/kit/surface.dart';
+import '../ui/kit/toggle_choice.dart';
+import '../ui/error_text.dart';
 
-class LogsView extends StatelessWidget {
-  final List<String> lines;
-  final bool paused;
-  final String levelFilter;
-  final Widget? notice;
-  final void Function(bool)? onPause;
-  final void Function()? onClear;
-  final void Function(String)? onLevelFilter;
-  final String command;
-  final bool consoleEnabled;
-  final String? consoleUnavailableMessage;
-  final bool consolePending;
-  final void Function(String)? onCommandChanged;
-  final void Function()? onExecuteCommand;
+/// The level a log line was written at, read from its bracketed prefix
+/// (`[12:00:01 WARN]:`, `[ERROR]`).
+enum LogLevel { info, warn, error, debug }
 
-  const LogsView({
+final RegExp _levelWord = RegExp(
+  r'\b(SEVERE|ERROR|FATAL|WARNING|WARN|INFO|DEBUG|TRACE)\b',
+);
+
+/// The level in [line]'s prefix, or null for a line without one (a stack
+/// trace or a wrapped message).
+LogLevel? logLevelOf(String line) {
+  if (!line.startsWith('[')) return null;
+  final int end = line.indexOf(']');
+  final String prefix = (end < 0 ? line : line.substring(0, end)).toUpperCase();
+  final RegExpMatch? match = _levelWord.firstMatch(prefix);
+  return switch (match?.group(1)) {
+    'SEVERE' || 'ERROR' || 'FATAL' => LogLevel.error,
+    'WARNING' || 'WARN' => LogLevel.warn,
+    'DEBUG' || 'TRACE' => LogLevel.debug,
+    'INFO' => LogLevel.info,
+    _ => null,
+  };
+}
+
+/// [lines] with their levels; a line without a level of its own belongs to
+/// the line above it, so a stack trace stays with its error.
+List<(String, LogLevel)> levelledLines(List<String> lines) {
+  LogLevel current = LogLevel.info;
+  return <(String, LogLevel)>[
+    for (final String line in lines)
+      (line, current = logLevelOf(line) ?? current),
+  ];
+}
+
+/// The lines that pass the level filter ([level] null shows all) and
+/// contain [query], ignoring case.
+List<(String, LogLevel)> filterLogLines(
+  List<String> lines, {
+  LogLevel? level,
+  String query = '',
+}) {
+  final String needle = query.trim().toLowerCase();
+  return <(String, LogLevel)>[
+    for (final (String, LogLevel) entry in levelledLines(lines))
+      if ((level == null || entry.$2 == level) &&
+          (needle.isEmpty || entry.$1.toLowerCase().contains(needle)))
+        entry,
+  ];
+}
+
+/// The scrolling log: one line per row, coloured by level.
+class LogViewport extends StatelessWidget {
+  const LogViewport({
+    required this.id,
     required this.lines,
-    required this.paused,
-    required this.levelFilter,
-    required this.onPause,
-    required this.onClear,
-    required this.onLevelFilter,
-    this.notice,
-    this.command = '',
-    this.consoleEnabled = false,
-    this.consoleUnavailableMessage,
-    this.consolePending = false,
-    this.onCommandChanged,
-    this.onExecuteCommand,
+    required this.label,
+    this.onScroll,
     super.key,
   });
+
+  final String id;
+  final List<(String, LogLevel)> lines;
+
+  /// The log's accessible name.
+  final String label;
+  final void Function()? onScroll;
+
+  static String _lineClasses(LogLevel level) => switch (level) {
+    LogLevel.error => 'reactor-log-line is-error',
+    LogLevel.warn => 'reactor-log-line is-warning',
+    LogLevel.debug => 'reactor-log-line is-debug',
+    LogLevel.info => 'reactor-log-line',
+  };
 
   @override
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
-    return ReactorPage(
-      title: reactorText(ReactorText.logsTitle),
-      subtitle: reactorText(ReactorText.logsSubtitle),
-      children: <Widget>[
-        ?notice,
-        SectionPanel(
-          label: reactorText(ReactorText.consoleTitle),
-          description: reactorText(ReactorText.consoleDescription),
-          flush: true,
-          trailing: ArcaneSelect(
-            size: ComponentSize.sm,
-            label: reactorText(ReactorText.logsLevel),
-            value: levelFilter,
-            options: <ArcaneSelectOption>[
-              ArcaneSelectOption(
-                label: reactorText(ReactorText.logsAllLevels),
-                value: 'ALL',
-              ),
-              const ArcaneSelectOption(label: 'INFO', value: 'INFO'),
-              const ArcaneSelectOption(label: 'WARN', value: 'WARN'),
-              const ArcaneSelectOption(label: 'ERROR', value: 'ERROR'),
-              const ArcaneSelectOption(label: 'DEBUG', value: 'DEBUG'),
-            ],
-            onChanged: (String s) => onLevelFilter?.call(s),
-          ),
-          child: dom.div(classes: 'reactor-terminal', <Widget>[
-            dom.div(classes: 'reactor-terminal-toolbar', <Widget>[
-              dom.div(classes: 'reactor-terminal-state', <Widget>[
-                dom.span(
-                  classes: 'reactor-terminal-live${paused ? ' is-paused' : ''}',
-                  const <Widget>[],
-                ),
-                Component.text(
-                  paused
-                      ? reactorText(ReactorText.logsOutputPaused)
-                      : reactorText(
-                          ReactorText.logsStreamCount,
-                          <String, Object?>{'count': lines.length},
-                        ),
-                ),
-              ]),
-              dom.div(classes: 'reactor-terminal-actions', <Widget>[
-                Button.secondary(
-                  label: paused
-                      ? reactorText(ReactorText.logsResume)
-                      : reactorText(ReactorText.logsPause),
-                  size: ButtonSize.small,
-                  onPressed: () => onPause?.call(!paused),
-                ),
-                Button.ghost(
-                  label: reactorText(ReactorText.logsClear),
-                  size: ButtonSize.small,
-                  onPressed: () => onClear?.call(),
-                ),
-              ]),
+    return dom.div(
+      id: id,
+      classes: 'reactor-log',
+      attributes: <String, String>{
+        'role': 'log',
+        'aria-live': 'off',
+        'aria-label': label,
+        'tabindex': '0',
+      },
+      events: onScroll == null
+          ? null
+          : <String, void Function(web.Event)>{
+              'scroll': (web.Event _) => onScroll!(),
+            },
+      <Widget>[
+        if (lines.isEmpty)
+          EmptyState(message: reactorText(ReactorText.logsNoLines))
+        else
+          for (final (String, LogLevel) entry in lines)
+            dom.div(classes: _lineClasses(entry.$2), <Widget>[
+              Component.text(entry.$1),
             ]),
-            dom.div(classes: 'reactor-terminal-output', <Widget>[
-              if (lines.isEmpty)
-                ReactorEmptyState(
-                  title: reactorText(ReactorText.logsNoLines),
-                  description: reactorText(ReactorText.logsNoLinesDescription),
-                  icon: ArcaneIcon.scrollText(size: IconSize.sm),
-                )
-              else
-                RowWindow<String>(
-                  rows: lines,
-                  pageSize: 200,
-                  latest: true,
-                  builder: (List<String> visible) => dom.div(
-                    attributes: const <String, String>{
-                      'role': 'log',
-                      'aria-live': 'off',
-                    },
-                    classes: 'reactor-terminal-lines',
-                    <Widget>[
-                      for (final String line in visible)
-                        dom.div(classes: _lineClasses(line), <Widget>[
-                          Component.text(line),
-                        ]),
-                    ],
-                  ),
-                ),
-            ]),
-            dom.div(classes: 'reactor-console', <Widget>[
-              dom.span(classes: 'reactor-console-prompt', <Widget>[
-                Component.text('>'),
-              ]),
-              dom.div(classes: 'reactor-console-input', <Widget>[
-                TextInput(
-                  value: command,
-                  type: TextInputType.text,
-                  attributes: const <String, String>{'dir': 'ltr'},
-                  placeholder: reactorText(ReactorText.consolePlaceholder),
-                  disabled: !consoleEnabled || consolePending,
-                  onChanged: consoleEnabled && !consolePending
-                      ? onCommandChanged
-                      : null,
-                  onSubmitted:
-                      consoleEnabled &&
-                          !consolePending &&
-                          command.trim().isNotEmpty
-                      ? (String value) => onExecuteCommand?.call()
-                      : null,
-                  fullWidth: true,
-                ),
-              ]),
-              Button.primary(
-                label: consolePending
-                    ? reactorText(ReactorText.consoleRunning)
-                    : reactorText(ReactorText.consoleRun),
-                disabled:
-                    !consoleEnabled || consolePending || command.trim().isEmpty,
-                onPressed:
-                    !consoleEnabled || consolePending || command.trim().isEmpty
-                    ? null
-                    : () => onExecuteCommand?.call(),
-              ),
-            ]),
-            if (!consoleEnabled)
-              dom.div(classes: 'reactor-console-disabled', <Widget>[
-                Component.text(
-                  consoleUnavailableMessage ??
-                      reactorText(ReactorText.consoleAdminRequired),
-                ),
-              ]),
-          ]),
-        ),
       ],
     );
   }
-
-  String _lineClasses(String line) {
-    final String normalized = line.toUpperCase();
-    if (normalized.contains('[ERROR]') || normalized.contains('[SEVERE]')) {
-      return 'reactor-terminal-line is-error';
-    }
-    if (normalized.contains('[WARN]')) {
-      return 'reactor-terminal-line is-warning';
-    }
-    if (normalized.contains('[DEBUG]') || normalized.contains('[TRACE]')) {
-      return 'reactor-terminal-line is-debug';
-    }
-    return 'reactor-terminal-line';
-  }
 }
 
+/// The console of the server the page belongs to, from its session: the
+/// stream opens while the page shows it and closes a while after it leaves.
 class LogsScreen extends StatefulWidget {
   const LogsScreen({super.key});
 
@@ -206,72 +145,97 @@ class LogsScreen extends StatefulWidget {
 }
 
 class _LogsScreenState extends State<LogsScreen> {
-  ILogClient? _client;
-  IConsoleClient? _consoleClient;
-  LogController? _controller;
-  bool _started = false;
-  bool _consolePending = false;
+  static const String _logId = 'reactor-log';
+
+  LogLevel? _level;
+  String _query = '';
+  bool _following = true;
   String _command = '';
-  Object? _error;
+  bool _sending = false;
+
+  /// The session the view state belongs to; another server starts over.
+  String? _session;
+
+  /// A phone: the level filter moves into the toolbar's "..." menu, so
+  /// the search box keeps its room.
+  bool _compact = false;
+  void Function() _stopCompact = () {};
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final OperateScope? scope = OperateScope.of(context);
-    final ILogClient? client = scope?.client;
-    _consoleClient = scope?.consoleClient;
-    final ILogSocket Function()? factory = scope?.logSocketFactory;
-    if (client != null && !_started) {
-      _started = true;
-      _client = client;
-      _controller = LogController(
-        client,
-        socket: factory?.call(),
-        onChange: () => setState(() {}),
-        onError: (Object error) {
-          if (!mounted) return;
-          setState(() => _error = error);
-        },
-      );
-      _controller!.load();
-      _controller!.start();
-    }
-  }
-
-  void _retry() {
-    final LogController? controller = _controller;
-    if (controller == null) return;
-    setState(() => _error = null);
-    controller.load();
+  void initState() {
+    super.initState();
+    final (bool compact, void Function() stop) = watchMedia(compactQuery, (
+      bool compact,
+    ) {
+      if (mounted) setState(() => _compact = compact);
+    });
+    _compact = compact;
+    _stopCompact = stop;
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _stopCompact();
     super.dispose();
   }
 
-  Future<void> _executeConsole() async {
-    final IConsoleClient? client = _consoleClient;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final String? session = ServerSessionScope.of(context)?.key;
+    if (session == _session) return;
+    _session = session;
+    _following = true;
+    _command = '';
+  }
+
+  web.HTMLElement? get _viewport =>
+      kIsWeb ? web.document.getElementById(_logId) as web.HTMLElement? : null;
+
+  void _onScroll() {
+    final web.HTMLElement? log = _viewport;
+    if (log == null) return;
+    final bool atEnd = log.scrollHeight - log.scrollTop - log.clientHeight < 24;
+    if (atEnd != _following) setState(() => _following = atEnd);
+  }
+
+  /// Runs a frame after a build. A scroll up in between turned following
+  /// off, and the view stays where the reader put it.
+  void _toEnd() {
+    if (!_following) return;
+    final web.HTMLElement? log = _viewport;
+    if (log != null) log.scrollTop = log.scrollHeight.toDouble();
+  }
+
+  void _jumpToLatest() {
+    setState(() => _following = true);
+    afterFrame(_toEnd);
+  }
+
+  IConsoleClient? _console(BuildContext context) =>
+      ServerSessionScope.of(context)?.clientAs<IConsoleClient>();
+
+  bool _consoleAllowed(BuildContext context) =>
+      ServerScope.of(context)?.state == ConnState.live &&
+      _console(context) != null &&
+      RoleGate.allows(context, RoleNeed.console);
+
+  Future<void> _run() async {
+    final IConsoleClient? client = _console(context);
     final String command = _command.trim();
-    final RoleInfo? role = RoleScope.of(context)?.role;
-    final bool allowed = role?.canExecuteConsole ?? false;
-    final bool live = ServerScope.of(context)?.state == ConnState.live;
     if (client == null ||
         command.isEmpty ||
-        _consolePending ||
-        !allowed ||
-        !live) {
+        _sending ||
+        !_consoleAllowed(context)) {
       return;
     }
-
-    setState(() => _consolePending = true);
+    setState(() => _sending = true);
     try {
       final bool dispatched = await client.executeConsole(command);
       if (!mounted) return;
+      // The log shows the result; a toast here would cover Run.
       if (dispatched) {
         setState(() => _command = '');
-        ArcaneSonner.success(reactorText(ReactorText.consoleDispatched));
       } else {
         ArcaneSonner.error(reactorText(ReactorText.consoleRejected));
       }
@@ -282,100 +246,224 @@ class _LogsScreenState extends State<LogsScreen> {
         description: localizedReactorError(error),
       );
     } finally {
-      if (mounted) setState(() => _consolePending = false);
+      if (mounted) setState(() => _sending = false);
     }
+  }
+
+  AppPage _page({required List<Widget> children}) => AppPage(
+    title: reactorText(ReactorText.pageConsoleTitle),
+    tip: reactorText(ReactorText.logsSubtitle),
+    children: children,
+  );
+
+  Widget _search() => dom.div(classes: 'reactor-grow', <Widget>[
+    TextInput(
+      type: TextInputType.search,
+      size: ComponentSize.md,
+      value: _query,
+      placeholder: reactorText(ReactorText.logsSearch),
+      attributes: <String, String>{
+        'aria-label': reactorText(ReactorText.logsSearch),
+      },
+      fullWidth: true,
+      onChanged: (String value) => setState(() => _query = value),
+    ),
+  ]);
+
+  ActionRow _toolbar(LogController controller) {
+    final bool paused = controller.paused;
+    final List<ChoiceOption<LogLevel?>> levels = <ChoiceOption<LogLevel?>>[
+      ChoiceOption<LogLevel?>(null, reactorText(ReactorText.commonAll)),
+      ChoiceOption<LogLevel?>(
+        LogLevel.warn,
+        reactorText(ReactorText.logsLevelWarn),
+      ),
+      ChoiceOption<LogLevel?>(
+        LogLevel.error,
+        reactorText(ReactorText.logsLevelError),
+      ),
+    ];
+    return ActionRow(
+      label: reactorText(ReactorText.pageConsoleTitle),
+      leading: <Widget>[
+        if (!_compact)
+          ToggleChoice<LogLevel?>(
+            label: reactorText(ReactorText.logsLevel),
+            options: levels,
+            value: _level,
+            onChanged: (LogLevel? level) => setState(() => _level = level),
+          ),
+        _search(),
+      ],
+      more: <AppMenuEntry>[
+        if (_compact)
+          for (final ChoiceOption<LogLevel?> level in levels)
+            AppMenuEntry(
+              level.label,
+              () => setState(() => _level = level.value),
+              icon: level.value == _level ? ArcaneIcon.check() : null,
+            ),
+      ],
+      secondary: <RowAction>[
+        // On a phone both are icon buttons (named, with a tooltip), so the
+        // search box gets the row.
+        RowAction(
+          reactorText(paused ? ReactorText.logsResume : ReactorText.logsPause),
+          () => controller.setPaused(!paused),
+          icon: paused ? ArcaneIcon.play() : ArcaneIcon.pause(),
+          iconOnly: _compact,
+          pressed: paused,
+        ),
+        RowAction(
+          reactorText(ReactorText.logsClear),
+          controller.clear,
+          icon: ArcaneIcon.eraser(),
+          iconOnly: _compact,
+        ),
+      ],
+    );
+  }
+
+  Widget _commandRow(BuildContext context) {
+    final bool allowed = _consoleAllowed(context);
+    final bool ready = allowed && !_sending && _command.trim().isNotEmpty;
+    return ActionRow(
+      label: reactorText(ReactorText.consoleCommand),
+      leading: <Widget>[
+        dom.div(
+          classes: 'reactor-grow',
+          attributes: const <String, String>{'dir': 'ltr'},
+          <Widget>[
+            TextInput(
+              value: _command,
+              type: TextInputType.text,
+              placeholder: reactorText(ReactorText.consoleCommand),
+              attributes: <String, String>{
+                'aria-label': reactorText(ReactorText.consoleCommand),
+                'autocomplete': 'off',
+                'spellcheck': 'false',
+              },
+              disabled: !allowed || _sending,
+              fullWidth: true,
+              onChanged: (String value) => setState(() => _command = value),
+              onSubmitted: (String _) => _run(),
+            ),
+          ],
+        ),
+      ],
+      primary: RowAction(
+        reactorText(ReactorText.consoleRun),
+        ready ? _run : null,
+        loading: _sending,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
-    final ServerScope? server = ServerScope.of(context);
-    if (server?.state == ConnState.connecting && _client == null) {
-      return _statePage(
-        ReactorLoadingState(label: reactorText(ReactorText.logsOpening)),
-      );
-    }
-    if (_client == null) {
-      return _statePage(
-        ReactorNotice(
-          title: reactorText(ReactorText.logsUnavailable),
-          message: reactorText(ReactorText.logsLiveRequired),
-          status: ReactorStatus.critical,
-        ),
-      );
-    }
-
-    final LogController controller = _controller!;
-    if (controller.loading && controller.lines.isEmpty) {
-      return _statePage(
-        ReactorLoadingState(label: reactorText(ReactorText.logsLoadingHistory)),
-      );
-    }
-
-    final Object? error = _error;
-    if (error != null && controller.lines.isEmpty) {
-      return _statePage(
-        ReactorNotice(
-          title: reactorText(ReactorText.logsStreamUnavailable),
-          message: localizedReactorError(error),
-          status: ReactorStatus.critical,
-          action: Button.secondary(
-            label: reactorText(ReactorText.commonRetry),
-            size: ButtonSize.small,
-            onPressed: _retry,
-          ),
-        ),
-      );
-    }
-
+    final ServerSession? session = ServerSessionScope.of(context);
     final RoleInfo? role = RoleScope.of(context)?.role;
-    final bool live = server?.state == ConnState.live;
-    final bool consoleEnabled =
-        live && _consoleClient != null && (role?.canExecuteConsole ?? false);
-    final Widget? notice = error != null
-        ? ReactorNotice(
-            title: reactorText(ReactorText.logsRefreshFailed),
-            message: localizedReactorError(error),
-            status: ReactorStatus.warning,
-            action: Button.secondary(
-              label: reactorText(ReactorText.commonRetry),
-              size: ButtonSize.small,
-              onPressed: _retry,
+    if (role != null && !role.scopes.contains('console:read')) {
+      return _page(
+        children: <Widget>[
+          EmptyState(
+            message: reactorText(ReactorText.logsNoAccess),
+            description: reactorText(ReactorText.logsNoAccessDescription),
+            icon: ArcaneIcon.lock(),
+          ),
+        ],
+      );
+    }
+    if (session == null || !session.supports<ILogClient>()) {
+      return _page(
+        children: <Widget>[
+          if (ServerScope.of(context)?.state == ConnState.connecting)
+            LoadingState(label: reactorText(ReactorText.logsLoadingHistory))
+          else
+            EmptyState(
+              message: reactorText(ReactorText.logsUnavailable),
+              description: reactorText(ReactorText.logsLiveRequired),
             ),
-          )
-        : controller.loading
-        ? ReactorNotice(
-            title: reactorText(ReactorText.logsRefreshingHistory),
-            message: reactorText(ReactorText.logsRefreshingHistoryDescription),
-            status: ReactorStatus.info,
-          )
-        : null;
-
-    return LogsView(
-      lines: controller.visible,
-      paused: controller.paused,
-      levelFilter: controller.levelFilter,
-      notice: notice,
-      onPause: (bool v) => setState(() => controller.setPaused(v)),
-      onClear: () => setState(() => controller.clear()),
-      onLevelFilter: (String level) =>
-          setState(() => controller.setLevelFilter(level)),
-      command: _command,
-      consoleEnabled: consoleEnabled,
-      consoleUnavailableMessage: !live
-          ? reactorText(ReactorText.logsCommandDisabled)
-          : null,
-      consolePending: _consolePending,
-      onCommandChanged: (String value) => setState(() => _command = value),
-      onExecuteCommand: _executeConsole,
+        ],
+      );
+    }
+    final LogController controller = session.logs;
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (BuildContext context) => _body(context, controller),
     );
   }
 
-  Widget _statePage(Widget state) {
-    return ReactorPage(
-      title: reactorText(ReactorText.logsTitle),
-      subtitle: reactorText(ReactorText.logsSubtitle),
-      children: <Widget>[state],
+  /// What the log shows instead of lines when none could be read.
+  Widget? _failure(LogController controller) {
+    final Object? error = controller.error;
+    if (error == null || controller.lines.isNotEmpty) return null;
+    final ReactErrorKind kind = reactErrorKind(error);
+    if (kind == ReactErrorKind.forbidden) {
+      return EmptyState(
+        message: reactorText(ReactorText.logsNoAccess),
+        description: reactorText(ReactorText.logsNoAccessDescription),
+        icon: ArcaneIcon.lock(),
+      );
+    }
+    final bool retry =
+        kind != ReactErrorKind.revoked &&
+        kind != ReactErrorKind.wrongServer &&
+        kind != ReactErrorKind.authentication;
+    return ErrorState(
+      title: reactorText(ReactorText.logsUnavailable),
+      message: localizedReactorError(error),
+      onRetry: retry ? controller.load : null,
+    );
+  }
+
+  Widget _body(BuildContext context, LogController controller) {
+    final List<String> lines = controller.lines;
+    final bool waiting = controller.loading && lines.isEmpty;
+    final Widget? failure = waiting ? null : _failure(controller);
+    if (_following) afterFrame(_toEnd);
+    return _page(
+      children: <Widget>[
+        dom.div(classes: 'ui-stack', <Widget>[
+          _toolbar(controller),
+          if (controller.reconnecting)
+            AppAlert(
+              tone: AlertTone.warning,
+              message: reactorText(ReactorText.logsReconnecting),
+              live: true,
+            ),
+          SurfaceScope(
+            child: dom.div(classes: 'reactor-log-frame', <Widget>[
+              if (waiting)
+                LoadingState(label: reactorText(ReactorText.logsLoadingHistory))
+              else if (failure != null)
+                failure
+              else
+                LogViewport(
+                  id: _logId,
+                  label: reactorText(ReactorText.pageConsoleTitle),
+                  lines: filterLogLines(lines, level: _level, query: _query),
+                  onScroll: _onScroll,
+                ),
+              if (!_following && !waiting && failure == null)
+                dom.div(classes: 'reactor-log-jump', <Widget>[
+                  ActionRow(
+                    dense: true,
+                    secondary: <RowAction>[
+                      RowAction(
+                        reactorText(ReactorText.logsJumpLatest),
+                        _jumpToLatest,
+                        icon: ArcaneIcon.arrowDown(),
+                      ),
+                    ],
+                  ),
+                ]),
+            ]),
+          ),
+          RoleGate(need: RoleNeed.console, child: _commandRow(context)),
+        ]),
+      ],
     );
   }
 }

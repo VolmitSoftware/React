@@ -1,17 +1,18 @@
+/// Performance > Events (Advanced): event dispatch cost. Time and handle
+/// counts are different units, so each has its own chart.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 
-import '../chart/timeseries_chart.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/section_card.dart';
+import '../ui/kit/metric_tile.dart';
+import '../ui/kit/page.dart';
 import '../widget/server_snapshot_state.dart';
-import '../widget/stat_tile.dart';
+import 'monitor_parts.dart';
 
 class EventsScreen extends StatelessWidget {
   const EventsScreen({super.key});
@@ -21,53 +22,23 @@ class EventsScreen extends StatelessWidget {
     dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    final Widget? statePage = serverSnapshotStatePage(
-      scope: scope,
-      title: reactorText(ReactorText.eventsTitle),
-      subtitle: reactorText(ReactorText.eventsSubtitle),
-    );
-    if (snapshot == null) return statePage!;
+    if (snapshot == null) return serverSnapshotState(scope: scope);
 
-    final SamplerSample? eventHandles = snapshot.sampler(
-      'event-handles-per-tick',
-    );
-    final SamplerSample? eventListeners = snapshot.sampler('events-listeners');
+    final SamplerSample? handles = snapshot.sampler('event-handles-per-tick');
     final SamplerSample? eventTime = snapshot.sampler('event-time');
+    final String handlesLabel = reactorText(ReactorText.eventsHandlesPerTick);
+    final String timeLabel = reactorText(ReactorText.commonEventTime);
 
-    final List<(String, List<double>)> eventTimeSeries =
-        <(String, List<double>)>[
-          (
-            reactorText(ReactorText.commonEventTime),
-            eventTime?.history ?? const <double>[],
-          ),
-          (
-            reactorText(ReactorText.eventsSeriesHandlesPerTick),
-            eventHandles?.history ?? const <double>[],
-          ),
-        ];
-
-    return ReactorPage(
-      title: reactorText(ReactorText.eventsTitle),
-      subtitle: reactorText(ReactorText.eventsSubtitle),
+    return PageStack(
       children: <Widget>[
-        SectionPanel(
-          label: reactorText(ReactorText.commonEventTime),
+        MetricGrid(
           children: <Widget>[
-            TimeseriesChart(series: eventTimeSeries, height: 160),
-            statGrid(<Widget>[
-              StatTile(
-                label: reactorText(ReactorText.eventsHandlesPerTick),
-                sample: eventHandles,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.eventsListeners),
-                sample: eventListeners,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.commonEventTime),
-                sample: eventTime,
-              ),
-            ]),
+            samplerTile(timeLabel, eventTime),
+            samplerTile(handlesLabel, handles),
+            samplerTile(
+              reactorText(ReactorText.eventsListeners),
+              snapshot.sampler('events-listeners'),
+            ),
           ],
         ),
       ],

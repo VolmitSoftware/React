@@ -1,3 +1,5 @@
+/// Activity > Entities: entity load, players and their ping, then the
+/// per-kind breakdown and player traffic.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
@@ -8,12 +10,14 @@ import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
-import '../ui/reactor_ui.dart';
-import '../widget/section_card.dart';
+import '../ui/kit/card.dart';
+import '../ui/kit/metric_tile.dart';
+import '../ui/kit/page.dart';
+import '../ui/kit/section.dart';
 import '../widget/server_snapshot_state.dart';
-import '../widget/stat_tile.dart';
+import 'monitor_parts.dart';
 
-const List<String> _kEntityBreakdownIds = <String>[
+const List<String> kEntityBreakdownIds = <String>[
   'entities-animals',
   'entities-hostile',
   'villagers',
@@ -25,7 +29,7 @@ const List<String> _kEntityBreakdownIds = <String>[
   'spawner-spawns',
 ];
 
-const List<String> _kPlayerActivityIds = <String>[
+const List<String> kPlayerActivityIds = <String>[
   'player-joins-rate',
   'player-quits-rate',
   'players-unique-24h',
@@ -39,124 +43,74 @@ class EntitiesScreen extends StatelessWidget {
     dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
-    final Widget? statePage = serverSnapshotStatePage(
-      scope: scope,
-      title: reactorText(ReactorText.entitiesTitle),
-      subtitle: reactorText(ReactorText.entitiesSubtitle),
-    );
-    if (snapshot == null) return statePage!;
+    if (snapshot == null) return serverSnapshotState(scope: scope);
 
     final SamplerSample? entities = snapshot.sampler('entities');
-    final SamplerSample? entityAiActive = snapshot.sampler(
-      'entity-ai-active-count',
-    );
-    final SamplerSample? entitiesSpawns = snapshot.sampler('entities-spawns');
-    final SamplerSample? players = snapshot.sampler('players');
     final SamplerSample? pingP95 = snapshot.sampler('player-ping-p95');
-    final SamplerSample? pingJitter = snapshot.sampler('ping-jitter');
-    final List<SamplerSample> entityBreakdown = _samples(
+    final SamplerSample? jitter = snapshot.sampler('ping-jitter');
+    final List<SamplerSample> breakdown = samplersOf(
       snapshot,
-      _kEntityBreakdownIds,
+      kEntityBreakdownIds,
     );
-    final List<SamplerSample> playerActivity = _samples(
+    final List<SamplerSample> playerActivity = samplersOf(
       snapshot,
-      _kPlayerActivityIds,
+      kPlayerActivityIds,
     );
+    final String entitiesLabel = reactorText(ReactorText.commonEntities);
+    final String pingLabel = reactorText(ReactorText.commonPingP95);
 
-    final List<(String, List<double>)> entityCountSeries =
-        <(String, List<double>)>[
-          (
-            reactorText(ReactorText.commonEntities),
-            entities?.history ?? const <double>[],
-          ),
-        ];
-
-    final List<(String, List<double>)> pingSeriesBuilder =
-        <(String, List<double>)>[
-          (
-            reactorText(ReactorText.commonPingP95),
-            pingP95?.history ?? const <double>[],
-          ),
-          if (pingJitter != null)
-            (reactorText(ReactorText.entitiesJitter), pingJitter.history),
-        ];
-
-    return ReactorPage(
-      title: reactorText(ReactorText.entitiesTitle),
-      subtitle: reactorText(ReactorText.entitiesSubtitle),
+    return PageStack(
       children: <Widget>[
-        SectionPanel(
-          label: reactorText(ReactorText.entitiesCount),
+        MetricGrid(
           children: <Widget>[
-            TimeseriesChart(series: entityCountSeries, height: 160),
-            statGrid(<Widget>[
-              StatTile(
-                label: reactorText(ReactorText.commonPlayers),
-                sample: players,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.commonEntities),
-                sample: entities,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.entitiesAiActive),
-                sample: entityAiActive,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.entitiesSpawnsPerSecond),
-                sample: entitiesSpawns,
-              ),
-            ]),
+            samplerTile(entitiesLabel, entities),
+            samplerTile(
+              reactorText(ReactorText.entitiesAiActive),
+              snapshot.sampler('entity-ai-active-count'),
+            ),
+            samplerTile(
+              reactorText(ReactorText.entitiesSpawnsPerSecond),
+              snapshot.sampler('entities-spawns'),
+            ),
+            samplerTile(
+              reactorText(ReactorText.commonPlayers),
+              snapshot.sampler('players'),
+            ),
+            samplerTile(pingLabel, pingP95),
+            samplerTile(reactorText(ReactorText.entitiesPingJitter), jitter),
           ],
         ),
-        SectionPanel(
-          label: reactorText(ReactorText.entitiesPlayerPing),
-          children: <Widget>[
-            TimeseriesChart(series: pingSeriesBuilder, height: 120),
-            statGrid(<Widget>[
-              StatTile(
-                label: reactorText(ReactorText.commonPingP95),
-                sample: pingP95,
-              ),
-              StatTile(
-                label: reactorText(ReactorText.entitiesPingJitter),
-                sample: pingJitter,
-              ),
-            ]),
-          ],
+        ChartCard(
+          title: reactorText(ReactorText.entitiesCount),
+          child: TimeseriesChart(
+            series: <(String, List<double>)>[
+              (entitiesLabel, entities?.history ?? const <double>[]),
+            ],
+          ),
         ),
-        if (entityBreakdown.isNotEmpty)
-          _sampleSection(
-            reactorText(ReactorText.entitiesBreakdown),
-            entityBreakdown,
+        ChartCard(
+          title: reactorText(ReactorText.entitiesPlayerPing),
+          child: TimeseriesChart(
+            height: 120,
+            unit: 'ms',
+            series: <(String, List<double>)>[
+              (pingLabel, pingP95?.history ?? const <double>[]),
+            ],
+          ),
+        ),
+        if (breakdown.isNotEmpty)
+          PageSection(
+            title: reactorText(ReactorText.entitiesBreakdown),
+            children: <Widget>[MetricGrid(children: namedTiles(breakdown))],
           ),
         if (playerActivity.isNotEmpty)
-          _sampleSection(
-            reactorText(ReactorText.entitiesPlayerActivity),
-            playerActivity,
+          PageSection(
+            title: reactorText(ReactorText.entitiesPlayerActivity),
+            children: <Widget>[
+              MetricGrid(children: namedTiles(playerActivity)),
+            ],
           ),
       ],
-    );
-  }
-
-  List<SamplerSample> _samples(ServerSnapshot snapshot, List<String> ids) {
-    return ids
-        .map(snapshot.sampler)
-        .whereType<SamplerSample>()
-        .toList(growable: false);
-  }
-
-  Widget _sampleSection(String label, List<SamplerSample> samples) {
-    return SectionPanel(
-      label: label,
-      flush: true,
-      child: statGrid(
-        samples
-            .map((SamplerSample sample) {
-              return StatTile(label: sample.name, sample: sample);
-            })
-            .toList(growable: false),
-      ),
     );
   }
 }

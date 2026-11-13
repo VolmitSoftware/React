@@ -1,17 +1,15 @@
 package art.arcane.react.web;
 
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
+import art.arcane.react.api.web.pairing.WebToken;
+import art.arcane.react.api.web.RingLogHandler;
 import art.arcane.react.api.web.resource.LogsResource;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
-import io.javalin.http.ForbiddenResponse;
+import art.arcane.react.api.web.WebError;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.security.SecureRandom;
 import java.util.List;
 import java.util.Set;
 
@@ -23,22 +21,17 @@ import static org.mockito.Mockito.when;
 
 public class LogsResourceTest {
 
-    private PairingToken adminToken;
-    private PairingToken operatorToken;
+    private WebToken adminToken;
+    private WebToken operatorToken;
 
     @BeforeEach
     void setUp() {
-        byte[] secret = new byte[32];
-        new SecureRandom().nextBytes(secret);
-        TokenRecord adminRecord = new TokenRecord("admin", "admin", 1L, Set.of("read"), "admin");
-        TokenRecord operatorRecord = new TokenRecord("operator", "operator", 1L, Set.of("read"), "operator");
-        TokenStore store = TokenStore.inMemory(adminRecord, operatorRecord);
-        adminToken = verifyToken(secret, adminRecord, store);
-        operatorToken = verifyToken(secret, operatorRecord, store);
+        adminToken = WebTestTokens.token("admin", "admin");
+        operatorToken = WebTestTokens.token("operator", "operator");
     }
 
     private LogsResource buildResource() {
-        return new LogsResource(n -> List.of("line-a", "line-b"));
+        return new LogsResource(n -> new RingLogHandler.Tail(List.of("line-a", "line-b"), 42L));
     }
 
     @Test
@@ -53,6 +46,7 @@ public class LogsResourceTest {
 
         LogsResource.LogsResponse response = (LogsResource.LogsResponse) captor.getValue();
         assertEquals(2, response.data().length);
+        assertEquals(42L, response.lastSeq());
         assertEquals("line-a", response.data()[0]);
         assertEquals("line-b", response.data()[1]);
     }
@@ -72,7 +66,7 @@ public class LogsResourceTest {
             if (n < 1 || n > 1000) {
                 throw new IllegalArgumentException("n out of clamped range: " + n);
             }
-            return List.of("line-a", "line-b");
+            return new RingLogHandler.Tail(List.of("line-a", "line-b"), 42L);
         });
         Context ctx = authorizedContext();
         when(ctx.queryParam("limit")).thenReturn("5000");
@@ -91,7 +85,7 @@ public class LogsResourceTest {
             if (n < 1) {
                 throw new IllegalArgumentException("n below minimum: " + n);
             }
-            return List.of("line-a");
+            return new RingLogHandler.Tail(List.of("line-a"), 42L);
         });
         Context ctx = authorizedContext();
         when(ctx.queryParam("limit")).thenReturn("-5");
@@ -109,7 +103,7 @@ public class LogsResourceTest {
         int[] capturedN = {-1};
         LogsResource resource = new LogsResource(n -> {
             capturedN[0] = n;
-            return List.of("line-a");
+            return new RingLogHandler.Tail(List.of("line-a"), 42L);
         });
         Context ctx = authorizedContext();
         when(ctx.queryParam("limit")).thenReturn("50");
@@ -122,19 +116,15 @@ public class LogsResourceTest {
     void list_with_operator_token_is_forbidden() {
         LogsResource resource = buildResource();
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(operatorToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(operatorToken);
 
-        assertThrows(ForbiddenResponse.class, () -> resource.list(ctx));
+        assertThrows(WebError.class, () -> resource.list(ctx));
     }
 
     private Context authorizedContext() {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(adminToken);
+        when(ctx.<WebToken>attribute("token")).thenReturn(adminToken);
         return ctx;
     }
 
-    private static PairingToken verifyToken(byte[] secret, TokenRecord record, TokenStore store) {
-        String bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
-        return PairingToken.verify(secret, bearer, store).orElseThrow();
-    }
 }

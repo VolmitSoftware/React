@@ -2,14 +2,22 @@ class RoleInfo {
   final String role;
   final List<String> scopes;
 
-  const RoleInfo({required this.role, required this.scopes});
+  /// When the pairing ends unless used (`/whoami` since links).
+  final DateTime? expiresAt;
+
+  const RoleInfo({required this.role, required this.scopes, this.expiresAt});
 
   factory RoleInfo.fromJson(Map<String, dynamic> j) {
     final Object? rawScopes = j['scopes'];
     final List<String> parsedScopes = rawScopes is List<dynamic>
         ? rawScopes.map((dynamic e) => e as String).toList()
         : const <String>[];
-    return RoleInfo(role: j['role'] as String, scopes: parsedScopes);
+    final Object? expires = j['expiresAt'];
+    return RoleInfo(
+      role: j['role'] as String,
+      scopes: parsedScopes,
+      expiresAt: expires is String ? DateTime.tryParse(expires)?.toUtc() : null,
+    );
   }
 
   bool get canRead => scopes.contains('read');

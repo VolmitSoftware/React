@@ -217,7 +217,7 @@ class WebJsonMapperTest {
     JsonMapper mapper = javalinJackson();
     Javalin app = Javalin.create();
     app.get("/dto/{index}", context -> context.json(new Envelope<>(samples.get(Integer.parseInt(context.pathParam("index"))))));
-    app.get("/error", context -> context.status(404).json(new ErrorEnvelope(new ErrorEnvelope.Message("missing"))));
+    app.get("/error", context -> context.status(404).json(new ErrorEnvelope(new ErrorEnvelope.Message("not_found", "missing"))));
     app.start("127.0.0.1", 0);
     try {
       HttpClient client = HttpClient.newHttpClient();

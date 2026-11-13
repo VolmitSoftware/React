@@ -8,6 +8,7 @@ abstract final class RelayFrameType {
   static const String error = 'error';
   static const String challenge = 'challenge';
   static const String registered = 'registered';
+  static const String status = 'status';
 }
 
 class RelayFrame {
@@ -18,12 +19,14 @@ class RelayFrame {
   final String type;
   final String? serverId;
   final String? requestId;
+  final bool? online;
   final Map<String, dynamic>? payload;
 
   const RelayFrame({
     required this.type,
     this.serverId,
     this.requestId,
+    this.online,
     this.payload,
   });
 
@@ -33,6 +36,7 @@ class RelayFrame {
         'type',
         'serverId',
         'requestId',
+        'online',
         'payload',
       }.contains(key),
     )) {
@@ -65,6 +69,11 @@ class RelayFrame {
       );
     }
 
+    final Object? onlineRaw = json['online'];
+    if (onlineRaw != null && onlineRaw is! bool) {
+      throw const FormatException('online must be a boolean');
+    }
+
     final Object? payloadRaw = json['payload'];
     if (payloadRaw != null && payloadRaw is! Map<String, dynamic>) {
       throw const FormatException('payload must be a map');
@@ -74,6 +83,7 @@ class RelayFrame {
       type: typeRaw,
       serverId: serverIdRaw as String?,
       requestId: requestIdRaw as String?,
+      online: onlineRaw as bool?,
       payload: payloadRaw as Map<String, dynamic>?,
     );
   }
@@ -85,6 +95,9 @@ class RelayFrame {
     }
     if (requestId != null) {
       result['requestId'] = requestId;
+    }
+    if (online != null) {
+      result['online'] = online;
     }
     if (payload != null) {
       result['payload'] = payload;

@@ -97,6 +97,31 @@ void main() {
       expect(RelayFrame.decode('{"type":"route","unexpected":true}'), isNull);
     });
 
+    test('toJson writes a top-level online flag when set', () {
+      final RelayFrame frame = RelayFrame(
+        type: RelayFrameType.status,
+        serverId: 'S1',
+        online: true,
+        payload: <String, dynamic>{'online': true},
+      );
+      expect(
+        frame.encode(),
+        '{"type":"status","serverId":"S1","online":true,"payload":{"online":true}}',
+      );
+      expect(
+        RelayFrame(type: RelayFrameType.data).toJson().containsKey('online'),
+        isFalse,
+      );
+    });
+
+    test('decode accepts a boolean online flag and rejects other types', () {
+      final RelayFrame? decoded = RelayFrame.decode(
+        '{"type":"status","serverId":"S1","online":false}',
+      );
+      expect(decoded?.online, isFalse);
+      expect(RelayFrame.decode('{"type":"status","online":"yes"}'), isNull);
+    });
+
     test('decode enforces an optional UTF-8 byte limit', () {
       final String encoded = RelayFrame(
         type: RelayFrameType.route,

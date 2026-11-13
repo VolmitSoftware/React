@@ -257,22 +257,23 @@ void main() {
       expect(
         localizations
             .installOverlayJson(
-              '{"screen.actions.confirm_title":"Run {action}?"}',
+              '{"screen.config_editor.confirm_preset":"Run {preset}?"}',
             )
             .applied,
         isTrue,
       );
 
       final ReactorOverlayResult rejected = localizations.installOverlayJson(
-        '{"screen.actions.confirm_title":"Run {name}?"}',
+        '{"screen.config_editor.confirm_preset":"Run {name}?"}',
       );
 
       expect(rejected.applied, isFalse);
       expect(rejected.error, contains('placeholders'));
       expect(
-        localizations.text(ReactorText.actionsConfirmTitle, <String, Object?>{
-          'action': 'GC',
-        }),
+        localizations.text(
+          ReactorText.configEditorConfirmPreset,
+          <String, Object?>{'preset': 'GC'},
+        ),
         equals('Run GC?'),
       );
     });
@@ -281,7 +282,7 @@ void main() {
       final ReactorLocalizations localizations = ReactorLocalizations();
 
       final ReactorOverlayResult rejected = localizations.installOverlayJson(
-        '{"screen.actions.confirm_title":"Run {{action}}?"}',
+        '{"screen.config_editor.confirm_preset":"Run {{preset}}?"}',
       );
 
       expect(rejected.applied, isFalse);
@@ -293,17 +294,18 @@ void main() {
       expect(
         localizations
             .installOverlayJson(
-              '{"screen.actions.confirm_title":"Ausführen: {action}"}',
+              '{"screen.config_editor.confirm_preset":"Ausführen: {preset}"}',
             )
             .applied,
         isTrue,
       );
 
       expect(
-        localizations.text(ReactorText.actionsConfirmTitle, <String, Object?>{
-          'action': '{action}<script>',
-        }),
-        equals('Ausführen: {action}<script>'),
+        localizations.text(
+          ReactorText.configEditorConfirmPreset,
+          <String, Object?>{'preset': '{preset}<script>'},
+        ),
+        equals('Ausführen: {preset}<script>'),
       );
     });
 
@@ -311,13 +313,13 @@ void main() {
       final ReactorLocalizations localizations = ReactorLocalizations();
 
       expect(
-        () => localizations.text(ReactorText.actionsConfirmTitle),
+        () => localizations.text(ReactorText.configEditorConfirmPreset),
         throwsArgumentError,
       );
       expect(
         () => localizations.text(
-          ReactorText.actionsConfirmTitle,
-          <String, Object?>{'action': 'GC', 'extra': 'ignored'},
+          ReactorText.configEditorConfirmPreset,
+          <String, Object?>{'preset': 'GC', 'extra': 'ignored'},
         ),
         throwsArgumentError,
       );
@@ -348,9 +350,7 @@ void main() {
 
 const List<String> _highRiskKeys = <String>[
   "status.live",
-  "shell.state",
-  "shell.fleet_control_plane",
-  "screen.fleet.title",
+  "shell.all_servers",
   "screen.internals.jobs",
   "screen.worlds.title",
   "common.players",
@@ -362,10 +362,8 @@ const List<String> _highRiskKeys = <String>[
 ];
 const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   "en_US": <String>[
-    "Live",
-    "State",
-    "Server group control console",
-    "Server group",
+    "Online",
+    "All servers",
     "Jobs",
     "Worlds",
     "Players",
@@ -377,9 +375,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "de_DE": <String>[
     "Online",
-    "Status",
-    "Servergruppen-Leitstand",
-    "Servergruppe",
+    "Alle Server",
     "Hintergrundaufgaben",
     "Welten",
     "Spieler",
@@ -391,9 +387,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "es_ES": <String>[
     "En línea",
-    "Estado",
-    "Consola de control del grupo de servidores",
-    "Grupo de servidores",
+    "Todos los servidores",
     "Tareas en segundo plano",
     "Mundos",
     "Jugadores",
@@ -405,9 +399,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "fi_FI": <String>[
     "Verkossa",
-    "Tila",
-    "Palvelinryhmän hallintakonsoli",
-    "Palvelinryhmä",
+    "Kaikki palvelimet",
     "Taustatehtävät",
     "Maailmat",
     "Pelaajat",
@@ -419,9 +411,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "fr_FR": <String>[
     "En ligne",
-    "État",
-    "Console de contrôle du groupe de serveurs",
-    "Groupe de serveurs",
+    "Tous les serveurs",
     "Tâches en arrière-plan",
     "Mondes",
     "Joueurs",
@@ -433,9 +423,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "he_IL": <String>[
     "מקוון",
-    "מצב",
-    "מסוף בקרת קבוצת השרתים",
-    "קבוצת שרתים",
+    "כל השרתים",
     "משימות רקע",
     "עולמות",
     "שחקנים",
@@ -447,9 +435,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "it_IT": <String>[
     "Online",
-    "Stato",
-    "Console di controllo del gruppo di server",
-    "Gruppo di server",
+    "Tutti i server",
     "Attività in background",
     "Mondi",
     "Giocatori",
@@ -461,9 +447,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "ja-JP": <String>[
     "オンライン",
-    "状態",
-    "サーバー群管理コンソール",
-    "サーバー群",
+    "すべてのサーバー",
     "バックグラウンドタスク",
     "ワールド",
     "プレイヤー",
@@ -475,9 +459,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "ko_KR": <String>[
     "온라인",
-    "상태",
-    "서버군 제어 콘솔",
-    "서버군",
+    "모든 서버",
     "백그라운드 작업",
     "세계",
     "플레이어",
@@ -489,9 +471,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "lt_LT": <String>[
     "Veikia",
-    "Būsena",
-    "Serverių grupės valdymo pultas",
-    "Serverių grupė",
+    "Visi serveriai",
     "Foninės užduotys",
     "Pasauliai",
     "Žaidėjai",
@@ -503,9 +483,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "nl_NL": <String>[
     "Online",
-    "Status",
-    "Beheerconsole voor de servergroep",
-    "Servergroep",
+    "Alle servers",
     "Achtergrondtaken",
     "Werelden",
     "Spelers",
@@ -517,9 +495,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "pl_PL": <String>[
     "Online",
-    "Stan",
-    "Konsola zarządzania grupą serwerów",
-    "Grupa serwerów",
+    "Wszystkie serwery",
     "Zadania w tle",
     "Światy",
     "Gracze",
@@ -531,9 +507,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "pt_PT": <String>[
     "Online",
-    "Estado",
-    "Consola de controlo do grupo de servidores",
-    "Grupo de servidores",
+    "Todos os servidores",
     "Tarefas em segundo plano",
     "Mundos",
     "Jogadores",
@@ -545,9 +519,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "ru_RU": <String>[
     "В сети",
-    "Состояние",
-    "Консоль управления группой серверов",
-    "Группа серверов",
+    "Все серверы",
     "Фоновые задачи",
     "Миры",
     "Игроки",
@@ -559,9 +531,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "tr_TR": <String>[
     "Çevrimiçi",
-    "Durum",
-    "Sunucu grubu kontrol paneli",
-    "Sunucu grubu",
+    "Tüm sunucular",
     "Arka plan görevleri",
     "Dünyalar",
     "Oyuncular",
@@ -573,9 +543,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "vi_VI": <String>[
     "Trực tuyến",
-    "Trạng thái",
-    "Bảng điều khiển cụm máy chủ",
-    "Cụm máy chủ",
+    "Tất cả máy chủ",
     "Tác vụ nền",
     "Thế giới",
     "Người chơi",
@@ -587,9 +555,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "zh_CN": <String>[
     "在线",
-    "状态",
-    "服务器集群控制台",
-    "服务器集群",
+    "所有服务器",
     "后台任务",
     "世界",
     "玩家",
@@ -601,9 +567,7 @@ const Map<String, List<String>> _highRiskTerminology = <String, List<String>>{
   ],
   "zh_TW": <String>[
     "線上",
-    "狀態",
-    "伺服器叢集控制台",
-    "伺服器叢集",
+    "所有伺服器",
     "背景任務",
     "世界",
     "玩家",
@@ -619,51 +583,36 @@ const Map<String, Map<String, String>> _forbiddenContextTranslations =
     <String, Map<String, String>>{
       'de_DE': <String, String>{
         'screen.actions.recent_executions': 'Aktuelle Hinrichtungen',
-        'shell.a11y.application_status': 'Bewerbungsstatus',
         'screen.config_editor.applying_short': 'Bewerben…',
-        'shell.inspector.last_sample': 'Letzte Probe',
         'chart.awaiting_samples': 'Warten auf Proben',
       },
-      'es_ES': <String, String>{
-        'shell.a11y.application_status': 'Estado de la solicitud',
-        'screen.environment.title': 'Medio ambiente',
-      },
+      'es_ES': <String, String>{'screen.environment.title': 'Medio ambiente'},
       'fi_FI': <String, String>{
         'screen.actions.recent_executions': 'Viimeaikaiset teloitukset',
         'screen.config_editor.applying_short': 'Haetaan…',
-        'shell.inspector.last_sample': 'Viimeinen näyte',
       },
       'fr_FR': <String, String>{
-        'shell.a11y.application_status': 'Statut de la demande',
         'screen.config_editor.applying_short': 'Candidature…',
       },
       'he_IL': <String, String>{
         'screen.actions.recent_executions': 'הוצאות להורג אחרונות',
-        'shell.a11y.application_status': 'סטטוס הבקשה',
         'screen.config_editor.applying_short': 'מגיש בקשה...',
       },
-      'it_IT': <String, String>{
-        'shell.a11y.application_status': 'Stato della domanda',
-        'screen.comparison.metric': 'Metrico',
-      },
+      'it_IT': <String, String>{'screen.comparison.metric': 'Metrico'},
       'ja-JP': <String, String>{
         'screen.actions.recent_executions': '最近の執行',
-        'shell.a11y.application_status': '申請状況',
         'screen.config_editor.applying_short': '申請中…',
       },
       'ko_KR': <String, String>{
         'screen.actions.recent_executions': '최근 처형',
-        'shell.a11y.application_status': '신청현황',
         'screen.config_editor.applying_short': '신청 중…',
       },
       'lt_LT': <String, String>{
         'screen.performance.title': 'Spektaklis',
         'screen.logs.title': 'Rąstai',
         'screen.actions.recent_executions': 'Naujausi egzekucijos',
-        'shell.a11y.application_status': 'Paraiškos būsena',
       },
       'nl_NL': <String, String>{
-        'shell.inspector.last_sample': 'Laatste monster',
         'chart.awaiting_samples': 'In afwachting van monsters',
         'screen.comparison.metric': 'Metrisch',
       },
@@ -673,40 +622,25 @@ const Map<String, Map<String, String>> _forbiddenContextTranslations =
       },
       'ru_RU': <String, String>{
         'screen.actions.recent_executions': 'Недавние казни',
-        'shell.a11y.application_status': 'Статус заявки',
         'screen.environment.title': 'Окружающая среда',
       },
       'tr_TR': <String, String>{
-        'config.no_tunable_knobs': 'Bu öğenin ayarlanabilir düğmeleri yoktur.',
         'screen.actions.recent_executions': 'Son İnfazlar',
-        'shell.a11y.application_status': 'Başvuru durumu',
         'screen.config_editor.applying_short': 'Başvuruluyor…',
       },
-      'vi_VI': <String, String>{
-        'config.no_tunable_knobs': 'Mục này không có nút điều chỉnh.',
-        'alert.memory_pressure': 'Áp lực trí nhớ',
-        'shell.a11y.application_status': 'Trạng thái đơn đăng ký',
-      },
+      'vi_VI': <String, String>{'alert.memory_pressure': 'Áp lực trí nhớ'},
       'zh_CN': <String, String>{
-        'config.no_tunable_knobs': '该产品没有可调旋钮。',
         'screen.actions.recent_executions': '最近的处决',
-        'shell.a11y.application_status': '申请状态',
         'screen.config_editor.applying_short': '正在申请…',
-        'screen.logs.console.dispatched': '指挥部出动',
         'screen.comparison.metric': '公制',
         'screen.add_server.direct_host': '直接主办',
-        'shell.inspector.last_sample': '最后一个样品',
         'chart.awaiting_samples': '等待样品',
       },
       'zh_TW': <String, String>{
-        'config.no_tunable_knobs': '該產品沒有可調旋鈕。',
         'screen.actions.recent_executions': '最近的處決',
-        'shell.a11y.application_status': '申請狀態',
         'screen.config_editor.applying_short': '正在申請…',
-        'screen.logs.console.dispatched': '指揮部出動',
         'screen.comparison.metric': '公制',
         'screen.add_server.direct_host': '直接主辦',
-        'shell.inspector.last_sample': '最後一個樣品',
         'chart.awaiting_samples': '等待樣品',
       },
     };
@@ -719,16 +653,28 @@ const Set<String> _englishInvariantKeys = <String>{
   'alert.critical_description',
   'common.chunks',
   'common.redstone',
-  'heatmap.chunk_title',
-  'screen.actions.execution_summary',
   'screen.chunks.title',
   'screen.overview.tps',
+  'heatmap.teleport_confirm_message',
 };
 const Map<String, Set<String>> _localeEnglishInvariantKeys =
     <String, Set<String>>{
+      'de_DE': <String>{'chart.range_live', 'start.online', 'status.live'},
       'es_ES': <String>{'screen.events.listeners'},
-      'nl_NL': <String>{'screen.events.listeners'},
-      'pt_PT': <String>{'screen.events.listeners'},
+      'it_IT': <String>{'chart.range_live', 'start.online', 'status.live'},
+      'nl_NL': <String>{
+        'chart.range_live',
+        'screen.events.listeners',
+        'screen.mechanics.updates',
+        'start.online',
+        'status.live',
+      },
+      'pl_PL': <String>{'start.online', 'status.live'},
+      'pt_PT': <String>{
+        'screen.events.listeners',
+        'start.online',
+        'status.live',
+      },
       'zh_CN': <String>{'common.ping_p95'},
       'zh_TW': <String>{'common.ping_p95'},
     };

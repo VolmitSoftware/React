@@ -2,15 +2,16 @@ library;
 
 import 'dart:async';
 
+import '../model/log_line.dart';
 import '../model/server_credential.dart';
 import 'react_log_socket_interface.dart';
 
 class _StubLogSocket implements ILogSocket {
-  final StreamController<String> _controller =
-      StreamController<String>.broadcast();
+  final StreamController<LogBatch> _controller =
+      StreamController<LogBatch>.broadcast();
 
   @override
-  Stream<String> get lines => _controller.stream;
+  Stream<LogBatch> get batches => _controller.stream;
 
   @override
   Future<void> close() async {}

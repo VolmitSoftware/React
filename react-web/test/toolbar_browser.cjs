@@ -1,11 +1,15 @@
+// The shell's own controls, without a server: the top bar "..." menu (theme,
+// Simple/Advanced, language), the phone drawer and the first-run page.
+//
+//   REACT_WEB_URL=http://127.0.0.1:8820 \
+//     PLAYWRIGHT_MODULE=/path/to/node_modules/playwright node test/toolbar_browser.cjs
 const assert = require('node:assert/strict');
 const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 
-async function expectTooltip(page, text) {
-  await page.waitForFunction(expected =>
-    [...document.querySelectorAll('[role="tooltip"]')].some(element =>
-      element.checkVisibility() && element.textContent.trim() === expected), text);
-  assert.deepEqual(await page.locator('[role="tooltip"]:visible').allTextContents(), [text]);
+async function openMore(page) {
+  const more = page.getByRole('banner').getByRole('button', {name: 'More options', exact: true});
+  await more.click();
+  await page.getByRole('menu').first().waitFor();
 }
 
 async function main() {
@@ -22,37 +26,49 @@ async function main() {
   });
   try {
     await page.goto(process.env.REACT_WEB_URL || 'http://127.0.0.1:8080');
-    const light = page.getByRole('button', {name: 'Switch to light theme', exact: true});
-    await light.focus();
-    await expectTooltip(page, 'Switch to light theme');
-    await page.keyboard.press('Enter');
-    await expectTooltip(page, 'Switch to dark theme');
-    assert.equal(await page.evaluate(() => document.activeElement.getAttribute('aria-label')), 'Switch to dark theme');
-    await page.reload();
+    // No server yet: / is Home with the Pairing link field, inside the shell.
+    await page.getByRole('heading', {name: 'Home', level: 1}).waitFor();
+    await page.getByRole('textbox', {name: 'Pairing link'}).waitFor();
+    assert.equal(await page.getByRole('navigation').count() > 0, true);
+
+    await openMore(page);
+    await page.getByRole('menuitem', {name: 'Switch to light theme'}).click();
+    await page.waitForFunction(() => document.documentElement.classList.contains('light'));
     assert.equal(await page.evaluate(() => localStorage.getItem('reactor.theme')), 'light');
-    const dark = page.getByRole('button', {name: 'Switch to dark theme', exact: true});
-    await dark.hover();
-    await expectTooltip(page, 'Switch to dark theme');
-    await dark.click();
-    await expectTooltip(page, 'Switch to light theme');
+    await page.reload();
+    await page.getByRole('heading', {name: 'Home', level: 1}).waitFor();
+    await openMore(page);
+    await page.getByRole('menuitem', {name: 'Switch to dark theme'}).click();
+    await page.waitForFunction(() => document.documentElement.classList.contains('dark'));
+
+    await openMore(page);
+    await page.getByRole('menuitem', {name: 'Switch to Advanced'}).click();
+    assert.equal(await page.evaluate(() => localStorage.getItem('reactor.mode')), 'advanced');
+    await openMore(page);
+    await page.getByRole('menuitem', {name: 'Switch to Simple'}).waitFor();
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(250);
-    assert.equal(await page.locator('[role="tooltip"]:visible').count(), 0);
+
+    await openMore(page);
+    await page.getByRole('menuitem', {name: /Select language/}).click();
+    const dialog = page.getByRole('dialog', {name: 'Select language'});
+    await dialog.waitFor();
+    assert.equal(await dialog.getByRole('radio').count(), 18);
+    await page.keyboard.press('Escape');
+    await dialog.waitFor({state: 'hidden'});
 
     await page.setViewportSize({width: 375, height: 844});
-    await page.mouse.move(2, 820);
-    const navigation = page.getByRole('banner').getByRole('button', {name: 'Open navigation', exact: true});
-    await navigation.focus();
-    await expectTooltip(page, 'Open navigation');
-    await page.keyboard.press('Enter');
-    await expectTooltip(page, 'Close navigation');
-    assert.equal(await page.getByRole('banner').getByRole('button', {name: 'Close navigation', exact: true}).getAttribute('aria-expanded'), 'true');
-    await page.keyboard.press('Enter');
-    await expectTooltip(page, 'Open navigation');
-    assert.equal(await navigation.getAttribute('aria-expanded'), 'false');
+    const open = page.getByRole('banner').getByRole('button', {name: 'Open navigation', exact: true});
+    await open.waitFor();
+    assert.equal(await open.getAttribute('aria-expanded'), 'false');
+    await open.click();
+    const drawer = page.locator('#ui-nav-drawer [role="dialog"]');
+    await drawer.waitFor();
+    await drawer.getByRole('link', {name: 'Settings'}).waitFor();
+    await page.keyboard.press('Escape');
+    await drawer.waitFor({state: 'hidden'});
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     assert.deepEqual(errors, []);
-    console.log('Toolbar browser passed: reactive tooltips, keyboard focus, Escape, theme persistence, mobile navigation.');
+    console.log('Toolbar browser passed: first run, theme, mode, language, phone drawer.');
   } finally {
     await context.close();
     await browser.close();

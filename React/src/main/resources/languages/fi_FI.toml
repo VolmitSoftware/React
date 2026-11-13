@@ -23,6 +23,7 @@
 #
 # === Muuttujat ===
 # Säilytä muuttujien nimet ja käytä vain kunkin viestin omia muuttujia.
+#   {access}  React Web -parituksen rooli tai oikeudet
 #   {action}  Toiminnon nimi tai värisäädön suunta
 #   {actions}  Jonossa olevien toimintojen määrä tai ohitettujen toimintojen nimilista
 #   {active}  Aktiivisten ominaisuuksien tai säätöjen määrä
@@ -41,7 +42,7 @@
 #   {before}  Asetusarvo, kieliviesti tai kekomuistin käyttö ennen muutosta
 #   {checked}  Tarkistettujen mittaajien määrä
 #   {chunks}  Toiminnon käsittelemien chunkien määrä
-#   {code}  Verkkoliittymän parituskoodi
+#   {client}  Selaimen nimi, josta React Web -paritus tehtiin
 #   {command}  Komennon polku
 #   {count}  Rivien, moduulien, muutosten tai testihavaintojen määrä
 #   {current}  Nykyisen sivun numero
@@ -57,6 +58,7 @@
 #   {entities}  Toiminnon käsittelemien entiteettien määrä
 #   {entry}  Integraation aikajanan merkintä
 #   {exceptions}  Kuormitustestissä tallennetut React-poikkeukset
+#   {expires}  Milloin React Web -paritus päättyy käyttämättä
 #   {fail}  Epäonnistuneiden tarkistusten määrä
 #   {file}  Asetus-, kieli- tai lisäosan API-tiedoston nimi
 #   {fingerprint}  Palvelimen tai verkkoliittymän tunnisteen sormenjälki
@@ -80,14 +82,17 @@
 #   {incident}  Kehitystestistä suljetun rekursiivisen häiriötoiminnon tunniste
 #   {index}  Kehitystestin nykyisen vaiheen numero
 #   {invalid}  Virheellisiä lukemia antavien mittaajien määrä
-#   {issued_at}  Verkkotokenin luontiaika
 #   {item}  Esineen nimi tai tunniste
 #   {items}  Yhdistettyjen esine-entiteettien määrä
 #   {kept}  Kielipäivityksessä säilytetyt paikalliset muokkaukset
 #   {key}  Komentoparametrin avain, asetusavain tai kieliviestin ID
 #   {label}  Testin, mittarin, asetuksen, komennon tai verkkotunnisteen nimiö
+#   {lifetime}  Kuinka kauan React Web -paritus kestää käyttämättä
 #   {line}  Muokattavan rivin numero monirivisessä viestissä
 #   {lines}  Tarkistettujen palvelinlokin rivien määrä
+#   {link}  React Web -parituslinkki
+#   {links}  Avaamattomien React Web -parituslinkkien määrä
+#   {listener}  Osoite, johon React Web -kuuntelija on sidottu
 #   {loaded}  Esilämmityksen aikana juuri ladattujen chunkien määrä
 #   {locale}  Näytettävä, valittava tai muokattava kielikoodi
 #   {matched}  Maailmat, joiden automaattitallennus vastaa testin vertailutilaa
@@ -105,6 +110,7 @@
 #   {offenders}  Ei-äärellisiä arvoja palauttavien mittaajien määrä
 #   {options}  Sallitut asetusarvot
 #   {p95}  Pelipäivitysajan 95. persentiili kuormitustestissä, ms
+#   {origin}  Pyynnön selainalkuperä
 #   {parameter}  Komentoparametrin nimi
 #   {parameters}  Ohitetut komentoparametrit
 #   {pass}  Onnistuneiden tarkistusten määrä
@@ -128,6 +134,7 @@
 #   {react_errors}  Palvelinlokista löytyneiden React-virherivien määrä
 #   {reason}  Virheen, hylkäyksen tai käytöstä poissaolon syy
 #   {registered}  Rekisteröityjen moduulien määrä
+#   {relay}  React Web -välityspalvelimen tila
 #   {remaining}  Aika seuraavaan sallittuun kielitarkistukseen
 #   {removed_first}  Poistiko ensimmäinen käytöstäpoisto ominaisuuden aktiivisesta rekisteristä
 #   {removed_second}  Poistiko toistettu käytöstäpoisto ominaisuuden aktiivisesta rekisteristä
@@ -137,6 +144,7 @@
 #   {sampler}  Mittaajan nimi tai tunniste
 #   {samplers}  Luettelo integraatiomittaajista tai virheellisistä mittaajista
 #   {scope}  Kartan tai etäisyysasetuksen kohdealue
+#   {scopes}  React Web -parituksen oikeudet
 #   {score}  Suorituskykytestin pistemäärä
 #   {seconds}  Lähtölaskennan tai kuormitustestin kesto sekunteina
 #   {section}  Asetusten tai kielieditorin osio
@@ -145,6 +153,7 @@
 #   {since_run}  Nykyisen testin alkamisen jälkeen ilmoitetut virheet
 #   {size}  Karttaseinän enimmäismitat tai aktiiviset mitat
 #   {skip}  Ohitettujen tarkistusten määrä
+#   {sockets}  Avoimien React Web -socketien määrä
 #   {spawn_y}  Korkeus, johon painovoimatestin lohko luotiin
 #   {state}  Toiminnon tai lisäosan API-paketin tila
 #   {status}  Integraation tila tai asetustilan nimiö
@@ -159,6 +168,7 @@
 #   {tier}  Häiriötoimintasuunnitelman vakavuustaso
 #   {timing}  Kykyjen takaisinkutsujen aika millisekunteina minuutissa
 #   {to}  Nykyisen sivun viimeisen merkinnän numero
+#   {tokens}  Paritettujen React Web -selainten määrä
 #   {total}  Viestin merkintöjen, moduulien, maailmojen, tarkistusten tai muistin kokonaismäärä
 #   {type}  Komentoparametrin, asetusarvon, kartan tai etäisyyden tyyppi
 #   {unavailable}  Käytöstä poissa olevien NMS-siltakahvojen määrä
@@ -225,12 +235,12 @@ root = "Reactin juurikomento"
 test = "Suorita Reactin validointi- ja kuormitustestejä"
 "test.load" = "Suorita kaksivaiheinen synteettinen kuormitustesti"
 "test.run" = "Suorita Reactin validointisarja"
-version = "Näytä React-versio"
 distance = "Aseta palvelimen, maailman tai pelaajan näkyvyys-, simulointi- tai lähetysetäisyys"
 web = "Hallitse Reactin WebUI-käyttötokeneita"
-"web.list" = "Luettele aktiiviset WebUI-tokenit"
-"web.pair" = "Luo WebUI-paritustoken"
-"web.revoke" = "Peruuta WebUI-token"
+"web.pair" = "Luo kertakäyttöinen React Web -parituslinkki"
+"web.revoke" = "Peru tunnus tai avaamaton linkki"
+"web.status" = "Näytä kuuntelija, välityspalvelin ja sormenjälki"
+"web.tokens" = "Listaa paritetut selaimet"
 language = "Valitse oma kielesi tai palvelimen kieli"
 
 [command.parameter]
@@ -267,9 +277,11 @@ target = "Kohdemaailma tai -pelaaja; oletuksena komennon lähettäjän ympärist
 value = "Etäisyys chunkeina; arvo -1 perii asetuksen, jos perimistä tuetaan"
 
 [command.parameter.web]
-id = "Peruutettavan tokenin ID"
+expires = "Kuinka kauan paritus kestää käyttämättä, esimerkiksi 7d"
+id = "Tunnuksen ID tai all"
 label = "Tokenin ihmisen luettava nimiö"
 role = "Tämän tokenin rooli: viewer, operator tai admin"
+scopes = "Oikeudet roolin sijaan, esimerkiksi read,op:execute"
 
 [command.runtime]
 chunk_not_sampled = "&cTätä chunkia ei ole vielä mitattu. Tarkista hetken kuluttua uudelleen.&r"
@@ -347,21 +359,39 @@ threading_folia = "(Folia, aluekohtaiset säikeet)"
 threading_standard = ""
 
 [command.runtime.web]
+fingerprint_copy_hover = "Kopioi sormenjälki"
+invalid_expires = "&cexpires= ottaa luvun ja yksikön d, h tai m väliltä 1m–365d, esimerkiksi 7d.&r"
+invalid_label = "&cNimessä on enintään 64 merkkiä.&r"
 invalid_role = "&cVirheellinen rooli: &f{role}&c. Odotettu: viewer, operator tai admin.&r"
+invalid_scope = "&cTuntematon oikeus &f{scope}&c. Oikeudet ovat {scopes}.&r"
+link_copy = "&b&n[Kopioi]&r"
+link_copy_hover = "Kopioi linkki"
+link_details = "&7Oikeudet {scopes}; päättyy {lifetime} käyttämättä; tunnus {id}&r"
+link_open = "&b&n[Avaa React Web]&r"
+link_open_hover = "Avaa selaimessa"
+link_ready = "&aLinkki valmis. Avaa se 10 minuutin kuluessa&r"
+link_ready_console = "&aLinkki valmis. Avaa se 10 minuutin kuluessa:&r {link}"
+link_revoke = "&c&n[Peru]&r"
+link_revoke_hover = "Peru tämä linkki tai lopeta sillä tehty paritus"
 mutation_notice = "&eWeb-muutos käyttäjältä &f{actor}&e: &b{target}&e — &f{detail}&e.&r"
-pair_unavailable = "&cVerkkoparitus ei ole käytettävissä: &f{reason}&r"
+never = "ei koskaan"
 no_tokens = "&bEi aktiivisia tokeneita.&r"
-pairing_code = "&bParikoodi:&r {code}"
-pairing_copy = "&bParikoodi:&r &e&nKopioi napsauttamalla&r"
-pairing_copy_hover = "Kopioi koko parikoodi"
-persist_failed = "&cTokenin tallennus epäonnistui: &f{reason}&r"
+off = "pois"
+pair_refused = "&e{label} ei voinut parittaa: &f{reason}&r"
+pair_unavailable = "&cVerkkoparitus ei ole käytettävissä: &f{reason}&r"
+refused_expired = "linkki vanheni; luo uusi"
+refused_origin = "alkuperä {origin} ei ole web.toml-tiedoston allowedOrigins-listassa"
+relay_connecting = "{url} yhdistää"
+relay_registered = "{url} rekisteröity"
+relay_waiting = "odottaa ensimmäistä paritusta"
 revoked = "&bPeruttu token:&r {id}"
-role = "&bRooli:&r {role}"
-server_fingerprint = "&bPalvelimen sormenjälki:&r {fingerprint}"
-token_entry = "&7  {id} | {label} | issuedAt={issued_at}&r"
-token_fingerprint = "&bTokenin sormenjälki:&r {fingerprint}"
+role_and_scopes = "&cKäytä role= tai scopes=, ei molempia.&r"
+scopes_need_read = "&cscopes= sisältää aina read.&r"
+state_ready = "valmis"
+status = "&bReact Web&r {state} | kuuntelija {listener} | välitys {relay} | {tokens} tunnusta, {links} avointa linkkiä | {sockets} socketia"
+status_fingerprint = "&7Sormenjälki&r {fingerprint}"
+token_entry = "&7  {id} | {label} | {access} | päättyy {expires} | viimeksi käytetty {used} | {client} | {sockets} socketia&r"
 token_header = "&bAktiiviset tokenit ({count}):&r"
-token_id = "&bTokenin ID:&r {id}"
 token_not_found = "&cTokenia ei löytynyt: &f{id}&r"
 update_failed = "&cToken-tallennuksen päivitys epäonnistui: &f{reason}&r"
 
@@ -469,13 +499,17 @@ description = "Reactin sisäisen HTTP/WebSocket-hallintarajapinnan asetukset. Mu
 impact = "Aseta tähän käänteisen välityspalvelimen HTTPS-osoite, jos kuuntelija on käytettävissä localhostin ulkopuolelta. Reactin sisäinen kuuntelija tukee edelleen vain HTTP:tä. Muutokset tulevat voimaan automaattisesti, kun web.toml tallennetaan."
 summary = "Suorille API-asiakkaille ilmoitettava julkinen perusosoite."
 
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.allowedorigins]
+impact = "Jokainen merkintä on alkuperä: skeema, isäntä ja portti ilman polkua; pelkkä http vain loopbackissa. Muun alkuperän sivu hylätään koodilla origin_not_allowed. Pyynnöt ilman Origin-otsaketta, kuten välityspalvelimen, eivät muutu."
+summary = "Selainalkuperät, jotka saavat käyttää suoraa kuuntelijaa."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.appurl]
+impact = "Vaihda se itse ylläpitämääsi React Webiin ja lisää sen alkuperä allowedOrigins-listaan."
+summary = "React Webin osoite, jonka parituslinkit avaavat."
+
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenaddress]
 impact = "Oletuksena oleva :: -jokeri hyväksyy IPv6- ja IPv4-yhteensopivaa liikennettä lähiverkosta, konteista ja porttiohjauksista. Käytä loopback-osoitetta vain samalla koneella olevan käänteisen välityspalvelimen tai välittäjän takana."
 summary = "IP-osoite, johon verkkokuuntelija sidotaan."
-
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.corsorigins]
-impact = "Tyhjä luettelo sallii kaikki alkuperät. Lisää tiettyjä alkuperiä rajoittaaksesi alkuperien välistä pääsyä."
-summary = "HTTP-rajapinnan sallittujen CORS-alkuperien luettelo."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React avaa todennetun rajapinnan oletuksena. Arvo false estää HTTP- ja WebSocket-kuuntelijoiden avaamisen."
@@ -486,8 +520,8 @@ impact = "Jos tämä portti on varattu, React kokeilee seuraavia 99 porttia jär
 summary = "Verkkopalvelimen ensisijainen TCP-portti."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayenabled]
-impact = "Kun arvo on true, React yhdistää välittäjäpalvelimeen osoitteessa relayUrl, jotta kumppanisovellus tavoittaa NAT:n takana olevat palvelimet ilman porttiohjausta."
-summary = "Ottaa käyttöön lähtevän pilvivälittäjän asiakkaan NAT-läpäisyä varten."
+impact = "React yhdistää relayUrl-osoitteeseen ensimmäisellä /react web pair -komennolla ja jokaisella käynnistyksellä niin kauan kuin paritus on olemassa. Parituslinkit sisältävät silloin myös välityspalvelimen osoitteen."
+summary = "Ottaa käyttöön lähtevän välitysasiakkaan, jotta selaimet tavoittavat palvelimen ilman avointa porttia."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayurl]
 impact = "Luetaan vain, kun relayEnabled on true. Jätä tyhjäksi, kun välittäjä ei ole käytössä."
@@ -497,9 +531,13 @@ summary = "Välittäjäpalvelimen WSS-perusosoite, esim. wss://relay.arcane.art;
 impact = "Kun arvo on true, todentamattomat GET-pyynnöt hylätään virheellä 401. Aseta arvoksi false vain täysin luotetuissa verkkoympäristöissä."
 summary = "Vaatii kelvollisen todennustokenin vain luku -tyyppisille HTTP-päätepisteille."
 
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.wspushhz]
-impact = "Suuremmat arvot lisäävät työntöpäivitysten tarkkuutta mutta myös verkon ja CPU:n kuormaa."
-summary = "Tavoitetaajuus (Hz), jolla mittaajapäivitykset työnnetään WebSocket-yhteyksien kautta."
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.servername]
+impact = "Tyhjä käyttää MOTD:n ensimmäistä riviä tai palvelinkansion nimeä, jos MOTD on vanillan oletus."
+summary = "Nimi, jonka React Web näyttää tälle palvelimelle."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
+impact = "Jokainen käyttö aloittaa ajan alusta. /react web pair expires= korvaa sen yhdelle linkille. 1–365."
+summary = "Päivät, jotka paritus kestää käyttämättä."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Roskienkeruutoiminnon asetukset. Pyytää JVM:n roskienkeruuta ja raportoi heti vapautuneen kekomuistin."

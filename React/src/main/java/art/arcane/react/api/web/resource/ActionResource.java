@@ -2,6 +2,7 @@ package art.arcane.react.api.web.resource;
 
 import art.arcane.react.api.web.ActionBackend;
 import art.arcane.react.api.web.ActionDispatcher;
+import art.arcane.react.api.web.ActionTicketRegistry;
 import art.arcane.react.api.web.WebAuth;
 import art.arcane.react.api.web.WebMutation;
 import art.arcane.react.api.web.WebMutationReporter;
@@ -18,14 +19,17 @@ public class ActionResource {
     private final ActionBackend backend;
     private final ActionDispatcher dispatcher;
     private final WebMutationReporter reporter;
+    private final ActionTicketRegistry tickets;
 
     public ActionResource(
             ActionBackend backend,
             ActionDispatcher dispatcher,
-            WebMutationReporter reporter) {
+            WebMutationReporter reporter,
+            ActionTicketRegistry tickets) {
         this.backend = backend;
         this.dispatcher = dispatcher;
         this.reporter = reporter;
+        this.tickets = tickets;
     }
 
     public record ListResponse(ActionDescriptorDto[] data) {}
@@ -36,6 +40,14 @@ public class ActionResource {
 
     public void list(Context ctx) {
         ctx.json(new ListResponse(backend.list().toArray(new ActionDescriptorDto[0])));
+    }
+
+    public void ticket(Context ctx) {
+        ActionTicketRegistry.TicketView view = tickets.get(ctx.pathParam("id"));
+        if (view == null) {
+            throw new NotFoundResponse("Unknown ticket");
+        }
+        ctx.json(view);
     }
 
     public void execute(Context ctx) {

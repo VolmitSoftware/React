@@ -43,6 +43,7 @@ Future<void> main() async {
   );
   final FleetManager fleet = FleetManager(
     storage: storage,
+    session: WebFleetStorage.session(),
     clientFactory: (ServerCredential cred) =>
         ReactClient(cred, counter: MonotonicCounter(storage)),
     relayClientFactory: (ServerCredential cred) {

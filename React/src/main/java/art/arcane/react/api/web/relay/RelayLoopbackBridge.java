@@ -9,9 +9,21 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 public class RelayLoopbackBridge implements RelayRequestBridge {
+
+    // Longer than the relay's own 10 s request timeout, so a stuck handler frees its dispatch thread.
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
+
+    /**
+     * Not forwarded: the transport's own headers, which the JDK client sets itself, and {@code Origin}. The relay checks the
+     * browser's origin when the browser connects, so the listener's origin gate applies to the direct path only.
+     */
+    private static final Set<String> DROPPED_HEADERS = Set.of("origin", "host", "connection", "content-length", "expect", "upgrade");
 
     private final String baseUrl;
     private final HttpClient client;
@@ -33,11 +45,14 @@ public class RelayLoopbackBridge implements RelayRequestBridge {
 
             HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + path))
+                .timeout(REQUEST_TIMEOUT)
                 .method(upperMethod, publisher);
 
             if (headers != null) {
                 for (Map.Entry<String, String> entry : headers.entrySet()) {
-                    builder.header(entry.getKey(), entry.getValue());
+                    if (!DROPPED_HEADERS.contains(entry.getKey().toLowerCase(Locale.ROOT))) {
+                        builder.header(entry.getKey(), entry.getValue());
+                    }
                 }
             }
 

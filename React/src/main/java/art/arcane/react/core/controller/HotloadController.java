@@ -27,6 +27,7 @@ import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.api.web.WebConfiguration;
+import art.arcane.react.api.web.WebRevisions;
 import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigDescription;
@@ -526,7 +527,34 @@ public class HotloadController extends TickedObject implements IController {
         && !runtime.revisions().isCurrent(change.snapshot().path(), change.revision())) {
       outcome = ApplyOutcome.STALE;
     }
+    if (outcome == ApplyOutcome.APPLIED) {
+      bumpWebRevisions(change.file());
+    }
     return new AppliedChange(change, outcome);
+  }
+
+  private void bumpWebRevisions(File file) {
+    File root = dataFolder;
+    if (root == null && React.instance != null) {
+      root = React.instance.getDataFolder();
+    }
+    bumpWebRevisionsForAppliedFile(root, file);
+  }
+
+  /** Moves the web revision counter that covers a config file applied from disk. */
+  static void bumpWebRevisionsForAppliedFile(File root, File file) {
+    String[] parts = relativizeNormalized(root, file).replace('\\', '/').split("/");
+    if (parts.length == 1 && parts[0].equals("react.toml")) {
+      WebRevisions.bumpForConfigFile("main", null);
+      return;
+    }
+    if (parts.length != 2) {
+      return;
+    }
+    String id = ConfigFileSupport.configNameFromFileName(parts[1]);
+    if (id != null && !id.isBlank()) {
+      WebRevisions.bumpForConfigFile(parts[0].toLowerCase(Locale.ROOT), id);
+    }
   }
 
   private void finishPreparedBatch(

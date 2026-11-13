@@ -147,6 +147,30 @@ void main() {
       expect(response.body['data'], isNotNull);
     });
 
+    test('keeps the headers the server added (the relay proof)', () {
+      final RelayResponse response = RelayResponse.fromDataPayload(
+        <String, dynamic>{
+          'status': 200,
+          'body': <String, dynamic>{'data': <String, dynamic>{}},
+          'headers': <String, dynamic>{
+            'X-React-Server-Key': 'key',
+            'X-React-Proof': 'sig',
+          },
+        },
+      );
+      expect(response.headers, <String, String>{
+        'X-React-Server-Key': 'key',
+        'X-React-Proof': 'sig',
+      });
+      expect(
+        RelayResponse.fromDataPayload(<String, dynamic>{
+          'status': 200,
+          'body': <String, dynamic>{},
+        }).headers,
+        isEmpty,
+      );
+    });
+
     test('parses data payload with error body', () {
       final RelayResponse response = RelayResponse.fromDataPayload(
         <String, dynamic>{

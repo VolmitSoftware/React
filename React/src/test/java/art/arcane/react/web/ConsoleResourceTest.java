@@ -3,21 +3,18 @@ package art.arcane.react.web;
 import art.arcane.react.api.web.AuditLog;
 import art.arcane.react.api.web.BukkitWebMutationReporter;
 import art.arcane.react.api.web.ConsoleCommandDispatcher;
-import art.arcane.react.api.web.PairingToken;
-import art.arcane.react.api.web.TokenRecord;
-import art.arcane.react.api.web.TokenStore;
+import art.arcane.react.api.web.pairing.WebToken;
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.resource.ConsoleResource;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
-import io.javalin.http.ForbiddenResponse;
+import art.arcane.react.api.web.WebError;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
-import java.security.SecureRandom;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,31 +34,14 @@ public class ConsoleResourceTest {
     @TempDir
     File dataFolder;
 
-    private PairingToken adminToken;
-    private PairingToken operatorToken;
+    private WebToken adminToken;
+    private WebToken operatorToken;
     private AuditLog auditLog;
 
     @BeforeEach
     void setUp() {
-        byte[] secret = new byte[32];
-        new SecureRandom().nextBytes(secret);
-        TokenRecord adminRecord = new TokenRecord(
-            "tok-console-admin",
-            "admin-device",
-            1000L,
-            Set.of("read", "op:execute", "admin", "console:read", "console:execute"),
-            "admin"
-        );
-        TokenRecord operatorRecord = new TokenRecord(
-            "tok-console-op",
-            "operator-device",
-            1000L,
-            Set.of("read", "op:execute"),
-            "operator"
-        );
-        TokenStore store = TokenStore.inMemory(adminRecord, operatorRecord);
-        adminToken = verified(secret, adminRecord, store);
-        operatorToken = verified(secret, operatorRecord, store);
+        adminToken = WebTestTokens.token("tok-console-admin", "admin");
+        operatorToken = WebTestTokens.token("tok-console-op", "operator");
         auditLog = new AuditLog(dataFolder) {
             @Override
             protected void schedule(Runnable runnable) {
@@ -113,7 +93,7 @@ public class ConsoleResourceTest {
         );
         Context ctx = context(operatorToken, "say denied");
 
-        assertThrows(ForbiddenResponse.class, () -> resource.execute(ctx));
+        assertThrows(WebError.class, () -> resource.execute(ctx));
         verify(dispatcher, never()).dispatch(anyString());
     }
 
@@ -140,15 +120,11 @@ public class ConsoleResourceTest {
         verify(dispatcher, never()).dispatch(anyString());
     }
 
-    private static Context context(PairingToken token, String command) {
+    private static Context context(WebToken token, String command) {
         Context ctx = mock(Context.class);
-        when(ctx.<PairingToken>attribute("token")).thenReturn(token);
+        when(ctx.<WebToken>attribute("token")).thenReturn(token);
         when(ctx.bodyAsClass(ConsoleResource.ExecuteBody.class)).thenReturn(new ConsoleResource.ExecuteBody(command));
         return ctx;
     }
 
-    private static PairingToken verified(byte[] secret, TokenRecord record, TokenStore store) {
-        String bearer = PairingToken.mint(secret, record.id(), record.label(), record.issuedAt(), record.scopes());
-        return PairingToken.verify(secret, bearer, store).orElseThrow();
-    }
 }

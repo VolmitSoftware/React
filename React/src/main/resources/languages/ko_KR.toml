@@ -23,6 +23,7 @@
 #
 # === 변수 ===
 # 변수 이름을 변경하지 말고 각 메시지에 원래 있는 변수만 사용하세요.
+#   {access}  React Web 페어링의 역할 또는 권한
 #   {action}  작업 이름 또는 색상 조정 방향
 #   {actions}  대기 중인 작업 수 또는 제외된 작업 이름 목록
 #   {active}  활성 기능 또는 조정 항목 수
@@ -41,7 +42,7 @@
 #   {before}  변경 전 설정 값, 언어 메시지 또는 힙 사용량
 #   {checked}  검사한 샘플러 수
 #   {chunks}  작업의 영향을 받은 청크 수
-#   {code}  웹 페어링 코드
+#   {client}  React Web 페어링을 만든 브라우저 이름
 #   {command}  명령어 경로
 #   {count}  항목, 모듈, 변경 사항 또는 테스트 결과 수
 #   {current}  현재 페이지 번호
@@ -57,6 +58,7 @@
 #   {entities}  작업의 영향을 받은 개체 수
 #   {entry}  연동 타임라인 항목
 #   {exceptions}  부하 테스트 회차 중 기록된 React 예외
+#   {expires}  사용하지 않으면 React Web 페어링이 끝나는 시점
 #   {fail}  실패한 검사 수
 #   {file}  설정, 언어 또는 플러그인 API 파일 이름
 #   {fingerprint}  서버 또는 웹 토큰 지문
@@ -80,14 +82,17 @@
 #   {incident}  개발 테스트 모음에서 제외한 재귀적 사고 대응 작업 식별자
 #   {index}  개발 테스트 모음의 현재 단계 번호
 #   {invalid}  유효하지 않은 측정값을 가진 샘플러 수
-#   {issued_at}  웹 토큰 생성 시간
 #   {item}  아이템 이름 또는 식별자
 #   {items}  병합한 아이템 개체 수
 #   {kept}  언어 업데이트에서 유지된 로컬 편집
 #   {key}  명령어 매개변수 키, 설정 키 또는 언어 메시지 ID
 #   {label}  벤치마크, 지표, 설정, 명령어 또는 웹 토큰 레이블
+#   {lifetime}  사용하지 않을 때 React Web 페어링이 유지되는 기간
 #   {line}  여러 줄 메시지에서 편집 중인 줄 번호
 #   {lines}  검색한 서버 로그 줄 수
+#   {link}  React Web 페어링 링크
+#   {links}  아직 열지 않은 React Web 페어링 링크 수
+#   {listener}  React Web 리스너가 바인딩된 주소
 #   {loaded}  사전 로딩 중 새로 불러온 청크 수
 #   {locale}  표시, 선택 또는 편집 중인 언어 코드
 #   {matched}  자동 저장 상태가 테스트 기준과 일치하는 월드
@@ -105,6 +110,7 @@
 #   {offenders}  유한하지 않은 값을 반환하는 샘플러 수
 #   {options}  허용되는 설정 값
 #   {p95}  부하 테스트의 틱 시간 95백분위수(ms)
+#   {origin}  요청을 보낸 브라우저 출처
 #   {parameter}  명령어 매개변수 이름
 #   {parameters}  무시된 명령어 매개변수
 #   {pass}  통과한 검사 수
@@ -128,6 +134,7 @@
 #   {react_errors}  서버 로그에서 찾은 React 오류 줄 수
 #   {reason}  실패, 거부 또는 사용 불가 상태의 이유
 #   {registered}  등록된 모듈 수
+#   {relay}  React Web 릴레이 상태
 #   {remaining}  다음 언어 확인이 가능해질 때까지 남은 시간
 #   {removed_first}  첫 비활성화로 기능이 활성 레지스트리에서 제거되었는지 여부
 #   {removed_second}  반복 비활성화로 기능이 활성 레지스트리에서 제거되었는지 여부
@@ -137,6 +144,7 @@
 #   {sampler}  샘플러 이름 또는 식별자
 #   {samplers}  연동 샘플러 또는 실패한 샘플러 목록
 #   {scope}  지도 범위 또는 거리 설정 범위
+#   {scopes}  React Web 페어링의 권한
 #   {score}  벤치마크 점수
 #   {seconds}  카운트다운 또는 부하 테스트 시간(초)
 #   {section}  설정 또는 언어 편집기 섹션
@@ -145,6 +153,7 @@
 #   {since_run}  현재 테스트 시작 이후 보고된 오류
 #   {size}  지도 벽의 최대 크기 또는 사용 중인 크기
 #   {skip}  건너뛴 검사 수
+#   {sockets}  열린 React Web 소켓 수
 #   {spawn_y}  중력 테스트 블록이 생성된 높이
 #   {state}  작업 또는 플러그인 API 팩 상태
 #   {status}  연동 상태 또는 설정 상태 레이블
@@ -159,6 +168,7 @@
 #   {tier}  사고 대응 절차의 심각도 단계
 #   {timing}  분당 능력 콜백 시간(밀리초)
 #   {to}  현재 페이지의 마지막 항목 번호
+#   {tokens}  페어링된 React Web 브라우저 수
 #   {total}  메시지의 전체 항목, 모듈, 월드, 검사 수 또는 메모리 양
 #   {type}  명령어 매개변수, 설정 값, 지도 또는 거리 유형
 #   {unavailable}  사용할 수 없는 NMS 브리지 핸들 수
@@ -225,12 +235,12 @@ root = "React 최상위 명령어"
 test = "React 검증 및 부하 테스트 실행"
 "test.load" = "2회차 가상 부하 테스트 실행"
 "test.run" = "React 검증 모음 실행"
-version = "React 버전 표시"
 distance = "서버, 월드 또는 플레이어의 시야·시뮬레이션·전송 거리 설정"
 web = "React WebUI 액세스 토큰 관리"
-"web.list" = "활성 WebUI 토큰 목록"
-"web.pair" = "WebUI 페어링 토큰 생성"
-"web.revoke" = "WebUI 토큰 해지"
+"web.pair" = "한 번만 쓰는 React Web 페어링 링크 만들기"
+"web.revoke" = "토큰을 해지하거나 아직 열지 않은 링크 취소"
+"web.status" = "리스너, 릴레이, 지문 보기"
+"web.tokens" = "페어링된 브라우저 목록"
 language = "개인 언어 또는 서버 언어 선택"
 
 [command.parameter]
@@ -267,9 +277,11 @@ target = "대상 월드 또는 플레이어. 기본값은 명령 실행자의 �
 value = "청크 단위 거리. 설정 상속을 지원하는 경우 -1을 사용하세요"
 
 [command.parameter.web]
-id = "해지할 토큰 ID"
+expires = "사용하지 않을 때 페어링이 유지되는 기간, 예: 7d"
+id = "토큰 ID 또는 all"
 label = "이 토큰을 식별하기 위한 읽기 쉬운 레이블"
 role = "이 토큰의 역할: viewer, operator 또는 admin"
+scopes = "역할 대신 쓸 권한, 예: read,op:execute"
 
 [command.runtime]
 chunk_not_sampled = "&c이 청크는 아직 측정되지 않았습니다. 1초 후 다시 확인하세요.&r"
@@ -347,21 +359,39 @@ threading_folia = "(Folia 리전 스레딩)"
 threading_standard = ""
 
 [command.runtime.web]
+fingerprint_copy_hover = "지문 복사"
+invalid_expires = "&cexpires=는 d, h, m을 붙인 숫자를 1m부터 365d까지 받습니다. 예: 7d.&r"
+invalid_label = "&c라벨은 최대 64자입니다.&r"
 invalid_role = "&c잘못된 역할: &f{role}&c. viewer, operator 또는 admin을 입력하세요.&r"
+invalid_scope = "&c알 수 없는 권한 &f{scope}&c. 권한: {scopes}.&r"
+link_copy = "&b&n[복사]&r"
+link_copy_hover = "링크 복사"
+link_details = "&7권한 {scopes}; 사용하지 않으면 {lifetime} 후 종료; 토큰 {id}&r"
+link_open = "&b&n[React Web 열기]&r"
+link_open_hover = "브라우저에서 열기"
+link_ready = "&a링크가 준비되었습니다. 10분 안에 여세요&r"
+link_ready_console = "&a링크가 준비되었습니다. 10분 안에 여세요:&r {link}"
+link_revoke = "&c&n[해지]&r"
+link_revoke_hover = "이 링크를 취소하거나 이 링크로 만든 페어링 끝내기"
 mutation_notice = "&e웹 변경자 &f{actor}&e: &b{target}&e — &f{detail}&e.&r"
-pair_unavailable = "&c웹 페어링을 사용할 수 없습니다: &f{reason}&r"
+never = "없음"
 no_tokens = "&b활성 토큰이 없습니다.&r"
-pairing_code = "&b페어링 코드:&r {code}"
-pairing_copy = "&b페어링 코드:&r &e&n클릭하여 복사&r"
-pairing_copy_hover = "전체 페어링 코드 복사"
-persist_failed = "&c토큰 저장에 실패했습니다: &f{reason}&r"
+off = "꺼짐"
+pair_refused = "&e{label} 페어링 실패: &f{reason}&r"
+pair_unavailable = "&c웹 페어링을 사용할 수 없습니다: &f{reason}&r"
+refused_expired = "링크가 만료되었습니다. 새로 만드세요"
+refused_origin = "출처 {origin}이(가) web.toml의 allowedOrigins 목록에 없습니다"
+relay_connecting = "{url} 연결 중"
+relay_registered = "{url} 등록됨"
+relay_waiting = "첫 페어링을 기다리는 중"
 revoked = "&b해지된 토큰:&r {id}"
-role = "&b역할:&r {role}"
-server_fingerprint = "&b서버 지문:&r {fingerprint}"
-token_entry = "&7  {id} | {label} | issuedAt={issued_at}&r"
-token_fingerprint = "&b토큰 지문:&r {fingerprint}"
+role_and_scopes = "&crole= 또는 scopes= 중 하나만 쓰세요.&r"
+scopes_need_read = "&cscopes=에는 read가 있어야 합니다.&r"
+state_ready = "준비됨"
+status = "&bReact Web&r {state} | 리스너 {listener} | 릴레이 {relay} | 토큰 {tokens}개, 열린 링크 {links}개 | 소켓 {sockets}개"
+status_fingerprint = "&7지문&r {fingerprint}"
+token_entry = "&7  {id} | {label} | {access} | 만료 {expires} | 마지막 사용 {used} | {client} | 소켓 {sockets}개&r"
 token_header = "&b활성 토큰 ({count}):&r"
-token_id = "&b토큰 ID:&r {id}"
 token_not_found = "&c토큰을 찾을 수 없습니다: &f{id}&r"
 update_failed = "&c토큰 저장소 업데이트에 실패했습니다: &f{reason}&r"
 
@@ -469,13 +499,17 @@ description = "React에 내장된 HTTP/WebSocket 관리 API 설정입니다. web
 impact = "localhost 외부에 리스너를 노출하는 경우 역방향 프록시의 HTTPS URL을 설정하세요. React의 내장 리스너는 계속 HTTP만 지원합니다. web.toml을 저장하면 변경 사항이 자동으로 적용됩니다."
 summary = "직접 접속하는 API 클라이언트에 알릴 공개 기본 URL."
 
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.allowedorigins]
+impact = "각 항목은 출처입니다: 스킴, 호스트, 포트이며 경로는 넣지 않습니다. 일반 http는 루프백에서만 허용됩니다. 다른 출처의 페이지는 origin_not_allowed로 거부됩니다. 릴레이처럼 Origin이 없는 요청은 영향을 받지 않습니다."
+summary = "직접 리스너를 쓸 수 있는 브라우저 출처."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.appurl]
+impact = "직접 호스팅하는 React Web으로 바꾸고 그 출처를 allowedOrigins 목록에 추가하세요."
+summary = "페어링 링크가 여는 React Web 주소."
+
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenaddress]
 impact = "기본 와일드카드 ::는 LAN, 컨테이너 및 포트 전달을 통한 IPv6와 IPv4 매핑 트래픽을 허용합니다. 루프백 주소는 같은 호스트의 역방향 프록시나 중계 뒤에서만 사용하세요."
 summary = "웹 리스너가 바인딩할 IP 주소."
-
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.corsorigins]
-impact = "빈 목록은 모든 출처를 허용합니다. 교차 출처 접근을 제한하려면 특정 출처를 추가하세요."
-summary = "HTTP API에서 허용하는 CORS 출처 목록."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React는 기본적으로 인증된 API를 엽니다. false로 설정하면 HTTP 또는 WebSocket 리스너를 열지 않습니다."
@@ -486,8 +520,8 @@ impact = "이 포트를 사용 중이면 React는 다음 99개 포트를 순서�
 summary = "웹 서버가 우선 사용하는 TCP 포트입니다."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayenabled]
-impact = "true이면 React가 relayUrl의 릴레이 브로커에 연결하여, 동반 앱이 포트 포워딩 없이 NAT 뒤의 서버에 접속할 수 있습니다."
-summary = "NAT 통과를 위한 아웃바운드 클라우드 릴레이 클라이언트를 활성화합니다."
+impact = "React는 첫 /react web pair 때 relayUrl 주소에 연결하고, 페어링이 있는 동안 시작할 때마다 연결합니다. 그러면 페어링 링크에 릴레이 주소도 들어갑니다."
+summary = "포트를 열지 않고도 브라우저가 이 서버에 닿도록 외부로 나가는 릴레이 클라이언트를 켭니다."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.relayurl]
 impact = "relayEnabled가 true일 때만 읽습니다. 릴레이를 사용하지 않으면 비워 두세요."
@@ -497,9 +531,13 @@ summary = "릴레이 브로커의 기본 WSS URL. 예: wss://relay.arcane.art; /
 impact = "true이면 인증되지 않은 GET 요청을 401로 거부합니다. 완전히 신뢰할 수 있는 네트워크 환경에서만 false로 설정하세요."
 summary = "읽기 전용 HTTP 엔드포인트에 유효한 인증 토큰을 요구합니다."
 
-[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.wspushhz]
-impact = "값이 높을수록 푸시 정확도가 올라가지만 네트워크와 CPU 오버헤드도 늘어납니다."
-summary = "WebSocket 연결로 샘플러 업데이트를 푸시하는 목표 주파수(Hz)."
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.servername]
+impact = "비어 있으면 MOTD 첫 줄을 쓰고, MOTD가 바닐라 기본값이면 서버 폴더 이름을 씁니다."
+summary = "React Web이 이 서버에 표시하는 이름."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
+impact = "사용할 때마다 기간이 다시 시작됩니다. /react web pair expires=로 링크 하나만 바꿀 수 있습니다. 1부터 365까지."
+summary = "사용하지 않을 때 페어링이 유지되는 일수."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "가비지 컬렉션 수집 작업 설정. JVM 가비지 컬렉션을 요청하고 즉시 회수된 힙을 보고합니다."

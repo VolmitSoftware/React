@@ -1,127 +1,43 @@
 library;
 
-import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr_router/jaspr_router.dart';
 import 'package:jaspr_test/server_test.dart';
-
-import 'package:react_web/app/reactor_app.dart';
+import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:react_web/model/sampler_sample.dart';
-import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/screen/events.dart';
 import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/server_scope.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
-
-SamplerSample _sample(
-  String id,
-  double value, {
-  String suffix = '',
-  double min = 0.0,
-  double max = 100.0,
-}) => SamplerSample(
-  id: id,
-  name: id,
-  value: value,
-  display: value.toString(),
-  suffix: suffix,
-  min: min,
-  max: max,
-  history: <double>[value],
-);
-
-ServerSnapshot _fakeSnapshot() {
-  final List<SamplerSample> samples = <SamplerSample>[
-    _sample('events-listeners', 512.0, max: 10000.0),
-    _sample('event-time', 1.4, suffix: 'ms', max: 50.0),
-    _sample('event-handles-per-tick', 24.0, max: 1000.0),
-  ];
-  final Map<String, SamplerSample> byId = <String, SamplerSample>{
-    for (final SamplerSample s in samples) s.id: s,
-  };
-  return ServerSnapshot(byId: byId, at: DateTime.now(), seq: 1);
-}
-
-Widget _wrap(Widget child) => ArcaneThemeProvider(
-  stylesheet: _sheet,
-  child: ServerScope(
-    snapshot: _fakeSnapshot(),
-    state: ConnState.live,
-    child: child,
-  ),
-);
+import 'monitor_support.dart';
 
 void main() {
   group('EventsScreen', () {
-    testServer('renders Event Time section card heading', (
+    testServer('time, handles and listeners as tiles, no repeat chart', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const EventsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Event Time'),
-        isTrue,
-        reason: 'Event Time section heading must appear in rendered HTML',
+      tester.pumpComponent(
+        onServer(
+          const EventsScreen(),
+          snapshot: snapshotOf(<SamplerSample>[
+            sample('event-time', 1.5, suffix: 'ms'),
+            sample('event-handles-per-tick', 420),
+            sample('events-listeners', 96),
+          ]),
+        ),
       );
+      final String body = (await tester.request('/')).body;
+
+      expect(occurrences(body, 'class="ui-metric"'), 3);
+      expect(occurrences(body, 'data-chart-card'), 0);
+      expect(body, contains(ReactorText.commonEventTime.english));
+      expect(body, contains(ReactorText.eventsHandlesPerTick.english));
+      expect(body, contains(ReactorText.eventsListeners.english));
+      expect(body, contains('420.0'));
     });
 
-    testServer('renders Listeners stat tile label', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrap(const EventsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Listeners'),
-        isTrue,
-        reason: 'Listeners stat tile label must appear in rendered HTML',
+    testServer('loads while connecting', (ServerTester tester) async {
+      tester.pumpComponent(
+        onServer(const EventsScreen(), state: ConnState.connecting),
       );
-    });
-
-    testServer('renders events-listeners value 512.0', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrap(const EventsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('512.0'),
-        isTrue,
-        reason: 'events-listeners value 512.0 must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders Events or Event Time label in HTML', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrap(const EventsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Event Time') || res.body.contains('Events'),
-        isTrue,
-        reason: 'Event Time (or Events) label must appear in rendered HTML',
-      );
-    });
-  });
-
-  group('EventsScreen route wiring', () {
-    test('kRouteServerEvents constant is correct', () {
-      expect(kRouteServerEvents, equals('/server/:id/events'));
-    });
-
-    test('buildReactorRoutes includes server events route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasEvents = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerEvents,
-      );
-      expect(
-        hasEvents,
-        isTrue,
-        reason: 'per-server Events screen requires /server/:id/events route',
-      );
+      expect((await tester.request('/')).body, contains('ui-loading'));
     });
   });
 }

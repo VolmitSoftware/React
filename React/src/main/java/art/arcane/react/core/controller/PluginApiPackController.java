@@ -1,6 +1,7 @@
 package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
+import art.arcane.react.api.web.WebRevisions;
 import art.arcane.react.core.pluginapi.PluginApiPackDefinition;
 import art.arcane.react.core.pluginapi.PluginApiPackParser;
 import art.arcane.react.core.pluginapi.PluginApiPackRuntime;
@@ -257,6 +258,7 @@ public final class PluginApiPackController extends TickedObject implements ICont
       removed.retire(React.controller(SampleController.class));
       return true;
     });
+    WebRevisions.bump(WebRevisions.Kind.PACKS);
     return true;
   }
 
@@ -337,7 +339,11 @@ public final class PluginApiPackController extends TickedObject implements ICont
 
   private void applyCatalog(PreparedCatalog prepared) {
     SampleController sampleController = React.controller(SampleController.class);
+    boolean changed;
     synchronized (packs) {
+      Map<String, String> previousErrors = Map.copyOf(validationErrors);
+      int previousRuntimes = packs.size();
+      changed = false;
       validationErrors.clear();
       validationErrors.putAll(prepared.errors());
       for (String oldId : new ArrayList<>(packs.keySet())) {
@@ -348,6 +354,7 @@ public final class PluginApiPackController extends TickedObject implements ICont
               && oldRuntime.definition().sourcePath().equals(replacement.sourcePath())) {
             continue;
           }
+          changed = true;
           oldRuntime.retire(sampleController);
           PluginApiPackRuntime newRuntime = new PluginApiPackRuntime(replacement);
           if (newRuntime.activate(sampleController)) {
@@ -361,6 +368,7 @@ public final class PluginApiPackController extends TickedObject implements ICont
         }
         Path oldPath = oldRuntime.definition().sourcePath().toAbsolutePath().normalize();
         if (!prepared.presentPaths().contains(oldPath)) {
+          changed = true;
           oldRuntime.retire(sampleController);
           packs.remove(oldId);
           collectFailures.remove(oldId);
@@ -370,6 +378,7 @@ public final class PluginApiPackController extends TickedObject implements ICont
         if (packs.containsKey(definition.id())) {
           continue;
         }
+        changed = true;
         PluginApiPackRuntime runtime = new PluginApiPackRuntime(definition);
         if (runtime.activate(sampleController)) {
           packs.put(definition.id(), runtime);
@@ -377,6 +386,10 @@ public final class PluginApiPackController extends TickedObject implements ICont
           validationErrors.put(definition.sourcePath().getFileName().toString(), runtime.detail());
         }
       }
+      changed = changed || previousRuntimes != packs.size() || !previousErrors.equals(validationErrors);
+    }
+    if (changed) {
+      WebRevisions.bump(WebRevisions.Kind.PACKS);
     }
   }
 

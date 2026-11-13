@@ -1,258 +1,363 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr_router/jaspr_router.dart';
+import 'package:jaspr/jaspr.dart' show GlobalStateKey;
 import 'package:jaspr_test/server_test.dart';
 
-import 'package:react_web/app/reactor_app.dart';
 import 'package:react_web/model/control_item.dart';
-import 'package:react_web/model/sampler_sample.dart';
-import 'package:react_web/model/server_snapshot.dart';
+import 'package:react_web/model/knob.dart';
 import 'package:react_web/screen/optimization.dart';
 import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/control_scope.dart';
-import 'package:react_web/state/server_scope.dart';
+import 'package:react_web/ui/kit/mode.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+import 'support/operate_fakes.dart';
 
-final List<ControlItem> _fakeItems = <ControlItem>[
+final List<ControlItem> _features = <ControlItem>[
+  controlItem(
+    'dynamic-view-distance',
+    name: 'Dynamic View Distance',
+    category: 'Players',
+    enabled: true,
+    description: 'Shrinks view distance under load.',
+  ),
   const ControlItem(
     id: 'mob-stacking',
     name: 'Mob Stacking',
-    category: 'Entity Population',
-    enabled: true,
-    description: 'Stacks nearby mobs to reduce entity count.',
-  ),
-  const ControlItem(
-    id: 'fast-leaf-decay',
-    name: 'Fast Leaf Decay',
-    category: 'Block & World-Tick',
+    category: 'Entities',
     enabled: false,
-    description: 'Accelerates leaf decay propagation.',
+    description: 'Stacks nearby mobs.',
+    knobs: <Knob>[
+      Knob(key: 'radius', label: 'Radius', type: KnobType.intType, value: 4),
+    ],
   ),
+  controlItem('redstone-limiter', name: 'Redstone Limiter', category: 'World'),
 ];
 
-Widget _wrapView(Widget child) =>
-    ArcaneThemeProvider(stylesheet: _sheet, child: child);
+Widget _view(ControlListView view) =>
+    ArcaneThemeProvider(stylesheet: testSheet, child: view);
 
-Widget _wrapScreen(Widget child) => ArcaneThemeProvider(
-  stylesheet: _sheet,
-  child: ControlScope(
-    client: null,
-    child: ServerScope(
-      snapshot: ServerSnapshot(
-        byId: const <String, SamplerSample>{},
-        at: DateTime(2026),
-        seq: 1,
-      ),
-      state: ConnState.live,
-      child: child,
-    ),
-  ),
-);
+ControlListView _onScreen() =>
+    find.byType(ControlListView).evaluate().single.component as ControlListView;
 
 void main() {
-  group('OptimizationScreen route wiring', () {
-    test('kRouteServerOptimization constant is correct', () {
-      expect(kRouteServerOptimization, equals('/server/:id/optimization'));
-    });
-
-    test('buildReactorRoutes includes server optimization route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasOptimization = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerOptimization,
+  group('filterControlItems', () {
+    test('matches name, id and description, ignoring case', () {
+      expect(
+        filterControlItems(
+          _features,
+          query: 'STACK',
+        ).map((ControlItem i) => i.id),
+        <String>['mob-stacking'],
       );
       expect(
-        hasOptimization,
-        isTrue,
-        reason:
-            'per-server Optimization screen requires /server/:id/optimization route',
+        filterControlItems(_features, query: 'view distance').single.id,
+        'dynamic-view-distance',
       );
+      expect(
+        filterControlItems(_features, query: 'redstone-lim').single.id,
+        'redstone-limiter',
+      );
+    });
+
+    test('the Governors filter picks the governor features', () {
+      expect(
+        filterControlItems(
+          _features,
+          category: governorsFilter,
+        ).map((ControlItem i) => i.id),
+        <String>['dynamic-view-distance'],
+      );
+      expect(kGovernorFeatureIds, hasLength(14));
+    });
+
+    test('a category filter keeps that category only', () {
+      expect(
+        filterControlItems(_features, category: 'World').single.id,
+        'redstone-limiter',
+      );
+      expect(filterControlItems(_features), hasLength(3));
     });
   });
 
-  group('OptimizationScreen sidebar', () {
-    testServer('ReactorShell with a server renders Optimization sidebar item', (
+  group('ControlListView', () {
+    testServer('one row per item with a named switch', (
       ServerTester tester,
     ) async {
       tester.pumpComponent(
-        _wrapView(
-          ReactorShell(
-            currentPath: '/server/srv1/optimization',
-            servers: const <ServerEntry>[
-              ServerEntry(
-                id: 'srv1',
-                name: 'Test Server',
-                state: ConnState.live,
-              ),
-            ],
+        _view(
+          ControlListView(
+            items: _features,
+            itemLabel: 'Feature',
+            emptyMessage: 'None',
+            governors: true,
+            onToggle: (String _, bool _) {},
+            onSetAll: (bool _, List<ControlItem> _) {},
           ),
         ),
       );
       final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Optimization'),
-        isTrue,
-        reason:
-            'Optimization sidebar item must appear in per-server sidebar group',
+      expect(res.statusCode, 200);
+      expect(res.body, contains('Mob Stacking'));
+      expect(res.body, contains('aria-label="Mob Stacking"'));
+      expect(res.body, contains('aria-label="Redstone Limiter"'));
+      expect(res.body, contains('Governors'));
+      expect(res.body, contains('All categories'));
+      expect(res.body, isNot(contains('Configure')));
+      expect(res.body, isNot(contains('data-disabled="true"')));
+    });
+
+    testServer('Configure shows for items with settings when offered', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _view(
+          ControlListView(
+            items: _features,
+            itemLabel: 'Feature',
+            emptyMessage: 'None',
+            onConfigure: (String _) {},
+          ),
+        ),
       );
+      final DocumentResponse res = await tester.request('/');
+      expect(res.body, contains('aria-label="Configure Mob Stacking"'));
+      expect(res.body, isNot(contains('Configure Redstone Limiter')));
+      expect(res.body, isNot(contains('Governors')));
+    });
+
+    testServer('grouped, the catch-all Other group comes last', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _view(
+          ControlListView(
+            items: <ControlItem>[
+              controlItem('a', name: 'Alpha', category: 'Other'),
+              controlItem('b', name: 'Beta', category: 'World'),
+              controlItem('c', name: 'Gamma', category: 'Entities'),
+            ],
+            itemLabel: 'Tweak',
+            emptyMessage: 'None',
+            grouped: true,
+          ),
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+      final int entities = body.indexOf('>Entities<');
+      final int world = body.indexOf('>World<');
+      final int other = body.indexOf('>Other<');
+      expect(entities, greaterThan(0));
+      expect(world, greaterThan(entities));
+      expect(other, greaterThan(world));
+    });
+
+    testServer('a filter that matches nothing says so', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        _view(
+          ControlListView(
+            items: _features,
+            itemLabel: 'Feature',
+            emptyMessage: 'None',
+            query: 'zzz',
+          ),
+        ),
+      );
+      final DocumentResponse res = await tester.request('/');
+      expect(res.body, contains('Nothing matches'));
+    });
+
+    testServer('no items shows the empty message', (ServerTester tester) async {
+      tester.pumpComponent(
+        _view(
+          const ControlListView(
+            items: <ControlItem>[],
+            itemLabel: 'Feature',
+            emptyMessage: 'No features',
+          ),
+        ),
+      );
+      final DocumentResponse res = await tester.request('/');
+      expect(res.body, contains('No features'));
     });
   });
 
-  group('OptimizationGridView render', () {
-    testServer(
-      'renders category headings Entity Population and Block & World-Tick',
-      (ServerTester tester) async {
-        tester.pumpComponent(
-          _wrapView(
-            OptimizationGridView(
-              items: _fakeItems,
-              total: _fakeItems.length,
-              enabledCount: 1,
-              onToggle: null,
-              onConfigure: null,
-              onSetAll: null,
-            ),
+  group('Features screen', () {
+    testServer('without a client it asks for a live connection', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        serverScopes(null, const ControlListScreen.features()),
+      );
+      final DocumentResponse res = await tester.request('/');
+      expect(res.body, contains('Features unavailable'));
+      expect(res.body, contains('requires a live connection'));
+    });
+
+    testComponents('loads the features and toggles on the same server', (
+      ComponentTester tester,
+    ) async {
+      final FakeServer server = FakeServer(
+        client: OperateClient(features: List<ControlItem>.of(_features)),
+      );
+      tester.pumpComponent(
+        serverScopes(server, const ControlListScreen.features()),
+      );
+      await tester.pump();
+      expect(_onScreen().items.map((ControlItem i) => i.id), hasLength(3));
+      _onScreen().onToggle!('mob-stacking', true);
+      await tester.pump();
+      expect(server.client.calls, contains('PUT /features/mob-stacking'));
+    });
+
+    testComponents('a viewer gets disabled switches', (
+      ComponentTester tester,
+    ) async {
+      tester.pumpComponent(
+        serverScopes(
+          FakeServer(
+            client: OperateClient(features: List<ControlItem>.of(_features)),
           ),
+          const ControlListScreen.features(),
+          role: viewerRole,
+        ),
+      );
+      await tester.pump();
+      expect(_onScreen().onToggle, isNull);
+      expect(_onScreen().onSetAll, isNull);
+    });
+
+    testComponents('Configure is Advanced only', (
+      ComponentTester tester,
+    ) async {
+      tester.pumpComponent(
+        serverScopes(
+          FakeServer(
+            client: OperateClient(features: List<ControlItem>.of(_features)),
+          ),
+          const ControlListScreen.features(),
+          mode: ReactorMode.simple,
+        ),
+      );
+      await tester.pump();
+      expect(_onScreen().onConfigure, isNull);
+      expect(_onScreen().onToggle, isNotNull);
+    });
+
+    testComponents('Disable all asks, then turns off the shown items', (
+      ComponentTester tester,
+    ) async {
+      final FakeServer server = FakeServer(
+        client: OperateClient(
+          features: <ControlItem>[
+            controlItem('alpha', enabled: true),
+            controlItem('beta', enabled: true, category: 'World'),
+          ],
+        ),
+      );
+      tester.pumpComponent(
+        withConfirmHost(
+          serverScopes(server, const ControlListScreen.features()),
+        ),
+      );
+      await tester.pump();
+      _onScreen().onCategory!('World');
+      await tester.pump();
+      final List<ControlItem> shown = filterControlItems(
+        _onScreen().items,
+        category: _onScreen().category,
+      );
+      _onScreen().onSetAll!(false, shown);
+      await tester.pump();
+      await answerConfirm(tester, yes: true);
+      expect(server.client.calls, contains('PUT /features/beta'));
+      expect(server.client.calls, isNot(contains('PUT /features/alpha')));
+      await unmount(tester);
+    });
+
+    testComponents(
+      'settings are staged, sent by Save, and flag server changes',
+      (ComponentTester tester) async {
+        final OperateClient client = OperateClient(
+          features: <ControlItem>[_features[1]],
         );
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, equals(200));
-        expect(
-          res.body.contains('Entity Population'),
-          isTrue,
-          reason: 'Entity Population category heading must appear',
+        final FakeServer server = FakeServer(client: client);
+        tester.pumpComponent(
+          serverScopes(server, const ControlListScreen.features()),
         );
-        expect(
-          res.body.contains('Block'),
-          isTrue,
-          reason: 'Block & World-Tick category heading must appear',
+        await tester.pump();
+        _onScreen().onConfigure!('mob-stacking');
+        await tester.pump();
+        ControlSettingsSheet sheet() =>
+            find.byType(ControlSettingsSheet).evaluate().single.component
+                as ControlSettingsSheet;
+        expect(sheet().onSave, isNull);
+        sheet().onStage!('radius', 9);
+        await tester.pump();
+        expect(client.writes('PUT /features/mob-stacking/config'), 0);
+
+        client.featureList[0] = client.featureList[0].withKnobValue(
+          'radius',
+          6,
         );
+        await server.session.features.load();
+        await tester.pump();
+        expect(sheet().changedOnServer!('radius'), isTrue);
+        expect(_onScreen().changedOnServer!(_onScreen().items.single), isTrue);
+
+        sheet().onSave!();
+        await tester.pump();
+        expect(client.writes('PUT /features/mob-stacking/config'), 1);
       },
     );
 
-    testServer('renders feature names Mob Stacking and Fast Leaf Decay', (
-      ServerTester tester,
+    testComponents('switching servers reloads and writes to the new server', (
+      ComponentTester tester,
     ) async {
+      final FakeServer first = FakeServer(
+        client: OperateClient(features: <ControlItem>[controlItem('alpha')]),
+      );
+      final FakeServer second = FakeServer(
+        client: OperateClient(features: <ControlItem>[controlItem('beta')]),
+      );
+      final GlobalStateKey<ServerSwitcherState> key =
+          GlobalStateKey<ServerSwitcherState>();
       tester.pumpComponent(
-        _wrapView(
-          OptimizationGridView(
-            items: _fakeItems,
-            total: _fakeItems.length,
-            enabledCount: 1,
-            onToggle: null,
-            onConfigure: null,
-            onSetAll: null,
-          ),
+        ServerSwitcher(
+          key: key,
+          servers: <FakeServer>[first, second],
+          child: const ControlListScreen.features(),
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Mob Stacking'),
-        isTrue,
-        reason: 'Mob Stacking feature name must appear',
-      );
-      expect(
-        res.body.contains('Fast Leaf Decay'),
-        isTrue,
-        reason: 'Fast Leaf Decay feature name must appear',
-      );
-      expect(res.body, contains('aria-label="Mob Stacking"'));
-      expect(res.body, contains('aria-label="Fast Leaf Decay"'));
+      await tester.pump();
+      expect(_onScreen().items.single.id, 'alpha');
+
+      key.currentState!.show(1);
+      await tester.pump();
+      expect(_onScreen().items.single.id, 'beta');
+      expect(second.client.calls, contains('GET /features'));
+
+      _onScreen().onToggle!('beta', true);
+      await tester.pump();
+      expect(second.client.calls, contains('PUT /features/beta'));
+      expect(first.client.writes('PUT /features/'), 0);
     });
 
-    testServer('renders enabled summary 1 / 2 enabled', (
-      ServerTester tester,
+    testComponents('not live leaves the switches disabled', (
+      ComponentTester tester,
     ) async {
       tester.pumpComponent(
-        _wrapView(
-          OptimizationGridView(
-            items: _fakeItems,
-            total: _fakeItems.length,
-            enabledCount: 1,
-            onToggle: null,
-            onConfigure: null,
-            onSetAll: null,
+        serverScopes(
+          FakeServer(
+            client: OperateClient(features: List<ControlItem>.of(_features)),
           ),
+          const ControlListScreen.features(),
+          state: ConnState.degraded,
         ),
       );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Enabled: 1/2'),
-        isTrue,
-        reason: 'Localized enabled count must appear',
-      );
-    });
-
-    testServer('renders Enable all and Disable all buttons', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrapView(
-          OptimizationGridView(
-            items: _fakeItems,
-            total: _fakeItems.length,
-            enabledCount: 1,
-            onToggle: null,
-            onConfigure: null,
-            onSetAll: null,
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Enable all'),
-        isTrue,
-        reason: 'Enable all button must appear',
-      );
-      expect(
-        res.body.contains('Disable all'),
-        isTrue,
-        reason: 'Disable all button must appear',
-      );
-    });
-
-    testServer('renders Configure action for each feature card', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(
-        _wrapView(
-          OptimizationGridView(
-            items: _fakeItems,
-            total: _fakeItems.length,
-            enabledCount: 1,
-            onToggle: null,
-            onConfigure: null,
-            onSetAll: null,
-          ),
-        ),
-      );
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Configure'),
-        isTrue,
-        reason: 'Configure button must appear for feature cards',
-      );
-    });
-  });
-
-  group('OptimizationScreen no-connection', () {
-    testServer('renders requires a live connection note when client is null', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrapScreen(const OptimizationScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('requires a live connection'),
-        isTrue,
-        reason: 'connection note must appear when ControlScope has no client',
-      );
+      await tester.pump();
+      expect(_onScreen().onToggle, isNull);
     });
   });
 }

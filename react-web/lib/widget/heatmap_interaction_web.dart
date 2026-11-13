@@ -22,9 +22,13 @@ void Function() installHeatmapInteraction({
   final web.HTMLElement plane = element as web.HTMLElement;
   final Map<String, JSFunction> listeners = <String, JSFunction>{};
   int activePointer = -1;
+  bool captured = false;
   double startX = 0;
   double startY = 0;
   int lastWheelAt = 0;
+
+  bool moved(double deltaX, double deltaY) =>
+      deltaX.abs() >= 12 || deltaY.abs() >= 12;
 
   void bind(
     String type,
@@ -45,12 +49,15 @@ void Function() installHeatmapInteraction({
     final web.PointerEvent pointer = event as web.PointerEvent;
     final double deltaX = _eventNumber(pointer as JSObject, 'clientX') - startX;
     final double deltaY = _eventNumber(pointer as JSObject, 'clientY') - startY;
-    try {
-      plane.releasePointerCapture(activePointer);
-    } catch (_) {}
+    if (captured) {
+      try {
+        plane.releasePointerCapture(activePointer);
+      } catch (_) {}
+    }
     activePointer = -1;
+    captured = false;
     plane.classList.remove('is-dragging');
-    if (deltaX.abs() < 12 && deltaY.abs() < 12) return;
+    if (!moved(deltaX, deltaY)) return;
     event.preventDefault();
     if (deltaX.abs() >= deltaY.abs()) {
       onPan(deltaX > 0 ? -1 : 1, 0);
@@ -74,13 +81,30 @@ void Function() installHeatmapInteraction({
     final web.PointerEvent pointer = event as web.PointerEvent;
     if (pointer.button != 0) return;
     activePointer = pointer.pointerId;
+    captured = false;
     startX = _eventNumber(pointer as JSObject, 'clientX');
     startY = _eventNumber(pointer as JSObject, 'clientY');
+    // No scroll: a press that scrolled the grid would land on another cell.
+    plane.focus(web.FocusOptions(preventScroll: true));
+  });
+
+  // A press only becomes a drag once it moves; until then the cell under
+  // it gets its own click (a capture from the start would send the click
+  // to the grid instead of the cell).
+  bind('pointermove', (web.Event event) {
+    if (captured || activePointer < 0 || !event.isA<web.PointerEvent>()) {
+      return;
+    }
+    final web.PointerEvent pointer = event as web.PointerEvent;
+    if (pointer.pointerId != activePointer) return;
+    final double deltaX = _eventNumber(pointer as JSObject, 'clientX') - startX;
+    final double deltaY = _eventNumber(pointer as JSObject, 'clientY') - startY;
+    if (!moved(deltaX, deltaY)) return;
+    captured = true;
     try {
       plane.setPointerCapture(activePointer);
     } catch (_) {}
     plane.classList.add('is-dragging');
-    plane.focus();
   });
 
   bind('pointerup', finishDrag, passive: false);
@@ -94,6 +118,7 @@ void Function() installHeatmapInteraction({
       'ArrowUp',
       'ArrowDown',
       'Home',
+      'Enter',
     ];
     if (!handled.contains(keyboard.key)) return;
     event.preventDefault();

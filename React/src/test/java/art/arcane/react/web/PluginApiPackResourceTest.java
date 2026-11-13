@@ -1,6 +1,6 @@
 package art.arcane.react.web;
 
-import art.arcane.react.api.web.PairingToken;
+import art.arcane.react.api.web.pairing.WebToken;
 import art.arcane.react.api.web.WebMutationReporter;
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.PluginApiCatalogDto;
@@ -10,7 +10,7 @@ import art.arcane.react.core.controller.PluginApiPackController;
 import art.arcane.react.core.pluginapi.PluginApiPackRuntime.PackState;
 import art.arcane.react.core.pluginapi.PluginApiPackRuntime.PackStatus;
 import io.javalin.http.Context;
-import io.javalin.http.ForbiddenResponse;
+import art.arcane.react.api.web.WebError;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -55,9 +55,9 @@ class PluginApiPackResourceTest {
     );
     PluginApiPackResource resource = new PluginApiPackResource(() -> controller, mock(WebMutationReporter.class));
     Context context = mock(Context.class);
-    PairingToken token = mock(PairingToken.class);
+    WebToken token = mock(WebToken.class);
     when(token.hasScope("admin")).thenReturn(true);
-    when(context.<PairingToken>attribute("token")).thenReturn(token);
+    when(context.<WebToken>attribute("token")).thenReturn(token);
     when(context.bodyAsClass(PluginApiPackResource.ContentBody.class)).thenReturn(
         new PluginApiPackResource.ContentBody("pack")
     );
@@ -78,11 +78,11 @@ class PluginApiPackResourceTest {
     PluginApiPackController controller = mock(PluginApiPackController.class);
     PluginApiPackResource resource = new PluginApiPackResource(() -> controller, mock(WebMutationReporter.class));
     Context context = mock(Context.class);
-    PairingToken token = mock(PairingToken.class);
+    WebToken token = mock(WebToken.class);
     when(token.hasScope("admin")).thenReturn(false);
-    when(context.<PairingToken>attribute("token")).thenReturn(token);
+    when(context.<WebToken>attribute("token")).thenReturn(token);
 
-    assertThrows(ForbiddenResponse.class, () -> resource.put(context));
+    assertThrows(WebError.class, () -> resource.put(context));
     verify(controller, org.mockito.Mockito.never()).install(any(), any());
   }
 

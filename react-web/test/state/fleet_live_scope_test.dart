@@ -3,7 +3,7 @@ library;
 import 'dart:async';
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
+import 'package:react_web/theme/reactor_stylesheet.dart';
 import 'package:jaspr_test/server_test.dart';
 
 import 'package:react_web/model/server_snapshot.dart';
@@ -11,7 +11,7 @@ import 'package:react_web/state/connection_manager.dart';
 import 'package:react_web/state/fleet_live_model.dart';
 import 'package:react_web/state/fleet_live_scope.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+const ReactorStylesheet _sheet = ReactorStylesheet();
 
 Widget _wrap(Widget child) =>
     ArcaneThemeProvider(stylesheet: _sheet, child: child);

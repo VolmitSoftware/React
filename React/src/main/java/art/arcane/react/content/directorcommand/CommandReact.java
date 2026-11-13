@@ -127,16 +127,6 @@ public class CommandReact implements DirectorExecutor {
     toggle.run();
   }
 
-  @Director(
-      name = "version",
-      aliases = {"v"},
-      hidden = true,
-      description = "Show the React version",
-      descriptionKey = "command.description.version")
-  public void version() {
-    debug.version();
-  }
-
   private void toggleMonitoringOnly(CommandSender commandSender) {
     FeatureController featureController = React.controller(FeatureController.class);
     TweakController tweakController = React.controller(TweakController.class);

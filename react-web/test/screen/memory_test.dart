@@ -1,138 +1,145 @@
 library;
 
-import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
 import 'package:jaspr_test/server_test.dart';
-
+import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:react_web/model/sampler_sample.dart';
-import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/screen/memory.dart';
+import 'package:react_web/ui/kit/mode.dart';
 import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/server_scope.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
-
-SamplerSample _sample(
-  String id,
-  double value, {
-  String suffix = 'MB',
-  double max = 8192.0,
-}) => SamplerSample(
-  id: id,
-  name: id,
-  value: value,
-  display: value.toString(),
-  suffix: suffix,
-  min: 0.0,
-  max: max,
-  history: <double>[value, value * 0.95, value * 1.05],
-);
-
-ServerSnapshot _fakeSnapshot() {
-  final List<SamplerSample> samples = <SamplerSample>[
-    _sample('memory-used', 3500.0),
-    _sample('memory-free', 4692.0),
-    _sample('memory-used-after-gc', 3100.0),
-    _sample('memory-pressure', 42.0, suffix: '%', max: 100.0),
-    _sample('gc-time-percent', 1.8, suffix: '%', max: 100.0),
-    _sample('gc-pause-p95', 45.0, suffix: 'ms', max: 500.0),
-    _sample('memory-garbage', 512.0),
-  ];
-  final Map<String, SamplerSample> byId = <String, SamplerSample>{
-    for (final SamplerSample s in samples) s.id: s,
-  };
-  return ServerSnapshot(byId: byId, at: DateTime.now(), seq: 1);
-}
-
-Widget _wrap(Widget child) => ArcaneThemeProvider(
-  stylesheet: _sheet,
-  child: ServerScope(
-    snapshot: _fakeSnapshot(),
-    state: ConnState.live,
-    child: child,
-  ),
-);
+import 'monitor_support.dart';
 
 void main() {
   group('MemoryScreen', () {
-    testServer('renders used-heap tile showing memory-used value 3500.0', (
+    testServer('Advanced: heap, pressure and GC with the JVM heap below', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const MemoryScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('3500.0'),
-        isTrue,
-        reason: 'memory-used value 3500.0 must appear in rendered HTML',
+      tester.pumpComponent(
+        onServer(
+          const MemoryScreen(),
+          mode: ReactorMode.advanced,
+          // As the plugin sends them: sizes in bytes, the allocation rate
+          // ("memory-pressure") in bytes per second.
+          snapshot: snapshotOf(<SamplerSample>[
+            sample('memory-used', 4294967296, suffix: 'GB', display: '4'),
+            sample('memory-free', 2147483648, suffix: 'GB', display: '2'),
+            sample(
+              'memory-used-after-gc',
+              3145728000,
+              suffix: 'GB',
+              display: '2.9',
+            ),
+            sample('jvm-heap-utilization', 95, suffix: '%'),
+            sample(
+              'memory-pressure',
+              83614412,
+              suffix: 'MB/s',
+              display: '79.7',
+            ),
+            sample('gc-time-percent', 3, suffix: '%'),
+            sample('gc-pause-p95', 12, suffix: 'ms'),
+            sample(
+              'jvm-heap-max',
+              8589934592,
+              suffix: 'GB',
+              display: '8',
+              name: 'JVM heap max',
+            ),
+          ]),
+        ),
       );
+      final String body = (await tester.request('/')).body;
+
+      // The heap over time; pressure and GC pause are tiles only.
+      expect(occurrences(body, 'data-chart-card'), 1);
+      for (final String label in <String>[
+        ReactorText.memoryUsed.english,
+        ReactorText.memoryAfterGc.english,
+        ReactorText.memoryPressure.english,
+        ReactorText.commonGcTime.english,
+        ReactorText.memoryGcPauseP95.english,
+        ReactorText.memoryHeapUsage.english,
+        ReactorText.memoryJvmHeap.english,
+        ReactorText.memoryAllocation.english,
+        'JVM heap max',
+      ]) {
+        expect(body, contains(label));
+      }
+      // Sizes from the bytes, the rate as a rate; no raw byte counts.
+      expect(body, contains('>4.0</span>'));
+      expect(body, contains('>79.7</span>'));
+      expect(body, contains('MB/s'));
+      expect(body, contains('>8.0</span>'));
+      expect(body, isNot(contains('4294967296')));
+      expect(body, contains('data-tone="warning"'));
+      expect(body, contains(ReactorText.commonWarning.english));
     });
 
-    testServer('renders gc-time-percent gauge label and value', (
+    testServer('Simple: the heap in use of its maximum and the heap chart', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const MemoryScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('GC Time'),
-        isTrue,
-        reason: 'GC Time gauge label must appear in rendered HTML',
+      tester.pumpComponent(
+        onServer(
+          const MemoryScreen(),
+          snapshot: snapshotOf(<SamplerSample>[
+            sample('memory-used', 4294967296, suffix: 'GB', display: '4'),
+            sample('jvm-heap-utilization', 50, suffix: '%'),
+            sample('gc-time-percent', 3, suffix: '%'),
+            sample('jvm-heap-max', 8589934592, suffix: 'GB', display: '8'),
+          ]),
+        ),
       );
-      expect(
-        res.body.contains('1.8'),
-        isTrue,
-        reason: 'gc-time-percent value 1.8 must appear as gauge center numeric',
-      );
+      final String body = (await tester.request('/')).body;
+      expect(occurrences(body, 'class="ui-metric"'), 1);
+      expect(body, contains('of 8.0 GB'));
+      expect(body, isNot(contains(ReactorText.commonGcTime.english)));
+      expect(occurrences(body, 'data-chart-card'), 1);
     });
 
-    testServer('renders Memory Pressure section heading', (
+    testServer('heap chart shows plugin byte values as sizes', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const MemoryScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Memory Pressure'),
-        isTrue,
-        reason: 'Memory Pressure section heading must appear in rendered HTML',
+      // The plugin sends memory in bytes and shows it in a larger unit.
+      const SamplerSample used = SamplerSample(
+        id: 'memory-used',
+        name: 'Memory used',
+        suffix: 'GB',
+        value: 2726378744,
+        display: '2.5',
+        min: 1131809056,
+        max: 2726378744,
+        history: <double>[1131809056, 2726378744],
       );
+      tester.pumpComponent(
+        onServer(
+          const MemoryScreen(),
+          snapshot: snapshotOf(<SamplerSample>[used]),
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+      expect(body, isNot(contains('2726378744')));
+      expect(body, isNot(contains('1131809056')));
+      expect(body, contains('>2.5</span>'));
     });
 
-    testServer('renders gc-pause-p95 as line chart section', (
+    testServer('no JVM heap heading without JVM heap samplers', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const MemoryScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('GC Pause p95'),
-        isTrue,
-        reason: 'GC Pause p95 section heading must appear in rendered HTML',
+      tester.pumpComponent(
+        onServer(
+          const MemoryScreen(),
+          snapshot: snapshotOf(<SamplerSample>[sample('memory-used', 1)]),
+        ),
       );
-      expect(
-        res.body.contains('reactor-chart-hit-target'),
-        isTrue,
-        reason: 'gc-pause-p95 must render as an interactive time series chart',
-      );
+      final String body = (await tester.request('/')).body;
+      expect(body, isNot(contains(ReactorText.memoryJvmHeap.english)));
     });
 
-    testServer('renders Memory Garbage stat tile label and value', (
-      ServerTester tester,
-    ) async {
-      tester.pumpComponent(_wrap(const MemoryScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Memory Garbage'),
-        isTrue,
-        reason: 'Memory Garbage label must appear in rendered HTML',
+    testServer('is empty while offline', (ServerTester tester) async {
+      tester.pumpComponent(
+        onServer(const MemoryScreen(), state: ConnState.offline),
       );
-      expect(
-        res.body.contains('512'),
-        isTrue,
-        reason: 'memory-garbage value 512 must appear in rendered HTML',
-      );
+      expect((await tester.request('/')).body, contains('ui-empty'));
     });
   });
 }

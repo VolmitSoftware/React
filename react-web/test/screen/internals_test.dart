@@ -1,176 +1,83 @@
 library;
 
-import 'package:arcane_jaspr/arcane_jaspr.dart';
-import 'package:arcane_jaspr_ascii/arcane_jaspr_ascii.dart';
-import 'package:jaspr_router/jaspr_router.dart';
 import 'package:jaspr_test/server_test.dart';
-
-import 'package:react_web/app/reactor_app.dart';
+import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:react_web/model/sampler_sample.dart';
-import 'package:react_web/model/server_snapshot.dart';
 import 'package:react_web/screen/internals.dart';
 import 'package:react_web/state/connection_manager.dart';
-import 'package:react_web/state/server_scope.dart';
 
-const AsciiStylesheet _sheet = AsciiStylesheet();
+import 'monitor_support.dart';
 
-SamplerSample _sample(
-  String id,
-  double value, {
-  String suffix = '',
-  double min = 0.0,
-  double max = 100.0,
-}) => SamplerSample(
-  id: id,
-  name: id,
-  value: value,
-  display: value.toString(),
-  suffix: suffix,
-  min: min,
-  max: max,
-  history: <double>[value],
-);
-
-ServerSnapshot _fakeSnapshot() {
-  final List<SamplerSample> samples = <SamplerSample>[
-    _sample('react-async-tick-time', 1.2, suffix: 'ms'),
-    _sample('react-sync-tick-time', 0.8, suffix: 'ms'),
-    _sample('react-jobs-queue', 14.0),
-    _sample('react-job-queue-time', 5.3, suffix: 'ms'),
-    _sample('react-job-budget', 50.0, suffix: 'ms'),
-    _sample('processor-system-load', 45.0, suffix: '%'),
-    _sample('processor-process-load', 72.0, suffix: '%'),
-    _sample('processor-outside', 30.0, suffix: '%'),
-    _sample('react-history-dropped-snapshots', 2.0),
-    _sample('react-websocket-sessions', 4.0),
-    _sample('jvm-heap-utilization', 62.0, suffix: '%'),
-  ];
-  final Map<String, SamplerSample> byId = <String, SamplerSample>{
-    for (final SamplerSample s in samples) s.id: s,
-  };
-  return ServerSnapshot(byId: byId, at: DateTime.now(), seq: 1);
-}
-
-ServerSnapshot _highCpuSnapshot() {
-  final List<SamplerSample> samples = <SamplerSample>[
-    _sample('react-async-tick-time', 1.0, suffix: 'ms'),
-    _sample('react-sync-tick-time', 0.5, suffix: 'ms'),
-    _sample('react-jobs-queue', 0.0),
-    _sample('react-job-queue-time', 0.0, suffix: 'ms'),
-    _sample('react-job-budget', 50.0, suffix: 'ms'),
-    _sample('processor-system-load', 95.0, suffix: '%'),
-    _sample('processor-process-load', 90.0, suffix: '%'),
-    _sample('processor-outside', 5.0, suffix: '%'),
-  ];
-  final Map<String, SamplerSample> byId = <String, SamplerSample>{
-    for (final SamplerSample s in samples) s.id: s,
-  };
-  return ServerSnapshot(byId: byId, at: DateTime.now(), seq: 1);
-}
-
-Widget _wrap(Widget child, {ServerSnapshot? snapshot}) => ArcaneThemeProvider(
-  stylesheet: _sheet,
-  child: ServerScope(
-    snapshot: snapshot ?? _fakeSnapshot(),
-    state: ConnState.live,
-    child: child,
-  ),
-);
+List<SamplerSample> _samples() => <SamplerSample>[
+  sample('react-async-tick-time', 1.2, suffix: 'ms'),
+  sample('react-sync-tick-time', 0.4, suffix: 'ms'),
+  sample('react-jobs-queue', 3),
+  sample('react-job-queue-time', 1, suffix: 'ms'),
+  sample('react-job-budget', 5, suffix: 'ms'),
+  sample('processor-process-load', 90, suffix: '%'),
+  sample('processor-system-load', 40, suffix: '%'),
+  sample('processor-outside', 10, suffix: '%'),
+  sample('react-history-writer-queue', 7, name: 'History writer queue'),
+  sample('react-websocket-sessions', 2, name: 'WebSocket sessions'),
+  sample('jvm-threads', 88, name: 'JVM threads'),
+  sample('jvm-heap-max', 8192, suffix: 'MB', name: 'JVM heap max'),
+];
 
 void main() {
   group('InternalsScreen', () {
-    testServer('renders Jobs section heading', (ServerTester tester) async {
-      tester.pumpComponent(_wrap(const InternalsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Jobs'),
-        isTrue,
-        reason: 'Jobs section heading must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders CPU Load section heading', (ServerTester tester) async {
-      tester.pumpComponent(_wrap(const InternalsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('CPU Load'),
-        isTrue,
-        reason: 'CPU Load section heading must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders Process Load gauge label', (ServerTester tester) async {
-      tester.pumpComponent(_wrap(const InternalsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('Process Load'),
-        isTrue,
-        reason: 'Process Load gauge label must appear in rendered HTML',
-      );
-    });
-
-    testServer('renders react-jobs-queue value 14.0', (
+    testServer('jobs and CPU tiles, React tick chart, sampler lists', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const InternalsScreen()));
-      final DocumentResponse res = await tester.request('/');
-      expect(res.statusCode, equals(200));
-      expect(
-        res.body.contains('14.0'),
-        isTrue,
-        reason: 'react-jobs-queue value 14.0 must appear in rendered HTML',
+      tester.pumpComponent(
+        onServer(const InternalsScreen(), snapshot: snapshotOf(_samples())),
       );
+      final String body = (await tester.request('/')).body;
+
+      expect(occurrences(body, 'class="ui-metric"'), 6);
+      expect(occurrences(body, 'data-chart-card'), 1);
+      expect(occurrences(body, 'role="table"'), 3);
+      for (final String label in <String>[
+        ReactorText.internalsJobs.english,
+        ReactorText.internalsCpuLoad.english,
+        ReactorText.internalsReactTickTime.english,
+        ReactorText.internalsTelemetryPipeline.english,
+        ReactorText.internalsWebTelemetry.english,
+        ReactorText.internalsJvmRuntime.english,
+        'History writer queue',
+        'JVM threads',
+      ]) {
+        expect(body, contains(label));
+      }
+      expect(body, contains(ReactorText.statusCritical.english));
     });
 
-    testServer('renders telemetry, web, and JVM sections', (
+    testServer('the JVM heap lives under Memory, not here', (
       ServerTester tester,
     ) async {
-      tester.pumpComponent(_wrap(const InternalsScreen()));
-      final DocumentResponse res = await tester.request('/');
-
-      expect(res.statusCode, equals(200));
-      expect(res.body.contains('Telemetry Pipeline'), isTrue);
-      expect(res.body.contains('Web Telemetry'), isTrue);
-      expect(res.body.contains('JVM Runtime'), isTrue);
-      expect(res.body.contains('62.0'), isTrue);
+      tester.pumpComponent(
+        onServer(const InternalsScreen(), snapshot: snapshotOf(_samples())),
+      );
+      expect((await tester.request('/')).body, isNot(contains('JVM heap max')));
     });
 
-    testServer(
-      'high processor-process-load (90) renders var(--destructive) gauge error',
-      (ServerTester tester) async {
-        tester.pumpComponent(
-          _wrap(const InternalsScreen(), snapshot: _highCpuSnapshot()),
-        );
-        final DocumentResponse res = await tester.request('/');
-        expect(res.statusCode, equals(200));
-        expect(
-          res.body.contains('var(--destructive)'),
-          isTrue,
-          reason:
-              'processor-process-load=90 exceeds threshold 85 → GaugeStatus.error → var(--destructive) must appear',
-        );
-      },
-    );
-  });
-
-  group('kRouteServerInternals', () {
-    test('constant is "/server/:id/internals"', () {
-      expect(kRouteServerInternals, equals('/server/:id/internals'));
+    testServer('sampler rows open their history in Metrics', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        onServer(
+          const InternalsScreen(serverId: 's1'),
+          snapshot: snapshotOf(_samples()),
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+      expect(body, contains('href="/server/s1/metrics?metric=jvm-threads"'));
     });
 
-    test('buildReactorRoutes includes server internals route', () {
-      final List<RouteBase> routes = buildReactorRoutes();
-      final bool hasInternals = routes.any(
-        (RouteBase r) => r is Route && r.path == kRouteServerInternals,
+    testServer('is empty while degraded', (ServerTester tester) async {
+      tester.pumpComponent(
+        onServer(const InternalsScreen(), state: ConnState.degraded),
       );
-      expect(
-        hasInternals,
-        isTrue,
-        reason: 'Internals sidebar item requires /server/:id/internals route',
-      );
+      expect((await tester.request('/')).body, contains('ui-empty'));
     });
   });
 }

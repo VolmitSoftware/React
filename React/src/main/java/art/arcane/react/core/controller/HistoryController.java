@@ -2,6 +2,8 @@ package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.core.history.ChartHistory;
+import art.arcane.react.core.history.ChartRange;
 import art.arcane.react.core.history.HistoryPoint;
 import art.arcane.react.core.history.HistoryQueryEngine;
 import art.arcane.react.core.history.HistoryQueryResult;
@@ -102,6 +104,8 @@ public class HistoryController implements IController {
   private transient volatile int failedSamplerCount;
   private transient List<Sampler> orderedSamplers = List.of();
   private transient Map<String, Sampler> samplerIdentities = new HashMap<>();
+  private transient volatile ChartHistory chartHistory;
+  private transient volatile long startedAtMs;
 
   public HistoryController() {
     latestSnapshot = new AtomicReference<>(MetricSnapshot.empty());
@@ -112,6 +116,7 @@ public class HistoryController implements IController {
     lastSuccessfulPersistMs = new AtomicLong();
     activeSegmentLock = new Object();
     samplerFailureLogMs = new HashMap<>();
+    chartHistory = new ChartHistory();
   }
 
   @Override
@@ -150,13 +155,17 @@ public class HistoryController implements IController {
     availableSamplerCount = 0;
     unavailableSamplerCount = 0;
     failedSamplerCount = 0;
+    chartHistory = new ChartHistory();
+    startedAtMs = 0L;
   }
 
   @Override
   public void postStart() {
+    startedAtMs = System.currentTimeMillis();
     writerExecutor = createWriterExecutor();
     captureExecutor = Executors.newSingleThreadScheduledExecutor(daemonFactory("react-history-capture"));
     writerExecutor.execute(this::initializeStorage);
+    writerExecutor.execute(this::seedChartHistory);
     captureExecutor.scheduleAtFixedRate(
         this::captureIfDue,
         0L,
@@ -262,6 +271,10 @@ public class HistoryController implements IController {
       return new HistoryQueryResult(fromMs, toMs, resolutionMs, throughSequence, throughMs, empty);
     }
     return engine.query(ids, fromMs, toMs, resolutionMs, throughSequence, throughMs);
+  }
+
+  public ChartHistory.Window chartRange(ChartRange range, List<String> ids, long nowMs) {
+    return chartHistory.read(range, ids, nowMs);
   }
 
   public int effectiveMaxQuerySeries() {
@@ -401,6 +414,34 @@ public class HistoryController implements IController {
     }
   }
 
+  void seedChartHistory() {
+    HistoryQueryEngine engine = queryEngine;
+    if (engine == null || stopping) {
+      return;
+    }
+    // Stored samples stop at the start second; everything later reaches the rings through record.
+    long toMs = Math.floorDiv(startedAtMs, 1_000L) * 1_000L;
+    Map<ChartRange, Map<String, List<HistoryPoint>>> seeds = new EnumMap<>(ChartRange.class);
+    try {
+      for (ChartRange range : ChartRange.values()) {
+        long fromMs = Math.floorDiv(toMs, range.stepMs()) * range.stepMs() - range.spanMs();
+        HistoryQueryResult result = engine.query(ChartHistory.SAMPLER_IDS, fromMs, toMs, range.stepMs(), 0L, toMs);
+        Map<String, List<HistoryPoint>> points = new HashMap<>();
+        for (HistoryQuerySeries series : result.series()) {
+          points.put(series.id(), series.points());
+        }
+        seeds.put(range, points);
+      }
+    } catch (Throwable failure) {
+      React.warn("Failed to load stored history into the web chart ranges; they fill from live samples instead.", failure);
+      return;
+    }
+    ChartHistory chart = chartHistory;
+    for (Map.Entry<ChartRange, Map<String, List<HistoryPoint>>> seed : seeds.entrySet()) {
+      chart.seed(seed.getKey(), seed.getValue());
+    }
+  }
+
   void captureIfDue() {
     if (stopping) {
       return;
@@ -415,6 +456,7 @@ public class HistoryController implements IController {
     try {
       MetricSnapshot snapshot = captureSnapshot();
       latestSnapshot.set(snapshot);
+      chartHistory.record(snapshot);
       HistoryStore store = historyStore;
       if (store != null) {
         store.updateLiveDescriptors(snapshot);
