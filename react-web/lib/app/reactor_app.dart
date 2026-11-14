@@ -94,6 +94,7 @@ class _ReactorAppState extends State<ReactorApp> {
     dependOnReactorLocale(context);
     return ArcaneApp(
       brightness: _brightness,
+      includeFallbackScripts: false,
       stylesheet: const ReactorStylesheet(),
       home: ReactorLocaleScope(
         locale: _localeManager.locale,

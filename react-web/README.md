@@ -14,6 +14,7 @@ dart pub get --enforce-lockfile
 dart analyze
 dart test
 dart run tool/locale_catalog.dart --check
+dart run tool/write_arcane_runtime.dart   # after an arcane_jaspr update; the CSP blocks the inline runtime
 dart run jaspr_cli:jaspr build
 python3 tool/serve_site.py --port 8820
 ```
