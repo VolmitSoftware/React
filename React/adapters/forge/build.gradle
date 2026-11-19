@@ -21,7 +21,8 @@ dependencies {
     implementation minecraft.dependency("net.minecraftforge:forge:${targetProperties.forge}")
 }
 tasks.named('shadowJar').configure {
-    manifest.attributes('MixinConfigs': 'react.mixins.json')
+    manifest.attributes('MixinConfigs': 'react.mixins.json',
+        'Add-Opens': 'net.minecraftforge.eventbus/net.minecraftforge.eventbus.internal')
 }
 
 if (targetProperties.forgeRuntimeMappings == 'srg') {

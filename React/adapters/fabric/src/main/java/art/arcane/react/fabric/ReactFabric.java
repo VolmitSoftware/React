@@ -1,7 +1,10 @@
 package art.arcane.react.fabric;
 
+import art.arcane.react.fabric.cost.FabricEventWrap;
+import art.arcane.react.fabric.cost.FabricModOwners;
 import art.arcane.react.mod.ReactMapsPayload;
 import art.arcane.react.mod.ReactModRuntime;
+import art.arcane.react.mod.cost.ModCostProbe;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -11,7 +14,8 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
 
 public final class ReactFabric implements ModInitializer {
-    private final ReactModRuntime runtime = new ReactModRuntime("Fabric", FabricLoader.getInstance().getConfigDir());
+    private final ReactModRuntime runtime = new ReactModRuntime("Fabric", FabricLoader.getInstance().getConfigDir(),
+            new ModCostProbe(new FabricModOwners(), new FabricEventWrap(), null));
 
     @Override
     public void onInitialize() {

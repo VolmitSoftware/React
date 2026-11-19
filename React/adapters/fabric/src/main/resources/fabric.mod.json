@@ -12,7 +12,7 @@
     "main": ["${projectGroup}.fabric.ReactFabric"],
     "client": ["${projectGroup}.fabric.ReactFabricClient"]
   },
-  "mixins": ["react.mixins.json"],
+  "mixins": ["react.mixins.json", "react-fabric.mixins.json"],
   "jars": [
     {"file": "META-INF/jars/fabric-api-base.jar"},
     {"file": "META-INF/jars/fabric-command-api-v2.jar"},
