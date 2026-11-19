@@ -34,6 +34,7 @@ import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.platform.bukkit.BukkitLanguage;
 import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.react.localization.catalog.GuiMessages;
 import art.arcane.react.model.ReactConfiguration;
@@ -1242,7 +1243,7 @@ public final class ReactConfigGUI {
         element.onLeftClick((e) -> {
           if (isLanguageEntry(entry)) {
             player.closeInventory();
-            ReactLanguage.switcher().command(player, new String[]{"server"});
+            BukkitLanguage.switcher().command(player, new String[]{"server"});
             return;
           }
           ConfigInputController inputController = React.controller(ConfigInputController.class);

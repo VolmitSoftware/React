@@ -1,6 +1,7 @@
 package art.arcane.react.core.controller;
 
 import art.arcane.react.content.directorcommand.CommandReact;
+import art.arcane.react.util.director.ReactDirector;
 import art.arcane.volmlib.util.director.compat.DirectorEngineFactory;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeNode;
@@ -13,18 +14,18 @@ public class DirectorCommandControllerLegacyParityTest {
     public void normalizeLegacyArgsMapsEnvironmentRootsToInfo() {
         Assertions.assertArrayEquals(
                 new String[]{"environment", "info"},
-                DirectorCommandController.normalizeLegacyArgs(new String[]{"environment"})
+                ReactDirector.normalizeLegacyArgs(new String[]{"environment"})
         );
         Assertions.assertArrayEquals(
                 new String[]{"environment", "info"},
-                DirectorCommandController.normalizeLegacyArgs(new String[]{"env"})
+                ReactDirector.normalizeLegacyArgs(new String[]{"env"})
         );
     }
 
     @Test
     public void normalizeLegacyArgsLeavesOtherCommandsUntouched() {
         String[] args = new String[]{"benchmark", "cpu"};
-        Assertions.assertSame(args, DirectorCommandController.normalizeLegacyArgs(args));
+        Assertions.assertSame(args, ReactDirector.normalizeLegacyArgs(args));
     }
 
     @Test

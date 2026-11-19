@@ -19,6 +19,8 @@
 
 package art.arcane.react.api.rendering;
 
+import art.arcane.react.localization.catalog.MapMessages;
+import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.block.BlockFace;
 
 import java.util.ArrayDeque;
@@ -527,5 +529,14 @@ public final class MegamapGrid {
         default -> null;
       };
     }
+  }
+
+  public static TextKey defectLabel(DefectReason reason) {
+    return switch (reason) {
+      case HOLE -> MapMessages.MEGAMAP_DEFECT_HOLE;
+      case DUPLICATE_MAP_ID -> MapMessages.MEGAMAP_DEFECT_DUPLICATE;
+      case ROTATED -> MapMessages.MEGAMAP_DEFECT_ROTATED;
+      case MIXED_RENDERER -> MapMessages.MEGAMAP_DEFECT_MIXED;
+    };
   }
 }

@@ -6,6 +6,7 @@ import art.arcane.react.content.sampler.SamplerEventTime;
 import art.arcane.react.core.history.MetricSnapshot;
 import art.arcane.react.core.history.MetricSnapshotValue;
 import art.arcane.react.core.plugincost.SamplerPluginCost;
+import art.arcane.react.platform.cost.OwnerCostMode;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
@@ -42,7 +43,7 @@ class HistoryCaptureActivityTest {
     scheduling.when(J::isFoliaThreading).thenReturn(false);
     bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
     controller = new EventController();
-    controller.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
+    controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
     react.when(() -> React.controller(EventController.class)).thenReturn(controller);
     controller.start();
     sampler = new SamplerEventTime();
@@ -115,7 +116,7 @@ class HistoryCaptureActivityTest {
     history.captureSnapshot(List.of(sampler, pluginCost), System.currentTimeMillis());
     Assertions.assertFalse(controller.isMeasuring());
 
-    controller.setInstrumentation(EventController.InstrumentationMode.ALWAYS);
+    controller.setInstrumentation(OwnerCostMode.ALWAYS);
     controller.onTick();
     controller.onTick();
     Assertions.assertTrue(controller.isMeasuring());
@@ -132,7 +133,7 @@ class HistoryCaptureActivityTest {
 
   @Test
   void captureRecordsAvailableValuesOnceAWindowIsPublished() {
-    controller.setInstrumentation(EventController.InstrumentationMode.ALWAYS);
+    controller.setInstrumentation(OwnerCostMode.ALWAYS);
     controller.onTick();
     controller.onTick();
     Assertions.assertTrue(controller.isMeasuring());

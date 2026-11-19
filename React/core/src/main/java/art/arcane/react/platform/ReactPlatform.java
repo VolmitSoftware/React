@@ -1,6 +1,7 @@
 package art.arcane.react.platform;
 
 import art.arcane.react.api.web.ReactWebServer;
+import art.arcane.react.platform.cost.OwnerCostProbe;
 
 import java.io.File;
 import java.util.Optional;
@@ -114,6 +115,28 @@ public interface ReactPlatform {
   }
 
   default Optional<RuntimeStatsHost> runtimeStatsHost() {
+    return Optional.empty();
+  }
+
+  // Commands, messaging and localization
+
+  /**
+   * Wraps a platform command sender, such as a console or player object, for React's commands and messages.
+   */
+  default Optional<ReactCommandSender> commandSender(Object handle) {
+    return handle instanceof ReactCommandSender sender ? Optional.of(sender) : Optional.empty();
+  }
+
+  default Optional<CommandHost> commandHost() {
+    return Optional.empty();
+  }
+
+  default Optional<LanguageHost> languageHost() {
+    return Optional.empty();
+  }
+
+  // Owner cost
+  default Optional<OwnerCostProbe> ownerCostProbe() {
     return Optional.empty();
   }
 }

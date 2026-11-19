@@ -1,6 +1,7 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.localization.catalog.RendererMessages;
+import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.entity.Player;
@@ -17,7 +18,7 @@ public class FeaturePluginEventImpactPieMap extends FeatureIrisChunkSharePieBase
 
   @Override
   protected TextKey title() {
-    return RendererMessages.TITLE_PLUGIN_IMPACT_SHARE;
+    return OwnerNoun.pick(RendererMessages.TITLE_PLUGIN_IMPACT_SHARE, RendererMessages.TITLE_MOD_IMPACT_SHARE);
   }
 
   @Override

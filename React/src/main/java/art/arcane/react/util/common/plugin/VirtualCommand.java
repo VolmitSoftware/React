@@ -19,6 +19,8 @@
 
 package art.arcane.react.util.plugin;
 
+import art.arcane.react.platform.bukkit.BukkitCommandSender;
+
 
 import art.arcane.react.React;
 import art.arcane.react.localization.ReactLanguage;
@@ -28,8 +30,6 @@ import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.collection.KMap;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.reflect.V;
-import net.kyori.adventure.key.Key;
-import net.kyori.adventure.sound.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -87,7 +87,7 @@ public class VirtualCommand {
   }
 
   public boolean hit(CommandSender sender, KList<String> chain, String label) {
-    VolmitSender vs = new VolmitSender(sender);
+    VolmitSender vs = BukkitCommandSender.volmit(sender);
     vs.setTag(tag);
 
     if (label != null) {
@@ -113,12 +113,7 @@ public class VirtualCommand {
           c.remove(0);
           if (cmd.hit(sender, c, vs.getCommand())) {
             if (vs.isPlayer()) {
-              vs.player().playSound(Sound.sound(
-                  Key.key("minecraft:item.axe.strip"),
-                  Sound.Source.PLAYER,
-                  0.35f,
-                  1.8f
-              ));
+              vs.getS().playSound("minecraft:item.axe.strip", 0.35f, 1.8f);
             }
 
             return true;
@@ -135,7 +130,7 @@ public class VirtualCommand {
   }
 
   public KList<String> hitTab(CommandSender sender, KList<String> chain, String label) {
-    VolmitSender vs = new VolmitSender(sender);
+    VolmitSender vs = BukkitCommandSender.volmit(sender);
     vs.setTag(tag);
 
     if (label != null)

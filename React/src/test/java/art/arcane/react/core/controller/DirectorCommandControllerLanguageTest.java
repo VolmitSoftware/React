@@ -1,6 +1,6 @@
 package art.arcane.react.core.controller;
 
-import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.platform.bukkit.BukkitLanguage;
 import art.arcane.volmlib.util.localization.BukkitLanguageSwitcher;
 import org.bukkit.command.Command;
 import org.bukkit.entity.Player;
@@ -27,8 +27,8 @@ class DirectorCommandControllerLanguageTest {
         new String[]{"server", "edit", "pl_PL"}
     );
 
-    try (MockedStatic<ReactLanguage> language = Mockito.mockStatic(ReactLanguage.class)) {
-      language.when(ReactLanguage::switcher).thenReturn(switcher);
+    try (MockedStatic<BukkitLanguage> language = Mockito.mockStatic(BukkitLanguage.class)) {
+      language.when(BukkitLanguage::switcher).thenReturn(switcher);
 
       for (String[] arguments : forwarded) {
         Assertions.assertTrue(controller.onCommand(sender, command, "react", withSpelling(spelling, arguments)));
@@ -60,8 +60,8 @@ class DirectorCommandControllerLanguageTest {
     );
     Mockito.when(switcher.complete(Mockito.same(sender), Mockito.any(String[].class))).thenReturn(suggestions);
 
-    try (MockedStatic<ReactLanguage> language = Mockito.mockStatic(ReactLanguage.class)) {
-      language.when(ReactLanguage::switcher).thenReturn(switcher);
+    try (MockedStatic<BukkitLanguage> language = Mockito.mockStatic(BukkitLanguage.class)) {
+      language.when(BukkitLanguage::switcher).thenReturn(switcher);
 
       for (String[] arguments : forwarded) {
         Assertions.assertEquals(suggestions,

@@ -27,8 +27,8 @@ import art.arcane.react.api.rendering.MegamapGrid;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.api.rendering.RendererAdaptMetrics;
 import art.arcane.react.api.rendering.RendererBiletoolsMetrics;
-import art.arcane.react.api.rendering.RendererHiddenoreMetrics;
 import art.arcane.react.api.rendering.RendererGlossMetrics;
+import art.arcane.react.api.rendering.RendererHiddenoreMetrics;
 import art.arcane.react.api.rendering.RendererIrisMetrics;
 import art.arcane.react.api.rendering.RendererIrisWorldMetrics;
 import art.arcane.react.api.rendering.RendererReactMetrics;
@@ -38,6 +38,8 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.sampler.SamplerMapRenderer;
 import art.arcane.react.content.feature.FeatureUnknown;
 import art.arcane.react.core.integration.IntegrationCapabilitySupport;
+import art.arcane.react.platform.cost.OwnerCostModel;
+import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
@@ -3092,8 +3094,8 @@ public class MapController extends TickedObject implements IController, Listener
     if (normalizedRendererId.startsWith("react-")) {
       return "React";
     }
-    if (normalizedRendererId.startsWith("plugin-")) {
-      return "Plugins";
+    if (OwnerCostModel.isOwnerScopedId(normalizedRendererId)) {
+      return OwnerNoun.pick("Plugins", "Mods");
     }
     return "Core";
   }

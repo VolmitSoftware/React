@@ -309,7 +309,7 @@ public class MapRendererPipe extends MapRenderer {
       return null;
     }
 
-    return ReactLanguage.raw(MapMessages.defectLabel(defectReason));
+    return ReactLanguage.raw(MegamapGrid.defectLabel(defectReason));
   }
 
   // The megamap assignment a build was composed under. Written only inside composeLock so the

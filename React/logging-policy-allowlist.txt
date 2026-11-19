@@ -6,4 +6,3 @@ art/arcane/react/api/web/RingLogHandler.java printStackTrace(
 # The web controller attaches its ring handler to the server logger on purpose.
 # Director and scheduling scaffolding uses printStackTrace as its failure sink before the plugin logger exists.
 art/arcane/react/util/common/scheduling/J.java Throwable::printStackTrace
-art/arcane/react/util/common/director/DirectorContextHandler.java Throwable::printStackTrace

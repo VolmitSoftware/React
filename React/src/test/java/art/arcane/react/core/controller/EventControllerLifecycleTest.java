@@ -3,6 +3,7 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.api.event.NaughtyRegisteredListener;
 import art.arcane.react.api.event.layer.ServerTickEvent;
+import art.arcane.react.platform.cost.OwnerCostMode;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.volmlib.util.scheduling.FoliaScheduler;
@@ -48,7 +49,7 @@ class EventControllerLifecycleTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController controller = new EventController();
-      controller.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
+      controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
       controller.start();
 
       Assertions.assertFalse(fixture.registered() instanceof NaughtyRegisteredListener);
@@ -101,7 +102,7 @@ class EventControllerLifecycleTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController controller = new EventController();
-      controller.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
+      controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
       controller.start();
       scheduler.runFirst();
 
@@ -126,7 +127,7 @@ class EventControllerLifecycleTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController oldController = new EventController();
-      oldController.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
+      oldController.setInstrumentation(OwnerCostMode.ON_DEMAND);
       oldController.start();
       scheduler.runFirst();
       oldController.markSamplerActivity();
@@ -140,7 +141,7 @@ class EventControllerLifecycleTest {
       oldController.stop();
       Assertions.assertFalse(fixture.registered() instanceof NaughtyRegisteredListener);
       EventController newController = new EventController();
-      newController.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
+      newController.setInstrumentation(OwnerCostMode.ON_DEMAND);
       newController.start();
       scheduler.runLast();
       newController.markSamplerActivity();
@@ -167,7 +168,7 @@ class EventControllerLifecycleTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
-      controller.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
+      controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
       controller.start();
       controller.markSamplerActivity();
       controller.onTick();

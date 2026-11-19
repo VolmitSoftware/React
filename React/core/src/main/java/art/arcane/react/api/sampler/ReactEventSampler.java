@@ -21,6 +21,7 @@ package art.arcane.react.api.sampler;
 
 import art.arcane.react.platform.EventMeasurement;
 import art.arcane.react.platform.RuntimeStatsHost;
+import art.arcane.react.platform.cost.OwnerCostModel;
 
 public abstract class ReactEventSampler extends ReactCachedSampler {
   private transient volatile EventMeasurement eventController;
@@ -53,7 +54,7 @@ public abstract class ReactEventSampler extends ReactCachedSampler {
   public Metadata metadata() {
     Metadata metadata = super.metadata();
     return new Metadata(sampleDelay, measuredWindowMs, Quality.MEASURED,
-        getId().startsWith("plugin-") ? "ms/s" : metadata.unit());
+        getId().startsWith(OwnerCostModel.samplerId("")) ? "ms/s" : metadata.unit());
   }
 
   @Override

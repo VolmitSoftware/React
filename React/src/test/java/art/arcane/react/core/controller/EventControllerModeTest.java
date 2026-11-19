@@ -3,6 +3,7 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.api.event.NaughtyRegisteredListener;
 import art.arcane.react.api.event.layer.ServerTickEvent;
+import art.arcane.react.platform.cost.OwnerCostMode;
 import art.arcane.react.testutil.IsolatedClassLoader;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.Ticker;
@@ -49,7 +50,7 @@ class EventControllerModeTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
-      Assertions.assertEquals(EventController.InstrumentationMode.ON_DEMAND, controller.getInstrumentation());
+      Assertions.assertEquals(OwnerCostMode.ON_DEMAND, controller.getInstrumentation());
       controller.start();
 
       Assertions.assertSame(fixture.original(), fixture.registered());
@@ -75,7 +76,7 @@ class EventControllerModeTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
-      controller.setInstrumentation(EventController.InstrumentationMode.ALWAYS);
+      controller.setInstrumentation(OwnerCostMode.ALWAYS);
       controller.start();
 
       NaughtyRegisteredListener installed = Assertions.assertInstanceOf(
@@ -101,7 +102,7 @@ class EventControllerModeTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
-      controller.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
+      controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
       controller.setSamplerActivityWindowMS(15_000L);
       controller.start();
       controller.onTick();
@@ -129,7 +130,7 @@ class EventControllerModeTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
-      controller.setInstrumentation(EventController.InstrumentationMode.DUTY_CYCLE);
+      controller.setInstrumentation(OwnerCostMode.DUTY_CYCLE);
       controller.setDutyCycleOnMS(5_000L);
       controller.setDutyCyclePeriodMS(60_000L);
       controller.start();
@@ -170,7 +171,7 @@ class EventControllerModeTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController controller = new EventController();
-      controller.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
+      controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
       controller.start();
       scheduler.runFirst();
       controller.markSamplerActivity();
@@ -199,7 +200,7 @@ class EventControllerModeTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
-      controller.setInstrumentation(EventController.InstrumentationMode.ALWAYS);
+      controller.setInstrumentation(OwnerCostMode.ALWAYS);
       controller.start();
 
       NaughtyRegisteredListener installed = Assertions.assertInstanceOf(
@@ -225,7 +226,7 @@ class EventControllerModeTest {
       Assertions.assertSame(foreign, fixture.registered());
 
       EventController controller = new EventController();
-      controller.setInstrumentation(EventController.InstrumentationMode.ALWAYS);
+      controller.setInstrumentation(OwnerCostMode.ALWAYS);
       controller.start();
       NaughtyRegisteredListener installed = Assertions.assertInstanceOf(
           NaughtyRegisteredListener.class,
@@ -245,7 +246,7 @@ class EventControllerModeTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController controller = new EventController();
-      controller.setInstrumentation(EventController.InstrumentationMode.ON_DEMAND);
+      controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
       controller.start();
       scheduler.runFirst();
 
@@ -264,7 +265,7 @@ class EventControllerModeTest {
     HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController old = new EventController();
-      old.setInstrumentation(EventController.InstrumentationMode.ALWAYS);
+      old.setInstrumentation(OwnerCostMode.ALWAYS);
       old.start();
       NaughtyRegisteredListener foreign = Assertions.assertInstanceOf(
           NaughtyRegisteredListener.class,
@@ -272,7 +273,7 @@ class EventControllerModeTest {
       );
 
       EventController current = new EventController();
-      current.setInstrumentation(EventController.InstrumentationMode.ALWAYS);
+      current.setInstrumentation(OwnerCostMode.ALWAYS);
       current.start();
       NaughtyRegisteredListener replaced = Assertions.assertInstanceOf(
           NaughtyRegisteredListener.class,

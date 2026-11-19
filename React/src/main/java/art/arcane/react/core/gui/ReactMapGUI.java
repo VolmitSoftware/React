@@ -27,11 +27,12 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.sampler.SamplerMapRenderer;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.localization.ReactLanguage;
-import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.react.localization.catalog.GuiMessages;
 import art.arcane.react.localization.catalog.MapMessages;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.localization.catalog.TaxonomyMessages;
+import art.arcane.react.platform.cost.OwnerCostModel;
+import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.format.C;
 import art.arcane.react.util.inventorygui.UIStaticDecorator;
@@ -40,6 +41,7 @@ import art.arcane.volmlib.util.inventorygui.Element;
 import art.arcane.volmlib.util.inventorygui.UIElement;
 import art.arcane.volmlib.util.inventorygui.UIWindow;
 import art.arcane.volmlib.util.inventorygui.WindowResolution;
+import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.localization.TextKey;
 import org.bukkit.Bukkit;
@@ -507,7 +509,7 @@ public final class ReactMapGUI {
   }
 
   private static String megamapDefectLabel(MegamapGrid.DefectReason reason) {
-    return ReactLanguage.raw(MapMessages.defectLabel(reason));
+    return ReactLanguage.raw(MegamapGrid.defectLabel(reason));
   }
 
   private static String rendererDisplayName(ReactRenderer renderer) {
@@ -580,8 +582,8 @@ public final class ReactMapGUI {
     if (normalizedId.startsWith("react-")) {
       return ReactLanguage.plain(TaxonomyMessages.GROUP_REACT);
     }
-    if (normalizedId.startsWith("plugin-")) {
-      return ReactLanguage.plain(TaxonomyMessages.GROUP_PLUGINS);
+    if (OwnerCostModel.isOwnerScopedId(normalizedId)) {
+      return ReactLanguage.plain(OwnerNoun.pick(TaxonomyMessages.GROUP_PLUGINS, TaxonomyMessages.GROUP_MODS));
     }
     return ReactLanguage.plain(TaxonomyMessages.GROUP_CORE);
   }
@@ -611,8 +613,8 @@ public final class ReactMapGUI {
     if (normalizedId.startsWith("react-")) {
       return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_REACT);
     }
-    if (normalizedId.startsWith("plugin-")) {
-      return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_PLUGIN);
+    if (OwnerCostModel.isOwnerScopedId(normalizedId)) {
+      return ReactLanguage.plain(OwnerNoun.pick(GuiMessages.MAP_SCOPE_TAG_PLUGIN, GuiMessages.MAP_SCOPE_TAG_MOD));
     }
     return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_CORE);
   }

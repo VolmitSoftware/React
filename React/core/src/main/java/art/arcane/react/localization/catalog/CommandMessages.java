@@ -88,6 +88,7 @@ public final class CommandMessages {
   public static final TextKey DISTANCE_FAILED = TextKey.of("command.runtime.distance.failed", "&cFailed to set &f{scope} {target}&c &b{type}&c distance. Check the console for the full error.&r");
   public static final TextKey MONITORING_ONLY_ENABLED = TextKey.of("command.runtime.monitoring_only.enabled", "&aMonitoring-only mode enabled.&r &7Features and tweaks are paused; monitoring, statistics, maps, manual actions, and commands remain available.&r");
   public static final TextKey MONITORING_ONLY_DISABLED = TextKey.of("command.runtime.monitoring_only.disabled", "&aMonitoring-only mode disabled.&r &7Configured features and tweaks are active again.&r");
+  public static final TextKey COMMAND_UNAVAILABLE = TextKey.of("command.runtime.unavailable", "&f{command}&c is not available on &f{platform}&c.&r");
   public static final TextKey MONITORING_ONLY_UNAVAILABLE = TextKey.of("command.runtime.monitoring_only.unavailable", "&cMonitoring-only mode is unavailable because the feature controller is not ready.&r");
   public static final TextKey MONITORING_ONLY_SCHEDULE_FAILED = TextKey.of("command.runtime.monitoring_only.schedule_failed", "&cMonitoring-only mode could not be changed on the Folia global region.&r");
   public static final TextKey CONFIG_PERMISSION = TextKey.of("command.runtime.config_permission", "&cYou do not have permission to open the config editor.&r");
@@ -260,6 +261,7 @@ public final class CommandMessages {
     builder.add(DISTANCE_FAILED);
     builder.add(MONITORING_ONLY_ENABLED);
     builder.add(MONITORING_ONLY_DISABLED);
+    builder.add(COMMAND_UNAVAILABLE);
     builder.add(MONITORING_ONLY_UNAVAILABLE);
     builder.add(MONITORING_ONLY_SCHEDULE_FAILED);
     builder.add(CONFIG_PERMISSION);

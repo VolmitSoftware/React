@@ -181,6 +181,7 @@ public final class GuiMessages {
   public static final TextKey MAP_SCOPE_TAG_ANIMUS = TextKey.of("gui.map.scope_tag.animus", "ANIMUS");
   public static final TextKey MAP_SCOPE_TAG_REACT = TextKey.of("gui.map.scope_tag.react", "REACT");
   public static final TextKey MAP_SCOPE_TAG_PLUGIN = TextKey.of("gui.map.scope_tag.plugin", "PLUGIN");
+  public static final TextKey MAP_SCOPE_TAG_MOD = TextKey.of("gui.map.scope_tag.mod", "MOD");
   public static final TextKey MAP_SCOPE_TAG_CORE = TextKey.of("gui.map.scope_tag.core", "CORE");
 
   private GuiMessages() {
@@ -364,6 +365,7 @@ public final class GuiMessages {
     builder.add(MAP_SCOPE_TAG_ANIMUS);
     builder.add(MAP_SCOPE_TAG_REACT);
     builder.add(MAP_SCOPE_TAG_PLUGIN);
+    builder.add(MAP_SCOPE_TAG_MOD);
     builder.add(MAP_SCOPE_TAG_CORE);
   }
 }

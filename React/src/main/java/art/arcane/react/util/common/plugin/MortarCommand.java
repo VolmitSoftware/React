@@ -25,8 +25,6 @@ import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.localization.MessageArgument;
-import net.kyori.adventure.key.Key;
-import net.kyori.adventure.sound.Sound;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -77,12 +75,7 @@ public abstract class MortarCommand implements ICommand {
     }
 
     if (sender.isPlayer()) {
-      sender.player().playSound(Sound.sound(
-          Key.key("minecraft:entity.item_frame.rotate_item"),
-          Sound.Source.PLAYER,
-          0.25f,
-          1.7f
-      ));
+      sender.getS().playSound("minecraft:entity.item_frame.rotate_item", 0.25f, 1.7f);
     }
 
     return v;

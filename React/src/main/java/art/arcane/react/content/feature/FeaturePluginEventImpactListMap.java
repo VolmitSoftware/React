@@ -31,6 +31,7 @@ import art.arcane.react.core.controller.MapController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.MapMessages;
 import art.arcane.react.localization.catalog.RendererMessages;
+import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.util.localization.MessageArgument;
 
@@ -57,7 +58,7 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
     boolean frameAnchored = isFrameAnchored();
     RendererLayout.backdrop(this, MapTheme.SURFACE_0, MapTheme.SURFACE_1);
     dashHeader(
-        ReactLanguage.raw(RendererMessages.TITLE_PLUGIN_IMPACT),
+        ReactLanguage.raw(OwnerNoun.pick(RendererMessages.TITLE_PLUGIN_IMPACT, RendererMessages.TITLE_MOD_IMPACT)),
         frameAnchored ? ReactLanguage.raw(RendererMessages.STATUS_FRAME) : null,
         ACCENT,
         MapTheme.INFO
@@ -70,7 +71,7 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
       RendererLayout.emptyState(
           this,
           body,
-          ReactLanguage.raw(RendererMessages.PLUGIN_NO_IMPACT),
+          ReactLanguage.raw(OwnerNoun.pick(RendererMessages.PLUGIN_NO_IMPACT, RendererMessages.MOD_NO_IMPACT)),
           ReactLanguage.raw(RendererMessages.PLUGIN_WAIT_FOR_DATA)
       );
       RendererLayout.footer(this, null, null, ACCENT);

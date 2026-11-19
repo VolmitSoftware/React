@@ -1,6 +1,6 @@
 package art.arcane.react.util.director.context;
 
-import art.arcane.react.util.plugin.VolmitSender;
+import art.arcane.react.platform.bukkit.BukkitCommandSender;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Assertions;
@@ -14,13 +14,13 @@ class PlayerContextHandlerTest {
   void playerSenderResolvesItselfAsTheDefaultTarget() {
     Player player = Mockito.mock(Player.class);
 
-    Assertions.assertSame(player, handler.handle(new VolmitSender(player)));
+    Assertions.assertSame(player, handler.handle(BukkitCommandSender.volmit(player)).player().handle());
   }
 
   @Test
   void consoleSenderHasNoImplicitPlayerTarget() {
     CommandSender console = Mockito.mock(CommandSender.class);
 
-    Assertions.assertNull(handler.handle(new VolmitSender(console)));
+    Assertions.assertNull(handler.handle(BukkitCommandSender.volmit(console)));
   }
 }

@@ -20,54 +20,23 @@
 package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
-import art.arcane.react.content.directorcommand.CommandReact;
-import art.arcane.react.localization.ReactLanguage;
-import art.arcane.volmlib.util.localization.LanguageAudience;
-import art.arcane.react.localization.catalog.RuntimeMessages;
-import art.arcane.react.util.cache.AtomicCache;
+import art.arcane.react.platform.bukkit.BukkitCommandSender;
 import art.arcane.react.util.common.scheduling.J;
-import art.arcane.react.util.director.DirectorContext;
-import art.arcane.react.util.director.DirectorContextHandler;
-import art.arcane.react.util.director.DirectorSystem;
+import art.arcane.react.util.director.ReactDirector;
 import art.arcane.react.util.plugin.IController;
-import art.arcane.react.util.plugin.VolmitSender;
-import art.arcane.volmlib.util.director.DirectorEngineOptions;
-import art.arcane.volmlib.util.director.compat.DirectorEngineFactory;
-import art.arcane.volmlib.util.director.context.DirectorContextRegistry;
-import art.arcane.volmlib.util.director.help.DirectorMiniMenu;
-import art.arcane.volmlib.util.director.runtime.DirectorExecutionMode;
-import art.arcane.volmlib.util.director.runtime.DirectorExecutionResult;
-import art.arcane.volmlib.util.director.runtime.DirectorInvocation;
-import art.arcane.volmlib.util.director.runtime.DirectorInvocationHook;
 import art.arcane.volmlib.util.director.runtime.DirectorRuntimeEngine;
-import art.arcane.volmlib.util.director.runtime.DirectorRuntimeNode;
-import art.arcane.volmlib.util.director.runtime.DirectorSender;
-import art.arcane.volmlib.util.math.RNG;
-import art.arcane.volmlib.util.localization.MessageArgument;
-import art.arcane.volmlib.util.plugin.ComponentMessenger;
-import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.key.Key;
-import net.kyori.adventure.sound.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
-public class DirectorCommandController implements IController, CommandExecutor, TabCompleter, DirectorInvocationHook {
-  private static final String ROOT_COMMAND = "react";
-  private static final String ROOT_PERMISSION = "react.use";
-
-  private final transient AtomicCache<DirectorRuntimeEngine> directorCache = new AtomicCache<>();
+public class DirectorCommandController implements IController, CommandExecutor, TabCompleter {
+  private final transient ReactDirector director = new ReactDirector();
 
   @Override
   public String getName() {
@@ -81,9 +50,9 @@ public class DirectorCommandController implements IController, CommandExecutor, 
 
   @Override
   public void start() {
-    PluginCommand command = React.instance.getCommand(ROOT_COMMAND);
+    PluginCommand command = React.instance.getCommand(ReactDirector.ROOT_COMMAND);
     if (command == null) {
-      React.warn("Failed to find command '" + ROOT_COMMAND + "'");
+      React.warn("Failed to find command '" + ReactDirector.ROOT_COMMAND + "'");
       return;
     }
 
@@ -103,283 +72,26 @@ public class DirectorCommandController implements IController, CommandExecutor, 
   }
 
   public DirectorRuntimeEngine getDirector() {
-    return directorCache.aquireNastyPrint(() -> DirectorEngineFactory.create(
-        new CommandReact(),
-        DirectorEngineOptions.builder()
-            .contexts(buildDirectorContexts())
-            .dispatcher(this::dispatchDirector)
-            .invocationHook(this)
-            .legacyHandlers(DirectorSystem.handlers)
-            .textResolver(ReactLanguage.directorResolver())
-            .build()
-    ));
-  }
-
-  private DirectorContextRegistry buildDirectorContexts() {
-    DirectorContextRegistry contexts = new DirectorContextRegistry();
-    contexts.register(CommandSender.class, (invocation, map) -> {
-      if (invocation.getSender() instanceof BukkitDirectorSender sender) {
-        return sender.sender();
-      }
-      return null;
-    });
-
-    for (Map.Entry<Class<?>, DirectorContextHandler<?>> entry : DirectorContextHandler.contextHandlers.entrySet()) {
-      registerContextHandler(contexts, entry.getKey(), entry.getValue());
-    }
-
-    return contexts;
-  }
-
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  private void registerContextHandler(DirectorContextRegistry contexts, Class<?> type, DirectorContextHandler<?> handler) {
-    contexts.register((Class) type, (invocation, map) -> {
-      if (invocation.getSender() instanceof BukkitDirectorSender sender) {
-        return ((DirectorContextHandler) handler).handle(new VolmitSender(sender.sender()));
-      }
-
-      return null;
-    });
-  }
-
-  private void dispatchDirector(DirectorExecutionMode mode, Runnable runnable) {
-    if (mode == DirectorExecutionMode.SYNC) {
-      // Command execution already runs on the correct server thread context.
-      // Re-queueing it can break Folia region ownership and make commands appear non-responsive.
-      runnable.run();
-    } else {
-      runnable.run();
-    }
-  }
-
-  @Override
-  public void beforeInvoke(DirectorInvocation invocation, DirectorRuntimeNode node) {
-    if (invocation.getSender() instanceof BukkitDirectorSender sender) {
-      DirectorContext.touch(new VolmitSender(sender.sender()));
-    }
-  }
-
-  @Override
-  public void afterInvoke(DirectorInvocation invocation, DirectorRuntimeNode node) {
-    DirectorContext.remove();
+    return director.getDirector();
   }
 
   @Nullable
   @Override
   public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
-    if (!command.getName().equalsIgnoreCase(ROOT_COMMAND)) {
+    if (!command.getName().equalsIgnoreCase(ReactDirector.ROOT_COMMAND)) {
       return List.of();
     }
 
-    if (isLanguageCommand(args)) {
-      return ReactLanguage.switcher().complete(sender, Arrays.copyOfRange(args, 1, args.length));
-    }
-    List<String> v = runDirectorTab(sender, alias, args);
-
-    if (sender instanceof Player) {
-      // audience delivery: spigot CommandSender has no playSound(net.kyori Sound)
-      React.audiences().sender(sender).playSound(Sound.sound(
-          Key.key("minecraft:block.amethyst_block.chime"),
-          Sound.Source.PLAYER,
-          0.25f,
-          RNG.r.f(0.125f, 1.95f)
-      ));
-    }
-
-    return v;
+    return director.complete(new BukkitCommandSender(sender), alias, args);
   }
 
   @Override
   public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-    if (!command.getName().equalsIgnoreCase(ROOT_COMMAND)) {
+    if (!command.getName().equalsIgnoreCase(ReactDirector.ROOT_COMMAND)) {
       return false;
     }
 
-    if (isLanguageCommand(args)) {
-      ReactLanguage.switcher().command(sender, Arrays.copyOfRange(args, 1, args.length));
-      return true;
-    }
-    if (!(args.length > 0 && args[0].equalsIgnoreCase("debug")
-        && (args.length > 1 && args[1].equalsIgnoreCase("dump")
-            || args.length == 1 && sender.hasPermission("react.debugdump")))
-        && !sender.hasPermission(ROOT_PERMISSION) && !sender.hasPermission("react.*") && !sender.isOp()) {
-      ReactLanguage.send(sender, RuntimeMessages.MISSING_PERMISSION,
-          MessageArgument.untrusted("permission", ROOT_PERMISSION));
-      return true;
-    }
-
-    LanguageAudience.run(sender instanceof Player player ? player.getUniqueId() : null,
-        () -> executeCommand(sender, label, normalizeLegacyArgs(args)));
+    director.execute(new BukkitCommandSender(sender), label, args);
     return true;
-  }
-
-  private static boolean isLanguageCommand(String[] args) {
-    return args.length > 0
-        && ("language".equalsIgnoreCase(args[0]) || "languages".equalsIgnoreCase(args[0]));
-  }
-
-  private void executeCommand(CommandSender sender, String label, String[] args) {
-    if (sendHelpIfRequested(sender, args)) {
-      playSuccessSound(sender);
-      return;
-    }
-
-    DirectorExecutionResult result = runDirector(sender, label, args);
-
-    if (result.isSuccess()) {
-      playSuccessSound(sender);
-      return;
-    }
-
-    playFailureSound(sender);
-
-    if (!result.isHandled()) {
-      ReactLanguage.send(sender, RuntimeMessages.UNKNOWN_COMMAND);
-    }
-  }
-
-  private boolean sendHelpIfRequested(CommandSender sender, String[] args) {
-    Optional<DirectorMiniMenu.DirectorHelpPage> page = DirectorMiniMenu.resolveHelp(getDirector(), Arrays.asList(normalizeHelpArgs(args)));
-    if (page.isEmpty()) {
-      return false;
-    }
-
-    DirectorMiniMenu.Theme helpTheme = DirectorMiniMenu.Theme.reactBlue();
-    DirectorMiniMenu.deliver(sender, page.get(), helpTheme, ReactLanguage.directorResolver());
-    return true;
-  }
-
-  private String[] normalizeHelpArgs(String[] args) {
-    if (args == null || args.length == 0) {
-      return new String[0];
-    }
-
-    List<String> normalized = new ArrayList<>(args.length);
-    for (int i = 0; i < args.length; i++) {
-      String arg = args[i];
-      if (!isHelpWord(arg)) {
-        normalized.add(arg);
-        continue;
-      }
-
-      String page = "1";
-      if (i + 1 < args.length && isPageToken(args[i + 1])) {
-        page = args[i + 1].trim();
-        i++;
-      }
-      normalized.add("help=" + page);
-    }
-
-    return normalized.toArray(new String[0]);
-  }
-
-  private boolean isHelpWord(String value) {
-    return value != null && (value.equalsIgnoreCase("help") || value.equals("?"));
-  }
-
-  private boolean isPageToken(String value) {
-    if (value == null || value.isBlank()) {
-      return false;
-    }
-
-    try {
-      Integer.parseInt(value.trim());
-      return true;
-    } catch (NumberFormatException ignored) {
-      return false;
-    }
-  }
-
-  private DirectorExecutionResult runDirector(CommandSender sender, String label, String[] args) {
-    try {
-      return getDirector().execute(new DirectorInvocation(new BukkitDirectorSender(sender), label, Arrays.asList(args)));
-    } catch (Throwable e) {
-      React.reportError("Director command execution failed: "
-          + e.getClass().getSimpleName() + " " + e.getMessage(), e);
-      return DirectorExecutionResult.notHandled();
-    }
-  }
-
-  private List<String> runDirectorTab(CommandSender sender, String alias, String[] args) {
-    try {
-      return getDirector().tabComplete(new DirectorInvocation(new BukkitDirectorSender(sender), alias, Arrays.asList(args)));
-    } catch (Throwable e) {
-      React.warn("Director tab completion failed: " + e.getClass().getSimpleName()
-          + " " + e.getMessage(), e);
-      return List.of();
-    }
-  }
-
-  static String[] normalizeLegacyArgs(String[] args) {
-    if (args == null || args.length != 1) {
-      return args;
-    }
-
-    String root = args[0];
-    if (root == null) {
-      return args;
-    }
-
-    if (root.equalsIgnoreCase("environment") || root.equalsIgnoreCase("env")) {
-      return new String[]{"environment", "info"};
-    }
-
-    return args;
-  }
-
-  private void playFailureSound(CommandSender sender) {
-    if (sender instanceof Player) {
-      Audience audience = React.audiences().sender(sender);
-      audience.playSound(Sound.sound(
-          Key.key("minecraft:block.respawn_anchor.deplete"),
-          Sound.Source.PLAYER,
-          0.77f,
-          0.25f
-      ));
-      audience.playSound(Sound.sound(
-          Key.key("minecraft:block.beacon.deactivate"),
-          Sound.Source.PLAYER,
-          0.2f,
-          0.45f
-      ));
-    }
-  }
-
-  private void playSuccessSound(CommandSender sender) {
-    if (sender instanceof Player) {
-      Audience audience = React.audiences().sender(sender);
-      audience.playSound(Sound.sound(
-          Key.key("minecraft:block.amethyst_cluster.break"),
-          Sound.Source.PLAYER,
-          0.77f,
-          1.65f
-      ));
-      audience.playSound(Sound.sound(
-          Key.key("minecraft:block.respawn_anchor.charge"),
-          Sound.Source.PLAYER,
-          0.125f,
-          2.99f
-      ));
-    }
-  }
-
-  private record BukkitDirectorSender(
-      CommandSender sender) implements DirectorSender {
-    @Override
-    public String getName() {
-      return sender.getName();
-    }
-
-    @Override
-    public boolean isPlayer() {
-      return sender instanceof Player;
-    }
-
-    @Override
-    public void sendMessage(String message) {
-      if (message != null && !message.trim().isEmpty()) {
-        ComponentMessenger.sendLiteral(sender, message);
-      }
-    }
   }
 }

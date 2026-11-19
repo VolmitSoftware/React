@@ -98,6 +98,10 @@ public class PluginCostController implements IController, Listener {
     }
 
     sampleController.unregisterSampler(SamplerPluginCost.idFor(plugin.getName()));
+    EventController events = React.controller(EventController.class);
+    if (events != null) {
+      events.getCostModel().forgetOwner(plugin.getName());
+    }
   }
 
   private boolean isExcluded(Plugin plugin) {

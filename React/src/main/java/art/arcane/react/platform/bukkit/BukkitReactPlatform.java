@@ -3,7 +3,12 @@ package art.arcane.react.platform.bukkit;
 import art.arcane.react.React;
 import art.arcane.react.api.web.ReactWebServer;
 import art.arcane.react.core.controller.WebController;
+import art.arcane.react.core.controller.EventController;
 import art.arcane.react.platform.CapabilityRefusal;
+import art.arcane.react.platform.CommandHost;
+import art.arcane.react.platform.LanguageHost;
+import art.arcane.react.platform.ReactCommandSender;
+import art.arcane.react.platform.bukkit.command.BukkitCommandHost;
 import art.arcane.react.platform.PlatformCapability;
 import art.arcane.react.platform.PlatformKind;
 import art.arcane.react.content.sampler.BukkitWorldStatsHost;
@@ -17,10 +22,12 @@ import art.arcane.react.platform.WorldStatsHost;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlayer;
 import art.arcane.react.platform.ReactWorld;
+import art.arcane.react.platform.cost.OwnerCostProbe;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.ReactExecutors;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -39,6 +46,8 @@ public final class BukkitReactPlatform implements ReactPlatform {
   private final WorldStatsHost worldStatsHost = new BukkitWorldStatsHost();
   private final PlayerStatsHost playerStatsHost = new BukkitPlayerStatsHost();
   private final RuntimeStatsHost runtimeStatsHost = new BukkitRuntimeStatsHost();
+  private final CommandHost commandHost = new BukkitCommandHost();
+  private final LanguageHost languageHost = new BukkitLanguageHost();
 
   public static BukkitReactPlatform instance() {
     return INSTANCE;
@@ -205,5 +214,29 @@ public final class BukkitReactPlatform implements ReactPlatform {
   @Override
   public Optional<RuntimeStatsHost> runtimeStatsHost() {
     return Optional.of(runtimeStatsHost);
+  }
+
+  @Override
+  public Optional<OwnerCostProbe> ownerCostProbe() {
+    EventController controller = React.instance == null ? null : React.controller(EventController.class);
+    return Optional.ofNullable(controller);
+  }
+
+  @Override
+  public Optional<ReactCommandSender> commandSender(Object handle) {
+    if (handle instanceof ReactCommandSender sender) {
+      return Optional.of(sender);
+    }
+    return handle instanceof CommandSender sender ? Optional.of(new BukkitCommandSender(sender)) : Optional.empty();
+  }
+
+  @Override
+  public Optional<CommandHost> commandHost() {
+    return Optional.of(commandHost);
+  }
+
+  @Override
+  public Optional<LanguageHost> languageHost() {
+    return Optional.of(languageHost);
   }
 }

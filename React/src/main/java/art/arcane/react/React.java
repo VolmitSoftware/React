@@ -42,6 +42,7 @@ import art.arcane.react.core.controller.PlayerController;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.platform.bukkit.BukkitLanguage;
 import art.arcane.volmlib.util.update.BukkitUpdateService;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.plugin.SplashScreen;
@@ -490,7 +491,7 @@ public class React extends VolmitPlugin implements ReloadAware {
     shutdownDrained = true;
     PrecisionStopwatch psw = PrecisionStopwatch.start();
     ReactConfiguration.get();
-    ReactLanguage.initialize();
+    BukkitLanguage.initialize();
     updateNotificationsEnabled = ReactConfiguration.get().isUpdateNotifications();
     updates = BukkitUpdateService.register(this, new BukkitUpdateService.Options(
         "VolmitSoftware", "React", "react.update", () -> updateNotificationsEnabled));
@@ -674,7 +675,7 @@ public class React extends VolmitPlugin implements ReloadAware {
       debugDump.close();
       debugDump = null;
     }
-    ReactLanguage.close();
+    BukkitLanguage.close();
     PENDING_LANGUAGE_INSTALLS.clear();
     closeAudienceProvider();
     synchronized (runtimeSettingsLock) {

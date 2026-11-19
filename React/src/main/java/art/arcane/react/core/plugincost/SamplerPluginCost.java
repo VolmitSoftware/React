@@ -22,15 +22,12 @@ package art.arcane.react.core.plugincost;
 import art.arcane.react.api.sampler.ReactEventSampler;
 import art.arcane.react.core.controller.EventController;
 import art.arcane.react.platform.EventMeasurement;
+import art.arcane.react.platform.cost.OwnerCostModel;
 import art.arcane.volmlib.util.format.Form;
-import art.arcane.volmlib.util.math.RollingSequence;
 import net.kyori.adventure.text.Component;
-
-import java.util.Locale;
 
 public class SamplerPluginCost extends ReactEventSampler {
   private final transient String pluginName;
-  private final transient RollingSequence average = new RollingSequence(5);
 
   public SamplerPluginCost(String pluginName) {
     super(idFor(pluginName), 1000);
@@ -38,8 +35,7 @@ public class SamplerPluginCost extends ReactEventSampler {
   }
 
   public static String idFor(String pluginName) {
-    String base = (pluginName == null ? "" : pluginName).trim().toLowerCase(Locale.ROOT);
-    return "plugin-" + base.replaceAll("[^a-z0-9_-]+", "-");
+    return OwnerCostModel.samplerId(pluginName);
   }
 
   @Override
@@ -57,8 +53,7 @@ public class SamplerPluginCost extends ReactEventSampler {
     if (!(measurement instanceof EventController controller)) {
       return 0D;
     }
-    average.put(controller.getPluginEventTimeMsPerSecond(pluginName));
-    return average.getAverage();
+    return controller.getCostModel().sampleAverage(pluginName);
   }
 
   @Override

@@ -25,6 +25,9 @@ import art.arcane.react.React;
 import art.arcane.react.api.event.NaughtyRegisteredListener;
 import art.arcane.react.api.event.layer.MinecartSpawnEvent;
 import art.arcane.react.api.event.layer.ServerTickEvent;
+import art.arcane.react.platform.cost.OwnerCostMode;
+import art.arcane.react.platform.cost.OwnerCostModel;
+import art.arcane.react.platform.cost.OwnerCostProbe;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.plugin.IController;
@@ -59,11 +62,9 @@ import java.util.concurrent.atomic.AtomicLong;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @ConfigDescription("Measures event-handler time per plugin by wrapping registered listeners while instrumentation is active.")
-public class EventController extends TickedObject implements EventMeasurement, IController, Listener {
+public class EventController extends TickedObject implements EventMeasurement, IController, Listener, OwnerCostProbe {
   private static final AtomicLong OWNER_SEQUENCE = new AtomicLong();
-  private static final long MIN_DUTY_PERIOD_MS = 1000L;
   private static final String WRAPPER_CLASS_NAME = NaughtyRegisteredListener.class.getName();
-  private static final PublishedWindow NO_WINDOW = new PublishedWindow(0, 0D, 0, 0, 0D, 0D, 0L, Map.of(), Map.of());
   private static volatile Field allListsField;
   private static volatile Field handlersField;
   private static volatile Field handlerSlotsField;
@@ -71,17 +72,20 @@ public class EventController extends TickedObject implements EventMeasurement, I
   private static volatile boolean reflectionResolved;
 
   @ConfigDoc(value = "Controls when plugin and event timing wrappers are installed: ON_DEMAND (default) installs them only while a monitor, map, placeholder, or web viewer reads event data, ALWAYS keeps them installed for continuous plugin-cost history, and DUTY_CYCLE additionally opens a periodic measurement window.", impact = "ALWAYS charges every event handler a timing overhead; ON_DEMAND removes that cost at idle but records history gaps; DUTY_CYCLE trades periodic gaps for a small recurring cost.")
-  private InstrumentationMode instrumentation = InstrumentationMode.ON_DEMAND;
+  private OwnerCostMode instrumentation = OwnerCostMode.ON_DEMAND;
   @ConfigDoc(value = "Milliseconds after the last event-data read before wrappers are removed in the on-demand and duty-cycle modes.", impact = "Higher values keep instrumentation installed longer after a viewer leaves; lower values remove it sooner.")
-  private long samplerActivityWindowMS = 15000;
+  private long samplerActivityWindowMS = OwnerCostModel.DEFAULT_ACTIVITY_WINDOW_MS;
   @ConfigDoc(value = "Length in milliseconds of each periodic measurement window in the duty-cycle mode.", impact = "Longer windows produce more recorded samples per period at a higher recurring cost.")
-  private long dutyCycleOnMS = 5000;
+  private long dutyCycleOnMS = OwnerCostModel.DEFAULT_DUTY_ON_MS;
   @ConfigDoc(value = "Milliseconds between the starts of periodic measurement windows in the duty-cycle mode.", impact = "Shorter periods record event data more often and cost more; longer periods leave wider history gaps.")
-  private long dutyCyclePeriodMS = 60000;
+  private long dutyCyclePeriodMS = OwnerCostModel.DEFAULT_DUTY_PERIOD_MS;
 
   @Getter(AccessLevel.NONE)
   @Setter(AccessLevel.NONE)
-  private transient volatile PublishedWindow window = NO_WINDOW;
+  private transient final OwnerCostModel costModel = new OwnerCostModel(this);
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private transient final Map<String, long[]> pendingDrain = new HashMap<>();
   private transient final AtomicBoolean running = new AtomicBoolean(false);
   private transient final AtomicBoolean active = new AtomicBoolean(false);
   private transient final AtomicBoolean instrumentationRequested = new AtomicBoolean(false);
@@ -89,11 +93,14 @@ public class EventController extends TickedObject implements EventMeasurement, I
   private transient final AtomicLong mutationRevision = new AtomicLong();
   private transient final AtomicLong measuredTicks = new AtomicLong();
   private transient volatile boolean spiesInjected = false;
-  private transient volatile long lastSamplerActivity = 0;
   private transient volatile long instrumentationOwner;
   private transient volatile long cleanupGeneration;
-  private transient volatile long dutyWindowStartMs;
-  private transient volatile long windowStartNanos;
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private transient volatile int listenerCount;
+  @Getter(AccessLevel.NONE)
+  @Setter(AccessLevel.NONE)
+  private transient volatile double callsPerTick;
 
   public EventController() {
     super("react", "event", 5000);
@@ -111,10 +118,10 @@ public class EventController extends TickedObject implements EventMeasurement, I
     cleanupGeneration = generation;
     active.set(true);
     spiesInjected = false;
-    lastSamplerActivity = 0;
-    dutyWindowStartMs = 0L;
     clearPublishedMetrics();
-    instrumentationRequested.set(mode() == InstrumentationMode.ALWAYS);
+    syncModelConfig();
+    costModel.start();
+    instrumentationRequested.set(costModel.mode() == OwnerCostMode.ALWAYS);
     requestReconciliation();
   }
 
@@ -122,6 +129,7 @@ public class EventController extends TickedObject implements EventMeasurement, I
   public void stop() {
     active.set(false);
     instrumentationRequested.set(false);
+    costModel.stop();
     lifecycleGeneration.incrementAndGet();
     uninstallOwner(instrumentationOwner);
   }
@@ -133,76 +141,86 @@ public class EventController extends TickedObject implements EventMeasurement, I
 
   @Override
   public void markSamplerActivity() {
-    lastSamplerActivity = System.currentTimeMillis();
-    if (active.get()
-        && !spiesInjected
-        && mode() != InstrumentationMode.ALWAYS
-        && instrumentationRequested.compareAndSet(false, true)) {
-      requestReconciliation();
-    }
+    syncModelConfig();
+    costModel.markActivity();
+  }
+
+  public OwnerCostModel getCostModel() {
+    return costModel;
+  }
+
+  public long getLastSamplerActivity() {
+    return costModel.lastActivityMs();
+  }
+
+  public void setLastSamplerActivity(long lastSamplerActivity) {
+    costModel.lastActivityMs(lastSamplerActivity);
+  }
+
+  public long getDutyWindowStartMs() {
+    return costModel.dutyWindowStartMs();
+  }
+
+  public void setDutyWindowStartMs(long dutyWindowStartMs) {
+    costModel.dutyWindowStartMs(dutyWindowStartMs);
   }
 
   @Override
   public boolean isMeasuring() {
-    return isFresh(window);
+    return costModel.measuring();
   }
 
   @Override
   public double getEventTimeMsPerSecond() {
-    PublishedWindow published = window;
-    return isFresh(published) ? published.totalTime() / published.windowSeconds() : 0D;
+    return costModel.totalMsPerSecond();
   }
 
   public double getPluginEventTimeMsPerSecond(String pluginName) {
-    PublishedWindow published = window;
-    return isFresh(published) ? pluginTime(published, pluginName) / published.windowSeconds() : 0D;
+    return costModel.msPerSecond(pluginName);
   }
 
   public double getPluginEventTimeMS(String pluginName) {
-    PublishedWindow published = window;
-    return isFresh(published) ? pluginTime(published, pluginName) : 0D;
+    return costModel.ms(pluginName);
   }
 
   public Map<String, Double> snapshotPluginEventTimeMS() {
-    PublishedWindow published = window;
-    return isFresh(published) ? new HashMap<>(published.pluginTime()) : new HashMap<>();
+    return costModel.snapshotMs();
   }
 
   public Map<String, Integer> snapshotPluginEventCalls() {
-    PublishedWindow published = window;
-    return isFresh(published) ? new HashMap<>(published.pluginCalls()) : new HashMap<>();
+    return costModel.snapshotCalls();
   }
 
   @Override
   public int getListenerCount() {
-    return window.listenerCount();
+    return listenerCount;
   }
 
   public double getTotalTime() {
-    return window.totalTime();
+    return costModel.totalMs();
   }
 
   public int getCalls() {
-    return window.calls();
+    return saturatingInt(costModel.calls());
   }
 
   public int getAsyncCalls() {
-    return window.asyncCalls();
+    return saturatingInt(costModel.asyncCalls());
   }
 
   @Override
   public double getCallsPerTick() {
-    return window.callsPerTick();
+    return callsPerTick;
   }
 
   @Override
   public double getWindowSeconds() {
-    return window.windowSeconds();
+    return costModel.windowSeconds();
   }
 
   @Override
   public long getWindowPublishedAtMs() {
-    return window.publishedAtMs();
+    return costModel.publishedAtMs();
   }
 
   @Override
@@ -211,13 +229,55 @@ public class EventController extends TickedObject implements EventMeasurement, I
       return;
     }
 
-    boolean wanted = evaluateInstrumentation(System.currentTimeMillis());
+    syncModelConfig();
+    costModel.applyMode();
+  }
+
+  @Override
+  public boolean available() {
+    return resolveReflection();
+  }
+
+  @Override
+  public String unavailableReason() {
+    return available() ? "" : "Bukkit event handler lists could not be instrumented";
+  }
+
+  @Override
+  public void setActive(boolean wanted) {
+    if (!active.get()) {
+      instrumentationRequested.set(false);
+      return;
+    }
+
     instrumentationRequested.set(wanted);
     if (!wanted && !spiesInjected && cleanupGeneration == 0L) {
       return;
     }
 
     requestReconciliation();
+  }
+
+  @Override
+  public boolean active() {
+    return spiesInjected;
+  }
+
+  @Override
+  public void drain(OwnerCostConsumer consumer) {
+    Map<String, long[]> drained;
+    synchronized (pendingDrain) {
+      if (pendingDrain.isEmpty()) {
+        return;
+      }
+      drained = new HashMap<>(pendingDrain);
+      pendingDrain.clear();
+    }
+
+    for (Map.Entry<String, long[]> entry : drained.entrySet()) {
+      long[] counters = entry.getValue();
+      consumer.accept(entry.getKey(), entry.getKey(), counters[0], counters[1], counters[2]);
+    }
   }
 
   public void call(Event event) {
@@ -356,44 +416,12 @@ public class EventController extends TickedObject implements EventMeasurement, I
     }
   }
 
-  private InstrumentationMode mode() {
-    InstrumentationMode configured = instrumentation;
-    return configured == null ? InstrumentationMode.ON_DEMAND : configured;
-  }
-
-  private long windowFreshnessMS() {
-    return 3L * Math.max(1000L, getTinterval());
-  }
-
-  private boolean isFresh(PublishedWindow published) {
-    long publishedAtMs = published.publishedAtMs();
-    return active.get() && publishedAtMs > 0L && System.currentTimeMillis() - publishedAtMs <= windowFreshnessMS();
-  }
-
-  private static double pluginTime(PublishedWindow published, String pluginName) {
-    Double time = published.pluginTime().get(pluginName);
-    return time == null ? 0D : time;
-  }
-
-  private boolean evaluateInstrumentation(long nowMs) {
-    boolean demanded = nowMs - lastSamplerActivity <= samplerActivityWindowMS;
-    return switch (mode()) {
-      case ALWAYS -> true;
-      case ON_DEMAND -> demanded;
-      case DUTY_CYCLE -> demanded || dutyWindowOpen(nowMs);
-    };
-  }
-
-  private boolean dutyWindowOpen(long nowMs) {
-    long period = Math.max(MIN_DUTY_PERIOD_MS, dutyCyclePeriodMS);
-    long on = Math.max(1L, Math.min(dutyCycleOnMS, period));
-    long windowStart = dutyWindowStartMs;
-    if (windowStart == 0L || nowMs - windowStart >= period) {
-      dutyWindowStartMs = nowMs;
-      return true;
-    }
-
-    return nowMs - windowStart < on;
+  private void syncModelConfig() {
+    costModel.mode(instrumentation);
+    costModel.activityWindowMs(samplerActivityWindowMS);
+    costModel.dutyOnMs(dutyCycleOnMS);
+    costModel.dutyPeriodMs(dutyCyclePeriodMS);
+    costModel.freshnessMs(3L * Math.max(1000L, getTinterval()));
   }
 
   private void requestReconciliation() {
@@ -583,41 +611,40 @@ public class EventController extends TickedObject implements EventMeasurement, I
 
   private void drainListener(NaughtyRegisteredListener naughty, WindowTotals totals) {
     NaughtyRegisteredListener.CounterSnapshot snapshot = naughty.drainCounters();
-    double listenerTime = snapshot.timeNanos() / 1.0E6D;
-    int listenerCalls = saturatingInt(snapshot.calls());
-    totals.timeNanos += snapshot.timeNanos();
     totals.calls += snapshot.calls();
-    totals.asyncCalls += snapshot.asyncCalls();
-    totals.pluginTime.merge(naughty.pluginName, listenerTime, Double::sum);
-    totals.pluginCalls.merge(naughty.pluginName, listenerCalls, EventController::saturatingAdd);
+    long[] counters = totals.owners.computeIfAbsent(naughty.pluginName, ignored -> new long[3]);
+    counters[0] += snapshot.timeNanos();
+    counters[1] += snapshot.calls();
+    counters[2] += snapshot.asyncCalls();
   }
 
   private void beginWindow() {
-    windowStartNanos = System.nanoTime();
+    costModel.beginWindow();
     measuredTicks.set(0L);
   }
 
   private void publishWindow(WindowTotals totals) {
-    long nowNanos = System.nanoTime();
-    long elapsedNanos = nowNanos - windowStartNanos;
-    windowStartNanos = nowNanos;
-    window = new PublishedWindow(
-        totals.listeners,
-        totals.timeNanos / 1.0E6D,
-        saturatingInt(totals.calls),
-        saturatingInt(totals.asyncCalls),
-        averageCallsPerTick(totals.calls, measuredTicks.getAndSet(0L)),
-        Math.max(1.0E-6D, elapsedNanos / 1.0E9D),
-        System.currentTimeMillis(),
-        Map.copyOf(totals.pluginTime),
-        Map.copyOf(totals.pluginCalls)
-    );
+    listenerCount = totals.listeners;
+    callsPerTick = averageCallsPerTick(totals.calls, measuredTicks.getAndSet(0L));
+    synchronized (pendingDrain) {
+      for (Map.Entry<String, long[]> entry : totals.owners.entrySet()) {
+        long[] pending = pendingDrain.computeIfAbsent(entry.getKey(), ignored -> new long[3]);
+        long[] drained = entry.getValue();
+        pending[0] += drained[0];
+        pending[1] += drained[1];
+        pending[2] += drained[2];
+      }
+    }
+    costModel.collect();
   }
 
   private void clearPublishedMetrics() {
-    window = NO_WINDOW;
-    windowStartNanos = 0L;
+    listenerCount = 0;
+    callsPerTick = 0D;
     measuredTicks.set(0L);
+    synchronized (pendingDrain) {
+      pendingDrain.clear();
+    }
   }
 
   private boolean isAuthoritativeThread() {
@@ -650,10 +677,6 @@ public class EventController extends TickedObject implements EventMeasurement, I
     return (int) Math.max(0L, Math.min(Integer.MAX_VALUE, value));
   }
 
-  private static int saturatingAdd(int left, int right) {
-    return saturatingInt((long) left + right);
-  }
-
   static double averageCallsPerTick(long calls, long ticks) {
     if (calls <= 0L || ticks <= 0L) {
       return 0D;
@@ -662,23 +685,9 @@ public class EventController extends TickedObject implements EventMeasurement, I
     return (double) calls / ticks;
   }
 
-  public enum InstrumentationMode {
-    ALWAYS,
-    ON_DEMAND,
-    DUTY_CYCLE
-  }
-
-  private record PublishedWindow(int listenerCount, double totalTime, int calls, int asyncCalls, double callsPerTick,
-                                 double windowSeconds, long publishedAtMs, Map<String, Double> pluginTime,
-                                 Map<String, Integer> pluginCalls) {
-  }
-
   private static final class WindowTotals {
-    private final Map<String, Double> pluginTime = new HashMap<>();
-    private final Map<String, Integer> pluginCalls = new HashMap<>();
+    private final Map<String, long[]> owners = new HashMap<>();
     private int listeners;
-    private long timeNanos;
     private long calls;
-    private long asyncCalls;
   }
 }

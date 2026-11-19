@@ -26,6 +26,7 @@ public final class TaxonomyMessages {
   public static final TextKey GROUP_BILETOOLS = TextKey.of("taxonomy.group.biletools", "BileTools Integration");
   public static final TextKey GROUP_ANIMUS = TextKey.of("taxonomy.group.animus", "Animus Integration");
   public static final TextKey GROUP_PLUGINS = TextKey.of("taxonomy.group.plugins", "Plugin Costs");
+  public static final TextKey GROUP_MODS = TextKey.of("taxonomy.group.mods", "Mod Costs");
   public static final TextKey GROUP_REACT = TextKey.of("taxonomy.group.react", "React Integration");
   public static final TextKey GROUP_CORE = TextKey.of("taxonomy.group.core", "React Core");
   public static final TextKey GROUP_TICK = TextKey.of("taxonomy.group.tick", "Tick & Stability");
@@ -71,6 +72,7 @@ public final class TaxonomyMessages {
     builder.add(GROUP_BILETOOLS);
     builder.add(GROUP_ANIMUS);
     builder.add(GROUP_PLUGINS);
+    builder.add(GROUP_MODS);
     builder.add(GROUP_REACT);
     builder.add(GROUP_CORE);
     builder.add(GROUP_TICK);
