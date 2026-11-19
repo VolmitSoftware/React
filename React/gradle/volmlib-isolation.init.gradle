@@ -1,0 +1,13 @@
+Gradle initiatingBuild = gradle
+while (initiatingBuild.parent != null) {
+    initiatingBuild = initiatingBuild.parent
+}
+String outputRoot = initiatingBuild.startParameter.projectProperties['volmLibBuildDirectory']
+if (outputRoot != null) {
+    gradle.beforeProject { Project candidate ->
+        if (candidate.rootProject.name == 'VolmLib') {
+            String relative = candidate.path == ':' ? 'root' : candidate.path.substring(1).replace(':', '/')
+            candidate.layout.buildDirectory.set(new File(outputRoot, relative))
+        }
+    }
+}

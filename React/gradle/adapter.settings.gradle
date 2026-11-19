@@ -1,0 +1,39 @@
+File reactRoot = settings.ext.reactRoot.canonicalFile
+File coreDirectory = new File(reactRoot, 'core')
+if (new File(coreDirectory, 'src/main/java').isDirectory() && new File(coreDirectory, 'build.gradle').isFile()) {
+    include(':core')
+    project(':core').projectDir = coreDirectory
+}
+boolean useLocal = providers.gradleProperty('useLocalVolmLib').getOrElse('true').toBoolean()
+String configuredPath = providers.gradleProperty('localVolmLibDirectory').orElse(providers.environmentVariable('VOLMLIB_DIR')).orNull
+File localDirectory = null
+if (useLocal) {
+    if (configuredPath != null) {
+        localDirectory = new File(configuredPath)
+        if (!localDirectory.isAbsolute()) {
+            localDirectory = new File(reactRoot, configuredPath)
+        }
+        if (!new File(localDirectory, 'settings.gradle').isFile()) {
+            throw new GradleException("Invalid VolmLib directory: ${localDirectory}")
+        }
+    } else {
+        File ancestor = reactRoot
+        while (ancestor != null && localDirectory == null) {
+            File candidate = new File(ancestor, 'VolmLib')
+            if (new File(candidate, 'settings.gradle').isFile()) {
+                localDirectory = candidate
+            }
+            ancestor = ancestor.parentFile
+        }
+    }
+}
+if (localDirectory != null) {
+    includeBuild(localDirectory) {
+        name = 'VolmLib'
+        dependencySubstitution {
+            substitute(module('com.github.VolmitSoftware:VolmLib')).using(project(':shared'))
+            substitute(module('com.github.VolmitSoftware.VolmLib:volmlib-shared')).using(project(':shared'))
+            substitute(module('com.github.VolmitSoftware.VolmLib:packaging')).using(project(':packaging'))
+        }
+    }
+}

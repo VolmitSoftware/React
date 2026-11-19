@@ -1,0 +1,10 @@
+pluginManagement {
+    repositories {
+        maven { url = uri('https://maven.minecraftforge.net/') }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+rootProject.name = 'react-forge'
+ext.reactRoot = file('../..')
+apply from: '../../gradle/adapter.settings.gradle'

@@ -1,5 +1,48 @@
 afterEvaluate {
     File packedArchive = tasks.named('packedJar').get().outputJar.get().asFile
+    List<Map<String, Object>> targets = [[
+        id: 'bukkit',
+        tasks: ['build'],
+        arguments: [],
+        java: 25,
+        memoryMiB: 6144,
+        workers: 2,
+        dependsOn: [],
+        artifacts: [[
+            path: relativePath(packedArchive),
+            role: 'runtime',
+            platforms: ['plugin'],
+            minecraftVersions: [bukkitMinecraftRange.toString()]
+        ]]
+    ]]
+    for (String loader : ['fabric', 'forge', 'neoforge']) {
+        minecraftTargets.each { String minecraft, Map<String, Object> properties ->
+            if (loader == 'neoforge' && properties.neoforgeUsesForge) {
+                return
+            }
+            List<String> arguments = ['-p', "adapters/${loader}".toString(), "-PminecraftVersion=${minecraft}".toString()]
+            react.each { String key, String value ->
+                if (key != 'minecraftVersion') {
+                    arguments.add("-P${key}=${value}".toString())
+                }
+            }
+            targets.add([
+                id: "${loader}-${minecraft}".toString(),
+                tasks: [':build'],
+                arguments: arguments,
+                java: 25,
+                memoryMiB: 4096,
+                workers: 2,
+                dependsOn: [],
+                artifacts: [[
+                    path: "adapters/${loader}/build/${minecraft}/libs/${modJarName(loader, minecraft)}".toString(),
+                    role: 'runtime',
+                    platforms: loader == 'forge' && properties.neoforgeUsesForge ? ['forge', 'neoforge'] : [loader],
+                    minecraftVersions: [minecraft]
+                ]]
+            ])
+        }
+    }
     rootProject.ext.multiplexor = [
         schema: 1,
         id: 'react',
@@ -7,20 +50,6 @@ afterEvaluate {
         sandbox: 'per-target',
         parallelTargets: true,
         sourceDependencies: ['volmlib'],
-        targets: [[
-            id: 'bukkit',
-            tasks: ['build'],
-            arguments: [],
-            java: 25,
-            memoryMiB: 6144,
-            workers: 2,
-            dependsOn: [],
-            artifacts: [[
-                path: relativePath(packedArchive),
-                role: 'runtime',
-                platforms: ['plugin'],
-                minecraftVersions: [bukkitMinecraftRange.toString()]
-            ]]
-        ]]
+        targets: targets
     ]
 }

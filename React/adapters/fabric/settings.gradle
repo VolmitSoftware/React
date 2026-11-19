@@ -1,0 +1,10 @@
+pluginManagement {
+    repositories {
+        maven { url = uri('https://maven.fabricmc.net/') }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+rootProject.name = 'react-fabric'
+ext.reactRoot = file('../..')
+apply from: '../../gradle/adapter.settings.gradle'

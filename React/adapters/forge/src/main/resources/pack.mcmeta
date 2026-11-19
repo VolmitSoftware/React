@@ -1,0 +1,7 @@
+{
+  "pack": {
+    "description": "${projectName} resources",
+    "min_format": ${dataPackFormat},
+    "max_format": ${dataPackFormat}
+  }
+}

@@ -1,0 +1,98 @@
+import art.arcane.volmit.packaging.JarCompactor
+
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url = uri('https://jitpack.io') }
+    }
+    dependencies {
+        classpath('com.github.VolmitSoftware.VolmLib:packaging:master-SNAPSHOT')
+    }
+}
+
+ext.reactRoot = file('../..')
+apply from: '../../gradle/identity.gradle'
+group = react.projectGroup
+version = react.projectVersion
+
+String target = react.minecraftVersion
+String loader = projectDir.name
+Map<String, Object> targetProperties = minecraftTargets[target]
+ext.targetProperties = targetProperties
+ext.hasCore = findProject(':core') != null
+layout.buildDirectory.set(layout.projectDirectory.dir("build/${target}"))
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+}
+tasks.withType(JavaCompile).configureEach {
+    options.release.set((int) targetProperties.javaVersion)
+    options.encoding = 'UTF-8'
+    options.compilerArgs.add('-parameters')
+}
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
+repositories {
+    mavenCentral()
+    maven { url = uri('https://jitpack.io') }
+}
+
+apply from: '../../gradle/shadow.gradle'
+apply from: '../../gradle/verify-artifact.gradle'
+
+sourceSets.main.java.srcDir('../mod-common/src/main/java')
+sourceSets.main.resources.srcDir('../mod-common/src/main/resources')
+sourceSets.test.java.srcDir('../mod-common/src/test/java')
+dependencies {
+    testImplementation('org.junit.jupiter:junit-jupiter:5.11.4')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.11.4')
+}
+for (String kind : ['java', 'resources']) {
+    org.gradle.api.file.SourceDirectorySet directories = kind == 'java' ? sourceSets.main.java : sourceSets.main.resources
+    List<File> overlays = []
+    if (targetProperties.sourceFamily != null) {
+        overlays.add(file("../mod-common/src/families/${targetProperties.sourceFamily}/${kind}"))
+        overlays.add(file("src/families/${targetProperties.sourceFamily}/${kind}"))
+    }
+    overlays.add(file("../mod-common/src/versions/${target}/${kind}"))
+    overlays.add(file("src/versions/${target}/${kind}"))
+    for (File overlay : overlays) {
+        directories.srcDir(overlay)
+    }
+    directories.exclude { FileTreeElement entry ->
+        for (int index = overlays.size() - 1; index >= 0; index--) {
+            File replacement = new File(overlays[index], entry.relativePath.pathString)
+            if (replacement.isFile()) {
+                return entry.file.canonicalFile != replacement.canonicalFile
+            }
+        }
+        false
+    }
+}
+
+Map<String, String> metadata = react + [
+    fabricLoaderVersion: targetProperties.fabricLoader,
+    forgeLoaderRange: targetProperties.forgeLoaderRange,
+    neoForgeVersion: targetProperties.neoforge ?: '',
+    javaVersion: targetProperties.javaVersion.toString(),
+    dataPackFormat: targetProperties.dataPackFormat.toString()
+]
+tasks.named('processResources').configure {
+    inputs.properties(metadata)
+    filesMatching(['fabric.mod.json', 'META-INF/mods.toml', 'META-INF/neoforge.mods.toml', 'pack.mcmeta', 'react.mixins.json']) { expand(metadata) }
+}
+tasks.named('shadowJar').configure {
+    String platform = [fabric: 'Fabric', forge: 'Forge', neoforge: 'NeoForge'][loader]
+    String loaderVersion = loader == 'fabric' ? targetProperties.fabricLoader : targetProperties[loader]
+    String displayVersion = loaderVersion.startsWith(target + '-') ? loaderVersion.substring(target.length() + 1) : loaderVersion
+    displayVersion = displayVersion.replaceFirst(/-beta$/, '')
+    archiveFileName.set("${react.projectName} v${version} [${platform}] ${target}+${displayVersion}.jar")
+    File compressionCache = new File(gradle.gradleUserHomeDir, 'caches/volmit-packaging/compression')
+    doLast {
+        File archive = archiveFile.get().asFile
+        long before = archive.length()
+        JarCompactor.compact(archive, new JarCompactor.CompactionOptions(Collections.<String>emptySet(), false, true, true, compressionCache.toPath()))
+        logger.lifecycle("${archive.name}: ${before} -> ${archive.length()} bytes")
+    }
+}

@@ -1,0 +1,46 @@
+import groovy.json.JsonSlurper
+
+Properties identity = new Properties()
+new File(project.ext.reactRoot, 'gradle.properties').withInputStream { InputStream stream -> identity.load(stream) }
+Map<String, String> values = [:]
+for (String key : ['projectId', 'projectName', 'projectGroup', 'projectVersion', 'minecraftVersion']) {
+    values[key] = providers.gradleProperty(key).getOrElse(identity.getProperty(key))
+    if (values[key] == null || values[key].isBlank()) {
+        throw new GradleException("${key} must not be blank")
+    }
+}
+if (!(values.projectId ==~ /[a-z][a-z0-9_]{1,63}/)) {
+    throw new GradleException('projectId must contain 2-64 lowercase letters, digits or underscores, starting with a letter')
+}
+if (!(values.projectGroup ==~ /[a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)+/)) {
+    throw new GradleException('projectGroup must be a dotted Java package name')
+}
+if (!(values.projectVersion ==~ /[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?/)) {
+    throw new GradleException('projectVersion must be a semantic version')
+}
+Map<String, Map<String, Object>> targets = (Map<String, Map<String, Object>>) new JsonSlurper().parse(new File(project.ext.reactRoot, 'gradle/targets.json'))
+targets.each { String target, Map<String, Object> properties ->
+    if (!(properties.forge instanceof String) || properties.forge.isBlank() || !properties.forgeLoaderRange) {
+        throw new GradleException("Minecraft ${target} must declare Forge support")
+    }
+    if (!(properties.javaVersion in [21, 25])) {
+        throw new GradleException("Minecraft ${target} must declare its Java runtime version")
+    }
+    if (!(properties.obfuscated instanceof Boolean)) {
+        throw new GradleException("Minecraft ${target} must declare whether it is obfuscated")
+    }
+    if (!(properties.dataPackFormat instanceof Integer)) {
+        throw new GradleException("Minecraft ${target} must declare its data pack format")
+    }
+    if (!(properties.forgeRuntimeMappings in ['srg', 'official'])) {
+        throw new GradleException("Minecraft ${target} must declare its Forge runtime mappings")
+    }
+    if (!(properties.neoforge instanceof String) && !properties.neoforgeUsesForge) {
+        throw new GradleException("Minecraft ${target} must declare a NeoForge version or reuse the Forge jar")
+    }
+}
+if (!targets.containsKey(values.minecraftVersion)) {
+    throw new GradleException("Unsupported Minecraft target ${values.minecraftVersion}; choose ${targets.keySet().join(', ')}")
+}
+ext.react = values
+ext.minecraftTargets = targets

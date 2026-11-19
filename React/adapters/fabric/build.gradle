@@ -1,0 +1,66 @@
+plugins {
+    id 'java'
+    id 'net.fabricmc.fabric-loom' version '1.17.21' apply false
+    id 'net.fabricmc.fabric-loom-remap' version '1.17.21' apply false
+    id 'com.gradleup.shadow' version '9.5.1'
+}
+apply from: '../../gradle/mod.gradle'
+apply plugin: targetProperties.obfuscated ? 'net.fabricmc.fabric-loom-remap' : 'net.fabricmc.fabric-loom'
+
+repositories {
+    maven { url = uri('https://maven.fabricmc.net/') }
+}
+configurations {
+    nestedApi { transitive = false }
+}
+dependencies {
+    minecraft("com.mojang:minecraft:${react.minecraftVersion}")
+    if (targetProperties.obfuscated) {
+        mappings(loom.officialMojangMappings())
+    }
+    String modConfiguration = targetProperties.obfuscated ? 'modImplementation' : 'implementation'
+    add(modConfiguration, "net.fabricmc:fabric-loader:${targetProperties.fabricLoader}")
+    targetProperties.fabricModules.each { String module, String moduleVersion ->
+        add(modConfiguration, "net.fabricmc.fabric-api:${module}:${moduleVersion}")
+        nestedApi("net.fabricmc.fabric-api:${module}:${moduleVersion}")
+    }
+}
+tasks.named('shadowJar').configure {
+    from(project.configurations.nestedApi) {
+        into('META-INF/jars')
+        rename { String filename ->
+            String module = targetProperties.fabricModules.keySet().find { String name -> filename.startsWith(name + '-') }
+            if (module == null) {
+                throw new GradleException("Unexpected Fabric API jar ${filename}")
+            }
+            module + '.jar'
+        }
+    }
+}
+if (targetProperties.obfuscated) {
+    TaskProvider shaded = tasks.named('shadowJar')
+    shaded.configure {
+        destinationDirectory.set(layout.buildDirectory.dir('devlibs'))
+    }
+    TaskProvider remapped = tasks.named('remapJar')
+    remapped.configure {
+        dependsOn(shaded)
+        inputFile.set(shaded.flatMap { task -> task.archiveFile })
+        archiveFileName.set(shaded.flatMap { task -> task.archiveFileName })
+        addNestedDependencies.set(false)
+    }
+    ext.distributionJar = remapped.flatMap { task -> task.archiveFile }
+}
+if (hasCore) {
+    evaluationDependsOn(':core')
+}
+loom {
+    mods {
+        register(react.projectId) {
+            sourceSet(sourceSets.main)
+            if (hasCore) {
+                modFiles.from(project.provider { project(':core').sourceSets.main.output })
+            }
+        }
+    }
+}

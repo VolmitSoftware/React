@@ -1,0 +1,39 @@
+import net.minecraftforge.renamer.gradle.RenameJar
+
+plugins {
+    id 'java'
+    id 'net.minecraftforge.gradle' version '7.0.40'
+    id 'net.minecraftforge.renamer' version '1.1.2' apply false
+    id 'com.gradleup.shadow' version '9.5.1'
+}
+apply from: '../../gradle/mod.gradle'
+
+if (targetProperties.obfuscated) {
+    minecraft.mappings channel: 'official', version: react.minecraftVersion
+}
+
+repositories {
+    minecraft.mavenizer(it)
+    maven fg.forgeMaven
+    maven fg.minecraftLibsMaven
+}
+dependencies {
+    implementation minecraft.dependency("net.minecraftforge:forge:${targetProperties.forge}")
+}
+tasks.named('shadowJar').configure {
+    manifest.attributes('MixinConfigs': 'react.mixins.json')
+}
+
+if (targetProperties.forgeRuntimeMappings == 'srg') {
+    apply plugin: 'net.minecraftforge.renamer'
+    TaskProvider<Jar> developmentJar = tasks.named('shadowJar', Jar)
+    developmentJar.configure {
+        destinationDirectory.set(layout.buildDirectory.dir('devlibs'))
+    }
+    TaskProvider<RenameJar> productionJar = renamer.classes('reobfShadowJar', developmentJar) {
+        map.from(minecraft.dependency.toSrgFile)
+        output.set(layout.buildDirectory.file(developmentJar.flatMap { Jar task -> task.archiveFileName }
+            .map { String filename -> "libs/${filename}" }))
+    }
+    ext.distributionJar = productionJar.flatMap { RenameJar task -> task.output }
+}

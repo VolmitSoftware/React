@@ -1,0 +1,174 @@
+import groovy.json.JsonSlurper
+import java.nio.charset.StandardCharsets
+import java.util.jar.JarEntry
+import java.util.jar.JarFile
+import java.util.jar.JarInputStream
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
+String platform = projectDir.name
+Map<String, String> metadataPaths = [fabric: 'fabric.mod.json', forge: 'META-INF/mods.toml', neoforge: 'META-INF/neoforge.mods.toml']
+Map<String, String> entrypointNames = [fabric: 'fabric.ReactFabric', forge: 'forge.ReactForge', neoforge: 'neoforge.ReactNeoForge']
+Map<String, String> clientNames = [fabric: 'fabric.ReactFabricClient', forge: 'forge.ReactForgeClient', neoforge: 'neoforge.ReactNeoForgeClient']
+TaskProvider verification = tasks.register('verifyArtifact') {
+    group = 'verification'
+    description = 'Checks mod metadata, bundled libraries and platform boundaries.'
+    Provider<RegularFile> artifactFile = providers.provider { project.ext.distributionJar }.flatMap { Provider<RegularFile> selected -> selected }
+    dependsOn(artifactFile)
+    inputs.file(artifactFile)
+    inputs.properties(react)
+    inputs.property('minecraftTargets', minecraftTargets)
+    doLast {
+        File artifact = artifactFile.get().asFile
+        Closure<Void> require = { boolean condition, String message ->
+            if (!condition) {
+                throw new GradleException("${artifact.name}: ${message}")
+            }
+            null
+        }
+        // The strings of a class file's constant pool: what ldc loads, such as a class name passed to Class.forName.
+        Closure<List<String>> stringConstants = { byte[] bytecode ->
+            DataInputStream input = new DataInputStream(new ByteArrayInputStream(bytecode))
+            input.skipBytes(8)
+            int count = input.readUnsignedShort()
+            Map<Integer, String> texts = [:]
+            List<Integer> strings = []
+            for (int index = 1; index < count; index++) {
+                int tag = input.readUnsignedByte()
+                switch (tag) {
+                    case 1: texts[index] = input.readUTF(); break
+                    case 8: strings.add(input.readUnsignedShort()); break
+                    case [7, 16, 19, 20]: input.skipBytes(2); break
+                    case 15: input.skipBytes(3); break
+                    case [3, 4, 9, 10, 11, 12, 17, 18]: input.skipBytes(4); break
+                    case [5, 6]: input.skipBytes(8); index++; break
+                    default: throw new GradleException("${artifact.name}: unknown constant pool tag ${tag}")
+                }
+            }
+            strings.collect { Integer index -> texts[index] }
+        }
+        String metadataPath = metadataPaths[platform]
+        String namespace = react.projectGroup.replace('.', '/') + '/'
+        String internal = namespace + 'internal/'
+        String entrypoint = react.projectGroup + '.' + entrypointNames[platform]
+        Map<String, Object> target = minecraftTargets[react.minecraftVersion]
+        new JarFile(artifact).withCloseable { JarFile archive ->
+            boolean versionedEntries = archive.entries().any { JarEntry entry -> !entry.directory && entry.name.startsWith('META-INF/versions/') }
+            require(archive.isMultiRelease() || !versionedEntries, 'versioned archive entries need a multi-release manifest')
+            List<String> required = [metadataPath, 'react.mixins.json', entrypoint.replace('.', '/') + '.class',
+                (react.projectGroup + '.' + clientNames[platform]).replace('.', '/') + '.class',
+                namespace + 'mod/ReactModRuntime.class', namespace + 'mod/ModTicks.class', namespace + 'mod/ReactMapsPayload.class',
+                internal + 'javalin/Javalin.class', internal + 'jetty/server/Server.class', internal + 'kotlin/Unit.class',
+                internal + 'jackson/databind/ObjectMapper.class', internal + 'caffeine/cache/Caffeine.class',
+                internal + 'toml/Toml.class', internal + 'kyori/adventure/text/minimessage/MiniMessage.class',
+                internal + 'volmlib/util/director/runtime/DirectorRuntimeEngine.class']
+            required.each { String path -> require(archive.getEntry(path) != null, "missing ${path}") }
+            (metadataPaths.values() + ['plugin.yml', 'paper-plugin.yml', 'velocity-plugin.json']).findAll { String path -> path != metadataPath }.each { String path ->
+                require(archive.getEntry(path) == null, "contains foreign platform metadata ${path}")
+            }
+            List<String> relocatedServerNames = [internal + 'gson/', internal.replace('/', '.') + 'gson.']
+            Set<String> classes = new HashSet<>()
+            List<String> forbidden = ['org/bukkit/', 'org/spigotmc/', 'io/papermc/', 'net/minecraft/', 'com/mojang/',
+                'net/minecraftforge/', 'net/neoforged/', 'net/fabricmc/', 'org/slf4j/', 'oshi/', 'com/sun/jna/'] +
+                relocatedLibraries.keySet().collect { String source -> source.replace('.', '/') + '/' }
+            archive.entries().each { JarEntry entry ->
+                if (!entry.name.endsWith('.class')) {
+                    return
+                }
+                require(classes.add(entry.name), "duplicate class ${entry.name}")
+                String classPath = entry.name.replaceFirst('^META-INF/versions/[0-9]+/', '')
+                require(classPath.startsWith(namespace), "class outside ${namespace}: ${entry.name}")
+                require(!forbidden.any { String prefix -> classPath.startsWith(prefix) }, "bundled platform or unrelocated library class ${entry.name}")
+                if (!classPath.startsWith(internal)) {
+                    // A class name in a string is meant for the server's own copy of a library it shares with this jar; Shadow
+                    // relocates it like the bundled copy, and the lookup then finds the bundled class instead of the server's.
+                    // Bundled libraries probing for each other by name are exempt: they want the bundled copy.
+                    archive.getInputStream(entry).withCloseable { InputStream stream ->
+                        String relocated = stringConstants(stream.readAllBytes()).find { String text -> relocatedServerNames.any { String name -> text.contains(name) } }
+                        require(relocated == null, "${entry.name} names ${relocated}, a relocated class the server provides; resolve the server's class from a type it returns")
+                    }
+                    archive.getInputStream(entry).withCloseable { InputStream stream ->
+                        byte[] bytecode = stream.readAllBytes()
+                        DataInputStream bytes = new DataInputStream(new ByteArrayInputStream(bytecode))
+                        require(bytes.readInt() == -889275714, "invalid class file ${entry.name}")
+                        bytes.readUnsignedShort()
+                        int javaVersion = (int) target.javaVersion
+                        require(bytes.readUnsignedShort() == javaVersion + 44, "${entry.name} must target Java ${javaVersion}")
+                        String constants = new String(bytecode, StandardCharsets.ISO_8859_1)
+                        relocatedLibraries.keySet().each { String source ->
+                            require(!constants.contains('L' + source.replace('.', '/') + '/'), "unrelocated ${source} reference in ${entry.name}")
+                        }
+                    }
+                }
+            }
+            String metadata = archive.getInputStream(archive.getJarEntry(metadataPath)).withCloseable { InputStream stream -> stream.getText('UTF-8') }
+            require(!metadata.contains('${'), "unexpanded properties in ${metadataPath}")
+            String mixins = archive.getInputStream(archive.getJarEntry('react.mixins.json')).withCloseable { InputStream stream -> stream.getText('UTF-8') }
+            require(((Map<String, Object>) new JsonSlurper().parseText(mixins)).package == react.projectGroup + '.mod.mixin', 'incorrect mixin package')
+            if (platform == 'fabric') {
+                Map<String, Object> parsed = (Map<String, Object>) new JsonSlurper().parseText(metadata)
+                require(parsed.id == react.projectId && parsed.name == react.projectName && parsed.version == react.projectVersion, 'Fabric identity does not match build properties')
+                require(parsed.environment == '*' && parsed.entrypoints == [main: [entrypoint], client: [react.projectGroup + '.' + clientNames.fabric]], 'incorrect Fabric entrypoints or environment')
+                require(parsed.depends instanceof Map && parsed.jars instanceof List, 'missing Fabric runtime requirements or nested jar declarations')
+                require(parsed.depends.minecraft == react.minecraftVersion && parsed.depends.fabricloader == ">=${target.fabricLoader}" && parsed.depends.java == ">=${target.javaVersion}", 'incorrect Fabric runtime requirements')
+                Set<String> modules = ((Map<String, String>) target.fabricModules).keySet()
+                Set<String> expected = modules.collect { String module -> "META-INF/jars/${module}.jar".toString() }.toSet()
+                List<String> declared = ((List<Map<String, String>>) parsed.jars).collect { Map<String, String> nested -> nested.file }
+                Set<String> bundled = archive.entries().findAll { JarEntry entry -> entry.name.startsWith('META-INF/jars/') && entry.name.endsWith('.jar') }.collect { JarEntry entry -> entry.name }.toSet()
+                require(declared.size() == modules.size() && declared.toSet() == expected && bundled == expected, "Fabric nested jars must be exactly ${modules}")
+                modules.each { String module ->
+                    Map<String, Object> nestedMetadata = null
+                    new JarInputStream(archive.getInputStream(archive.getJarEntry("META-INF/jars/${module}.jar"))).withCloseable { JarInputStream nested ->
+                        JarEntry nestedEntry
+                        while ((nestedEntry = nested.nextJarEntry) != null) {
+                            if (nestedEntry.name == 'fabric.mod.json') {
+                                nestedMetadata = (Map<String, Object>) new JsonSlurper().parseText(new String(nested.readAllBytes(), StandardCharsets.UTF_8))
+                                break
+                            }
+                        }
+                    }
+                    require(nestedMetadata != null && nestedMetadata.id == module && nestedMetadata.version == target.fabricModules[module], "incorrect nested Fabric module ${module}")
+                }
+            } else {
+                Closure<List<Map<String, String>>> sections = { String section ->
+                    List<Map<String, String>> matches = []
+                    Matcher blocks = Pattern.compile('(?ms)^\\[\\[' + Pattern.quote(section) + '\\]\\]\\s*\\n(.*?)(?=^\\[|\\z)').matcher(metadata)
+                    while (blocks.find()) {
+                        Map<String, String> fields = [:]
+                        Matcher values = Pattern.compile('(?m)^\\s*([A-Za-z][A-Za-z0-9]*)\\s*=\\s*"([^"\\r\\n]*)"\\s*$').matcher(blocks.group(1))
+                        while (values.find()) {
+                            fields[values.group(1)] = values.group(2)
+                        }
+                        matches.add(fields)
+                    }
+                    matches
+                }
+                List<Map<String, String>> mods = sections('mods')
+                require(mods.size() == 1 && mods[0].modId == react.projectId && mods[0].version == react.projectVersion && mods[0].displayName == react.projectName, 'mod identity does not match build properties')
+                List<Map<String, String>> dependencies = sections('dependencies.' + react.projectId)
+                Map<String, String> minecraft = dependencies.find { Map<String, String> dependency -> dependency.modId == 'minecraft' }
+                Map<String, String> loader = dependencies.find { Map<String, String> dependency -> dependency.modId == platform }
+                require(minecraft != null && minecraft.versionRange == "[${react.minecraftVersion}]" && minecraft.side == 'BOTH', 'incorrect Minecraft dependency range')
+                String loaderRange = platform == 'forge' ? target.forgeLoaderRange : "[${target.neoforge},)"
+                require(loader != null && loader.versionRange == loaderRange && loader.side == 'BOTH', 'incorrect mod loader dependency range')
+                String fmlRange = platform == 'forge' ? target.forgeLoaderRange : '[3,)'
+                require(Pattern.compile('(?m)^modLoader\\s*=\\s*"javafml"\\s*$').matcher(metadata).find(), 'missing Java FML loader declaration')
+                require(Pattern.compile('(?m)^loaderVersion\\s*=\\s*"' + Pattern.quote(fmlRange) + '"\\s*$').matcher(metadata).find(), 'incorrect FML loader range')
+                if (platform == 'forge') {
+                    require(archive.manifest.mainAttributes.getValue('MixinConfigs') == 'react.mixins.json', 'missing Forge mixin manifest entry')
+                    // Forge reads every mod jar as a data pack and logs "Missing data pack" for one without metadata.
+                    JarEntry packEntry = archive.getJarEntry('pack.mcmeta')
+                    require(packEntry != null, 'missing pack.mcmeta that Forge reads as the mod data pack')
+                    Map<String, Object> pack = (Map<String, Object>) new JsonSlurper().parseText(archive.getInputStream(packEntry).withCloseable { InputStream stream -> stream.getText('UTF-8') }).pack
+                    require(pack instanceof Map && pack.description instanceof String && pack.min_format == target.dataPackFormat && pack.max_format == target.dataPackFormat, "pack.mcmeta must declare data pack format ${target.dataPackFormat}")
+                }
+                if (platform == 'neoforge') {
+                    String javaRange = "[${target.javaVersion},)"
+                    require(Pattern.compile('(?ms)^\\[features\\.' + Pattern.quote(react.projectId) + '\\]\\s*\\n(?:(?!^\\[).)*?^javaVersion\\s*=\\s*"' + Pattern.quote(javaRange) + '"\\s*$').matcher(metadata).find(), 'incorrect NeoForge Java requirement')
+                    require(Pattern.compile('(?m)^config\\s*=\\s*"react\\.mixins\\.json"\\s*$').matcher(metadata).find(), 'missing NeoForge mixin declaration')
+                }
+            }
+        }
+    }
+}
+tasks.named('check').configure { dependsOn(verification) }

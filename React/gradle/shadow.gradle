@@ -1,0 +1,75 @@
+configurations {
+    bundle {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+configurations.implementation.extendsFrom(configurations.bundle)
+ext.distributionJar = tasks.named('shadowJar').flatMap { task -> task.archiveFile }
+
+// Minecraft ships OSHI, JNA, SLF4J, Guava, fastutil and commons-lang3 on every 26.x server and client, so the mod
+// jar uses those copies. Everything else React loads through slimjar on Bukkit is bundled and relocated here.
+dependencies {
+    if (hasCore) {
+        bundle(project(':core'))
+    }
+    bundle('com.github.VolmitSoftware:VolmLib:master-SNAPSHOT') {
+        changing = true
+        transitive = false
+    }
+    bundle('com.moandjiezana.toml:toml4j:0.7.2') { transitive = false }
+    bundle('com.google.code.gson:gson:2.10.1')
+    bundle('net.kyori:adventure-text-minimessage:4.26.1')
+    bundle('net.kyori:adventure-text-serializer-legacy:4.26.1')
+    bundle('net.kyori:adventure-text-serializer-plain:4.26.1')
+    bundle('net.kyori:adventure-text-serializer-gson:4.26.1')
+    bundle('io.javalin:javalin:6.4.0') {
+        exclude(group: 'org.slf4j')
+    }
+    bundle('com.fasterxml.jackson.core:jackson-databind:2.17.2')
+    bundle('com.github.ben-manes.caffeine:caffeine:3.0.6') { transitive = false }
+    bundle('com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2')
+}
+configurations.bundle.resolutionStrategy.cacheChangingModulesFor(0, 'seconds')
+
+ext.relocatedLibraries = [
+    'art.arcane.volmlib': 'volmlib',
+    'org.yaml.snakeyaml': 'snakeyaml',
+    'com.google.gson': 'gson',
+    'net.kyori': 'kyori',
+    'com.moandjiezana.toml': 'toml',
+    'io.javalin': 'javalin',
+    'org.eclipse.jetty': 'jetty',
+    'jakarta.servlet': 'servlet',
+    'kotlin': 'kotlin',
+    'org.jetbrains.annotations': 'annotations.jetbrains',
+    'org.intellij.lang.annotations': 'annotations.intellij',
+    'com.fasterxml.jackson': 'jackson',
+    'com.github.benmanes.caffeine': 'caffeine',
+    'com.googlecode.concurrentlinkedhashmap': 'concurrentlinkedhashmap'
+]
+
+tasks.named('shadowJar').configure {
+    addMultiReleaseAttribute.set(true)
+    configurations = [project.configurations.bundle]
+    filesMatching('META-INF/services/**') { duplicatesStrategy = DuplicatesStrategy.INCLUDE }
+    mergeServiceFiles()
+    relocatedLibraries.each { String source, String target ->
+        relocate(source, "${react.projectGroup}.internal.${target}")
+    }
+    exclude('META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/maven/**', 'META-INF/*.kotlin_module',
+        'META-INF/proguard/**', 'META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/DEPENDENCIES', '**/module-info.class')
+    // VolmLib's shared jar mostly needs Bukkit; only these packages are usable on a mod server. Core widens this list.
+    List<String> volmLibKept = ['art/arcane/volmlib/util/localization/', 'art/arcane/volmlib/util/director/',
+        'art/arcane/volmlib/util/config/', 'art/arcane/volmlib/util/format/', 'art/arcane/volmlib/util/io/',
+        'art/arcane/volmlib/util/plugin/ComponentText', 'art/arcane/volmlib/util/plugin/ComponentMessenger',
+        'art/arcane/volmlib/util/plugin/ComponentLog', 'art/arcane/volmlib/util/plugin/SplashScreenSupport']
+    exclude { FileTreeElement entry ->
+        String path = entry.relativePath.pathString
+        path.startsWith('art/arcane/volmlib/') && !entry.directory && !volmLibKept.any { String kept -> path.startsWith(kept) }
+    }
+    from(new File(reactRoot, '../LICENSE.md'))
+    archiveClassifier.set('')
+}
+tasks.named('jar').configure { enabled = false }
+tasks.named('assemble').configure { dependsOn('shadowJar') }

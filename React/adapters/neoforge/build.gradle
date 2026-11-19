@@ -1,0 +1,22 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev' version '2.0.147'
+    id 'com.gradleup.shadow' version '9.5.1'
+}
+apply from: '../../gradle/mod.gradle'
+
+if (hasCore) {
+    evaluationDependsOn(':core')
+}
+neoForge {
+    version = targetProperties.neoforge
+    mods {
+        register(react.projectId) {
+            sourceSet(sourceSets.main)
+            if (hasCore) {
+                sourceSet(project(':core').sourceSets.main)
+            }
+        }
+    }
+}
+neoForge.addModdingDependenciesTo(sourceSets.test)

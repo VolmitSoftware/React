@@ -1,0 +1,87 @@
+ext.reactRoot = projectDir
+apply from: 'gradle/identity.gradle'
+
+Closure<String> modJarName = { String loader, String target ->
+    Map<String, Object> properties = minecraftTargets[target]
+    String platform = [fabric: 'Fabric', forge: 'Forge', neoforge: 'NeoForge'][loader]
+    String loaderVersion = loader == 'fabric' ? properties.fabricLoader : properties[loader]
+    String displayVersion = loaderVersion.startsWith(target + '-') ? loaderVersion.substring(target.length() + 1) : loaderVersion
+    displayVersion = displayVersion.replaceFirst(/-beta$/, '')
+    "${react.projectName} v${react.projectVersion} [${platform}] ${target}+${displayVersion}.jar".toString()
+}
+ext.modJarName = modJarName
+
+boolean includeMods = providers.gradleProperty('includeModDistributions').getOrElse('false').toBoolean()
+List<TaskProvider<Exec>> matrixBuilds = []
+['fabric', 'forge', 'neoforge'].each { String loader ->
+    List<TaskProvider<Exec>> loaderBuilds = []
+    minecraftTargets.keySet().each { String target ->
+        String taskName = "${loader}Jar${target.replace('.', '_')}"
+        if (loader == 'neoforge' && minecraftTargets[target].neoforgeUsesForge) {
+            tasks.register(taskName) {
+                group = 'build'
+                description = "Builds the shared Forge/NeoForge jar for Minecraft ${target}."
+                dependsOn("forgeJar${target.replace('.', '_')}")
+            }
+            return
+        }
+        TaskProvider<Exec> targetBuild = tasks.register(taskName, Exec) {
+            group = 'build'
+            description = "Builds and checks ${loader} for Minecraft ${target}."
+            workingDir(projectDir)
+            List<String> arguments = [new File(projectDir, System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows') ? 'gradlew.bat' : 'gradlew').absolutePath,
+                '-p', "adapters/${loader}", '--project-cache-dir', file("adapters/${loader}/build/gradle-cache/${target}").absolutePath,
+                '--init-script', file('gradle/volmlib-isolation.init.gradle').absolutePath,
+                "-PvolmLibBuildDirectory=${file("adapters/${loader}/build/${target}/volmlib").absolutePath}",
+                '--no-daemon', '--console=plain', '--max-workers=2', 'build', "-PminecraftVersion=${target}"]
+            react.each { String key, String value ->
+                if (key != 'minecraftVersion') {
+                    arguments.add("-P${key}=${value}".toString())
+                }
+            }
+            for (String key : ['useLocalVolmLib', 'localVolmLibDirectory']) {
+                String value = providers.gradleProperty(key).orNull
+                if (value != null) {
+                    arguments.add("-P${key}=${key == 'localVolmLibDirectory' ? file(value).absolutePath : value}".toString())
+                }
+            }
+            commandLine(arguments)
+        }
+        loaderBuilds.add(targetBuild)
+        matrixBuilds.add(targetBuild)
+    }
+    tasks.register("${loader}Jar") {
+        group = 'build'
+        dependsOn("${loader}Jar${react.minecraftVersion.replace('.', '_')}")
+    }
+    String loaderName = [fabric: 'Fabric', forge: 'Forge', neoforge: 'NeoForge'][loader]
+    tasks.register("build${loaderName}") {
+        group = 'build'
+        description = "Builds every supported ${loader} target."
+        dependsOn(loaderBuilds)
+        if (loader == 'neoforge') {
+            minecraftTargets.findAll { String target, Map<String, Object> properties -> properties.neoforgeUsesForge }
+                .keySet().each { String target -> dependsOn("forgeJar${target.replace('.', '_')}") }
+        }
+    }
+}
+matrixBuilds.eachWithIndex { TaskProvider<Exec> targetBuild, int index ->
+    List<TaskProvider<Exec>> earlierBuilds = new ArrayList<>(matrixBuilds.subList(0, index))
+    targetBuild.configure { mustRunAfter(earlierBuilds) }
+}
+
+tasks.register('distributions', Sync) {
+    group = 'build'
+    description = 'Builds all supported distributions into build/distributions.'
+    if (includeMods) dependsOn(matrixBuilds)
+    from(tasks.named('packedJar'))
+    (includeMods ? ['fabric', 'forge', 'neoforge'] : []).each { String loader ->
+        minecraftTargets.keySet().each { String target ->
+            if (loader == 'neoforge' && minecraftTargets[target].neoforgeUsesForge) {
+                return
+            }
+            from("adapters/${loader}/build/${target}/libs/${modJarName(loader, target)}")
+        }
+    }
+    into(layout.buildDirectory.dir('distributions'))
+}

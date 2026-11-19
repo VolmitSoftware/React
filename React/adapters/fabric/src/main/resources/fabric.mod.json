@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "${projectId}",
+  "version": "${projectVersion}",
+  "name": "${projectName}",
+  "description": "Server performance monitoring and tuning.",
+  "authors": ["NextdoorPsycho", "Cyberpwn"],
+  "contact": {"homepage": "https://volmit.com"},
+  "license": "GPL-3.0",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["${projectGroup}.fabric.ReactFabric"],
+    "client": ["${projectGroup}.fabric.ReactFabricClient"]
+  },
+  "mixins": ["react.mixins.json"],
+  "jars": [
+    {"file": "META-INF/jars/fabric-api-base.jar"},
+    {"file": "META-INF/jars/fabric-command-api-v2.jar"},
+    {"file": "META-INF/jars/fabric-lifecycle-events-v1.jar"},
+    {"file": "META-INF/jars/fabric-networking-api-v1.jar"}
+  ],
+  "depends": {
+    "fabricloader": ">=${fabricLoaderVersion}",
+    "minecraft": "${minecraftVersion}",
+    "java": ">=${javaVersion}"
+  }
+}

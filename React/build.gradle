@@ -40,7 +40,7 @@ plugins {
 apply plugin: 'art.arcane.volmit-packaging'
 
 
-version = '2.2.5'
+version = providers.gradleProperty('projectVersion').get()
 ext.bukkitMinecraftRange = providers.gradleProperty('bukkitMinecraftRange').getOrElse('26.1.2-26.3')
 def apiVersion = '26.1'
 def spigotApiVersion = '26.2-R0.1-SNAPSHOT'
@@ -484,4 +484,5 @@ tasks.register('buildSwiftSwamp', Copy) {
     rename { String ignored -> 'React.jar' }
 }
 
+apply from: 'gradle/mod-lanes.gradle'
 apply from: 'gradle/multiplexor.gradle'
