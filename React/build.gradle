@@ -366,7 +366,7 @@ tasks.register('compileSpigotCompatibility', JavaCompile) {
         include 'art/arcane/react/content/feature/**'
         exclude 'art/arcane/react/content/feature/Paper*.java'
         include 'art/arcane/react/content/sampler/EntityCensusTracker.java'
-        include 'art/arcane/react/content/sampler/SamplerEntities.java'
+        include 'art/arcane/react/content/sampler/BukkitEntityTracker.java'
         include 'art/arcane/react/core/controller/ObserverController.java'
     }
     classpath = sourceSets.main.output.classesDirs + files(sourceSets.main.compileClasspath.filter { File dependency ->

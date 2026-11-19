@@ -237,8 +237,5 @@ public class MetricsResourceTest {
     public void stop() {
     }
 
-    @Override
-    public void render() {
-    }
   }
 }

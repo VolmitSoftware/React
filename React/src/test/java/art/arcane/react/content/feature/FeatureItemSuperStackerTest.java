@@ -3,6 +3,7 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.FeatureIntegrityListener;
 import art.arcane.react.api.web.KnobSerializer;
+import art.arcane.react.content.sampler.BukkitEntityTracker;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
@@ -118,7 +119,8 @@ class FeatureItemSuperStackerTest {
     try {
       GlossDropNameIntegration glossDropNames = Mockito.mock(GlossDropNameIntegration.class);
       FeatureItemSuperStacker feature = new FeatureItemSuperStacker(glossDropNames);
-      SamplerEntities sampler = Mockito.spy(new SamplerEntities());
+      SamplerEntities owner = Mockito.spy(new SamplerEntities());
+      BukkitEntityTracker sampler = new BukkitEntityTracker(owner, owner.getEntities());
       Item item = Mockito.mock(Item.class);
       ItemStack stack = Mockito.mock(ItemStack.class);
       Location location = Mockito.mock(Location.class);
@@ -134,24 +136,24 @@ class FeatureItemSuperStackerTest {
       Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
       Mockito.when(spawn.getEntity()).thenReturn(item);
       Mockito.when(spawn.getLocation()).thenReturn(location);
-      Mockito.doReturn(chunkCount).when(sampler).getChunkCounter(chunk);
+      Mockito.doReturn(chunkCount).when(owner).getChunkCounter(chunk);
 
       try (MockedStatic<React> react = Mockito.mockStatic(React.class);
            MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
            MockedStatic<BundleUtils> bundles = Mockito.mockStatic(BundleUtils.class)) {
         react.when(() -> React.feature(FeatureHopperItemIndex.class)).thenReturn(null);
-        react.when(() -> React.sampler(SamplerEntities.ID)).thenReturn(sampler);
+        react.when(() -> React.sampler(SamplerEntities.ID)).thenReturn(owner);
         bundles.when(() -> BundleUtils.isFlagged(stack)).thenReturn(false);
-        sampler.start();
+        sampler.begin();
         sampler.on(spawn);
 
         feature.explode(item);
         sampler.on(new EntityRemoveEvent(item, EntityRemoveEvent.Cause.PLUGIN));
-        sampler.stop();
+        sampler.end();
       }
 
       Mockito.verify(item).remove();
-      Assertions.assertEquals(0, sampler.getEntities().get());
+      Assertions.assertEquals(0, owner.getEntities().get());
       Assertions.assertEquals(0D, chunkCount.get());
     } finally {
       React.instance = previous;

@@ -19,7 +19,7 @@ class WorldCountSamplerTest {
       snapshots.when(() -> WorldEntitySnapshots.count(first)).thenReturn(1200);
       snapshots.when(() -> WorldEntitySnapshots.count(second)).thenReturn(3400);
 
-      Assertions.assertEquals(4600, SamplerEntities.countWorldEntities(List.of(first, second)));
+      Assertions.assertEquals(4600, BukkitEntityTracker.countWorldEntities(List.of(first, second)));
     }
   }
 
@@ -32,7 +32,7 @@ class WorldCountSamplerTest {
       snapshots.when(() -> WorldEntitySnapshots.chunkCount(first)).thenReturn(4096);
       snapshots.when(() -> WorldEntitySnapshots.chunkCount(second)).thenReturn(8192);
 
-      Assertions.assertEquals(12_288, SamplerChunks.countWorldChunks(List.of(first, second)));
+      Assertions.assertEquals(12_288, BukkitWorldStatsHost.countWorldChunks(List.of(first, second)));
     }
   }
 
@@ -47,8 +47,8 @@ class WorldCountSamplerTest {
       snapshots.when(() -> WorldEntitySnapshots.chunkCount(first)).thenReturn(Integer.MAX_VALUE);
       snapshots.when(() -> WorldEntitySnapshots.chunkCount(second)).thenReturn(1);
 
-      Assertions.assertEquals(Integer.MAX_VALUE, SamplerEntities.countWorldEntities(List.of(first, second)));
-      Assertions.assertEquals(Integer.MAX_VALUE, SamplerChunks.countWorldChunks(List.of(first, second)));
+      Assertions.assertEquals(Integer.MAX_VALUE, BukkitEntityTracker.countWorldEntities(List.of(first, second)));
+      Assertions.assertEquals(Integer.MAX_VALUE, BukkitWorldStatsHost.countWorldChunks(List.of(first, second)));
     }
   }
 }

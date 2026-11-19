@@ -91,8 +91,5 @@ public class MetricsSerializerTest {
     public void stop() {
     }
 
-    @Override
-    public void render() {
-    }
   }
 }

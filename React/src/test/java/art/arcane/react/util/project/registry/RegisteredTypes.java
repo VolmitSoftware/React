@@ -14,6 +14,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.jar.JarFile;
+import java.util.jar.JarEntry;
+import java.util.TreeSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -32,6 +36,43 @@ final class RegisteredTypes {
   record Built(Registered instance, Construction construction, Throwable failure) {
   }
 
+  private static Path codeSource(Class<?> type) {
+    try {
+      return Path.of(type.getProtectionDomain().getCodeSource().getLocation().toURI());
+    } catch (URISyntaxException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  private static List<String> classNames(Path root) {
+    try {
+      if (Files.isDirectory(root)) {
+        try (Stream<Path> paths = Files.walk(root)) {
+          return paths
+              .filter(path -> path.toString().endsWith(".class"))
+              .map(path -> root.relativize(path).toString())
+              .map(RegisteredTypes::className)
+              .filter(name -> name.startsWith("art.arcane.react."))
+              .toList();
+        }
+      }
+      try (JarFile jar = new JarFile(root.toFile())) {
+        return jar.stream()
+            .map(JarEntry::getName)
+            .filter(name -> name.endsWith(".class"))
+            .map(RegisteredTypes::className)
+            .filter(name -> name.startsWith("art.arcane.react."))
+            .toList();
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static String className(String path) {
+    return path.substring(0, path.length() - ".class".length()).replace('/', '.').replace('\\', '.');
+  }
+
   static Path mainClassesRoot() {
     try {
       return Path.of(React.class.getProtectionDomain().getCodeSource().getLocation().toURI());
@@ -45,29 +86,20 @@ final class RegisteredTypes {
     if (!Files.isDirectory(root)) {
       throw new IllegalStateException("React main classes are not a directory: " + root);
     }
+    Set<String> names = new TreeSet<>(classNames(root));
+    names.addAll(classNames(codeSource(Registered.class)));
     List<Class<? extends Registered>> types = new ArrayList<>();
-    try (Stream<Path> paths = Files.walk(root)) {
-      List<String> names = paths
-          .filter(path -> path.toString().endsWith(".class"))
-          .map(path -> root.relativize(path).toString())
-          .map(name -> name.substring(0, name.length() - ".class".length()).replace('/', '.').replace('\\', '.'))
-          .filter(name -> name.startsWith("art.arcane.react."))
-          .sorted()
-          .toList();
-      for (String name : names) {
-        Class<?> type;
-        try {
-          type = Class.forName(name, false, React.class.getClassLoader());
-        } catch (ClassNotFoundException | LinkageError unavailable) {
-          continue;
-        }
-        if (!Registered.class.isAssignableFrom(type) || type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
-          continue;
-        }
-        types.add(type.asSubclass(Registered.class));
+    for (String name : names) {
+      Class<?> type;
+      try {
+        type = Class.forName(name, false, React.class.getClassLoader());
+      } catch (ClassNotFoundException | LinkageError unavailable) {
+        continue;
       }
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
+      if (!Registered.class.isAssignableFrom(type) || type.isInterface() || Modifier.isAbstract(type.getModifiers())) {
+        continue;
+      }
+      types.add(type.asSubclass(Registered.class));
     }
     types.sort(Comparator.comparing(Class::getName));
     return types;

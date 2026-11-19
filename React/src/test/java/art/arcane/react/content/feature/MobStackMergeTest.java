@@ -2,6 +2,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.protect.ReactProtection;
+import art.arcane.react.content.sampler.BukkitEntityTracker;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.NMS;
 import art.arcane.react.util.common.scheduling.J;
@@ -182,7 +183,8 @@ class MobStackMergeTest {
   @Test
   void mergedMobRemovalIsCountedOnlyByTheEntityRemoveEvent() throws ReflectiveOperationException {
     FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking());
-    SamplerEntities sampler = Mockito.spy(new SamplerEntities());
+    SamplerEntities owner = Mockito.spy(new SamplerEntities());
+    BukkitEntityTracker sampler = new BukkitEntityTracker(owner, owner.getEntities());
     Entity source = Mockito.mock(Entity.class);
     Entity target = Mockito.mock(Entity.class);
     Location location = Mockito.mock(Location.class);
@@ -203,7 +205,7 @@ class MobStackMergeTest {
     Mockito.when(location.getChunk()).thenReturn(chunk);
     Mockito.when(spawn.getEntity()).thenReturn(source);
     Mockito.when(spawn.getLocation()).thenReturn(location);
-    Mockito.doReturn(chunkCount).when(sampler).getChunkCounter(chunk);
+    Mockito.doReturn(chunkCount).when(owner).getChunkCounter(chunk);
     Mockito.doReturn(true).when(feature).canMerge(source, target);
     Mockito.doReturn(1).when(feature).getStackCount(source);
     Mockito.doReturn(1).when(feature).getStackCount(target);
@@ -213,17 +215,17 @@ class MobStackMergeTest {
          MockedStatic<ReactProtection> protection = Mockito.mockStatic(ReactProtection.class);
          MockedStatic<NMS> nms = Mockito.mockStatic(NMS.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      react.when(() -> React.sampler(SamplerEntities.ID)).thenReturn(sampler);
-      sampler.start();
+      react.when(() -> React.sampler(SamplerEntities.ID)).thenReturn(owner);
+      sampler.begin();
       sampler.on(spawn);
 
       Assertions.assertTrue(feature.merge(source, target));
       sampler.on(new EntityRemoveEvent(source, EntityRemoveEvent.Cause.PLUGIN));
-      sampler.stop();
+      sampler.end();
     }
 
     Mockito.verify(source).remove();
-    Assertions.assertEquals(0, sampler.getEntities().get());
+    Assertions.assertEquals(0, owner.getEntities().get());
     Assertions.assertEquals(0D, chunkCount.get());
   }
 

@@ -6,7 +6,14 @@ import art.arcane.react.core.controller.WebController;
 import art.arcane.react.platform.CapabilityRefusal;
 import art.arcane.react.platform.PlatformCapability;
 import art.arcane.react.platform.PlatformKind;
+import art.arcane.react.content.sampler.BukkitWorldStatsHost;
 import art.arcane.react.platform.PlatformScheduler;
+import art.arcane.react.platform.PlayerStatsHost;
+import art.arcane.react.platform.RegistryHost;
+import art.arcane.react.platform.RuntimeStatsHost;
+import art.arcane.react.platform.SamplerHost;
+import art.arcane.react.platform.TickStatsHost;
+import art.arcane.react.platform.WorldStatsHost;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlayer;
 import art.arcane.react.platform.ReactWorld;
@@ -26,6 +33,12 @@ public final class BukkitReactPlatform implements ReactPlatform {
   private static final BukkitReactPlatform INSTANCE = new BukkitReactPlatform();
 
   private final PlatformScheduler scheduler = new BukkitPlatformScheduler();
+  private final SamplerHost samplerHost = new BukkitSamplerHost();
+  private final RegistryHost registryHost = new BukkitRegistryHost();
+  private final TickStatsHost tickStatsHost = new BukkitTickStatsHost();
+  private final WorldStatsHost worldStatsHost = new BukkitWorldStatsHost();
+  private final PlayerStatsHost playerStatsHost = new BukkitPlayerStatsHost();
+  private final RuntimeStatsHost runtimeStatsHost = new BukkitRuntimeStatsHost();
 
   public static BukkitReactPlatform instance() {
     return INSTANCE;
@@ -84,6 +97,11 @@ public final class BukkitReactPlatform implements ReactPlatform {
   @Override
   public void warn(String message) {
     React.warn(message);
+  }
+
+  @Override
+  public void warn(String message, Throwable failure) {
+    React.warn(message, failure);
   }
 
   @Override
@@ -155,5 +173,37 @@ public final class BukkitReactPlatform implements ReactPlatform {
   public Optional<ReactWebServer> webServer() {
     React react = React.instance;
     return react == null ? Optional.empty() : Optional.ofNullable(React.controller(WebController.class));
+  }
+
+  // Sampler hosts
+
+  @Override
+  public Optional<SamplerHost> samplerHost() {
+    return Optional.of(samplerHost);
+  }
+
+  @Override
+  public Optional<RegistryHost> registryHost() {
+    return Optional.of(registryHost);
+  }
+
+  @Override
+  public Optional<TickStatsHost> tickStatsHost() {
+    return Optional.of(tickStatsHost);
+  }
+
+  @Override
+  public Optional<WorldStatsHost> worldStatsHost() {
+    return Optional.of(worldStatsHost);
+  }
+
+  @Override
+  public Optional<PlayerStatsHost> playerStatsHost() {
+    return Optional.of(playerStatsHost);
+  }
+
+  @Override
+  public Optional<RuntimeStatsHost> runtimeStatsHost() {
+    return Optional.of(runtimeStatsHost);
   }
 }

@@ -1,0 +1,109 @@
+/*
+ *  Copyright (c) 2016-2025 Arcane Arts (Volmit Software)
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ */
+
+package art.arcane.react.api.sampler;
+
+import art.arcane.react.platform.EventMeasurement;
+import art.arcane.react.platform.RuntimeStatsHost;
+
+public abstract class ReactEventSampler extends ReactCachedSampler {
+  private transient volatile EventMeasurement eventController;
+  private transient volatile boolean sampledWhileMeasuring;
+  private transient volatile long measuredAtMs;
+  private transient volatile long measuredWindowMs;
+
+  protected ReactEventSampler(String id, long sampleDelay) {
+    super(id, sampleDelay);
+  }
+
+  protected abstract double onMeasuredSample(EventMeasurement controller);
+
+  @Override
+  public final double onSample() {
+    EventMeasurement controller = controller();
+    boolean measuring = controller != null && controller.isMeasuring();
+    sampledWhileMeasuring = measuring;
+    measuredAtMs = measuring ? controller.getWindowPublishedAtMs() : 0L;
+    measuredWindowMs = measuring ? Math.round(controller.getWindowSeconds() * 1_000D) : 0L;
+    return measuring ? onMeasuredSample(controller) : 0D;
+  }
+
+  @Override
+  protected long readingTimestampMs() {
+    return measuredAtMs;
+  }
+
+  @Override
+  public Metadata metadata() {
+    Metadata metadata = super.metadata();
+    return new Metadata(sampleDelay, measuredWindowMs, Quality.MEASURED,
+        getId().startsWith("plugin-") ? "ms/s" : metadata.unit());
+  }
+
+  @Override
+  public String availabilityReason() {
+    return sampledWhileMeasuring ? "measurement-stale" : "not-measuring";
+  }
+
+  @Override
+  public boolean isSampleAvailable() {
+    if (!sampledWhileMeasuring || !super.isSampleAvailable()) {
+      return false;
+    }
+
+    EventMeasurement controller = controller();
+    return controller != null && controller.isMeasuring();
+  }
+
+  @Override
+  public void markDemand() {
+    EventMeasurement controller = controller();
+    if (controller != null) {
+      controller.markSamplerActivity();
+    }
+  }
+
+  @Override
+  public void start() {
+    super.start();
+    sampledWhileMeasuring = false;
+    measuredAtMs = 0L;
+    measuredWindowMs = 0L;
+    eventController = measurement();
+  }
+
+  @Override
+  public void stop() {
+    super.stop();
+    eventController = null;
+  }
+
+  private static EventMeasurement measurement() {
+    return SamplerHosts.runtime().flatMap(RuntimeStatsHost::eventMeasurement).orElse(null);
+  }
+
+  private EventMeasurement controller() {
+    EventMeasurement controller = eventController;
+    if (controller == null) {
+      controller = measurement();
+      eventController = controller;
+    }
+    return controller;
+  }
+}

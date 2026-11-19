@@ -6,6 +6,7 @@ import art.arcane.react.api.action.ActionParams;
 import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.sampler.SamplerMapRenderer;
 import art.arcane.react.content.action.ActionCollectGarbage;
 import art.arcane.react.content.action.ActionHopperNetworkNormalize;
 import art.arcane.react.content.action.ActionIncidentPlaybook;
@@ -141,7 +142,7 @@ public final class PerformanceFixture {
             Location backing = new Location(world, x + index, y, z);
             blocks.put(backing, backing.getBlock().getBlockData());
             backing.getBlock().setType(Material.STONE, false);
-            ItemStack item = controller.createMap(world, renderer);
+            ItemStack item = controller.createMap(world, SamplerMapRenderer.of(renderer));
             MapMeta meta = (MapMeta) item.getItemMeta();
             maps.add(meta.getMapView().getId());
             ItemFrame frame = world.spawn(new Location(world, x + index, y, z - 1), ItemFrame.class, entity -> {

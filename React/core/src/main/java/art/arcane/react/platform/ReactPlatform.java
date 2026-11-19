@@ -44,6 +44,10 @@ public interface ReactPlatform {
 
   void warn(String message);
 
+  default void warn(String message, Throwable failure) {
+    warn(message);
+  }
+
   void verbose(String message);
 
   default void verbose(Supplier<String> message) {
@@ -84,6 +88,32 @@ public interface ReactPlatform {
 
   /** The running React Web server, for the {@code /react web} commands; empty where none runs. */
   default Optional<ReactWebServer> webServer() {
+    return Optional.empty();
+  }
+
+  // Sampler hosts
+
+  default Optional<SamplerHost> samplerHost() {
+    return Optional.empty();
+  }
+
+  default Optional<RegistryHost> registryHost() {
+    return Optional.empty();
+  }
+
+  default Optional<TickStatsHost> tickStatsHost() {
+    return Optional.empty();
+  }
+
+  default Optional<WorldStatsHost> worldStatsHost() {
+    return Optional.empty();
+  }
+
+  default Optional<PlayerStatsHost> playerStatsHost() {
+    return Optional.empty();
+  }
+
+  default Optional<RuntimeStatsHost> runtimeStatsHost() {
     return Optional.empty();
   }
 }

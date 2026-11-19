@@ -24,6 +24,7 @@ import art.arcane.react.api.rendering.MegamapGrid;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.api.rendering.RendererUnknown;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.sampler.SamplerMapRenderer;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.volmlib.util.localization.LanguageAudience;
@@ -512,14 +513,14 @@ public final class ReactMapGUI {
   private static String rendererDisplayName(ReactRenderer renderer) {
     String normalizedId = normalizeRendererId(renderer);
     String fallback = displayName(renderer == null ? null : renderer.getId());
-    if (renderer instanceof Sampler sampler) {
+    if (SamplerMapRenderer.samplerOf(renderer) instanceof Sampler sampler) {
       return MapMessages.localizedSamplerName(normalizedId, sampler.getName());
     }
     return RendererMessages.localizedTitle(normalizedId, fallback);
   }
 
   private static String rendererType(ReactRenderer renderer, String normalizedId) {
-    if (renderer instanceof Sampler) {
+    if (SamplerMapRenderer.samplerOf(renderer) != null) {
       return ReactLanguage.plain(GuiMessages.MAP_TYPE_SAMPLER);
     }
     if (INTEGRATION_METRIC_IDS.contains(normalizedId)) {
@@ -538,14 +539,14 @@ public final class ReactMapGUI {
   }
 
   private static String rendererSummary(ReactRenderer renderer, String normalizedId) {
-    if (renderer instanceof Sampler) {
+    if (SamplerMapRenderer.samplerOf(renderer) != null) {
       return MapMessages.samplerSummary(normalizedId);
     }
     return MapMessages.rendererSummary(normalizedId, rendererDisplayName(renderer));
   }
 
   private static String rendererDetail(ReactRenderer renderer, String normalizedId) {
-    return MapMessages.rendererDetail(normalizedId, renderer instanceof Sampler);
+    return MapMessages.rendererDetail(normalizedId, SamplerMapRenderer.samplerOf(renderer) != null);
   }
 
   private static String normalizeRendererId(ReactRenderer renderer) {
@@ -678,7 +679,7 @@ public final class ReactMapGUI {
     if (containsAny(normalizedId, "processor", "load", "cpu")) {
       return rendererGroup(21, TaxonomyMessages.GROUP_CPU, Material.BLAST_FURNACE);
     }
-    if (renderer instanceof Sampler) {
+    if (SamplerMapRenderer.samplerOf(renderer) != null) {
       return rendererGroup(22, TaxonomyMessages.GROUP_SAMPLER_TRENDS, Material.COMPASS);
     }
     if (normalizedId.endsWith("-map") || normalizedId.endsWith("-heatmap") || normalizedId.endsWith("-overlay")) {

@@ -544,7 +544,5 @@ public class WebSocketMetricsIntegrationTest {
         @Override
         public void stop() {}
 
-        @Override
-        public void render() {}
     }
 }

@@ -163,7 +163,7 @@ public class FeaturePerWorldTickBudget extends ReactFeature {
       String worldKey = WorldIdentity.serialize(world);
       live.add(worldId);
       WorldState state = stateByWorld.computeIfAbsent(worldId, ignored -> new WorldState());
-      double meanMs = SamplerPerWorldTickTime.meanMsFor(world);
+      double meanMs = SamplerPerWorldTickTime.meanMsFor(world == null ? null : world.getUID());
       PerWorldPressure.Mode next = step(state, meanMs, effectiveBudgetMsFor(worldKey), effectivePanicMsFor(worldKey), effectiveReleaseMsFor(worldKey));
       ReactScopedPressure.publish(world, new PerWorldPressure(next, meanMs));
     }

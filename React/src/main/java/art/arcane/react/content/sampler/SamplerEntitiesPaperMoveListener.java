@@ -25,9 +25,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
 public final class SamplerEntitiesPaperMoveListener implements Listener {
-  private final SamplerEntities sampler;
+  private final BukkitEntityTracker sampler;
 
-  public SamplerEntitiesPaperMoveListener(SamplerEntities sampler) {
+  public SamplerEntitiesPaperMoveListener(BukkitEntityTracker sampler) {
     this.sampler = sampler;
   }
 

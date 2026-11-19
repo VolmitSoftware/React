@@ -1,6 +1,8 @@
 package art.arcane.react.util.project.world;
 
 import art.arcane.react.React;
+import art.arcane.react.content.sampler.BukkitEntityTracker;
+import art.arcane.react.content.sampler.BukkitEntityTracker;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.util.common.scheduling.J;
@@ -370,7 +372,8 @@ class EntityKillerOwnershipTest {
   void killerRemovalIsCountedOnlyByTheEntityRemoveEvent() {
     Entity entity = entity(UUID.randomUUID());
     PersistentDataContainer container = Mockito.mock(PersistentDataContainer.class);
-    SamplerEntities sampler = Mockito.spy(new SamplerEntities());
+    SamplerEntities owner = Mockito.spy(new SamplerEntities());
+    BukkitEntityTracker sampler = new BukkitEntityTracker(owner, owner.getEntities());
     World world = Mockito.mock(World.class);
     Location location = Mockito.mock(Location.class);
     Chunk chunk = Mockito.mock(Chunk.class);
@@ -385,11 +388,11 @@ class EntityKillerOwnershipTest {
     Mockito.when(chunk.getWorld()).thenReturn(world);
     Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
     Mockito.when(world.getPlayers()).thenReturn(List.of());
-    Mockito.doReturn(chunkCount).when(sampler).getChunkCounter(chunk);
+    Mockito.doReturn(chunkCount).when(owner).getChunkCounter(chunk);
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      react.when(() -> React.sampler(SamplerEntities.ID)).thenReturn(sampler);
+      react.when(() -> React.sampler(SamplerEntities.ID)).thenReturn(owner);
       scheduling.when(() -> J.sr(Mockito.any(Runnable.class), Mockito.eq(20))).thenReturn(7);
       scheduling.when(() -> J.runEntity(
           Mockito.eq(entity),
@@ -401,7 +404,7 @@ class EntityKillerOwnershipTest {
         task.run();
         return true;
       });
-      sampler.start();
+      sampler.begin();
       try {
         sampler.on(spawnEvent);
         EntityKiller killer = new EntityKiller(entity, 10);
@@ -409,12 +412,12 @@ class EntityKillerOwnershipTest {
         killer.kill();
         sampler.on(new EntityRemoveEvent(entity, EntityRemoveEvent.Cause.PLUGIN));
       } finally {
-        sampler.stop();
+        sampler.end();
       }
     }
 
     Mockito.verify(entity).remove();
-    Assertions.assertEquals(0, sampler.getEntities().get());
+    Assertions.assertEquals(0, owner.getEntities().get());
     Assertions.assertEquals(0D, chunkCount.get());
   }
 

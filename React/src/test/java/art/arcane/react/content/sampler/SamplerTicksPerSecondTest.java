@@ -1,9 +1,7 @@
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.React;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class SamplerTicksPerSecondTest {
   private static final long MS = 1_000_000L;
@@ -84,21 +82,14 @@ class SamplerTicksPerSecondTest {
 
   @Test
   void restartReacquiresTheSharedClock() {
-    React previous = React.instance;
-    React plugin = Mockito.mock(React.class);
-    React.instance = plugin;
-    try {
-      TickClock clock = new TickClock(() -> null);
-      SamplerTicksPerSecond sampler = new SamplerTicksPerSecond(clock);
+    TickClock clock = new TickClock(() -> null);
+    SamplerTicksPerSecond sampler = new SamplerTicksPerSecond(clock);
 
-      sampler.start();
-      sampler.stop();
-      sampler.start();
-
-      Mockito.verify(plugin, Mockito.times(2)).registerListener(clock);
-      Mockito.verify(plugin, Mockito.times(1)).unregisterListener(clock);
-    } finally {
-      React.instance = previous;
-    }
+    sampler.start();
+    sampler.stop();
+    Assertions.assertFalse(TickClockTest.receivesServerTicks(clock));
+    sampler.start();
+    Assertions.assertTrue(TickClockTest.receivesServerTicks(clock));
+    sampler.stop();
   }
 }

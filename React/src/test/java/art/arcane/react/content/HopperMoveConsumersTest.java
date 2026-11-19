@@ -1,5 +1,7 @@
 package art.arcane.react.content;
 
+import art.arcane.react.platform.bukkit.BukkitSamplerEventBridge;
+
 import art.arcane.react.React;
 import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.content.feature.FeatureHopperTokenBucket;
@@ -113,25 +115,28 @@ class HopperMoveConsumersTest {
     Inventory otherChest = FakeInventories.chest(world, 1, 65, 0);
     Inventory hopper = FakeInventories.hopperBlock(world, 0, 64, 0);
     SamplerHopperEventSpan span = new SamplerHopperEventSpan();
+    BukkitSamplerEventBridge.HopperMove hopperMoves = new BukkitSamplerEventBridge.HopperMove();
+    BukkitSamplerEventBridge.ServerTick ticks = new BukkitSamplerEventBridge.ServerTick();
     span.start();
 
-    span.on(FakeInventories.move(chest, otherChest));
-    span.on(FakeInventories.move(chest, otherChest));
-    span.on(new ServerTickEvent());
+    hopperMoves.on(FakeInventories.move(chest, otherChest));
+    hopperMoves.on(FakeInventories.move(chest, otherChest));
+    ticks.on(new ServerTickEvent());
     assertEquals(0D, span.onSample());
 
-    span.on(FakeInventories.move(chest, hopper));
+    hopperMoves.on(FakeInventories.move(chest, hopper));
     long started = System.nanoTime();
     while (System.nanoTime() - started < 2_000_000L) {
       Thread.onSpinWait();
     }
-    span.on(FakeInventories.move(hopper, otherChest));
-    span.on(new ServerTickEvent());
+    hopperMoves.on(FakeInventories.move(hopper, otherChest));
+    ticks.on(new ServerTickEvent());
 
     Mockito.verify(chest, Mockito.never()).getHolder();
     Mockito.verify(otherChest, Mockito.never()).getHolder();
     Mockito.verify(hopper, Mockito.never()).getHolder();
     assertTrue(span.onSample() > 0D);
+    span.stop();
   }
 
   private static void set(Object target, String name, Object value) throws Exception {

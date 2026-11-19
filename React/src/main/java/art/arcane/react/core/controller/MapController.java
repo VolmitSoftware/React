@@ -35,6 +35,7 @@ import art.arcane.react.api.rendering.RendererReactMetrics;
 import art.arcane.react.api.rendering.RendererUnknown;
 import art.arcane.react.api.rendering.RendererWormholesMetrics;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.sampler.SamplerMapRenderer;
 import art.arcane.react.content.feature.FeatureUnknown;
 import art.arcane.react.core.integration.IntegrationCapabilitySupport;
 import art.arcane.react.util.common.scheduling.J;
@@ -678,7 +679,7 @@ public class MapController extends TickedObject implements IController, Listener
   public void postStart() {
     startupBoostUntilMs = System.currentTimeMillis() + Math.max(0L, startupBoostDurationMs);
     for (Sampler i : React.controller(SampleController.class).getSamplers().all()) {
-      if (isAbsentIntegrationRenderer(i)) {
+      if (isAbsentIntegrationRenderer(SamplerMapRenderer.of(i))) {
         continue;
       }
       registerRenderer(i);
@@ -858,6 +859,12 @@ public class MapController extends TickedObject implements IController, Listener
 
     if (renderers.put(renderer.getId(), renderer) != renderer) {
       invalidateRendererCaches();
+    }
+  }
+
+  public void registerRenderer(Sampler sampler) {
+    if (sampler != null) {
+      registerRenderer(SamplerMapRenderer.of(sampler));
     }
   }
 
@@ -2822,8 +2829,9 @@ public class MapController extends TickedObject implements IController, Listener
     SampleController sampleController = React.controller(SampleController.class);
     if (sampleController != null && sampleController.getSamplers() != null) {
       for (Sampler sampler : sampleController.getSamplers().all()) {
-        if (matchesRendererId(sampler, requested, requestedAlias, requestedCanonical, requestedAliasCanonical)) {
-          return sampler;
+        ReactRenderer samplerRenderer = SamplerMapRenderer.of(sampler);
+        if (matchesRendererId(samplerRenderer, requested, requestedAlias, requestedCanonical, requestedAliasCanonical)) {
+          return samplerRenderer;
         }
       }
     }

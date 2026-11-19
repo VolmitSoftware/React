@@ -487,8 +487,5 @@ class LiveSyncIntegrationTest {
         public void stop() {
         }
 
-        @Override
-        public void render() {
-        }
     }
 }

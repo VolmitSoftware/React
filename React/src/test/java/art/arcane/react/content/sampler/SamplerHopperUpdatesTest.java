@@ -1,5 +1,7 @@
 package art.arcane.react.content.sampler;
 
+import art.arcane.react.platform.bukkit.BukkitSamplerEventBridge;
+
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.ObserverController;
@@ -24,6 +26,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SamplerHopperUpdatesTest {
   @BeforeAll
@@ -39,21 +42,23 @@ class SamplerHopperUpdatesTest {
     Inventory nextHopper = FakeInventories.hopperBlock(world, 17, 64, 0);
     Block hopperBlock = FakeInventories.blockOf(hopper);
     Block nextHopperBlock = FakeInventories.blockOf(nextHopper);
-    SamplerHopperUpdates sampler = Mockito.spy(new SamplerHopperUpdates());
+    SamplerHopperUpdates sampler = new SamplerHopperUpdates();
+    BukkitSamplerEventBridge.HopperMove bridge = new BukkitSamplerEventBridge.HopperMove();
     Map<Block, AtomicDouble> counters = new HashMap<>();
     ObserverController observer = observer(counters);
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      sampler.on(FakeInventories.move(chest, hopper));
-      sampler.on(FakeInventories.move(hopper, nextHopper));
-      sampler.on(FakeInventories.move(hopper, nextHopper));
+      sampler.start();
+      bridge.on(FakeInventories.move(chest, hopper));
+      bridge.on(FakeInventories.move(hopper, nextHopper));
+      bridge.on(FakeInventories.move(hopper, nextHopper));
+      sampler.stop();
     }
 
     Mockito.verify(chest, Mockito.never()).getHolder();
     Mockito.verify(hopper, Mockito.never()).getHolder();
     Mockito.verify(nextHopper, Mockito.never()).getHolder();
-    Mockito.verify(sampler, Mockito.times(3)).increment();
     assertEquals(3D, counters.get(hopperBlock).get());
     assertNull(counters.get(nextHopperBlock));
   }
@@ -64,22 +69,26 @@ class SamplerHopperUpdatesTest {
     Inventory chest = FakeInventories.chest(world, 0, 64, 0);
     Inventory otherChest = FakeInventories.chest(world, 1, 64, 0);
     Inventory minecart = FakeInventories.hopperMinecart(world, 0.5D, 65D, 0.5D);
-    SamplerHopperUpdates sampler = Mockito.spy(new SamplerHopperUpdates());
-    ObserverController observer = observer(new HashMap<>());
+    SamplerHopperUpdates sampler = new SamplerHopperUpdates();
+    BukkitSamplerEventBridge.HopperMove bridge = new BukkitSamplerEventBridge.HopperMove();
+    Map<Block, AtomicDouble> counters = new HashMap<>();
+    ObserverController observer = observer(counters);
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      sampler.on(FakeInventories.move(chest, otherChest));
-      sampler.on(FakeInventories.move(chest, minecart));
-      sampler.on(FakeInventories.move(minecart, otherChest));
+      sampler.start();
+      bridge.on(FakeInventories.move(chest, otherChest));
+      bridge.on(FakeInventories.move(chest, minecart));
+      bridge.on(FakeInventories.move(minecart, otherChest));
+      sampler.stop();
     }
 
-    Mockito.verify(sampler, Mockito.never()).increment();
+    assertTrue(counters.isEmpty());
   }
 
   @Test
   void blockUpdatesNextToHoppersAreNotCountedAsTransfers() {
-    for (Method method : SamplerHopperUpdates.class.getDeclaredMethods()) {
+    for (Method method : BukkitSamplerEventBridge.HopperMove.class.getDeclaredMethods()) {
       if (method.isAnnotationPresent(EventHandler.class)) {
         assertNotEquals(BlockPhysicsEvent.class, method.getParameterTypes()[0], method.toString());
       }

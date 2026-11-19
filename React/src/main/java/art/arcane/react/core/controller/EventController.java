@@ -19,6 +19,8 @@
 
 package art.arcane.react.core.controller;
 
+import art.arcane.react.platform.EventMeasurement;
+
 import art.arcane.react.React;
 import art.arcane.react.api.event.NaughtyRegisteredListener;
 import art.arcane.react.api.event.layer.MinecartSpawnEvent;
@@ -57,7 +59,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @ConfigDescription("Measures event-handler time per plugin by wrapping registered listeners while instrumentation is active.")
-public class EventController extends TickedObject implements IController, Listener {
+public class EventController extends TickedObject implements EventMeasurement, IController, Listener {
   private static final AtomicLong OWNER_SEQUENCE = new AtomicLong();
   private static final long MIN_DUTY_PERIOD_MS = 1000L;
   private static final String WRAPPER_CLASS_NAME = NaughtyRegisteredListener.class.getName();
@@ -129,6 +131,7 @@ public class EventController extends TickedObject implements IController, Listen
 
   }
 
+  @Override
   public void markSamplerActivity() {
     lastSamplerActivity = System.currentTimeMillis();
     if (active.get()
@@ -139,10 +142,12 @@ public class EventController extends TickedObject implements IController, Listen
     }
   }
 
+  @Override
   public boolean isMeasuring() {
     return isFresh(window);
   }
 
+  @Override
   public double getEventTimeMsPerSecond() {
     PublishedWindow published = window;
     return isFresh(published) ? published.totalTime() / published.windowSeconds() : 0D;
@@ -168,6 +173,7 @@ public class EventController extends TickedObject implements IController, Listen
     return isFresh(published) ? new HashMap<>(published.pluginCalls()) : new HashMap<>();
   }
 
+  @Override
   public int getListenerCount() {
     return window.listenerCount();
   }
@@ -184,14 +190,17 @@ public class EventController extends TickedObject implements IController, Listen
     return window.asyncCalls();
   }
 
+  @Override
   public double getCallsPerTick() {
     return window.callsPerTick();
   }
 
+  @Override
   public double getWindowSeconds() {
     return window.windowSeconds();
   }
 
+  @Override
   public long getWindowPublishedAtMs() {
     return window.publishedAtMs();
   }

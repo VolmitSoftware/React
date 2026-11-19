@@ -1,5 +1,7 @@
 package art.arcane.react.content.sampler;
 
+import art.arcane.react.core.controller.SampleController;
+
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.util.common.scheduling.J;
@@ -27,7 +29,9 @@ class SamplerPerWorldTickTimeTest {
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
          MockedStatic<WorldEntitySnapshots> snapshots = Mockito.mockStatic(WorldEntitySnapshots.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(tickTime);
+      SampleController samplers = Mockito.mock(SampleController.class);
+      Mockito.when(samplers.getSampler(SamplerTickTime.ID)).thenReturn(tickTime);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samplers);
       scheduling.when(J::isPrimaryThread).thenReturn(true);
       bukkit.when(Bukkit::getWorlds).thenReturn(List.of(busy, quiet));
       snapshots.when(() -> WorldEntitySnapshots.count(busy)).thenReturn(300);
@@ -37,8 +41,8 @@ class SamplerPerWorldTickTimeTest {
 
       Assertions.assertEquals(16D, sampler.onSample(), 1e-9);
       Assertions.assertEquals(4D, sampler.onSample(), 1e-9);
-      Assertions.assertEquals(4D, SamplerPerWorldTickTime.meanMsFor(busy), 1e-9);
-      Assertions.assertEquals(1D, SamplerPerWorldTickTime.meanMsFor(quiet), 1e-9);
+      Assertions.assertEquals(4D, SamplerPerWorldTickTime.meanMsFor(busy.getUID()), 1e-9);
+      Assertions.assertEquals(1D, SamplerPerWorldTickTime.meanMsFor(quiet.getUID()), 1e-9);
       Assertions.assertEquals(6.4D, sampler.onSample(), 1e-9);
     }
   }

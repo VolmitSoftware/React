@@ -335,7 +335,7 @@ final class EntityCensusTracker {
     for (int offset = 0; offset < count; offset++) {
       Entity entity = entities[(start + offset) % entities.length];
       if (entity != null && J.isOwnedByCurrentRegion(entity)) {
-        SamplerEntities.reconcileCurrentChunk(entity, world, target.chunkX(), target.chunkZ());
+        BukkitEntityTracker.reconcileCurrentChunk(entity, world, target.chunkX(), target.chunkZ());
         observe(entity);
       }
     }
@@ -347,7 +347,7 @@ final class EntityCensusTracker {
     int chunkX = location.getBlockX() >> 4;
     int chunkZ = location.getBlockZ() >> 4;
     if (world != null && world.isChunkLoaded(chunkX, chunkZ)) {
-      SamplerEntities.reconcileCurrentChunk(entity, world, chunkX, chunkZ);
+      BukkitEntityTracker.reconcileCurrentChunk(entity, world, chunkX, chunkZ);
     }
   }
 

@@ -1,13 +1,13 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.react.React;
+import art.arcane.react.platform.SamplerEventCounters;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.constraints.DoubleRange;
 import net.jqwik.api.constraints.Size;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,7 +101,7 @@ class TickClockTest {
     });
 
     Assertions.assertEquals(1, warnings.size());
-    Assertions.assertTrue(warnings.get(0).getMessage().contains(TickTimeSources.UNAVAILABLE_WARNING));
+    Assertions.assertTrue(warnings.get(0).getMessage().contains(TickClock.UNAVAILABLE_WARNING));
   }
 
   @Test
@@ -302,34 +302,35 @@ class TickClockTest {
   }
 
   @Test
-  void ownersShareOneRegisteredListener() {
-    React previous = React.instance;
-    React plugin = Mockito.mock(React.class);
-    React.instance = plugin;
-    try {
-      TickClock clock = new TickClock(() -> null);
-      Object first = new Object();
-      Object second = new Object();
+  void ownersShareOneTickSubscription() {
+    TickClock clock = new TickClock(() -> null);
+    Object first = new Object();
+    Object second = new Object();
 
-      clock.acquire(first);
-      clock.acquire(first);
-      clock.acquire(second);
-      Mockito.verify(plugin, Mockito.times(1)).registerListener(clock);
+    clock.acquire(first);
+    clock.acquire(first);
+    clock.acquire(second);
+    Assertions.assertTrue(receivesServerTicks(clock));
 
-      clock.release(first);
-      Mockito.verify(plugin, Mockito.never()).unregisterListener(clock);
-      clock.release(second);
-      Mockito.verify(plugin, Mockito.times(1)).unregisterListener(clock);
+    clock.release(first);
+    Assertions.assertTrue(receivesServerTicks(clock));
+    clock.release(second);
+    Assertions.assertFalse(receivesServerTicks(clock));
 
-      clock.tick(BASE);
-      clock.tick(BASE + 50L * MS);
-      clock.acquire(first);
-      Assertions.assertFalse(clock.snapshot().hasTicks());
-      Mockito.verify(plugin, Mockito.times(2)).registerListener(clock);
-    } finally {
-      React.instance = previous;
-    }
+    clock.tick(BASE);
+    clock.tick(BASE + 50L * MS);
+    clock.acquire(first);
+    Assertions.assertFalse(clock.snapshot().hasTicks());
+    Assertions.assertTrue(receivesServerTicks(clock));
+    clock.release(first);
   }
+
+  static boolean receivesServerTicks(TickClock clock) {
+    double before = clock.millisSinceLastTick(Long.MAX_VALUE);
+    SamplerEventCounters.get().count(SamplerEventCounters.Counter.SERVER_TICK, null);
+    return clock.millisSinceLastTick(Long.MAX_VALUE) != before;
+  }
+
 
   @Property(tries = 100)
   void sortedPercentileStaysWithinBoundsAndGrowsWithRank(

@@ -41,7 +41,8 @@ class SamplerEntitiesMovementTest {
 
   @Test
   void crossChunkMoveThenRemoveClearsTheCurrentBucketWithoutLeavingTheOriginBehind() {
-    SamplerEntities sampler = new SamplerEntities();
+    SamplerEntities samplerOwner = new SamplerEntities();
+    BukkitEntityTracker sampler = new BukkitEntityTracker(samplerOwner, samplerOwner.getEntities());
     World world = world();
     Location originLocation = location(world, 2, 3);
     Location destinationLocation = location(world, 20, -8);
@@ -52,8 +53,8 @@ class SamplerEntitiesMovementTest {
     AtomicDouble originCount = new AtomicDouble();
     AtomicDouble destinationCount = new AtomicDouble();
     ObserverController observer = Mockito.mock(ObserverController.class);
-    Mockito.when(observer.get(world, 2, 3, sampler)).thenReturn(originCount);
-    Mockito.when(observer.get(world, 20, -8, sampler)).thenReturn(destinationCount);
+    Mockito.when(observer.get(world, 2, 3, samplerOwner)).thenReturn(originCount);
+    Mockito.when(observer.get(world, 20, -8, samplerOwner)).thenReturn(destinationCount);
     EntitySpawnEvent spawn = Mockito.mock(EntitySpawnEvent.class);
     Mockito.when(spawn.getEntity()).thenReturn(entity);
     Mockito.when(spawn.getLocation()).thenReturn(originLocation);
@@ -68,11 +69,11 @@ class SamplerEntitiesMovementTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      sampler.start();
+      sampler.begin();
 
       sampler.on(spawn);
 
-      Assertions.assertEquals(1, sampler.getEntities().get());
+      Assertions.assertEquals(1, samplerOwner.getEntities().get());
       Assertions.assertEquals(1D, originCount.get());
       Assertions.assertEquals(0D, destinationCount.get());
       Assertions.assertEquals(1, EntityCensusTracker.activeAi());
@@ -84,24 +85,25 @@ class SamplerEntitiesMovementTest {
 
       sampler.on(remove);
 
-      Assertions.assertEquals(0, sampler.getEntities().get());
+      Assertions.assertEquals(0, samplerOwner.getEntities().get());
       Assertions.assertEquals(0D, originCount.get());
       Assertions.assertEquals(0D, destinationCount.get());
       Assertions.assertEquals(0, EntityCensusTracker.activeAi());
-      sampler.stop();
+      sampler.end();
     }
   }
 
   @Test
   void firstObservedMoveSeedsRemovalOwnershipWithoutChangingTheWorldTotal() {
-    SamplerEntities sampler = new SamplerEntities();
+    SamplerEntities samplerOwner = new SamplerEntities();
+    BukkitEntityTracker sampler = new BukkitEntityTracker(samplerOwner, samplerOwner.getEntities());
     World world = world();
     Location destinationLocation = location(world, -40, 90);
     LivingEntity entity = Mockito.mock(LivingEntity.class);
     Mockito.when(entity.getUniqueId()).thenReturn(UUID.randomUUID());
     AtomicDouble destinationCount = new AtomicDouble();
     ObserverController observer = Mockito.mock(ObserverController.class);
-    Mockito.when(observer.get(world, -40, 90, sampler)).thenReturn(destinationCount);
+    Mockito.when(observer.get(world, -40, 90, samplerOwner)).thenReturn(destinationCount);
     EntityMoveEvent move = Mockito.mock(EntityMoveEvent.class);
     Mockito.when(move.getEntity()).thenReturn(entity);
     Mockito.when(move.getTo()).thenReturn(destinationLocation);
@@ -113,25 +115,26 @@ class SamplerEntitiesMovementTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      sampler.start();
-      sampler.getEntities().set(12);
+      sampler.begin();
+      samplerOwner.getEntities().set(12);
 
       moveListener.on(move);
 
-      Assertions.assertEquals(12, sampler.getEntities().get());
+      Assertions.assertEquals(12, samplerOwner.getEntities().get());
       Assertions.assertEquals(1D, destinationCount.get());
 
       sampler.on(remove);
 
-      Assertions.assertEquals(11, sampler.getEntities().get());
+      Assertions.assertEquals(11, samplerOwner.getEntities().get());
       Assertions.assertEquals(0D, destinationCount.get());
-      sampler.stop();
+      sampler.end();
     }
   }
 
   @Test
   void boundedCensusTransfersAnEntityThatMovedWithoutABukkitMoveEvent() {
-    SamplerEntities sampler = new SamplerEntities();
+    SamplerEntities samplerOwner = new SamplerEntities();
+    BukkitEntityTracker sampler = new BukkitEntityTracker(samplerOwner, samplerOwner.getEntities());
     World world = world();
     Location originLocation = location(world, 0, 0);
     Item item = Mockito.mock(Item.class);
@@ -139,8 +142,8 @@ class SamplerEntitiesMovementTest {
     AtomicDouble originCount = new AtomicDouble();
     AtomicDouble destinationCount = new AtomicDouble();
     ObserverController observer = Mockito.mock(ObserverController.class);
-    Mockito.when(observer.get(world, 0, 0, sampler)).thenReturn(originCount);
-    Mockito.when(observer.get(world, 1, 0, sampler)).thenReturn(destinationCount);
+    Mockito.when(observer.get(world, 0, 0, samplerOwner)).thenReturn(originCount);
+    Mockito.when(observer.get(world, 1, 0, samplerOwner)).thenReturn(destinationCount);
     EntitySpawnEvent spawn = Mockito.mock(EntitySpawnEvent.class);
     Mockito.when(spawn.getEntity()).thenReturn(item);
     Mockito.when(spawn.getLocation()).thenReturn(originLocation);
@@ -151,10 +154,10 @@ class SamplerEntitiesMovementTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      sampler.start();
+      sampler.begin();
 
       sampler.on(spawn);
-      SamplerEntities.reconcileCurrentChunk(item, world, 1, 0);
+      BukkitEntityTracker.reconcileCurrentChunk(item, world, 1, 0);
 
       Assertions.assertEquals(0D, originCount.get());
       Assertions.assertEquals(1D, destinationCount.get());
@@ -163,13 +166,14 @@ class SamplerEntitiesMovementTest {
 
       Assertions.assertEquals(0D, originCount.get());
       Assertions.assertEquals(0D, destinationCount.get());
-      sampler.stop();
+      sampler.end();
     }
   }
 
   @Test
   void censusRefreshMovesAnEntityToTheChunkAtItsLocationWithoutLoadingIt() {
-    SamplerEntities sampler = new SamplerEntities();
+    SamplerEntities samplerOwner = new SamplerEntities();
+    BukkitEntityTracker sampler = new BukkitEntityTracker(samplerOwner, samplerOwner.getEntities());
     World world = world();
     Location originLocation = location(world, 0, 0);
     Item item = Mockito.mock(Item.class);
@@ -177,8 +181,8 @@ class SamplerEntitiesMovementTest {
     AtomicDouble originCount = new AtomicDouble();
     AtomicDouble destinationCount = new AtomicDouble();
     ObserverController observer = Mockito.mock(ObserverController.class);
-    Mockito.when(observer.get(world, 0, 0, sampler)).thenReturn(originCount);
-    Mockito.when(observer.get(world, 1, -2, sampler)).thenReturn(destinationCount);
+    Mockito.when(observer.get(world, 0, 0, samplerOwner)).thenReturn(originCount);
+    Mockito.when(observer.get(world, 1, -2, samplerOwner)).thenReturn(destinationCount);
     Mockito.when(world.isChunkLoaded(1, -2)).thenReturn(true);
     EntitySpawnEvent spawn = Mockito.mock(EntitySpawnEvent.class);
     Mockito.when(spawn.getEntity()).thenReturn(item);
@@ -189,7 +193,7 @@ class SamplerEntitiesMovementTest {
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
       bukkit.when(Bukkit::getWorlds).thenReturn(List.of(world));
-      sampler.start();
+      sampler.begin();
       sampler.on(spawn);
       Mockito.when(item.getLocation()).thenReturn(new Location(world, 20.5D, 64D, -17.5D));
 
@@ -203,20 +207,21 @@ class SamplerEntitiesMovementTest {
       Assertions.assertEquals(1D, destinationCount.get());
       Mockito.verify(item, Mockito.never()).getChunk();
       Mockito.verify(world, Mockito.never()).getChunkAt(Mockito.anyInt(), Mockito.anyInt());
-      sampler.stop();
+      sampler.end();
     }
   }
 
   @Test
   void censusRefreshLeavesAnEntityInAnUnloadedChunkWhereItWasTracked() {
-    SamplerEntities sampler = new SamplerEntities();
+    SamplerEntities samplerOwner = new SamplerEntities();
+    BukkitEntityTracker sampler = new BukkitEntityTracker(samplerOwner, samplerOwner.getEntities());
     World world = world();
     Location originLocation = location(world, 0, 0);
     Item item = Mockito.mock(Item.class);
     Mockito.when(item.getUniqueId()).thenReturn(UUID.randomUUID());
     AtomicDouble originCount = new AtomicDouble();
     ObserverController observer = Mockito.mock(ObserverController.class);
-    Mockito.when(observer.get(world, 0, 0, sampler)).thenReturn(originCount);
+    Mockito.when(observer.get(world, 0, 0, samplerOwner)).thenReturn(originCount);
     EntitySpawnEvent spawn = Mockito.mock(EntitySpawnEvent.class);
     Mockito.when(spawn.getEntity()).thenReturn(item);
     Mockito.when(spawn.getLocation()).thenReturn(originLocation);
@@ -226,7 +231,7 @@ class SamplerEntitiesMovementTest {
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
       bukkit.when(Bukkit::getWorlds).thenReturn(List.of(world));
-      sampler.start();
+      sampler.begin();
       sampler.on(spawn);
       Mockito.when(item.getLocation()).thenReturn(new Location(world, 40.5D, 64D, 8.5D));
 
@@ -237,23 +242,24 @@ class SamplerEntitiesMovementTest {
       }
 
       Assertions.assertEquals(1D, originCount.get());
-      Mockito.verify(observer, Mockito.never()).get(world, 2, 0, sampler);
+      Mockito.verify(observer, Mockito.never()).get(world, 2, 0, samplerOwner);
       Mockito.verify(item, Mockito.never()).getChunk();
       Mockito.verify(world, Mockito.never()).getChunkAt(Mockito.anyInt(), Mockito.anyInt());
-      sampler.stop();
+      sampler.end();
     }
   }
 
   @Test
   void spawnResolvesTheChunkFromLocationCoordinatesWithoutLoadingIt() {
-    SamplerEntities sampler = new SamplerEntities();
+    SamplerEntities samplerOwner = new SamplerEntities();
+    BukkitEntityTracker sampler = new BukkitEntityTracker(samplerOwner, samplerOwner.getEntities());
     World world = world();
     Location spawnLocation = location(world, -3, 7);
     LivingEntity entity = Mockito.mock(LivingEntity.class);
     Mockito.when(entity.getUniqueId()).thenReturn(UUID.randomUUID());
     AtomicDouble chunkCount = new AtomicDouble();
     ObserverController observer = Mockito.mock(ObserverController.class);
-    Mockito.when(observer.get(world, -3, 7, sampler)).thenReturn(chunkCount);
+    Mockito.when(observer.get(world, -3, 7, samplerOwner)).thenReturn(chunkCount);
     EntitySpawnEvent spawn = Mockito.mock(EntitySpawnEvent.class);
     Mockito.when(spawn.getEntity()).thenReturn(entity);
     Mockito.when(spawn.getLocation()).thenReturn(spawnLocation);
@@ -261,21 +267,22 @@ class SamplerEntitiesMovementTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      sampler.start();
+      sampler.begin();
 
       sampler.on(spawn);
 
-      Assertions.assertEquals(1, sampler.getEntities().get());
+      Assertions.assertEquals(1, samplerOwner.getEntities().get());
       Assertions.assertEquals(1D, chunkCount.get());
       Mockito.verify(spawnLocation, Mockito.never()).getChunk();
       Mockito.verify(world, Mockito.never()).getChunkAt(Mockito.anyInt(), Mockito.anyInt());
-      sampler.stop();
+      sampler.end();
     }
   }
 
   @Test
   void sameChunkMoveSkipsChunkLookupAndCounterResolution() {
-    SamplerEntities sampler = new SamplerEntities();
+    SamplerEntities samplerOwner = new SamplerEntities();
+    BukkitEntityTracker sampler = new BukkitEntityTracker(samplerOwner, samplerOwner.getEntities());
     World world = world();
     Location spawnLocation = location(world, 5, 5);
     LivingEntity entity = Mockito.mock(LivingEntity.class);
@@ -283,7 +290,7 @@ class SamplerEntitiesMovementTest {
     Mockito.when(entity.hasAI()).thenReturn(true);
     AtomicDouble chunkCount = new AtomicDouble();
     ObserverController observer = Mockito.mock(ObserverController.class);
-    Mockito.when(observer.get(world, 5, 5, sampler)).thenReturn(chunkCount);
+    Mockito.when(observer.get(world, 5, 5, samplerOwner)).thenReturn(chunkCount);
     EntitySpawnEvent spawn = Mockito.mock(EntitySpawnEvent.class);
     Mockito.when(spawn.getEntity()).thenReturn(entity);
     Mockito.when(spawn.getLocation()).thenReturn(spawnLocation);
@@ -292,7 +299,7 @@ class SamplerEntitiesMovementTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      sampler.start();
+      sampler.begin();
       sampler.on(spawn);
 
       for (int step = 0; step < 15; step++) {
@@ -308,9 +315,9 @@ class SamplerEntitiesMovementTest {
 
       Assertions.assertEquals(1D, chunkCount.get());
       Assertions.assertEquals(1, EntityCensusTracker.activeAi());
-      Mockito.verify(observer, Mockito.times(1)).get(world, 5, 5, sampler);
+      Mockito.verify(observer, Mockito.times(1)).get(world, 5, 5, samplerOwner);
       Mockito.verify(entity, Mockito.times(1)).hasAI();
-      sampler.stop();
+      sampler.end();
     }
   }
 
@@ -329,16 +336,17 @@ class SamplerEntitiesMovementTest {
     React previous = React.instance;
     React plugin = Mockito.mock(React.class);
     React.instance = plugin;
-    SamplerEntities sampler = new SamplerEntities();
+    SamplerEntities samplerOwner = new SamplerEntities();
+    BukkitEntityTracker sampler = new BukkitEntityTracker(samplerOwner, samplerOwner.getEntities());
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      sampler.start();
+      sampler.begin();
 
       ArgumentCaptor<Listener> registered = ArgumentCaptor.forClass(Listener.class);
       Mockito.verify(plugin).registerListener(registered.capture());
       Assertions.assertInstanceOf(SamplerEntitiesPaperMoveListener.class, registered.getValue());
 
-      sampler.stop();
+      sampler.end();
 
       Mockito.verify(plugin).unregisterListener(registered.getValue());
     } finally {

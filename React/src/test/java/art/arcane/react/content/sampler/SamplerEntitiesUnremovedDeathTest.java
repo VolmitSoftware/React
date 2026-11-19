@@ -29,7 +29,8 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 class SamplerEntitiesUnremovedDeathTest {
-  private SamplerEntities sampler;
+  private SamplerEntities owner;
+  private BukkitEntityTracker sampler;
   private World world;
   private Chunk chunk;
   private AtomicBoolean dead;
@@ -41,7 +42,8 @@ class SamplerEntitiesUnremovedDeathTest {
   void setUp() {
     EntityCensusTracker.release();
     EntityCensusTracker.acquire();
-    sampler = new SamplerEntities();
+    owner = new SamplerEntities();
+    sampler = new BukkitEntityTracker(owner, owner.getEntities());
     world = Mockito.mock(World.class);
     Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
     Mockito.when(world.getEntityCount()).thenThrow(new NoSuchMethodError("getEntityCount"));
@@ -58,7 +60,7 @@ class SamplerEntitiesUnremovedDeathTest {
     Mockito.when(cow.isDead()).thenAnswer(ignored -> dead.get());
     chunkCount = new AtomicDouble();
     observer = Mockito.mock(ObserverController.class);
-    Mockito.when(observer.get(world, 0, 0, sampler)).thenReturn(chunkCount);
+    Mockito.when(observer.get(world, 0, 0, owner)).thenReturn(chunkCount);
   }
 
   @AfterEach
@@ -73,7 +75,7 @@ class SamplerEntitiesUnremovedDeathTest {
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
       bukkit.when(Bukkit::getWorlds).thenReturn(List.of(world));
-      sampler.start();
+      sampler.begin();
       sampler.on(spawn());
       Assertions.assertEquals(1, EntityCensusTracker.animals());
       Assertions.assertEquals(1, EntityCensusTracker.activeAi());
@@ -83,7 +85,7 @@ class SamplerEntitiesUnremovedDeathTest {
 
       Assertions.assertEquals(0, EntityCensusTracker.animals());
       Assertions.assertEquals(0, EntityCensusTracker.activeAi());
-      sampler.stop();
+      sampler.end();
     }
   }
 
@@ -92,16 +94,16 @@ class SamplerEntitiesUnremovedDeathTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      sampler.start();
+      sampler.begin();
       dead.set(true);
 
       sampler.on(entitiesLoad());
 
       Assertions.assertEquals(0, EntityCensusTracker.animals());
-      Assertions.assertEquals(0, sampler.getEntities().get());
+      Assertions.assertEquals(0, owner.getEntities().get());
       Assertions.assertEquals(0D, chunkCount.get());
-      Assertions.assertEquals(0, SamplerEntities.countWorldEntities(List.of(world)));
-      sampler.stop();
+      Assertions.assertEquals(0, BukkitEntityTracker.countWorldEntities(List.of(world)));
+      sampler.end();
     }
   }
 
@@ -110,11 +112,11 @@ class SamplerEntitiesUnremovedDeathTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      sampler.start();
+      sampler.begin();
       sampler.on(spawn());
       Assertions.assertEquals(1, EntityCensusTracker.animals());
       Assertions.assertEquals(1D, chunkCount.get());
-      Assertions.assertEquals(1, SamplerEntities.countWorldEntities(List.of(world)));
+      Assertions.assertEquals(1, BukkitEntityTracker.countWorldEntities(List.of(world)));
 
       dead.set(true);
       sampler.on(death(cow));
@@ -122,8 +124,8 @@ class SamplerEntitiesUnremovedDeathTest {
       Assertions.assertEquals(0, EntityCensusTracker.animals());
       Assertions.assertEquals(0, EntityCensusTracker.activeAi());
       Assertions.assertEquals(0D, chunkCount.get());
-      Assertions.assertEquals(0, SamplerEntities.countWorldEntities(List.of(world)));
-      sampler.stop();
+      Assertions.assertEquals(0, BukkitEntityTracker.countWorldEntities(List.of(world)));
+      sampler.end();
     }
   }
 
@@ -136,18 +138,18 @@ class SamplerEntitiesUnremovedDeathTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      sampler.start();
+      sampler.begin();
       sampler.on(spawn());
-      sampler.getEntities().set(5);
+      owner.getEntities().set(5);
 
       dead.set(true);
       sampler.on(death(cow));
       sampler.on(remove);
 
-      Assertions.assertEquals(4, sampler.getEntities().get());
+      Assertions.assertEquals(4, owner.getEntities().get());
       Assertions.assertEquals(0D, chunkCount.get());
       Assertions.assertEquals(0, EntityCensusTracker.animals());
-      sampler.stop();
+      sampler.end();
     }
   }
 
@@ -162,14 +164,14 @@ class SamplerEntitiesUnremovedDeathTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      sampler.start();
+      sampler.begin();
       sampler.on(join);
 
       sampler.on(death(player));
 
       Assertions.assertEquals(1D, chunkCount.get());
-      Assertions.assertEquals(1, SamplerEntities.countWorldEntities(List.of(world)));
-      sampler.stop();
+      Assertions.assertEquals(1, BukkitEntityTracker.countWorldEntities(List.of(world)));
+      sampler.end();
     }
   }
 

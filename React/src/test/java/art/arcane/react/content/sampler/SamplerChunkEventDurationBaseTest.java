@@ -1,12 +1,13 @@
 package art.arcane.react.content.sampler;
 
+import art.arcane.react.platform.SamplerEventCounters;
+
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.volmlib.util.math.RollingSequence;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.bukkit.Chunk;
-import org.bukkit.event.world.ChunkLoadEvent;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
@@ -90,11 +91,10 @@ class SamplerChunkEventDurationBaseTest {
   }
 
   private static void load(SamplerChunkEventDurationBase sampler, AtomicLong nanos, long durationNanos) {
-    ChunkLoadEvent event = Mockito.mock(ChunkLoadEvent.class);
-    Mockito.when(event.getChunk()).thenReturn(Mockito.mock(Chunk.class));
-    sampler.onStart(event);
+    Chunk chunk = Mockito.mock(Chunk.class);
+    SamplerEventCounters.get().count(SamplerEventCounters.Counter.CHUNK_LOAD_BEGIN, chunk);
     nanos.addAndGet(durationNanos);
-    sampler.onEnd(event);
+    SamplerEventCounters.get().count(SamplerEventCounters.Counter.CHUNK_LOAD_END, chunk);
   }
 
   private void setMaxHistory(SamplerChunkEventDurationBase sampler, int maxHistory) throws ReflectiveOperationException {

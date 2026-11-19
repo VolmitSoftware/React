@@ -1,0 +1,92 @@
+/*
+ *  Copyright (c) 2016-2025 Arcane Arts (Volmit Software)
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ */
+
+package art.arcane.react.content.sampler;
+
+import art.arcane.react.api.sampler.ReactCachedSampler;
+import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
+import art.arcane.react.core.telemetry.HostMetric;
+import art.arcane.volmlib.util.format.Form;
+
+import java.util.function.Supplier;
+
+public class SamplerProcessorSystemLoad extends ReactCachedSampler {
+  public static final String ID = "processor-system-load";
+  private transient final Supplier<HostTelemetrySnapshot> host;
+
+  public SamplerProcessorSystemLoad() {
+    this(SamplerHostTelemetry::current);
+  }
+
+  SamplerProcessorSystemLoad(Supplier<HostTelemetrySnapshot> host) {
+    super(ID, 100);
+    this.host = host;
+  }
+
+  private static double normalizeCpuLoad(double raw) {
+    if (!Double.isFinite(raw) || raw <= 0D) {
+      return 0D;
+    }
+
+    if (raw <= 1D) {
+      return raw;
+    }
+
+    if (raw <= 100D) {
+      return raw / 100D;
+    }
+
+    return 1D;
+  }
+
+  @Override
+  public String getIcon() {
+    return "minecraft:red_candle";
+  }
+
+  @Override
+  public boolean isSampleAvailable() {
+    return host.get().reading(HostMetric.CPU_SYSTEM).fresh(HostMetric.CPU_SYSTEM, System.currentTimeMillis()).available();
+  }
+
+  @Override
+  public Metadata metadata() {
+    return HostMetric.CPU_SYSTEM.metadata();
+  }
+
+  @Override
+  public Reading captureReading() {
+    return host.get().reading(HostMetric.CPU_SYSTEM).fresh(HostMetric.CPU_SYSTEM, System.currentTimeMillis()).reading(HostMetric.CPU_SYSTEM);
+  }
+
+  @Override
+  public double onSample() {
+    return host.get().reading(HostMetric.CPU_SYSTEM).value();
+  }
+
+  @Override
+  public String formattedValue(double t) {
+    return Form.pc(normalizeCpuLoad(t), 0);
+  }
+
+  @Override
+  public String formattedSuffix(double t) {
+    return "CPU";
+  }
+}

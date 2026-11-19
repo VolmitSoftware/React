@@ -77,8 +77,5 @@ class ReactPlaceholderPublisherTest {
     public void stop() {
     }
 
-    @Override
-    public void render() {
-    }
   }
 }

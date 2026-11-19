@@ -21,6 +21,7 @@ package art.arcane.react.core.plugincost;
 
 import art.arcane.react.api.sampler.ReactEventSampler;
 import art.arcane.react.core.controller.EventController;
+import art.arcane.react.platform.EventMeasurement;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
 import net.kyori.adventure.text.Component;
@@ -52,7 +53,10 @@ public class SamplerPluginCost extends ReactEventSampler {
   }
 
   @Override
-  protected double onMeasuredSample(EventController controller) {
+  protected double onMeasuredSample(EventMeasurement measurement) {
+    if (!(measurement instanceof EventController controller)) {
+      return 0D;
+    }
     average.put(controller.getPluginEventTimeMsPerSecond(pluginName));
     return average.getAverage();
   }

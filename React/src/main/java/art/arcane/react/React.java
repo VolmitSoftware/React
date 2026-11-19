@@ -31,6 +31,7 @@ import art.arcane.react.api.tweak.Tweak;
 import art.arcane.react.content.PAPI.ReactPlaceholders;
 import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.platform.bukkit.BukkitReactPlatform;
+import art.arcane.react.platform.bukkit.BukkitSamplerEventBridge;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.core.controller.FeatureController;
@@ -483,6 +484,7 @@ public class React extends VolmitPlugin implements ReloadAware {
   public void start() {
     instance = this;
     ReactPlatforms.bind(BukkitReactPlatform.instance());
+    BukkitSamplerEventBridge.install();
     closeAudienceProvider();
     alreadyDrained.set(false);
     shutdownDrained = true;
@@ -724,6 +726,7 @@ public class React extends VolmitPlugin implements ReloadAware {
       executors = null;
     }
     closeAudienceProvider();
+    BukkitSamplerEventBridge.uninstall();
     ReactPlatforms.unbind();
   }
 

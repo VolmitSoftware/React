@@ -1,5 +1,7 @@
 package art.arcane.react.content.sampler;
 
+import art.arcane.react.core.controller.SampleController;
+
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.ObserverController;
@@ -21,7 +23,9 @@ class SamplerTopCostSnapshotTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(tickTime);
+      SampleController samplers = Mockito.mock(SampleController.class);
+      Mockito.when(samplers.getSampler(SamplerTickTime.ID)).thenReturn(tickTime);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samplers);
 
       Assertions.assertEquals(10D, new SamplerTopChunkCost().onSample(), 1.0E-9D);
       Assertions.assertEquals(24D, new SamplerTopWorldMSPT().onSample(), 1.0E-9D);
@@ -39,7 +43,9 @@ class SamplerTopCostSnapshotTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> ignored = Mockito.mockStatic(J.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(tickTime);
+      SampleController samplers = Mockito.mock(SampleController.class);
+      Mockito.when(samplers.getSampler(SamplerTickTime.ID)).thenReturn(tickTime);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samplers);
 
       Assertions.assertEquals(0D, new SamplerTopChunkCost().onSample());
       Assertions.assertEquals(0D, new SamplerTopWorldMSPT().onSample());

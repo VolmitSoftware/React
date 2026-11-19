@@ -539,7 +539,5 @@ public class WebControllerIntegrationTest {
         @Override
         public void stop() {}
 
-        @Override
-        public void render() {}
     }
 }
