@@ -63,7 +63,12 @@ tasks.named('shadowJar').configure {
     List<String> volmLibKept = ['art/arcane/volmlib/util/localization/', 'art/arcane/volmlib/util/director/',
         'art/arcane/volmlib/util/config/', 'art/arcane/volmlib/util/format/', 'art/arcane/volmlib/util/io/',
         'art/arcane/volmlib/util/plugin/ComponentText', 'art/arcane/volmlib/util/plugin/ComponentMessenger',
-        'art/arcane/volmlib/util/plugin/ComponentLog', 'art/arcane/volmlib/util/plugin/SplashScreenSupport']
+        'art/arcane/volmlib/util/plugin/ComponentLog', 'art/arcane/volmlib/util/plugin/SplashScreenSupport',
+        'art/arcane/volmlib/util/math/', 'art/arcane/volmlib/util/scheduling/', 'art/arcane/volmlib/util/function/',
+        'art/arcane/volmlib/util/collection/', 'art/arcane/volmlib/util/json/', 'art/arcane/volmlib/util/data/',
+        'art/arcane/volmlib/integration/', 'art/arcane/volmlib/util/cache/', 'art/arcane/volmlib/util/VolmLog',
+        'art/arcane/volmlib/util/plugin/CancellableTask', 'art/arcane/volmlib/util/diagnostics/BukkitDebugMessages']
+    inputs.property('volmLibKept', volmLibKept)
     exclude { FileTreeElement entry ->
         String path = entry.relativePath.pathString
         path.startsWith('art/arcane/volmlib/') && !entry.directory && !volmLibKept.any { String kept -> path.startsWith(kept) }

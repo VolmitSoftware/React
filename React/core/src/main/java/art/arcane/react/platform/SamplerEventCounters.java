@@ -11,8 +11,8 @@ import java.util.function.BiConsumer;
  * {@link #isActive} is true and is told about changes through the activation observer.
  */
 public final class SamplerEventCounters {
-  private static final SamplerEventCounters INSTANCE = new SamplerEventCounters();
   private static final CounterListener[] NONE = new CounterListener[0];
+  private static final SamplerEventCounters INSTANCE = new SamplerEventCounters();
 
   private final Map<Counter, CounterListener[]> listeners = new EnumMap<>(Counter.class);
   private volatile CounterListener[][] dispatch = emptyDispatch();

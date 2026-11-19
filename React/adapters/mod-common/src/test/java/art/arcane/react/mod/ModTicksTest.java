@@ -40,6 +40,30 @@ class ModTicksTest {
     }
 
     @Test
+    void delayedWorkRunsAfterItsDelayInTicks() {
+        List<String> order = new ArrayList<>();
+        assertTrue(ticks.later(() -> order.add("three"), 3));
+        assertTrue(ticks.later(() -> order.add("one"), 1));
+        ticks.tick();
+        assertEquals(List.of("one"), order);
+        ticks.tick();
+        assertEquals(List.of("one"), order);
+        ticks.tick();
+        assertEquals(List.of("one", "three"), order);
+    }
+
+    @Test
+    void closingDropsDelayedWork() {
+        List<String> order = new ArrayList<>();
+        ticks.later(() -> order.add("late"), 2);
+        ticks.close();
+        assertFalse(ticks.later(() -> order.add("refused"), 1));
+        ticks.tick();
+        ticks.tick();
+        assertTrue(order.isEmpty());
+    }
+
+    @Test
     void closingARepeatingHandleStopsIt() throws Exception {
         List<String> order = new ArrayList<>();
         AutoCloseable handle = ticks.every(() -> order.add("repeat"));

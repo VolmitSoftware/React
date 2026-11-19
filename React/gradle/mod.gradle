@@ -44,6 +44,31 @@ apply from: '../../gradle/verify-artifact.gradle'
 sourceSets.main.java.srcDir('../mod-common/src/main/java')
 sourceSets.main.resources.srcDir('../mod-common/src/main/resources')
 sourceSets.test.java.srcDir('../mod-common/src/test/java')
+if (hasCore) {
+    TaskProvider<Task> classIndex = tasks.register('reactClassIndex') {
+        File output = layout.buildDirectory.dir('generated/react-class-index').get().asFile
+        dependsOn(':core:classes')
+        inputs.files(project.provider { project(':core').sourceSets.main.output.classesDirs })
+        outputs.dir(output)
+        doLast {
+            List<String> names = []
+            project(':core').sourceSets.main.output.classesDirs.each { File directory ->
+                if (directory.isDirectory()) {
+                    project.fileTree(directory).matching { include('**/*.class') }.visit { FileVisitDetails entry ->
+                        String path = entry.relativePath.pathString
+                        if (!entry.directory && !path.contains('$')) {
+                            names.add(path.substring(0, path.length() - '.class'.length()).replace('/', '.'))
+                        }
+                    }
+                }
+            }
+            names.sort()
+            output.mkdirs()
+            new File(output, 'react-class-index.txt').text = names.join('\n') + '\n'
+        }
+    }
+    sourceSets.main.resources.srcDir(classIndex)
+}
 dependencies {
     testImplementation('org.junit.jupiter:junit-jupiter:5.11.4')
     testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.11.4')

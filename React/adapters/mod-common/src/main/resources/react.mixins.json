@@ -3,7 +3,22 @@
   "minVersion": "0.8",
   "package": "${projectGroup}.mod.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": ["BlockEntityTypeMixin", "BoundTickingBlockEntityMixin", "EntityTypeMixin", "ServerLevelMixin"],
+  "mixins": [
+    "BlockEntityTypeMixin",
+    "BlockStateHooks",
+    "BoundTickingBlockEntityMixin",
+    "ChunkMapAccess",
+    "CommandsHooks",
+    "EntityTypeMixin",
+    "FlowingFluidHooks",
+    "HopperHooks",
+    "LevelAccess",
+    "LevelChunkHooks",
+    "PistonResolverHooks",
+    "RedstoneWireHooks",
+    "ServerLevelHooks",
+    "ServerLevelMixin"
+  ],
   "client": [],
   "injectors": {
     "defaultRequire": 1

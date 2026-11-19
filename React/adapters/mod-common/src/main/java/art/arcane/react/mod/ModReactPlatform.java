@@ -1,0 +1,271 @@
+package art.arcane.react.mod;
+
+import art.arcane.react.api.web.ReactWebServer;
+import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.platform.CapabilityRefusal;
+import art.arcane.react.platform.CommandHost;
+import art.arcane.react.platform.LanguageHost;
+import art.arcane.react.platform.PlatformCapability;
+import art.arcane.react.platform.PlatformKind;
+import art.arcane.react.platform.PlatformScheduler;
+import art.arcane.react.platform.PlayerStatsHost;
+import art.arcane.react.platform.ReactCommandSender;
+import art.arcane.react.platform.ReactPlatform;
+import art.arcane.react.platform.ReactPlayer;
+import art.arcane.react.platform.ReactWorld;
+import art.arcane.react.platform.RegistryHost;
+import art.arcane.react.platform.RuntimeStatsHost;
+import art.arcane.react.platform.SamplerHost;
+import art.arcane.react.platform.TickStatsHost;
+import art.arcane.react.platform.WorldStatsHost;
+import art.arcane.react.platform.cost.OwnerCostProbe;
+import net.minecraft.SharedConstants;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import org.slf4j.Logger;
+
+import java.io.File;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
+
+/** React's platform on a Fabric, Forge or NeoForge server. Region and entity scheduling collapse onto the server thread. */
+public final class ModReactPlatform implements ReactPlatform {
+    private final String loader;
+    private final MinecraftServer server;
+    private final File dataFolder;
+    private final Logger logger;
+    private final ModTicks ticks;
+    private final ExecutorService async;
+    private final ModPlatformScheduler scheduler;
+    private final SamplerHost samplerHost;
+    private final RegistryHost registryHost;
+    private final TickStatsHost tickStatsHost;
+    private final WorldStatsHost worldStatsHost;
+    private final PlayerStatsHost playerStatsHost;
+    private final RuntimeStatsHost runtimeStatsHost;
+    private final CommandHost commandHost;
+    private final LanguageHost languageHost;
+    private final OwnerCostProbe costProbe;
+    private final ModOwnerCost ownerCost;
+    private final Supplier<ReactWebServer> webServer;
+
+    ModReactPlatform(String loader, MinecraftServer server, File dataFolder, Logger logger, ModTicks ticks, ExecutorService async,
+                     List<Runnable> startupTasks, LanguageHost languageHost, OwnerCostProbe costProbe, Supplier<SampleController> samples,
+                     Supplier<ReactWebServer> webServer) {
+        this.loader = loader;
+        this.server = server;
+        this.dataFolder = dataFolder;
+        this.logger = logger;
+        this.ticks = ticks;
+        this.async = async;
+        this.webServer = webServer;
+        this.languageHost = languageHost;
+        this.costProbe = costProbe;
+        this.commandHost = new ModCommandHost(server);
+        this.scheduler = new ModPlatformScheduler(server, ticks, async);
+        this.samplerHost = new ModSamplerHost(samples);
+        this.registryHost = new ModRegistryHost(dataFolder, startupTasks, this::verbose, this::warn);
+        this.tickStatsHost = new ModTickStatsHost(server, ticks);
+        this.worldStatsHost = new ModWorldStatsHost(server);
+        this.playerStatsHost = new ModPlayerStatsHost(server);
+        this.ownerCost = new ModOwnerCost(costProbe, samples);
+        this.runtimeStatsHost = new ModRuntimeStatsHost(ticks, ownerCost);
+    }
+
+    ModOwnerCost ownerCost() {
+        return ownerCost;
+    }
+
+    ModPlatformScheduler modScheduler() {
+        return scheduler;
+    }
+
+    MinecraftServer server() {
+        return server;
+    }
+
+    @Override
+    public PlatformKind kind() {
+        return PlatformKind.MODDED;
+    }
+
+    @Override
+    public String platformName() {
+        return loader;
+    }
+
+    @Override
+    public String minecraftVersion() {
+        return SharedConstants.getCurrentVersion().name();
+    }
+
+    @Override
+    public File dataFolder() {
+        return dataFolder;
+    }
+
+    @Override
+    public PlatformScheduler scheduler() {
+        return scheduler;
+    }
+
+    @Override
+    public ExecutorService asyncExecutor() {
+        return async;
+    }
+
+    @Override
+    public void info(String message) {
+        logger.info(message);
+    }
+
+    @Override
+    public void warn(String message) {
+        logger.warn(message);
+    }
+
+    @Override
+    public void warn(String message, Throwable failure) {
+        logger.warn(message, failure);
+    }
+
+    @Override
+    public void verbose(String message) {
+        logger.debug(message);
+    }
+
+    @Override
+    public void reportError(String context, Throwable failure) {
+        logger.error(context, failure);
+    }
+
+    @Override
+    public Optional<CapabilityRefusal> unavailable(PlatformCapability capability) {
+        return Optional.empty();
+    }
+
+    @Override
+    public boolean dispatchConsoleCommand(String command) {
+        String line = command.startsWith("/") ? command.substring(1) : command;
+        Runnable dispatch = () -> server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), line);
+        if (server.isSameThread()) {
+            dispatch.run();
+            return true;
+        }
+        return ticks.later(dispatch);
+    }
+
+    @Override
+    public Optional<ReactPlayer> player(UUID id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        ServerPlayer player = server.getPlayerList().getPlayer(id);
+        return player == null ? Optional.empty() : Optional.of(new ModReactPlayer(player));
+    }
+
+    @Override
+    public Optional<ReactPlayer> player(Object handle) {
+        if (handle instanceof ReactPlayer player) {
+            return Optional.of(player);
+        }
+        return handle instanceof ServerPlayer player ? Optional.of(new ModReactPlayer(player)) : Optional.empty();
+    }
+
+    @Override
+    public Optional<ReactWorld> world(String name) {
+        if (name == null) {
+            return Optional.empty();
+        }
+        for (ServerLevel level : server.getAllLevels()) {
+            String id = ModReactWorld.nameOf(level);
+            if (id.equals(name) || level.dimension().identifier().getPath().equals(name)) {
+                return Optional.of(new ModReactWorld(level));
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<ReactWorld> world(Object handle) {
+        if (handle instanceof ReactWorld world) {
+            return Optional.of(world);
+        }
+        return handle instanceof ServerLevel level ? Optional.of(new ModReactWorld(level)) : Optional.empty();
+    }
+
+    // Commands, messaging and localization
+
+    @Override
+    public Optional<ReactCommandSender> commandSender(Object handle) {
+        if (handle instanceof ReactCommandSender sender) {
+            return Optional.of(sender);
+        }
+        if (handle instanceof CommandSourceStack source) {
+            return Optional.of(new ModCommandSender(source));
+        }
+        return handle instanceof ServerPlayer player ? Optional.of(new ModCommandSender(player.createCommandSourceStack()))
+                : Optional.empty();
+    }
+
+    @Override
+    public Optional<CommandHost> commandHost() {
+        return Optional.of(commandHost);
+    }
+
+    @Override
+    public Optional<LanguageHost> languageHost() {
+        return Optional.of(languageHost);
+    }
+
+    // Owner cost
+
+    @Override
+    public Optional<OwnerCostProbe> ownerCostProbe() {
+        return Optional.of(costProbe);
+    }
+
+    // React Web
+
+    @Override
+    public Optional<ReactWebServer> webServer() {
+        return Optional.ofNullable(webServer.get());
+    }
+
+    // Sampler hosts
+
+    @Override
+    public Optional<SamplerHost> samplerHost() {
+        return Optional.of(samplerHost);
+    }
+
+    @Override
+    public Optional<RegistryHost> registryHost() {
+        return Optional.of(registryHost);
+    }
+
+    @Override
+    public Optional<TickStatsHost> tickStatsHost() {
+        return Optional.of(tickStatsHost);
+    }
+
+    @Override
+    public Optional<WorldStatsHost> worldStatsHost() {
+        return Optional.of(worldStatsHost);
+    }
+
+    @Override
+    public Optional<PlayerStatsHost> playerStatsHost() {
+        return Optional.of(playerStatsHost);
+    }
+
+    @Override
+    public Optional<RuntimeStatsHost> runtimeStatsHost() {
+        return Optional.of(runtimeStatsHost);
+    }
+}

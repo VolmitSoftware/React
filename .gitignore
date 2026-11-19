@@ -12,6 +12,7 @@ React/AGENTS.md
 React/.jqwik-database
 React/core/.jqwik-database
 React/nms/*/logs/
+React/adapters/*/logs/
 
 # Dart/Jaspr and local web tooling
 **/.dart_tool/
