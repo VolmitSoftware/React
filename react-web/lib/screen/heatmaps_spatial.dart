@@ -9,6 +9,7 @@ import '../localization/reactor_localizations.dart';
 import '../model/sampler_sample.dart';
 import '../model/server_snapshot.dart';
 import '../state/server_scope.dart';
+import '../state/server_session_scope.dart';
 import '../ui/kit/metric_tile.dart';
 import '../ui/kit/section.dart';
 import '../ui/kit/states.dart';
@@ -28,6 +29,12 @@ const List<(String, ReactorText)> _kSpatialSamplers = <(String, ReactorText)>[
   ('iris-world-chunk-share-pie-map', ReactorText.heatmapsIrisWorldShare),
 ];
 
+/// The label that names add-ons, in the server's own word for them.
+ReactorText _ownerLabel(ReactorText label, bool modded) =>
+    modded && label == ReactorText.heatmapsEventImpactList
+    ? ReactorText.heatmapsEventImpactListMods
+    : label;
+
 class SpatialMetrics extends StatelessWidget {
   const SpatialMetrics({super.key});
 
@@ -36,10 +43,12 @@ class SpatialMetrics extends StatelessWidget {
     dependOnReactorLocale(context);
     final ServerScope? scope = ServerScope.of(context);
     final ServerSnapshot? snapshot = scope?.snapshot;
+    final bool modded =
+        ServerSessionScope.of(context)?.identity.modded ?? false;
     final List<Widget> tiles = <Widget>[
       for (final (String id, ReactorText label) in _kSpatialSamplers)
         if (snapshot?.sampler(id) case final SamplerSample sample)
-          samplerTile(reactorText(label), sample),
+          samplerTile(reactorText(_ownerLabel(label, modded)), sample),
     ];
     return PageSection(
       title: reactorText(ReactorText.heatmapsSpatialMetrics),

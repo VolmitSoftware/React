@@ -1,7 +1,5 @@
 package art.arcane.react.api.web.dto;
 
-import art.arcane.react.api.sampler.Sampler;
-
 public record MetricHistoryDescriptorDto(
     String id,
     String name,
@@ -11,7 +9,7 @@ public record MetricHistoryDescriptorDto(
     boolean active,
     long intervalMs,
     long windowMs,
-    Sampler.Quality quality,
+    String quality,
     String unit,
     boolean available,
     String unavailableReason

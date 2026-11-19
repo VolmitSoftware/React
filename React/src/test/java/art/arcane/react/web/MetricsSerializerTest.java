@@ -2,6 +2,7 @@ package art.arcane.react.web;
 
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.MetricsSerializer;
+import art.arcane.react.api.web.resource.MetricsResource;
 import art.arcane.react.api.web.dto.SamplerDto;
 import art.arcane.react.core.history.MetricSnapshotValue;
 import com.google.gson.Gson;
@@ -11,13 +12,12 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MetricsSerializerTest {
   @Test
   void serializesSourceMetadataWithoutReplacingItsTimestamp() {
-    SamplerDto value = new MetricsSerializer().toDto(new FakeSampler());
+    SamplerDto value = MetricsResource.toDto(new MetricsSerializer().toValue(new FakeSampler()));
 
     assertEquals("tick-time", value.id);
     assertEquals(42D, value.value);
@@ -27,7 +27,7 @@ public class MetricsSerializerTest {
     assertEquals(123L, value.sampledAtMs);
     assertEquals(500L, value.intervalMs);
     assertEquals(1_000L, value.windowMs);
-    assertEquals(Sampler.Quality.MEASURED, value.quality);
+    assertEquals(Sampler.Quality.MEASURED.name(), value.quality);
     assertEquals("ms", value.unit);
     assertEquals("", value.unavailableReason);
   }
@@ -36,15 +36,15 @@ public class MetricsSerializerTest {
   void omitsOnlyUnsupportedDiagnosticsFromLiveJson() {
     MetricsSerializer serializer = new MetricsSerializer();
     Gson gson = new Gson();
-    JsonObject unsupported = JsonParser.parseString(gson.toJson(serializer.toDto(new FakeSampler()))).getAsJsonObject();
+    JsonObject unsupported = JsonParser.parseString(gson.toJson(MetricsResource.toDto(serializer.toValue(new FakeSampler())))).getAsJsonObject();
     assertFalse(unsupported.has("diagnostics"));
 
     Sampler.Diagnostics zero = new Sampler.Diagnostics(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
     Sampler.Diagnostics measured = new Sampler.Diagnostics(2L, 1L, 1L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L);
     for (Sampler.Diagnostics diagnostics : new Sampler.Diagnostics[]{zero, measured}) {
-      SamplerDto dto = serializer.toDto(new MetricSnapshotValue("tick-time", "Tick Time", "ms", 42D,
-          "42", true, 123L, Sampler.Metadata.UNKNOWN, "", diagnostics));
-      assertSame(diagnostics, dto.diagnostics);
+      SamplerDto dto = MetricsResource.toDto(serializer.toValue(new MetricSnapshotValue("tick-time", "Tick Time", "ms", 42D,
+          "42", true, 123L, Sampler.Metadata.UNKNOWN, "", diagnostics)));
+      assertEquals(diagnostics.attempts(), dto.diagnostics.attempts());
       JsonObject retained = JsonParser.parseString(gson.toJson(dto)).getAsJsonObject().getAsJsonObject("diagnostics");
       assertEquals(12, retained.size());
       assertEquals(diagnostics.attempts(), retained.get("attempts").getAsLong());

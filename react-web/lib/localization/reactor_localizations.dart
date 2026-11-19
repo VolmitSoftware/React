@@ -378,6 +378,10 @@ enum ReactorText {
     'screen.heatmaps.event_impact_list',
     'Plugins sampled',
   ),
+  heatmapsEventImpactListMods(
+    'screen.heatmaps.event_impact_list_mods',
+    'Mods sampled',
+  ),
   heatmapsIrisBiomeShare(
     'screen.heatmaps.iris_biome_share',
     'Iris biome share',
@@ -807,12 +811,14 @@ enum ReactorText {
   pageConsoleTitle('page.console.title', 'Console'),
   pageTuningTitle('page.tuning.title', 'Tuning'),
   pagePluginsTitle('page.plugins.title', 'Plugins'),
+  pageModsTitle('page.mods.title', 'Mods'),
   pageActivityTip('page.activity.tip', 'Entities, chunks and world mechanics'),
   pageTuningTip(
     'page.tuning.tip',
     'Features, tweaks, world budgets and config',
   ),
   pagePluginsTip('page.plugins.tip', 'Plugin metrics and API packs'),
+  pageModsTip('page.mods.tip', 'Mod metrics and API packs'),
   pageSettingsTip(
     'page.settings.tip',
     'Look, saved servers, alerts and access',

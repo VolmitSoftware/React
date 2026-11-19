@@ -1,6 +1,8 @@
 package art.arcane.react.platform.bukkit;
 
 import art.arcane.react.React;
+import art.arcane.react.api.web.ReactWebServer;
+import art.arcane.react.core.controller.WebController;
 import art.arcane.react.platform.CapabilityRefusal;
 import art.arcane.react.platform.PlatformCapability;
 import art.arcane.react.platform.PlatformKind;
@@ -147,5 +149,11 @@ public final class BukkitReactPlatform implements ReactPlatform {
       return Optional.of(world);
     }
     return handle instanceof World world ? Optional.of(new BukkitReactWorld(world)) : Optional.empty();
+  }
+
+  @Override
+  public Optional<ReactWebServer> webServer() {
+    React react = React.instance;
+    return react == null ? Optional.empty() : Optional.ofNullable(React.controller(WebController.class));
   }
 }

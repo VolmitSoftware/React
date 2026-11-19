@@ -13,6 +13,7 @@ import 'control_list_controller.dart';
 import 'fleet_manager.dart';
 import 'log_controller.dart';
 import 'plugin_api_packs_controller.dart';
+import 'server_identity.dart';
 import 'revision_feed.dart';
 import 'sampler_catalog.dart';
 import 'world_overrides_controller.dart';
@@ -44,6 +45,7 @@ class ServerSession {
   PluginApiPacksController? _packs;
   LogController? _logs;
   SamplerCatalog? _catalog;
+  ServerIdentity? _identity;
   ChartHistory? _charts;
   CachedRoleClient? _roles;
   bool _disposed = false;
@@ -154,6 +156,10 @@ class ServerSession {
     return _roles ??= CachedRoleClient(client);
   }
 
+  /// The server's platform and whether it calls add-ons plugins or mods;
+  /// asked for on first read.
+  ServerIdentity get identity => _identity ??= (ServerIdentity(client)..load());
+
   /// The samplers this server cannot report; loads when a page listens.
   SamplerCatalog get catalog =>
       _catalog ??= SamplerCatalog(clientAs<IHistoryClient>());
@@ -174,6 +180,7 @@ class ServerSession {
     if (_disposed) return;
     _disposed = true;
     _catalog?.dispose();
+    _identity?.dispose();
     _charts?.dispose();
     _features?.dispose();
     _tweaks?.dispose();

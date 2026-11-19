@@ -3,7 +3,6 @@ package art.arcane.react.api.web.resource;
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.IntegrationStatusDto;
 import art.arcane.react.api.web.dto.IntegrationsDto;
-import art.arcane.react.core.controller.IntegrationController;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 
@@ -13,11 +12,11 @@ import java.util.function.Supplier;
 
 public class IntegrationResource {
 
-    private final Supplier<List<IntegrationController.IntegrationStatus>> statusSupplier;
+    private final Supplier<List<IntegrationStatusDto>> statusSupplier;
     private final IntFunction<List<String>> timelineSupplier;
 
     public IntegrationResource(
-            Supplier<List<IntegrationController.IntegrationStatus>> statusSupplier,
+            Supplier<List<IntegrationStatusDto>> statusSupplier,
             IntFunction<List<String>> timelineSupplier) {
         this.statusSupplier = statusSupplier;
         this.timelineSupplier = timelineSupplier;
@@ -37,23 +36,11 @@ public class IntegrationResource {
             }
         }
 
-        List<IntegrationController.IntegrationStatus> statuses = statusSupplier.get();
+        List<IntegrationStatusDto> statuses = statusSupplier.get();
         List<String> timeline = timelineSupplier.apply(limit);
 
-        IntegrationStatusDto[] integrationDtos = new IntegrationStatusDto[statuses.size()];
-        for (int i = 0; i < statuses.size(); i++) {
-            IntegrationController.IntegrationStatus status = statuses.get(i);
-            IntegrationStatusDto dto = new IntegrationStatusDto();
-            dto.pluginId = status.pluginId();
-            dto.health = status.health().name();
-            dto.protocol = status.protocol();
-            dto.lastHeartbeatMs = status.lastHeartbeatMs();
-            dto.message = status.message();
-            integrationDtos[i] = dto;
-        }
-
         IntegrationsDto result = new IntegrationsDto();
-        result.integrations = integrationDtos;
+        result.integrations = statuses.toArray(new IntegrationStatusDto[0]);
         result.timeline = timeline.toArray(new String[0]);
 
         ctx.json(new Envelope<>(result));

@@ -1,35 +1,24 @@
 package art.arcane.react.api.web.resource;
 
-import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.HistoryCursorCodec;
-import art.arcane.react.api.web.MetricsSerializer;
 import art.arcane.react.api.web.WebRevisions;
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.MetricHistoryDescriptorDto;
 import art.arcane.react.api.web.dto.MetricHistoryPageDto;
 import art.arcane.react.api.web.dto.MetricHistorySeriesDto;
-import art.arcane.react.api.web.dto.MetricRangeDto;
-import art.arcane.react.api.web.dto.MetricRangeSeriesDto;
 import art.arcane.react.api.web.dto.SamplerDto;
-import art.arcane.react.core.controller.HistoryController;
-import art.arcane.react.core.controller.SampleController;
-import art.arcane.react.core.history.ChartHistory;
 import art.arcane.react.core.history.ChartRange;
 import art.arcane.react.core.history.HistoryPoint;
 import art.arcane.react.core.history.HistoryQueryResult;
 import art.arcane.react.core.history.HistoryQuerySeries;
-import art.arcane.react.core.history.MetricDescriptor;
-import art.arcane.react.core.history.MetricSnapshot;
-import art.arcane.react.core.history.MetricSnapshotValue;
-import art.arcane.react.util.project.registry.Registry;
+import art.arcane.react.platform.WebMetricHistory;
+import art.arcane.react.platform.WebMetricsSource;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
 import io.javalin.http.ServiceUnavailableResponse;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,73 +27,82 @@ public class MetricsResource {
     private static final long DEFAULT_RANGE_MS = 24L * 60L * 60L * 1_000L;
     private static final int MAX_RANGE_IDS = 64;
 
-    private final SampleController samplers;
-    private final HistoryController history;
-    private final MetricsSerializer serializer;
+    private final WebMetricsSource source;
     private volatile CachedSnapshot cachedSnapshot;
     private volatile CachedLiveFrame cachedLiveFrame;
 
-    public MetricsResource(
-        SampleController samplers,
-        HistoryController history,
-        MetricsSerializer serializer
-    ) {
-        this.samplers = samplers;
-        this.history = history;
-        this.serializer = serializer;
+    public MetricsResource(WebMetricsSource source) {
+        this.source = source == null ? WebMetricsSource.empty() : source;
     }
 
     public SnapshotResponse snapshotData() {
         WebRevisions.Snapshot revisions = WebRevisions.current();
-        MetricSnapshot snapshot = history == null ? MetricSnapshot.empty() : history.latestObserved();
-        if (!snapshot.values().isEmpty()) {
-            return snapshotResponse(snapshot, revisions);
+        WebMetricsSource.Frame frame = source.currentFrame();
+        CachedSnapshot cached = cachedSnapshot;
+        if (cached != null && cached.source() == frame && cached.response().revisions() == revisions) {
+            return cached.response();
         }
-        cachedSnapshot = null;
-        return registrySnapshot(revisions);
-    }
-
-    private SnapshotResponse registrySnapshot(WebRevisions.Snapshot revisions) {
-        Registry<Sampler> registry = samplers == null ? null : samplers.getSamplers();
-        if (registry == null) {
-            return new SnapshotResponse(0L, System.currentTimeMillis(), new SamplerDto[0], revisions);
+        synchronized (this) {
+            cached = cachedSnapshot;
+            if (cached != null && cached.source() == frame) {
+                if (cached.response().revisions() == revisions) {
+                    return cached.response();
+                }
+                SnapshotResponse response = cached.response().withRevisions(revisions);
+                cachedSnapshot = new CachedSnapshot(frame, response);
+                return response;
+            }
+            SamplerDto[] data = new SamplerDto[frame.values().size()];
+            for (int index = 0; index < data.length; index++) {
+                data[index] = toDto(frame.values().get(index));
+            }
+            SnapshotResponse response = new SnapshotResponse(frame.sequence(), frame.capturedAtMs(), data, revisions);
+            cachedSnapshot = new CachedSnapshot(frame, response);
+            return response;
         }
-        Collection<Sampler> all = registry.all();
-        List<SamplerDto> data = new ArrayList<>(all.size());
-        for (Sampler sampler : all) {
-            data.add(serializer.toDto(sampler));
-        }
-        return new SnapshotResponse(0L, System.currentTimeMillis(), data.toArray(new SamplerDto[0]), revisions);
     }
 
     /**
      * The live frame pushed over {@code /ws/metrics}: available samplers only, no metadata or
-     * diagnostics. Returns the same instance until the snapshot or the revisions change.
+     * diagnostics. Returns the same instance until the captured frame or the revisions change.
      */
     public LiveFrame liveFrame() {
         WebRevisions.Snapshot revisions = WebRevisions.current();
-        MetricSnapshot snapshot = history == null ? MetricSnapshot.empty() : history.latestObserved();
-        if (snapshot.values().isEmpty()) {
-            cachedLiveFrame = null;
-            SnapshotResponse fallback = registrySnapshot(revisions);
-            return new LiveFrame(fallback.sequence(), fallback.capturedAtMs(), liveSamples(fallback.samplers()), revisions);
-        }
+        WebMetricsSource.Frame source = this.source.currentFrame();
         CachedLiveFrame cached = cachedLiveFrame;
-        if (cached != null && cached.source() == snapshot && cached.frame().revisions() == revisions) {
+        if (cached != null && cached.source() == source && cached.frame().revisions() == revisions) {
             return cached.frame();
         }
         synchronized (this) {
             cached = cachedLiveFrame;
-            if (cached != null && cached.source() == snapshot && cached.frame().revisions() == revisions) {
+            if (cached != null && cached.source() == source && cached.frame().revisions() == revisions) {
                 return cached.frame();
             }
-            LiveSampleDto[] samples = cached != null && cached.source() == snapshot
+            LiveSampleDto[] samples = cached != null && cached.source() == source
                 ? cached.frame().samplers()
-                : liveSamples(snapshot);
-            LiveFrame frame = new LiveFrame(snapshot.sequence(), snapshot.capturedAtMs(), samples, revisions);
-            cachedLiveFrame = new CachedLiveFrame(snapshot, frame);
+                : liveSamples(source);
+            LiveFrame frame = new LiveFrame(source.sequence(), source.capturedAtMs(), samples, revisions);
+            cachedLiveFrame = new CachedLiveFrame(source, frame);
             return frame;
         }
+    }
+
+    public static SamplerDto toDto(WebMetricsSource.Value value) {
+        SamplerDto dto = new SamplerDto();
+        dto.id = value.id();
+        dto.name = value.name();
+        dto.value = value.value();
+        dto.suffix = value.suffix();
+        dto.display = value.display();
+        dto.available = value.available();
+        dto.sampledAtMs = value.sampledAtMs();
+        dto.intervalMs = value.intervalMs();
+        dto.windowMs = value.windowMs();
+        dto.quality = value.quality();
+        dto.unit = value.unit();
+        dto.unavailableReason = value.unavailableReason();
+        dto.diagnostics = value.diagnostics();
+        return dto;
     }
 
     public void snapshot(Context context) {
@@ -115,16 +113,16 @@ public class MetricsResource {
         context.json(new Envelope<>(snapshotData()));
     }
 
-    private static LiveSampleDto[] liveSamples(MetricSnapshot snapshot) {
+    private static LiveSampleDto[] liveSamples(WebMetricsSource.Frame frame) {
         int available = 0;
-        for (MetricSnapshotValue value : snapshot.values()) {
+        for (WebMetricsSource.Value value : frame.values()) {
             if (value.available()) {
                 available++;
             }
         }
         LiveSampleDto[] samples = new LiveSampleDto[available];
         int index = 0;
-        for (MetricSnapshotValue value : snapshot.values()) {
+        for (WebMetricsSource.Value value : frame.values()) {
             if (value.available()) {
                 samples[index++] = new LiveSampleDto(value.id(), value.name(), value.suffix(), value.value(), value.display());
             }
@@ -132,52 +130,27 @@ public class MetricsResource {
         return samples;
     }
 
-    private static LiveSampleDto[] liveSamples(SamplerDto[] samplers) {
-        List<LiveSampleDto> samples = new ArrayList<>(samplers.length);
-        for (SamplerDto sampler : samplers) {
-            if (sampler.available) {
-                samples.add(new LiveSampleDto(sampler.id, sampler.name, sampler.suffix, sampler.value, sampler.display));
-            }
-        }
-        return samples.toArray(new LiveSampleDto[0]);
+    private WebMetricHistory historyOrNull() {
+        return source.history().orElse(null);
     }
 
     public void historyCatalog(Context context) {
+        WebMetricHistory history = historyOrNull();
         if (history == null) {
             context.json(new Envelope<>(new MetricHistoryDescriptorDto[0]));
             return;
         }
-        List<MetricDescriptor> descriptors = history.descriptors();
-        MetricSnapshot latest = history.latest();
-        MetricHistoryDescriptorDto[] data = new MetricHistoryDescriptorDto[descriptors.size()];
-        for (int index = 0; index < descriptors.size(); index++) {
-            MetricDescriptor descriptor = descriptors.get(index);
-            MetricSnapshotValue live = latest.value(descriptor.id());
-            data[index] = new MetricHistoryDescriptorDto(
-                descriptor.id(),
-                descriptor.name(),
-                descriptor.suffix(),
-                descriptor.firstTimestampMs(),
-                descriptor.lastTimestampMs(),
-                descriptor.active(),
-                descriptor.metadata().intervalMs(),
-                descriptor.metadata().windowMs(),
-                descriptor.metadata().quality(),
-                descriptor.metadata().unit(),
-                live != null && live.available(),
-                live == null || live.available() ? null : live.unavailableReason()
-            );
-        }
-        context.json(new Envelope<>(data));
+        context.json(new Envelope<>(history.descriptors().toArray(new MetricHistoryDescriptorDto[0])));
     }
 
     public void history(Context context) throws IOException {
+        WebMetricHistory history = historyOrNull();
         if (history == null) {
             throw new ServiceUnavailableResponse("Metric history is not available");
         }
         QueryPage query = context.queryParam("cursor") == null
-            ? initialQuery(context)
-            : cursorQuery(context.queryParam("cursor"));
+            ? initialQuery(history, context)
+            : cursorQuery(history, context.queryParam("cursor"));
         boolean known = false;
         for (String id : query.ids()) {
             if (history.knowsMetric(id)) {
@@ -230,6 +203,7 @@ public class MetricsResource {
     }
 
     public void range(Context context) {
+        WebMetricHistory history = historyOrNull();
         if (history == null) {
             throw new ServiceUnavailableResponse("Metric history is not available");
         }
@@ -238,19 +212,7 @@ public class MetricsResource {
             throw new BadRequestResponse("range must be one of 1h, 6h or 24h");
         }
         List<String> ids = parseRangeIds(context.queryParam("ids"));
-        ChartHistory.Window window = history.chartRange(range, ids, System.currentTimeMillis());
-        MetricRangeSeriesDto[] series = new MetricRangeSeriesDto[window.series().size()];
-        for (int index = 0; index < series.length; index++) {
-            ChartHistory.Series value = window.series().get(index);
-            series[index] = new MetricRangeSeriesDto(value.id(), value.values());
-        }
-        context.json(new Envelope<>(new MetricRangeDto(
-            range.id(),
-            range.stepMs(),
-            window.fromMs(),
-            window.toMs(),
-            series
-        )));
+        context.json(new Envelope<>(history.range(range, ids, System.currentTimeMillis())));
     }
 
     private static List<String> parseRangeIds(String raw) {
@@ -274,46 +236,21 @@ public class MetricsResource {
         return List.copyOf(ids);
     }
 
-    private SnapshotResponse snapshotResponse(MetricSnapshot snapshot, WebRevisions.Snapshot revisions) {
-        CachedSnapshot cached = cachedSnapshot;
-        if (cached != null && cached.source() == snapshot && cached.response().revisions() == revisions) {
-            return cached.response();
-        }
-        synchronized (this) {
-            cached = cachedSnapshot;
-            if (cached != null && cached.source() == snapshot) {
-                if (cached.response().revisions() == revisions) {
-                    return cached.response();
-                }
-                SnapshotResponse response = cached.response().withRevisions(revisions);
-                cachedSnapshot = new CachedSnapshot(snapshot, response);
-                return response;
-            }
-            SamplerDto[] data = new SamplerDto[snapshot.values().size()];
-            for (int index = 0; index < snapshot.values().size(); index++) {
-                data[index] = serializer.toDto(snapshot.values().get(index));
-            }
-            SnapshotResponse response = new SnapshotResponse(snapshot.sequence(), snapshot.capturedAtMs(), data, revisions);
-            cachedSnapshot = new CachedSnapshot(snapshot, response);
-            return response;
-        }
-    }
-
-    private QueryPage initialQuery(Context context) {
-        List<String> ids = parseIds(context.queryParam("ids"));
+    private QueryPage initialQuery(WebMetricHistory history, Context context) {
+        List<String> ids = parseIds(history, context.queryParam("ids"));
         int maxPoints = parseInt(context.queryParam("maxPoints"), 1_200, "maxPoints");
-        if (maxPoints < 1 || maxPoints > history.effectiveMaxQueryPoints()) {
-            throw new BadRequestResponse("maxPoints must be between 1 and " + history.effectiveMaxQueryPoints());
+        if (maxPoints < 1 || maxPoints > history.maxQueryPoints()) {
+            throw new BadRequestResponse("maxPoints must be between 1 and " + history.maxQueryPoints());
         }
         int pagePoints = parseInt(
             context.queryParam("pageSize"),
-            history.effectiveQueryPagePoints(),
+            history.queryPagePoints(),
             "pageSize"
         );
-        if (pagePoints < 1 || pagePoints > history.effectiveQueryPagePoints()) {
-            throw new BadRequestResponse("pageSize must be between 1 and " + history.effectiveQueryPagePoints());
+        if (pagePoints < 1 || pagePoints > history.queryPagePoints()) {
+            throw new BadRequestResponse("pageSize must be between 1 and " + history.queryPagePoints());
         }
-        MetricSnapshot snapshot = history.latest();
+        WebMetricHistory.Capture snapshot = history.latestCapture();
         long throughMs = snapshot.capturedAtMs() > 0L ? snapshot.capturedAtMs() : System.currentTimeMillis();
         long requestedToMs = parseLong(context.queryParam("to"), throughMs, "to");
         requestedToMs = Math.min(requestedToMs, saturatedAdd(throughMs, 1L));
@@ -336,16 +273,16 @@ public class MetricsResource {
         );
     }
 
-    private QueryPage cursorQuery(String cursor) {
+    private QueryPage cursorQuery(WebMetricHistory history, String cursor) {
         try {
             HistoryCursorCodec.HistoryCursor decoded = HistoryCursorCodec.decode(cursor);
-            validateIds(decoded.ids());
+            validateIds(history, decoded.ids());
             validateRange(decoded.requestedFromMs(), decoded.requestedToMs());
             if (decoded.nextFromMs() < decoded.requestedFromMs()
                 || decoded.nextFromMs() >= decoded.requestedToMs()
                 || decoded.resolutionMs() < 1_000L
                 || decoded.pagePoints() < 1
-                || decoded.pagePoints() > history.effectiveQueryPagePoints()) {
+                || decoded.pagePoints() > history.queryPagePoints()) {
                 throw new BadRequestResponse("History cursor contains invalid query bounds");
             }
             return new QueryPage(
@@ -365,7 +302,7 @@ public class MetricsResource {
         }
     }
 
-    private List<String> parseIds(String raw) {
+    private List<String> parseIds(WebMetricHistory history, String raw) {
         if (raw == null || raw.isBlank()) {
             throw new BadRequestResponse("ids is required");
         }
@@ -377,14 +314,14 @@ public class MetricsResource {
             }
         }
         List<String> result = List.copyOf(ids);
-        validateIds(result);
+        validateIds(history, result);
         return result;
     }
 
-    private void validateIds(List<String> ids) {
-        if (ids.isEmpty() || ids.size() > history.effectiveMaxQuerySeries()) {
+    private static void validateIds(WebMetricHistory history, List<String> ids) {
+        if (ids.isEmpty() || ids.size() > history.maxQuerySeries()) {
             throw new BadRequestResponse(
-                "ids must contain between 1 and " + history.effectiveMaxQuerySeries() + " unique metrics"
+                "ids must contain between 1 and " + history.maxQuerySeries() + " unique metrics"
             );
         }
         for (String id : ids) {
@@ -458,10 +395,10 @@ public class MetricsResource {
         }
     }
 
-    private record CachedSnapshot(MetricSnapshot source, SnapshotResponse response) {
+    private record CachedSnapshot(WebMetricsSource.Frame source, SnapshotResponse response) {
     }
 
-    private record CachedLiveFrame(MetricSnapshot source, LiveFrame frame) {
+    private record CachedLiveFrame(WebMetricsSource.Frame source, LiveFrame frame) {
     }
 
     public record SnapshotResponse(

@@ -84,4 +84,20 @@ public class EnvironmentDto {
         public long collisions;
         public long timestampMillis;
     }
+
+    /** Every section present with empty values, for a platform without host telemetry. */
+    public static EnvironmentDto empty() {
+        EnvironmentDto environment = new EnvironmentDto();
+        environment.cpu = new CpuDto();
+        environment.cpu.graphicsCards = new String[0];
+        environment.memory = new MemoryDto();
+        environment.jvm = new JvmDto();
+        environment.server = new ServerDto();
+        environment.server.sensors = new String[0];
+        environment.server.powerSources = new String[0];
+        environment.disks = new DiskDto[0];
+        environment.mounts = new MountDto[0];
+        environment.network = new NetworkInterfaceDto[0];
+        return environment;
+    }
 }

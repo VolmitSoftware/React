@@ -1,5 +1,7 @@
 package art.arcane.react.platform;
 
+import art.arcane.react.api.web.ReactWebServer;
+
 import java.io.File;
 import java.util.Optional;
 import java.util.UUID;
@@ -75,6 +77,13 @@ public interface ReactPlatform {
   }
 
   default Optional<ReactWorld> world(Object handle) {
+    return Optional.empty();
+  }
+
+  // React Web
+
+  /** The running React Web server, for the {@code /react web} commands; empty where none runs. */
+  default Optional<ReactWebServer> webServer() {
     return Optional.empty();
   }
 }

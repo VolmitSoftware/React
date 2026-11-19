@@ -1,8 +1,5 @@
 package art.arcane.react.api.web;
 
-import art.arcane.react.api.action.ActionParams;
-import art.arcane.react.api.action.ActionTicket;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -49,23 +46,6 @@ public final class ActionTicketRegistry {
     return id;
   }
 
-  public <T extends ActionParams> String track(ActionTicket<T> ticket) {
-    String id = register();
-    ticket.onStart(started -> update(id, State.RUNNING, ""));
-    ticket.onTerminal(finished -> {
-      if (finished.isFailed()) {
-        Throwable failure = finished.getFailure();
-        String message = failure == null || failure.getMessage() == null
-            ? "Action failed"
-            : failure.getMessage();
-        update(id, State.FAILED, message);
-        return;
-      }
-      update(id, State.DONE, completedMessage(finished));
-    });
-    return id;
-  }
-
   public void update(String id, State state, String message) {
     synchronized (tickets) {
       tickets.put(id, new TicketView(id, state.wire(), message == null ? "" : message));
@@ -76,14 +56,6 @@ public final class ActionTicketRegistry {
   public TicketView get(String id) {
     synchronized (tickets) {
       return tickets.get(id);
-    }
-  }
-
-  private static <T extends ActionParams> String completedMessage(ActionTicket<T> ticket) {
-    try {
-      return ticket.getAction().getCompletedMessage(ticket);
-    } catch (Throwable ignored) {
-      return "";
     }
   }
 }

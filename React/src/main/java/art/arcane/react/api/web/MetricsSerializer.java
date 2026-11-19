@@ -1,17 +1,18 @@
 package art.arcane.react.api.web;
 
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.api.web.dto.SamplerDto;
+import art.arcane.react.api.web.dto.MetricDiagnosticsDto;
 import art.arcane.react.core.history.MetricSnapshotValue;
+import art.arcane.react.platform.WebMetricsSource;
 
 public class MetricsSerializer {
 
-    public SamplerDto toDto(Sampler s) {
+    public WebMetricsSource.Value toValue(Sampler s) {
         s.markDemand();
         Sampler.Reading reading = s.captureReading();
         double value = reading.value();
         boolean available = reading.available();
-        return toDto(new MetricSnapshotValue(
+        return toValue(new MetricSnapshotValue(
             s.getId(),
             s.getName(),
             s.formattedSuffix(value),
@@ -25,21 +26,30 @@ public class MetricsSerializer {
         ));
     }
 
-    public SamplerDto toDto(MetricSnapshotValue value) {
-        SamplerDto dto = new SamplerDto();
-        dto.id = value.id();
-        dto.name = value.name();
-        dto.value = value.value();
-        dto.suffix = value.suffix();
-        dto.display = value.display();
-        dto.available = value.available();
-        dto.sampledAtMs = value.sampledAtMs();
-        dto.intervalMs = value.metadata().intervalMs();
-        dto.windowMs = value.metadata().windowMs();
-        dto.quality = value.metadata().quality();
-        dto.unit = value.metadata().unit();
-        dto.unavailableReason = value.unavailableReason();
-        dto.diagnostics = value.diagnostics() == Sampler.Diagnostics.EMPTY ? null : value.diagnostics();
-        return dto;
+    public WebMetricsSource.Value toValue(MetricSnapshotValue value) {
+        return new WebMetricsSource.Value(
+            value.id(),
+            value.name(),
+            value.suffix(),
+            value.value(),
+            value.display(),
+            value.available(),
+            value.sampledAtMs(),
+            value.metadata().intervalMs(),
+            value.metadata().windowMs(),
+            value.metadata().quality().name(),
+            value.metadata().unit(),
+            value.unavailableReason(),
+            diagnostics(value.diagnostics())
+        );
+    }
+
+    private static MetricDiagnosticsDto diagnostics(Sampler.Diagnostics d) {
+        if (d == null || d == Sampler.Diagnostics.EMPTY) {
+            return null;
+        }
+        return new MetricDiagnosticsDto(d.attempts(), d.successes(), d.failures(), d.cacheHits(), d.inFlightSkips(),
+            d.lastDurationNanos(), d.maxDurationNanos(), d.lastQueueNanos(), d.maxQueueNanos(), d.lastSuccessAtMs(),
+            d.totalDurationNanos(), d.totalQueueNanos());
     }
 }

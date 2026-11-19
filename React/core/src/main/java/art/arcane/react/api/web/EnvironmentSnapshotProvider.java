@@ -2,19 +2,18 @@ package art.arcane.react.api.web;
 
 import art.arcane.react.api.web.dto.EnvironmentDto;
 import art.arcane.react.api.web.dto.IdentityDto;
-import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
 
 import java.util.function.Supplier;
 
 public final class EnvironmentSnapshotProvider {
     private final Supplier<IdentityDto> identitySupplier;
     private final Supplier<String> serverVersionSupplier;
-    private final Supplier<HostTelemetrySnapshot> telemetrySupplier;
+    private final Supplier<EnvironmentDto> telemetrySupplier;
 
     public EnvironmentSnapshotProvider(
         Supplier<IdentityDto> identitySupplier,
         Supplier<String> serverVersionSupplier,
-        Supplier<HostTelemetrySnapshot> telemetrySupplier
+        Supplier<EnvironmentDto> telemetrySupplier
     ) {
         this.identitySupplier = identitySupplier;
         this.serverVersionSupplier = serverVersionSupplier;
@@ -22,11 +21,10 @@ public final class EnvironmentSnapshotProvider {
     }
 
     public EnvironmentDto snapshot() {
-        HostTelemetrySnapshot telemetry = telemetrySupplier.get();
-        if (telemetry == null) {
-            telemetry = HostTelemetrySnapshot.empty();
+        EnvironmentDto source = telemetrySupplier.get();
+        if (source == null) {
+            source = EnvironmentDto.empty();
         }
-        EnvironmentDto source = telemetry.environment();
         EnvironmentDto dto = new EnvironmentDto();
         dto.cpu = source.cpu;
         dto.memory = source.memory;

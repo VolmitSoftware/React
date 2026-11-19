@@ -2,6 +2,7 @@ package art.arcane.react.web;
 
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.IntegrationsDto;
+import art.arcane.react.api.web.BukkitWebHost;
 import art.arcane.react.api.web.resource.IntegrationResource;
 import art.arcane.react.core.controller.IntegrationController.Health;
 import art.arcane.react.core.controller.IntegrationController.IntegrationStatus;
@@ -34,7 +35,7 @@ public class IntegrationResourceTest {
         ));
         when(timelineSupplier.apply(20)).thenReturn(List.of("12s ago - x"));
 
-        IntegrationResource resource = new IntegrationResource(statusSupplier, timelineSupplier);
+        IntegrationResource resource = new IntegrationResource(() -> BukkitWebHost.integrationDtos(statusSupplier.get()), timelineSupplier);
         Context ctx = mock(Context.class);
         when(ctx.queryParam("limit")).thenReturn(null);
 
@@ -60,7 +61,7 @@ public class IntegrationResourceTest {
         when(statusSupplier.get()).thenReturn(List.of());
         when(timelineSupplier.apply(anyInt())).thenReturn(List.of());
 
-        IntegrationResource resource = new IntegrationResource(statusSupplier, timelineSupplier);
+        IntegrationResource resource = new IntegrationResource(() -> BukkitWebHost.integrationDtos(statusSupplier.get()), timelineSupplier);
 
         Context ctx1 = mock(Context.class);
         when(ctx1.queryParam("limit")).thenReturn(null);
@@ -84,7 +85,7 @@ public class IntegrationResourceTest {
         Supplier<List<IntegrationStatus>> statusSupplier = mock(Supplier.class);
         IntFunction<List<String>> timelineSupplier = mock(IntFunction.class);
 
-        IntegrationResource resource = new IntegrationResource(statusSupplier, timelineSupplier);
+        IntegrationResource resource = new IntegrationResource(() -> BukkitWebHost.integrationDtos(statusSupplier.get()), timelineSupplier);
         Context ctx = mock(Context.class);
         when(ctx.queryParam("limit")).thenReturn("abc");
 
@@ -99,7 +100,7 @@ public class IntegrationResourceTest {
         when(statusSupplier.get()).thenReturn(List.of());
         when(timelineSupplier.apply(anyInt())).thenReturn(List.of());
 
-        IntegrationResource resource = new IntegrationResource(statusSupplier, timelineSupplier);
+        IntegrationResource resource = new IntegrationResource(() -> BukkitWebHost.integrationDtos(statusSupplier.get()), timelineSupplier);
         Context ctx = mock(Context.class);
         when(ctx.queryParam("limit")).thenReturn(null);
 

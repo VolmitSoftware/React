@@ -1,8 +1,8 @@
 package art.arcane.react.api.web;
 
-import art.arcane.react.content.feature.FeaturePerWorldTickBudget;
-
 public final class WebRevisions {
+  private static final String PER_WORLD_TICK_BUDGET_ID = "per-world-tick-budget";
+
   public enum Kind {
     FEATURES,
     TWEAKS,
@@ -62,7 +62,7 @@ public final class WebRevisions {
     switch (category) {
       case "feature" -> {
         bump(Kind.FEATURES);
-        if (FeaturePerWorldTickBudget.ID.equals(id)) {
+        if (PER_WORLD_TICK_BUDGET_ID.equals(id)) {
           bump(Kind.WORLDS);
         }
       }

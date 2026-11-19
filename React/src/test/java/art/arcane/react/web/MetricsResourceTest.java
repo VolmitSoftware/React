@@ -1,6 +1,7 @@
 package art.arcane.react.web;
 
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.web.BukkitWebMetricsSource;
 import art.arcane.react.api.web.MetricsSerializer;
 import art.arcane.react.api.web.WebRevisions;
 import art.arcane.react.api.web.dto.Envelope;
@@ -36,7 +37,7 @@ public class MetricsResourceTest {
   void snapshotReturnsEmptyArrayWhenRegistryIsNull() {
     SampleController controller = mock(SampleController.class);
     when(controller.getSamplers()).thenReturn(null);
-    MetricsResource resource = new MetricsResource(controller, null, new MetricsSerializer());
+    MetricsResource resource = new MetricsResource(new BukkitWebMetricsSource(() -> controller, () -> null, new MetricsSerializer()));
 
     Context context = mock(Context.class);
     ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
@@ -58,7 +59,7 @@ public class MetricsResourceTest {
         1_000L,
         List.of(new MetricSnapshotValue("tick-time", "Tick Time", "ms", 42D, "42 ms", true, 1L, Sampler.Metadata.UNKNOWN, "", Sampler.Diagnostics.EMPTY))
     ));
-    MetricsResource resource = new MetricsResource(controller, history, new MetricsSerializer());
+    MetricsResource resource = new MetricsResource(new BukkitWebMetricsSource(() -> controller, () -> history, new MetricsSerializer()));
 
     MetricsResource.SnapshotResponse response = resource.snapshotData();
 
@@ -80,7 +81,7 @@ public class MetricsResourceTest {
     MetricSnapshot replacement = MetricSnapshot.of(18L, 2_000L, List.of(value));
     when(history.latestObserved()).thenReturn(first, first, next, next, replacement);
     MetricsSerializer serializer = spy(new MetricsSerializer());
-    MetricsResource resource = new MetricsResource(null, history, serializer);
+    MetricsResource resource = new MetricsResource(new BukkitWebMetricsSource(() -> null, () -> history, serializer));
 
     MetricsResource.SnapshotResponse a = resource.snapshotData();
     assertSame(a, resource.snapshotData());
@@ -91,7 +92,7 @@ public class MetricsResourceTest {
     assertNotSame(b, c);
     assertEquals(2_000L, c.capturedAtMs());
     verify(history, times(5)).latestObserved();
-    verify(serializer, times(3)).toDto(value);
+    verify(serializer, times(3)).toValue(value);
   }
 
   @Test
@@ -103,7 +104,7 @@ public class MetricsResourceTest {
     when(sampler.captureReading()).thenReturn(new Sampler.Reading(20D, 123L, true, Sampler.Metadata.UNKNOWN, ""));
     when(controller.getSamplers()).thenReturn(registry);
     when(registry.all()).thenReturn(List.of(sampler));
-    MetricsResource resource = new MetricsResource(controller, null, new MetricsSerializer());
+    MetricsResource resource = new MetricsResource(new BukkitWebMetricsSource(() -> controller, () -> null, new MetricsSerializer()));
 
     assertNotSame(resource.snapshotData(), resource.snapshotData());
     verify(sampler, times(2)).markDemand();
@@ -117,7 +118,7 @@ public class MetricsResourceTest {
     Registry<Sampler> registry = mock(Registry.class);
     when(controller.getSamplers()).thenReturn(registry);
     when(registry.all()).thenReturn(List.of(new FakeSampler("tps", 20D, "")));
-    MetricsResource resource = new MetricsResource(controller, null, new MetricsSerializer());
+    MetricsResource resource = new MetricsResource(new BukkitWebMetricsSource(() -> controller, () -> null, new MetricsSerializer()));
 
     SamplerDto[] values = resource.snapshotData().samplers();
 
@@ -141,7 +142,7 @@ public class MetricsResourceTest {
     Context context = mock(Context.class);
     ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
 
-    new MetricsResource(null, history, new MetricsSerializer()).historyCatalog(context);
+    new MetricsResource(new BukkitWebMetricsSource(() -> null, () -> history, new MetricsSerializer())).historyCatalog(context);
 
     verify(context).json(captor.capture());
     MetricHistoryDescriptorDto[] data = (MetricHistoryDescriptorDto[]) ((Envelope<?>) captor.getValue()).data();
@@ -161,7 +162,7 @@ public class MetricsResourceTest {
         123L, Sampler.Metadata.UNKNOWN, "plugin-missing", Sampler.Diagnostics.EMPTY);
     MetricSnapshot snapshot = MetricSnapshot.of(3L, 1_000L, List.of(live, off));
     when(history.latestObserved()).thenReturn(snapshot);
-    MetricsResource resource = new MetricsResource(null, history, new MetricsSerializer());
+    MetricsResource resource = new MetricsResource(new BukkitWebMetricsSource(() -> null, () -> history, new MetricsSerializer()));
 
     MetricsResource.LiveFrame first = resource.liveFrame();
     assertEquals(1, first.samplers().length);
@@ -185,7 +186,7 @@ public class MetricsResourceTest {
     when(history.knowsMetric("nope")).thenReturn(false);
     when(history.selectResolution(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.anyInt()))
         .thenReturn(1_000L);
-    MetricsResource resource = new MetricsResource(null, history, new MetricsSerializer());
+    MetricsResource resource = new MetricsResource(new BukkitWebMetricsSource(() -> null, () -> history, new MetricsSerializer()));
     Context context = mock(Context.class);
     when(context.queryParam("ids")).thenReturn("nope");
 

@@ -31,7 +31,7 @@ public class EnvironmentSnapshotProviderTest {
 
     @Test
     void snapshotCpuIsNonNullAndCoresMatchRuntime() {
-        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, () -> "Paper 26.3", this::fakeTelemetry);
+        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, () -> "Paper 26.3", () -> fakeTelemetry().environment());
         EnvironmentDto dto = provider.snapshot();
 
         assertNotNull(dto.cpu, "cpu must not be null");
@@ -41,7 +41,7 @@ public class EnvironmentSnapshotProviderTest {
 
     @Test
     void snapshotMemoryIsNonNullAndPhysicalTotalPositive() {
-        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, () -> "Paper 26.3", this::fakeTelemetry);
+        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, () -> "Paper 26.3", () -> fakeTelemetry().environment());
         EnvironmentDto dto = provider.snapshot();
 
         assertNotNull(dto.memory, "memory must not be null");
@@ -50,7 +50,7 @@ public class EnvironmentSnapshotProviderTest {
 
     @Test
     void snapshotJvmIsNonNullAndVersionNonBlank() {
-        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, () -> "Paper 26.3", this::fakeTelemetry);
+        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, () -> "Paper 26.3", () -> fakeTelemetry().environment());
         EnvironmentDto dto = provider.snapshot();
 
         assertNotNull(dto.jvm, "jvm must not be null");
@@ -61,7 +61,7 @@ public class EnvironmentSnapshotProviderTest {
 
     @Test
     void snapshotServerFieldsMatchInjectedIdentity() {
-        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, () -> "Paper 26.3", this::fakeTelemetry);
+        EnvironmentSnapshotProvider provider = new EnvironmentSnapshotProvider(this::fakeIdentity, () -> "Paper 26.3", () -> fakeTelemetry().environment());
         EnvironmentDto dto = provider.snapshot();
 
         assertNotNull(dto.server, "server must not be null");

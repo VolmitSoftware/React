@@ -1,40 +1,26 @@
 package art.arcane.react.api.web;
 
-import art.arcane.react.api.web.pairing.WebToken;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.localization.MessageArgument;
-import io.javalin.http.Context;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public final class BukkitWebMutationReporter implements WebMutationReporter {
-  private static final int MAX_AUDIT_FIELD_LENGTH = 300;
-
-  private final AuditLog auditLog;
-
+public final class BukkitWebMutationReporter extends AuditWebMutationReporter {
   public BukkitWebMutationReporter(AuditLog auditLog) {
-    this.auditLog = auditLog;
+    super(auditLog);
   }
 
   @Override
-  public void report(Context context, WebMutation mutation) {
-    WebToken token = context.attribute("token");
-    String actorId = token == null ? "web" : "web:" + token.id();
-    String actorDisplay = displayActor(token);
-    String operation = sanitize(mutation.operation());
-    String target = sanitize(mutation.target());
-    String detail = sanitize(mutation.detail());
-    String result = sanitize(mutation.result());
-    auditLog.append(actorId, operation, "target=" + target + " detail=" + detail, result);
-    J.s(() -> notifyOperators(actorDisplay, target, detail));
+  protected void notifyOperators(String actor, String target, String detail) {
+    J.s(() -> tellOperators(actor, target, detail));
   }
 
-  private static void notifyOperators(String actor, String target, String detail) {
+  private static void tellOperators(String actor, String target, String detail) {
     List<Player> players = new ArrayList<>(Bukkit.getOnlinePlayers());
     for (Player player : players) {
       J.runEntity(player, () -> {
@@ -50,23 +36,5 @@ public final class BukkitWebMutationReporter implements WebMutationReporter {
         );
       });
     }
-  }
-
-  static String displayActor(WebToken token) {
-    if (token == null) {
-      return "web";
-    }
-    String label = token.label() == null || token.label().isBlank() ? token.id() : token.label();
-    return label + " (" + token.role() + ", " + token.id() + ")";
-  }
-
-  private static String sanitize(String value) {
-    if (value == null) {
-      return "";
-    }
-    String cleaned = value.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ').trim();
-    return cleaned.length() <= MAX_AUDIT_FIELD_LENGTH
-        ? cleaned
-        : cleaned.substring(0, MAX_AUDIT_FIELD_LENGTH);
   }
 }

@@ -3,9 +3,9 @@ package art.arcane.react.api.web.resource;
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.IncidentContributorDto;
 import art.arcane.react.api.web.dto.IncidentDto;
-import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.core.incident.IncidentEvidence;
 import art.arcane.react.core.incident.IncidentRecord;
+import art.arcane.react.platform.WebHost;
 import io.javalin.http.Context;
 
 import java.util.List;
@@ -14,12 +14,12 @@ import java.util.function.Supplier;
 
 public class IncidentResource {
 
-    private final Supplier<SamplerIncidentScore.IncidentScoreSnapshot> snapshotSupplier;
+    private final Supplier<WebHost.IncidentScore> snapshotSupplier;
     private final Supplier<String> stateSupplier;
     private final IntFunction<List<IncidentRecord>> recordsSupplier;
 
     public IncidentResource(
-            Supplier<SamplerIncidentScore.IncidentScoreSnapshot> snapshotSupplier,
+            Supplier<WebHost.IncidentScore> snapshotSupplier,
             Supplier<String> stateSupplier,
             IntFunction<List<IncidentRecord>> recordsSupplier) {
         this.snapshotSupplier = snapshotSupplier;
@@ -42,9 +42,9 @@ public class IncidentResource {
         }
 
         IncidentDto dto = new IncidentDto();
-        SamplerIncidentScore.IncidentScoreSnapshot snapshot = snapshotSupplier.get();
+        WebHost.IncidentScore snapshot = snapshotSupplier.get();
         if (snapshot == null) {
-            snapshot = SamplerIncidentScore.IncidentScoreSnapshot.empty();
+            snapshot = WebHost.IncidentScore.EMPTY;
         }
         dto.score = snapshot.score();
         dto.scoreAvailable = snapshot.available();

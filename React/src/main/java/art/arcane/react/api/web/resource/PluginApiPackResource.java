@@ -1,5 +1,6 @@
 package art.arcane.react.api.web.resource;
 
+import art.arcane.react.api.web.PluginApiPackRoutes;
 import art.arcane.react.api.web.WebAuth;
 import art.arcane.react.api.web.WebMutation;
 import art.arcane.react.api.web.WebMutationReporter;
@@ -23,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-public final class PluginApiPackResource {
+public final class PluginApiPackResource implements PluginApiPackRoutes {
   private final Supplier<PluginApiPackController> controllerSupplier;
   private final WebMutationReporter reporter;
 
@@ -35,10 +36,12 @@ public final class PluginApiPackResource {
     this.reporter = reporter;
   }
 
+  @Override
   public void list(Context context) {
     context.json(new Envelope<>(catalog(controller())));
   }
 
+  @Override
   public void get(Context context) {
     PackStatus status = controller().status(context.pathParam("id"));
     if (status == null) {
@@ -47,6 +50,7 @@ public final class PluginApiPackResource {
     context.json(new Envelope<>(pack(status)));
   }
 
+  @Override
   public void validate(Context context) {
     WebAuth.requireScope(context, "admin");
     ContentBody body = body(context);
@@ -59,6 +63,7 @@ public final class PluginApiPackResource {
     )));
   }
 
+  @Override
   public void put(Context context) {
     WebAuth.requireScope(context, "admin");
     ContentBody body = body(context);
@@ -81,6 +86,7 @@ public final class PluginApiPackResource {
     }
   }
 
+  @Override
   public void delete(Context context) {
     WebAuth.requireScope(context, "admin");
     PluginApiPackController controller = controller();

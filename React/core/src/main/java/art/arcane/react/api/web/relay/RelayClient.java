@@ -1,6 +1,6 @@
 package art.arcane.react.api.web.relay;
 
-import art.arcane.react.React;
+import art.arcane.react.api.web.WebLog;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -227,10 +227,10 @@ public final class RelayClient {
     private void unreachable(Throwable failure) {
         Throwable cause = failure.getCause() != null ? failure.getCause() : failure;
         if (!stopped.get() && unreachableReported.compareAndSet(false, true)) {
-            React.warn("React Web relay unreachable at " + agentUri + ": " + cause.getClass().getSimpleName()
+            WebLog.warn("React Web relay unreachable at " + agentUri + ": " + cause.getClass().getSimpleName()
                 + "; retrying in the background");
         } else {
-            React.verbose("RelayClient: connect failed: " + cause);
+            WebLog.verbose("RelayClient: connect failed: " + cause);
         }
     }
 
@@ -241,7 +241,7 @@ public final class RelayClient {
         }
         long idleNanos = System.nanoTime() - connection.lastInboundNanos;
         if (idleNanos > TimeUnit.MILLISECONDS.toNanos(idleTimeoutMillis)) {
-            React.verbose("RelayClient: no traffic from the relay for " + TimeUnit.NANOSECONDS.toMillis(idleNanos) + " ms; reconnecting");
+            WebLog.verbose("RelayClient: no traffic from the relay for " + TimeUnit.NANOSECONDS.toMillis(idleNanos) + " ms; reconnecting");
             connection.socket.abort();
             connectionLost(connection.socket);
             return;
@@ -285,7 +285,7 @@ public final class RelayClient {
             touch();
             if (textBuffer.length() + data.length() > MAX_INBOUND_CHARS) {
                 textBuffer.setLength(0);
-                React.warn("RelayClient: relay frame exceeded " + MAX_INBOUND_CHARS + " characters; reconnecting");
+                WebLog.warn("RelayClient: relay frame exceeded " + MAX_INBOUND_CHARS + " characters; reconnecting");
                 webSocket.abort();
                 connectionLost(webSocket);
                 return null;
@@ -302,7 +302,7 @@ public final class RelayClient {
                     handleFrame(connection, frame);
                 }
             } catch (Exception e) {
-                React.warn("RelayClient: frame parse error: " + e.getMessage(), e);
+                WebLog.warn("RelayClient: frame parse error: " + e.getMessage(), e);
             }
             return null;
         }
@@ -327,7 +327,7 @@ public final class RelayClient {
 
         @Override
         public void onError(WebSocket webSocket, Throwable error) {
-            React.verbose("RelayClient: WebSocket error", error);
+            WebLog.verbose("RelayClient: WebSocket error", error);
             connectionLost(webSocket);
         }
 
@@ -347,8 +347,8 @@ public final class RelayClient {
             case "challenge" -> handleChallenge(connection, frame);
             case "registered" -> handleRegistered();
             case "route" -> handleRoute(connection, frame);
-            case "error" -> React.warn("RelayClient: broker error: " + (frame.payload() != null ? frame.payload().toString() : "(no payload)"));
-            default -> React.warn("RelayClient: unknown frame type: " + frame.type());
+            case "error" -> WebLog.warn("RelayClient: broker error: " + (frame.payload() != null ? frame.payload().toString() : "(no payload)"));
+            default -> WebLog.warn("RelayClient: unknown frame type: " + frame.type());
         }
     }
 
@@ -356,7 +356,7 @@ public final class RelayClient {
         try {
             JsonObject payload = frame.payload();
             if (payload == null || !payload.has("nonce")) {
-                React.warn("RelayClient: challenge frame missing nonce");
+                WebLog.warn("RelayClient: challenge frame missing nonce");
                 return;
             }
             byte[] nonce = B64URL_DECODER.decode(payload.get("nonce").getAsString());
@@ -368,7 +368,7 @@ public final class RelayClient {
 
             connection.send(new RelayFrame("register", identity.fingerprint(), "hs", registerPayload).toJson());
         } catch (Exception e) {
-            React.warn("RelayClient: challenge handling error: " + e.getMessage(), e);
+            WebLog.warn("RelayClient: challenge handling error: " + e.getMessage(), e);
         }
     }
 
@@ -376,7 +376,7 @@ public final class RelayClient {
         registered.set(true);
         attempt.set(0);
         unreachableReported.set(false);
-        React.info("React Web relay registered at " + agentUri + " as " + identity.fingerprint());
+        WebLog.info("React Web relay registered at " + agentUri + " as " + identity.fingerprint());
     }
 
     private void handleRoute(AgentConnection connection, RelayFrame frame) {
@@ -422,7 +422,7 @@ public final class RelayClient {
             connection.send(new RelayFrame("data", identity.fingerprint(), requestId, dataPayload).toJson());
         } catch (Exception e) {
             String message = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-            React.warn("RelayClient: route dispatch error: " + message, e);
+            WebLog.warn("RelayClient: route dispatch error: " + message, e);
             sendError(connection, requestId, 502, message);
         }
     }
