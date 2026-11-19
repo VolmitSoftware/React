@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerWormholesPlateBytes extends RemoteIntegrationSampler {
   public static final String ID = "wormholes-plate-bytes";
@@ -11,7 +10,7 @@ public class SamplerWormholesPlateBytes extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.MAP;
+  public String getIcon() {
+    return "minecraft:map";
   }
 }

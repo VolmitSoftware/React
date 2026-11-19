@@ -25,7 +25,6 @@ import art.arcane.react.content.feature.FeatureLazyGravity;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.volmlib.util.math.RollingSequence;
-import org.bukkit.Material;
 
 public class SamplerLazyGravitySkipped extends ReactCachedSampler {
   public static final String ID = "lazy-gravity-skipped";
@@ -39,8 +38,8 @@ public class SamplerLazyGravitySkipped extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.SAND;
+  public String getIcon() {
+    return "minecraft:sand";
   }
 
   @Override

@@ -25,7 +25,6 @@ import art.arcane.react.content.feature.FeatureHopperChainCoalescing;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.volmlib.util.math.RollingSequence;
-import org.bukkit.Material;
 
 public class SamplerHopperChainCoalescing extends ReactCachedSampler {
   public static final String ID = "hopper-chain-coalescing";
@@ -39,8 +38,8 @@ public class SamplerHopperChainCoalescing extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.HOPPER;
+  public String getIcon() {
+    return "minecraft:hopper";
   }
 
   @Override

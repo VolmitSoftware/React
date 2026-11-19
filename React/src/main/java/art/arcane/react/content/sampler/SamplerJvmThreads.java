@@ -5,7 +5,6 @@ import art.arcane.react.core.controller.TelemetryController;
 import art.arcane.react.core.telemetry.HostMetric;
 import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 import java.util.function.Supplier;
 
@@ -23,8 +22,8 @@ public class SamplerJvmThreads extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.STRING;
+  public String getIcon() {
+    return "minecraft:string";
   }
 
   @Override

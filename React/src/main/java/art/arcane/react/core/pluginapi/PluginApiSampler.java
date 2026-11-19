@@ -3,7 +3,6 @@ package art.arcane.react.core.pluginapi;
 import art.arcane.react.api.metric.ReactMetricKind;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public final class PluginApiSampler extends ReactCachedSampler {
   private final String packId;
@@ -44,7 +43,7 @@ public final class PluginApiSampler extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
+  public String getIcon() {
     return runtime.definition().icon();
   }
 

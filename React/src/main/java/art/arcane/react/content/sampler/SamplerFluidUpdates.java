@@ -21,7 +21,6 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedRateSampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.event.EventHandler;
@@ -36,8 +35,8 @@ public class SamplerFluidUpdates extends ReactCachedRateSampler implements Liste
   }
 
   @Override
-  public Material getIcon() {
-    return Material.MILK_BUCKET;
+  public String getIcon() {
+    return "minecraft:milk_bucket";
   }
 
   @EventHandler

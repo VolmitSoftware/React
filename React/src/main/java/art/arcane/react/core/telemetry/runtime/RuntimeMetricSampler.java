@@ -2,7 +2,6 @@ package art.arcane.react.core.telemetry.runtime;
 
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 import java.util.function.Supplier;
 
@@ -27,8 +26,8 @@ public final class RuntimeMetricSampler implements Sampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.COMPASS;
+  public String getIcon() {
+    return "minecraft:compass";
   }
 
   @Override

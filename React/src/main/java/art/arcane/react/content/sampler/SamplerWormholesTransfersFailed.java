@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerWormholesTransfersFailed extends RemoteIntegrationSampler {
   public static final String ID = "wormholes-transfers-failed";
@@ -11,7 +10,7 @@ public class SamplerWormholesTransfersFailed extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.BARRIER;
+  public String getIcon() {
+    return "minecraft:barrier";
   }
 }

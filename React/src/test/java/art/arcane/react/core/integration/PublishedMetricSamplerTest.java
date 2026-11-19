@@ -44,7 +44,7 @@ class PublishedMetricSamplerTest {
 
     Assertions.assertEquals("guardianpets-pets-live", sampler.getId());
     Assertions.assertEquals("Live Pets", sampler.getName());
-    Assertions.assertEquals(Material.BONE, sampler.getIcon());
+    Assertions.assertEquals("minecraft:bone", sampler.getIcon());
     Assertions.assertEquals("sampler", sampler.getConfigCategory());
   }
 
@@ -110,7 +110,7 @@ class PublishedMetricSamplerTest {
 
     Assertions.assertDoesNotThrow(sampler::loadConfiguration);
     Assertions.assertEquals("Live Pets", sampler.getName());
-    Assertions.assertEquals(Material.BONE, sampler.getIcon());
+    Assertions.assertEquals("minecraft:bone", sampler.getIcon());
   }
 
   @Test
@@ -125,7 +125,7 @@ class PublishedMetricSamplerTest {
     sampler.updateMetric(store.metric(LIVE));
 
     Assertions.assertEquals("Active Pets", sampler.getName());
-    Assertions.assertEquals(Material.CLOCK, sampler.getIcon());
+    Assertions.assertEquals("minecraft:clock", sampler.getIcon());
     Assertions.assertEquals("/min", PublishedMetricSampler.suffixFor(sampler.metric()));
     Assertions.assertEquals(2, sampler.metric().decimals());
   }

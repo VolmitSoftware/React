@@ -3,7 +3,6 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 
 public class SamplerBukkitPendingTasks extends ReactCachedSampler {
   public static final String ID = "bukkit-pending-tasks";
@@ -14,8 +13,8 @@ public class SamplerBukkitPendingTasks extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.REPEATER;
+  public String getIcon() {
+    return "minecraft:repeater";
   }
 
   @Override

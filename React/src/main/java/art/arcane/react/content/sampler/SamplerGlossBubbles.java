@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerGlossBubbles extends RemoteIntegrationSampler {
   public static final String ID = "gloss-bubbles";
@@ -11,7 +10,7 @@ public class SamplerGlossBubbles extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.BUBBLE_CORAL;
+  public String getIcon() {
+    return "minecraft:bubble_coral";
   }
 }

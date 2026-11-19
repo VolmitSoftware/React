@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerWormholesPlateBuilds extends RemoteIntegrationSampler {
   public static final String ID = "wormholes-plate-builds";
@@ -11,7 +10,7 @@ public class SamplerWormholesPlateBuilds extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.GLASS_PANE;
+  public String getIcon() {
+    return "minecraft:glass_pane";
   }
 }

@@ -24,7 +24,6 @@ import art.arcane.react.core.controller.TelemetryController;
 import art.arcane.react.core.telemetry.HostMetric;
 import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 import java.util.function.Supplier;
 
@@ -42,8 +41,8 @@ public class SamplerMemoryPressure extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.WATER_BUCKET;
+  public String getIcon() {
+    return "minecraft:water_bucket";
   }
 
   @Override

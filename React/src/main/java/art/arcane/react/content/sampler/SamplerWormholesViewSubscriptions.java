@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerWormholesViewSubscriptions extends RemoteIntegrationSampler {
   public static final String ID = "wormholes-view-subscriptions";
@@ -11,7 +10,7 @@ public class SamplerWormholesViewSubscriptions extends RemoteIntegrationSampler 
   }
 
   @Override
-  public Material getIcon() {
-    return Material.SPYGLASS;
+  public String getIcon() {
+    return "minecraft:spyglass";
   }
 }

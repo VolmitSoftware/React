@@ -22,7 +22,6 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public class SamplerEntityAiActiveCount extends ReactCachedSampler {
   public static final String ID = "entity-ai-active-count";
@@ -44,8 +43,8 @@ public class SamplerEntityAiActiveCount extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.ZOMBIE_SPAWN_EGG;
+  public String getIcon() {
+    return "minecraft:zombie_spawn_egg";
   }
 
   @Override

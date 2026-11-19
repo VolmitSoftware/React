@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerWormholesResyncs extends RemoteIntegrationSampler {
   public static final String ID = "wormholes-resyncs";
@@ -11,7 +10,7 @@ public class SamplerWormholesResyncs extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.COMPASS;
+  public String getIcon() {
+    return "minecraft:compass";
   }
 }

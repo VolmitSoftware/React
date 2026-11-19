@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerHiddenoreOreRemovalRate extends RemoteIntegrationSampler {
   public static final String ID = "hiddenore-ore-removal-rate";
@@ -11,7 +10,7 @@ public class SamplerHiddenoreOreRemovalRate extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.SMOOTH_STONE;
+  public String getIcon() {
+    return "minecraft:smooth_stone";
   }
 }

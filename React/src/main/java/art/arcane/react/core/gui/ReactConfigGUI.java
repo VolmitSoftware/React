@@ -39,6 +39,7 @@ import art.arcane.react.localization.catalog.GuiMessages;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.format.C;
+import art.arcane.react.util.project.registry.ItemIcons;
 import art.arcane.react.util.inventorygui.UIStaticDecorator;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.ConfigFileSupport;
@@ -827,7 +828,7 @@ public final class ReactConfigGUI {
         entries.add(new SectionIndexEntry(
             ROOT_CORE + "." + controller.getId(),
             displayName(controller.getName()),
-            controller.getIcon(),
+            ItemIcons.material(controller.getIcon()),
             ReactLanguage.plain(
                 GuiMessages.CONFIG_LORE_CONFIGURE_PATH,
                 MessageArgument.untrusted("path", "core/" + controller.getId() + ".toml")

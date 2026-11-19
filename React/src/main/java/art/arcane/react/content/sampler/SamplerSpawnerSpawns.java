@@ -2,7 +2,6 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedRateSampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -17,8 +16,8 @@ public class SamplerSpawnerSpawns extends ReactCachedRateSampler implements List
   }
 
   @Override
-  public Material getIcon() {
-    return Material.SPAWNER;
+  public String getIcon() {
+    return "minecraft:spawner";
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

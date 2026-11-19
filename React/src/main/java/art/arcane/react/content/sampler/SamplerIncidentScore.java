@@ -25,7 +25,6 @@ import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.incident.IncidentEvidence;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,8 +55,8 @@ public class SamplerIncidentScore extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.TOTEM_OF_UNDYING;
+  public String getIcon() {
+    return "minecraft:totem_of_undying";
   }
 
   @Override

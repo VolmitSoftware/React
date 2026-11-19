@@ -21,7 +21,6 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedRateSampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
@@ -34,8 +33,8 @@ public class SamplerChunksLoaded extends ReactCachedRateSampler implements Liste
   }
 
   @Override
-  public Material getIcon() {
-    return Material.COMMAND_BLOCK_MINECART;
+  public String getIcon() {
+    return "minecraft:command_block_minecart";
   }
 
   @EventHandler

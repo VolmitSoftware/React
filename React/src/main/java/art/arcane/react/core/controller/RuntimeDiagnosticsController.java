@@ -7,7 +7,6 @@ import art.arcane.react.util.common.scheduling.TickedObject;
 import art.arcane.react.util.common.scheduling.Ticker;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -216,8 +215,8 @@ public final class RuntimeDiagnosticsController extends TickedObject implements 
     }
 
     @Override
-    public Material getIcon() {
-      return Material.COMPARATOR;
+    public String getIcon() {
+      return "minecraft:comparator";
     }
 
     @Override

@@ -3,7 +3,6 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 
 public class SamplerWorlds extends ReactCachedSampler {
   public static final String ID = "worlds";
@@ -13,8 +12,8 @@ public class SamplerWorlds extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.GLOBE_BANNER_PATTERN;
+  public String getIcon() {
+    return "minecraft:globe_banner_pattern";
   }
 
   @Override

@@ -25,7 +25,6 @@ import art.arcane.react.core.controller.PdcWriteBatcher;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.volmlib.util.math.RollingSequence;
-import org.bukkit.Material;
 
 public class SamplerPdcWriteBatcher extends ReactCachedSampler {
   public static final String ID = "pdc-write-batcher";
@@ -39,8 +38,8 @@ public class SamplerPdcWriteBatcher extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.PAPER;
+  public String getIcon() {
+    return "minecraft:paper";
   }
 
   @Override

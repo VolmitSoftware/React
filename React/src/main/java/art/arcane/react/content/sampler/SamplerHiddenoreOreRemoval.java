@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerHiddenoreOreRemoval extends RemoteIntegrationSampler {
   public static final String ID = "hiddenore-ore-removal";
@@ -11,7 +10,7 @@ public class SamplerHiddenoreOreRemoval extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.TNT;
+  public String getIcon() {
+    return "minecraft:tnt";
   }
 }

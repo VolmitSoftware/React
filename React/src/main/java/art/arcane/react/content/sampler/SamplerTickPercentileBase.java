@@ -21,7 +21,6 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public abstract class SamplerTickPercentileBase extends ReactCachedSampler {
   private final transient TickClock clock;
@@ -52,8 +51,8 @@ public abstract class SamplerTickPercentileBase extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.CLOCK;
+  public String getIcon() {
+    return "minecraft:clock";
   }
 
   @Override

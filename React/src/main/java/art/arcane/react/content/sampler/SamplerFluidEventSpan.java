@@ -24,7 +24,6 @@ import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Material;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -52,8 +51,8 @@ public class SamplerFluidEventSpan extends ReactCachedSampler implements Listene
   }
 
   @Override
-  public Material getIcon() {
-    return Material.MILK_BUCKET;
+  public String getIcon() {
+    return "minecraft:milk_bucket";
   }
 
   @EventHandler

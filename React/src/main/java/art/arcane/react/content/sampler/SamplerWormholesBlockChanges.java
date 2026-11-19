@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerWormholesBlockChanges extends RemoteIntegrationSampler {
   public static final String ID = "wormholes-block-changes";
@@ -11,7 +10,7 @@ public class SamplerWormholesBlockChanges extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.OBSIDIAN;
+  public String getIcon() {
+    return "minecraft:obsidian";
   }
 }

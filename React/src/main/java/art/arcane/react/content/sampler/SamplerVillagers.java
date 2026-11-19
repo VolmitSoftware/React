@@ -22,7 +22,6 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public class SamplerVillagers extends ReactCachedSampler {
   public static final String ID = "villagers";
@@ -44,8 +43,8 @@ public class SamplerVillagers extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.EMERALD;
+  public String getIcon() {
+    return "minecraft:emerald";
   }
 
   @Override

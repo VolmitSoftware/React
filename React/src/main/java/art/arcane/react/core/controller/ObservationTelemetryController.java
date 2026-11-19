@@ -5,7 +5,6 @@ import art.arcane.react.core.telemetry.ObservationMetrics;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.react.util.plugin.IController;
-import org.bukkit.Material;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -110,8 +109,8 @@ public final class ObservationTelemetryController implements IController {
     }
 
     @Override
-    public Material getIcon() {
-      return Material.COMPARATOR;
+    public String getIcon() {
+      return "minecraft:comparator";
     }
 
     @Override

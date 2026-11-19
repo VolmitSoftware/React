@@ -31,7 +31,6 @@ import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -76,8 +75,8 @@ public class SamplerEntities extends ReactCachedSampler implements Listener {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.CHICKEN_SPAWN_EGG;
+  public String getIcon() {
+    return "minecraft:chicken_spawn_egg";
   }
 
   @Override

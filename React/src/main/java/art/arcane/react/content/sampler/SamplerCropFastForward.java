@@ -25,7 +25,6 @@ import art.arcane.react.content.feature.FeatureCropFastForward;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.volmlib.util.math.RollingSequence;
-import org.bukkit.Material;
 
 public class SamplerCropFastForward extends ReactCachedSampler {
   public static final String ID = "crop-fast-forward";
@@ -39,8 +38,8 @@ public class SamplerCropFastForward extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.WHEAT;
+  public String getIcon() {
+    return "minecraft:wheat";
   }
 
   @Override

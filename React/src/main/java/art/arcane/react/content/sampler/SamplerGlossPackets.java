@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerGlossPackets extends RemoteIntegrationSampler {
   public static final String ID = "gloss-packets";
@@ -11,7 +10,7 @@ public class SamplerGlossPackets extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.REPEATER;
+  public String getIcon() {
+    return "minecraft:repeater";
   }
 }

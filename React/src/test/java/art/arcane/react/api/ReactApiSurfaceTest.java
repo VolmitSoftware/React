@@ -4,6 +4,7 @@ import art.arcane.react.api.metric.ReactMetrics;
 import art.arcane.react.api.metric.internal.MetricBinding;
 import art.arcane.react.api.metric.internal.MetricInstaller;
 import art.arcane.react.api.protect.ReactProtection;
+import art.arcane.react.testutil.MainClassRoots;
 import art.arcane.react.api.protect.internal.ProtectionBinding;
 import art.arcane.react.api.protect.internal.ProtectionInstaller;
 import org.junit.jupiter.api.Assertions;
@@ -14,7 +15,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,38 +36,34 @@ class ReactApiSurfaceTest {
       "com.google.common",
       "it.unimi.dsi.fastutil");
 
-  private static Path classesRoot() throws URISyntaxException {
-    URI location = ReactProtection.class.getProtectionDomain().getCodeSource().getLocation().toURI();
-    return Path.of(location);
-  }
-
   private static List<Class<?>> apiClasses() throws IOException, URISyntaxException {
-    Path root = classesRoot();
     List<Class<?>> found = new ArrayList<>();
 
-    for (String apiPackage : API_PACKAGES) {
-      Path directory = root.resolve(apiPackage.replace('.', '/'));
+    for (Path root : MainClassRoots.all()) {
+      for (String apiPackage : API_PACKAGES) {
+        Path directory = root.resolve(apiPackage.replace('.', '/'));
 
-      if (!Files.isDirectory(directory)) {
-        continue;
-      }
-
-      try (Stream<Path> files = Files.list(directory)) {
-        for (Path file : files.toList()) {
-          String name = file.getFileName().toString();
-
-          if (!name.endsWith(".class") || name.contains("$")) {
-            continue;
-          }
-
-          Class<?> type = Class.forName(apiPackage + "." + name.substring(0, name.length() - 6));
-
-          if (Modifier.isPublic(type.getModifiers())) {
-            found.add(type);
-          }
+        if (!Files.isDirectory(directory)) {
+          continue;
         }
-      } catch (ClassNotFoundException e) {
-        throw new IllegalStateException(e);
+
+        try (Stream<Path> files = Files.list(directory)) {
+          for (Path file : files.toList()) {
+            String name = file.getFileName().toString();
+
+            if (!name.endsWith(".class") || name.contains("$")) {
+              continue;
+            }
+
+            Class<?> type = Class.forName(apiPackage + "." + name.substring(0, name.length() - 6));
+
+            if (Modifier.isPublic(type.getModifiers())) {
+              found.add(type);
+            }
+          }
+        } catch (ClassNotFoundException e) {
+          throw new IllegalStateException(e);
+        }
       }
     }
 

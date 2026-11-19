@@ -156,6 +156,7 @@ dependencies {
     testImplementation('io.papermc.paper:paper-api:26.1.2.build.74-stable')
     spigotCompatibility("org.spigotmc:spigot-api:${spigotApiVersion}")
 
+    api(project(':core'))
     implementation('com.github.VolmitSoftware.VolmLib:native-api:master-SNAPSHOT')
     implementation('com.github.VolmitSoftware.VolmLib:native-v1_21_R7:master-SNAPSHOT')
     implementation('com.github.VolmitSoftware.VolmLib:native-v26_2_R1:master-SNAPSHOT')
@@ -297,6 +298,7 @@ tasks.named('shadowJar', ShadowJar).configure {
         exclude(dependency('de.crazydev22.slimjar.helper:.*:.*'))
         exclude(dependency('io.github.slimjar:.*:.*'))
         exclude(dependency('com.github.VolmitSoftware.VolmLib:.*:.*'))
+        exclude(project(':core'))
     }
     dependsOn(tasks.named('processResources'))
     from(sourceSets.main.output)
@@ -420,6 +422,9 @@ if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_25)) {
 }
 
 pluginPackaging {
+    loggingPolicy {
+        sourceDirectories = [file('src/main/java'), file('core/src/main/java')]
+    }
     artifacts {
         create('distribution') {
             stripDirectories = true

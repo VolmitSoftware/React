@@ -23,7 +23,6 @@ import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
@@ -53,8 +52,8 @@ public class SamplerPingJitter extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.CLOCK;
+  public String getIcon() {
+    return "minecraft:clock";
   }
 
   @Override

@@ -22,7 +22,6 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.Server;
 import org.bukkit.event.Listener;
 
@@ -34,8 +33,8 @@ public class SamplerPlayers extends ReactCachedSampler implements Listener {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.TOTEM_OF_UNDYING;
+  public String getIcon() {
+    return "minecraft:totem_of_undying";
   }
 
   @Override

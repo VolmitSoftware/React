@@ -21,7 +21,6 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public class SamplerGcPauseP95 extends ReactCachedSampler {
   public static final String ID = "gc-pause-p95";
@@ -43,8 +42,8 @@ public class SamplerGcPauseP95 extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.EXPERIENCE_BOTTLE;
+  public String getIcon() {
+    return "minecraft:experience_bottle";
   }
 
   @Override

@@ -21,7 +21,6 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -45,8 +44,8 @@ public class SamplerWorldSaveEventInterval extends ReactCachedSampler implements
   }
 
   @Override
-  public Material getIcon() {
-    return Material.WRITABLE_BOOK;
+  public String getIcon() {
+    return "minecraft:writable_book";
   }
 
   @Override

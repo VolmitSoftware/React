@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerAdaptSessionLoad extends RemoteIntegrationSampler {
   public static final String ID = "adapt-session-load";
@@ -11,7 +10,7 @@ public class SamplerAdaptSessionLoad extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.BOOKSHELF;
+  public String getIcon() {
+    return "minecraft:bookshelf";
   }
 }

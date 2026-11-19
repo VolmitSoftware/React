@@ -25,7 +25,6 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -49,8 +48,8 @@ public class SamplerChunks extends ReactCachedSampler implements Listener {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.CHEST_MINECART;
+  public String getIcon() {
+    return "minecraft:chest_minecart";
   }
 
   public int getRealCheck() {

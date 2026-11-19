@@ -2,7 +2,6 @@ package art.arcane.react.core.telemetry;
 
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
@@ -27,7 +26,7 @@ public final class TelemetrySampler implements Sampler {
   }
 
   @Override
-  public Material getIcon() {
+  public String getIcon() {
     return options.icon();
   }
 
@@ -120,7 +119,7 @@ public final class TelemetrySampler implements Sampler {
       String id,
       String name,
       String suffix,
-      Material icon,
+      String icon,
       DoubleSupplier valueSupplier,
       BooleanSupplier availabilitySupplier,
       Format format,

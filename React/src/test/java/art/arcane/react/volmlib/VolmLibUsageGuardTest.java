@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 /** Keeps production code off the Chrono-era APIs that VolmLib lacks or implements differently. */
 class VolmLibUsageGuardTest {
   private static final Path MAIN_SOURCES = Path.of("src", "main", "java");
+  private static final Path CORE_SOURCES = Path.of("core", "src", "main", "java");
 
   @Test
   void productionCodeDoesNotCallRollingSequenceMedian() throws IOException {
@@ -38,12 +39,14 @@ class VolmLibUsageGuardTest {
   }
 
   private static List<String> filesMatching(Predicate<String> matcher) throws IOException {
-    Assertions.assertTrue(Files.isDirectory(MAIN_SOURCES), "missing " + MAIN_SOURCES.toAbsolutePath());
     List<String> matches = new ArrayList<>();
-    try (Stream<Path> paths = Files.walk(MAIN_SOURCES)) {
-      for (Path path : (Iterable<Path>) paths.filter(candidate -> candidate.toString().endsWith(".java"))::iterator) {
-        if (matcher.test(Files.readString(path, StandardCharsets.UTF_8))) {
-          matches.add(MAIN_SOURCES.relativize(path).toString());
+    for (Path root : List.of(MAIN_SOURCES, CORE_SOURCES)) {
+      Assertions.assertTrue(Files.isDirectory(root), "missing " + root.toAbsolutePath());
+      try (Stream<Path> paths = Files.walk(root)) {
+        for (Path path : (Iterable<Path>) paths.filter(candidate -> candidate.toString().endsWith(".java"))::iterator) {
+          if (matcher.test(Files.readString(path, StandardCharsets.UTF_8))) {
+            matches.add(root.relativize(path).toString());
+          }
         }
       }
     }

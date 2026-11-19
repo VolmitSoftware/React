@@ -1,6 +1,7 @@
 package art.arcane.react.packaging;
 
 import art.arcane.react.React;
+import art.arcane.react.testutil.MainClassRoots;
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.ErrorEnvelope;
 import com.google.gson.JsonElement;
@@ -49,21 +50,25 @@ class WebJsonMapperTest {
 
   @BeforeAll
   static void findResponseTypes() throws IOException, URISyntaxException {
-    Path root = Path.of(React.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-    Path webRoot = root.resolve(WEB_PACKAGE.replace('.', '/'));
     List<Class<?>> types = new ArrayList<>();
-    try (Stream<Path> paths = Files.walk(webRoot)) {
-      for (Path file : paths.filter(path -> path.toString().endsWith(".class")).sorted().toList()) {
-        String relative = root.relativize(file).toString();
-        String name = relative.substring(0, relative.length() - ".class".length()).replace('/', '.').replace('\\', '.');
-        Class<?> type;
-        try {
-          type = Class.forName(name, false, React.class.getClassLoader());
-        } catch (ClassNotFoundException | LinkageError unavailable) {
-          continue;
-        }
-        if (isResponseType(type)) {
-          types.add(type);
+    for (Path root : MainClassRoots.all()) {
+      Path webRoot = root.resolve(WEB_PACKAGE.replace('.', '/'));
+      if (!Files.isDirectory(webRoot)) {
+        continue;
+      }
+      try (Stream<Path> paths = Files.walk(webRoot)) {
+        for (Path file : paths.filter(path -> path.toString().endsWith(".class")).sorted().toList()) {
+          String relative = root.relativize(file).toString().replaceFirst("^/", "");
+          String name = relative.substring(0, relative.length() - ".class".length()).replace('/', '.').replace('\\', '.');
+          Class<?> type;
+          try {
+            type = Class.forName(name, false, React.class.getClassLoader());
+          } catch (ClassNotFoundException | LinkageError unavailable) {
+            continue;
+          }
+          if (isResponseType(type)) {
+            types.add(type);
+          }
         }
       }
     }

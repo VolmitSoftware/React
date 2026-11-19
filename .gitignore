@@ -10,6 +10,7 @@ React/AGENTS.md
 .release-gate/
 
 React/.jqwik-database
+React/core/.jqwik-database
 React/nms/*/logs/
 
 # Dart/Jaspr and local web tooling

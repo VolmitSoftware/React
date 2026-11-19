@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerBiletoolsReloads extends RemoteIntegrationSampler {
   public static final String ID = "biletools-reloads";
@@ -11,7 +10,7 @@ public class SamplerBiletoolsReloads extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.LIME_DYE;
+  public String getIcon() {
+    return "minecraft:lime_dye";
   }
 }

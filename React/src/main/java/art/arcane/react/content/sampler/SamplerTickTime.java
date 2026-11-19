@@ -21,7 +21,6 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public class SamplerTickTime extends ReactCachedSampler {
   public static final String ID = "tick-time";
@@ -49,8 +48,8 @@ public class SamplerTickTime extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.NAUTILUS_SHELL;
+  public String getIcon() {
+    return "minecraft:nautilus_shell";
   }
 
   @Override

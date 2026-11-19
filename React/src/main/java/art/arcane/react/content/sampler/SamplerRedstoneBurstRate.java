@@ -22,7 +22,6 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -51,8 +50,8 @@ public class SamplerRedstoneBurstRate extends ReactCachedSampler implements List
   }
 
   @Override
-  public Material getIcon() {
-    return Material.REPEATER;
+  public String getIcon() {
+    return "minecraft:repeater";
   }
 
   @EventHandler(priority = EventPriority.MONITOR)

@@ -22,7 +22,6 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
-import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -72,8 +71,8 @@ public abstract class SamplerChunkEventDurationBase extends ReactCachedSampler i
   }
 
   @Override
-  public Material getIcon() {
-    return Material.COMPASS;
+  public String getIcon() {
+    return "minecraft:compass";
   }
 
   @EventHandler(priority = EventPriority.LOWEST)

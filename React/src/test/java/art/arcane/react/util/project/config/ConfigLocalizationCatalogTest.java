@@ -49,19 +49,20 @@ public class ConfigLocalizationCatalogTest {
   }
 
   private static Set<String> discoverAnnotationOwnerNames() throws Exception {
-    Path root = Path.of("src", "main", "java").toAbsolutePath().normalize();
-    Assertions.assertTrue(Files.isDirectory(root), "Expected Java source directory at " + root);
-
     Set<String> owners = new HashSet<>();
-    try (Stream<Path> paths = Files.walk(root.resolve("art/arcane/react"))) {
-      List<Path> sourceFiles = paths
-          .filter(Files::isRegularFile)
-          .filter(path -> path.getFileName().toString().endsWith(".java"))
-          .toList();
-      for (Path sourceFile : sourceFiles) {
-        String source = Files.readString(sourceFile);
-        if (source.contains("ConfigDoc(") || source.contains("ConfigDescription(")) {
-          owners.add(className(root, sourceFile));
+    for (Path sourceRoot : List.of(Path.of("src", "main", "java"), Path.of("core", "src", "main", "java"))) {
+      Path root = sourceRoot.toAbsolutePath().normalize();
+      Assertions.assertTrue(Files.isDirectory(root), "Expected Java source directory at " + root);
+      try (Stream<Path> paths = Files.walk(root.resolve("art/arcane/react"))) {
+        List<Path> sourceFiles = paths
+            .filter(Files::isRegularFile)
+            .filter(path -> path.getFileName().toString().endsWith(".java"))
+            .toList();
+        for (Path sourceFile : sourceFiles) {
+          String source = Files.readString(sourceFile);
+          if (source.contains("ConfigDoc(") || source.contains("ConfigDescription(")) {
+            owners.add(className(root, sourceFile));
+          }
         }
       }
     }

@@ -22,7 +22,6 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
@@ -39,8 +38,8 @@ public class SamplerPlayerPingP95 extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.CLOCK;
+  public String getIcon() {
+    return "minecraft:clock";
   }
 
   @Override

@@ -15,7 +15,6 @@ import art.arcane.react.core.telemetry.PlayerActivityTracker;
 import art.arcane.react.core.telemetry.TelemetrySampler;
 import art.arcane.react.util.plugin.IController;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -211,71 +210,71 @@ public final class TelemetryController implements IController, Listener {
     }
 
     register(sampleController, options(
-        "react-history-writer-queue", "History Writer Queue", "snapshots", Material.HOPPER,
+        "react-history-writer-queue", "History Writer Queue", "snapshots", "minecraft:hopper",
         () -> historyLongValue(HistoryController::writerQueueDepth), this::historyAvailable,
         TelemetrySampler.Format.COUNT));
     register(sampleController, options(
-        "react-history-writer-capacity", "History Writer Capacity", "snapshots", Material.HOPPER,
+        "react-history-writer-capacity", "History Writer Capacity", "snapshots", "minecraft:hopper",
         () -> historyLongValue(HistoryController::writerQueueCapacity), this::historyAvailable,
         TelemetrySampler.Format.COUNT));
     register(sampleController, options(
-        "react-history-dropped-snapshots", "History Dropped Snapshots", "total", Material.BARRIER,
+        "react-history-dropped-snapshots", "History Dropped Snapshots", "total", "minecraft:barrier",
         () -> historyLongValue(HistoryController::droppedSnapshotsTotal), this::historyAvailable,
         TelemetrySampler.Format.COUNT));
     register(sampleController, options(
-        "react-history-drop-rate", "History Drop Rate", "/min", Material.BARRIER,
+        "react-history-drop-rate", "History Drop Rate", "/min", "minecraft:barrier",
         () -> historyDropsPerMinute, this::historyAvailable, TelemetrySampler.Format.DECIMAL));
     register(sampleController, options(
-        "react-history-persist-lag", "History Persist Lag", "ms", Material.CLOCK,
+        "react-history-persist-lag", "History Persist Lag", "ms", "minecraft:clock",
         () -> historyPersistLag(System.currentTimeMillis()), this::historyAvailable,
         TelemetrySampler.Format.DECIMAL));
     register(sampleController, options(
-        "react-history-storage-operational", "History Storage Operational", "", Material.CHEST,
+        "react-history-storage-operational", "History Storage Operational", "", "minecraft:chest",
         this::historyStorageOperational, this::historyAvailable, TelemetrySampler.Format.COUNT));
     register(sampleController, options(
-        "react-history-storage-error", "History Storage Error", "", Material.CHEST,
+        "react-history-storage-error", "History Storage Error", "", "minecraft:chest",
         this::historyStorageError, this::historyAvailable, TelemetrySampler.Format.COUNT));
     register(sampleController, options(
-        "react-history-capture-ms", "History Capture Duration", "ms", Material.CLOCK,
+        "react-history-capture-ms", "History Capture Duration", "ms", "minecraft:clock",
         () -> historyDoubleValue(HistoryController::lastCaptureDurationMs), this::historyAvailable,
         TelemetrySampler.Format.DECIMAL));
     register(sampleController, options(
-        "react-history-write-ms", "History Write Duration", "ms", Material.CLOCK,
+        "react-history-write-ms", "History Write Duration", "ms", "minecraft:clock",
         () -> historyDoubleValue(HistoryController::lastWriteDurationMs), this::historyAvailable,
         TelemetrySampler.Format.DECIMAL));
     register(sampleController, options(
-        "react-history-disk-bytes", "History Disk Usage", "", Material.CHEST,
+        "react-history-disk-bytes", "History Disk Usage", "", "minecraft:chest",
         () -> historyDiskBytes, this::historyAvailable, TelemetrySampler.Format.BYTES));
     register(sampleController, options(
-        "react-history-wal-bytes", "History WAL Usage", "", Material.WRITABLE_BOOK,
+        "react-history-wal-bytes", "History WAL Usage", "", "minecraft:writable_book",
         () -> historyWalBytes, this::historyAvailable, TelemetrySampler.Format.BYTES));
     register(sampleController, options(
-        "react-samplers-registered", "Registered Samplers", "samplers", Material.COMPARATOR,
+        "react-samplers-registered", "Registered Samplers", "samplers", "minecraft:comparator",
         () -> historyLongValue(HistoryController::getRegisteredSamplerCount), this::historyAvailable,
         TelemetrySampler.Format.COUNT));
     register(sampleController, options(
-        "react-samplers-available", "Available Samplers", "samplers", Material.COMPARATOR,
+        "react-samplers-available", "Available Samplers", "samplers", "minecraft:comparator",
         () -> historyLongValue(HistoryController::getAvailableSamplerCount), this::historyAvailable,
         TelemetrySampler.Format.COUNT));
     register(sampleController, options(
-        "react-samplers-unavailable", "Unavailable Samplers", "samplers", Material.COMPARATOR,
+        "react-samplers-unavailable", "Unavailable Samplers", "samplers", "minecraft:comparator",
         () -> historyLongValue(HistoryController::getUnavailableSamplerCount), this::historyAvailable,
         TelemetrySampler.Format.COUNT));
     register(sampleController, options(
-        "react-samplers-failed", "Failed Samplers", "samplers", Material.COMPARATOR,
+        "react-samplers-failed", "Failed Samplers", "samplers", "minecraft:comparator",
         () -> historyLongValue(HistoryController::getFailedSamplerCount), this::historyAvailable,
         TelemetrySampler.Format.COUNT));
     register(sampleController, options(
-        "react-published-metrics-accepted", "Published Metrics Accepted", "samples", Material.PAPER,
+        "react-published-metrics-accepted", "Published Metrics Accepted", "samples", "minecraft:paper",
         this::publishedAccepted, this::publishedAvailable, TelemetrySampler.Format.COUNT));
     register(sampleController, options(
-        "react-published-metrics-dropped", "Published Metrics Dropped", "samples", Material.PAPER,
+        "react-published-metrics-dropped", "Published Metrics Dropped", "samples", "minecraft:paper",
         this::publishedDropped, this::publishedAvailable, TelemetrySampler.Format.COUNT));
     register(sampleController, options(
-        "react-websocket-sessions", "Active WebSocket Sessions", "sessions", Material.COMPASS,
+        "react-websocket-sessions", "Active WebSocket Sessions", "sessions", "minecraft:compass",
         this::activeWebSocketSessions, this::webAvailable, TelemetrySampler.Format.COUNT));
     register(sampleController, options(
-        "react-websocket-coalesced-frames", "Coalesced WebSocket Frames", "frames", Material.COMPASS,
+        "react-websocket-coalesced-frames", "Coalesced WebSocket Frames", "frames", "minecraft:compass",
         CoalescingWsChannel::coalescedFrames, () -> true, TelemetrySampler.Format.COUNT));
 
     registerHostSamplers(sampleController);
@@ -295,15 +294,15 @@ public final class TelemetryController implements IController, Listener {
 
   private void registerPlayerSamplers(SampleController sampleController) {
     register(sampleController, options(
-        "player-joins-rate", "Player Joins", "/min", Material.PLAYER_HEAD,
+        "player-joins-rate", "Player Joins", "/min", "minecraft:player_head",
         () -> playerActivity.joinsPerMinute(System.currentTimeMillis()), () -> true,
         TelemetrySampler.Format.DECIMAL));
     register(sampleController, options(
-        "player-quits-rate", "Player Quits", "/min", Material.PLAYER_HEAD,
+        "player-quits-rate", "Player Quits", "/min", "minecraft:player_head",
         () -> playerActivity.quitsPerMinute(System.currentTimeMillis()), () -> true,
         TelemetrySampler.Format.DECIMAL));
     register(sampleController, options(
-        "players-unique-24h", "Unique Players 24h Since Start", "players", Material.PLAYER_HEAD,
+        "players-unique-24h", "Unique Players 24h Since Start", "players", "minecraft:player_head",
         () -> playerActivity.uniquePlayers(System.currentTimeMillis()), () -> true,
         TelemetrySampler.Format.COUNT));
   }
@@ -312,7 +311,7 @@ public final class TelemetryController implements IController, Listener {
       String id,
       String name,
       String suffix,
-      Material icon,
+      String icon,
       DoubleSupplier valueSupplier,
       BooleanSupplier availabilitySupplier,
       TelemetrySampler.Format format

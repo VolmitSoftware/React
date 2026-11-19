@@ -13,6 +13,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReactCatalogCompletenessTest {
-  private static final Path SOURCE_ROOT = Path.of("src/main/java");
-  private static final Path CATALOG_ROOT = SOURCE_ROOT.resolve("art/arcane/react/localization/catalog");
+  private static final List<Path> SOURCE_ROOTS = List.of(Path.of("src/main/java"), Path.of("core/src/main/java"));
+  private static final Path CATALOG_PACKAGE = Path.of("art/arcane/react/localization/catalog");
   private static final Pattern LITERAL_RAW_CALL = Pattern.compile(
       "ReactLanguage\\.raw\\(\\s*(\"(?:\\\\.|[^\"\\\\])*\")\\s*,\\s*(\"(?:\\\\.|[^\"\\\\])*\")\\s*\\)"
   );
@@ -46,44 +47,54 @@ class ReactCatalogCompletenessTest {
   @Test
   void everyDeclaredMessageKeyIsRegisteredWithoutChangingItsDefinition() throws Exception {
     MessageCatalog catalog = ReactMessages.catalog();
-    try (Stream<Path> files = Files.list(CATALOG_ROOT)) {
-      List<Path> sources = files.filter(path -> path.getFileName().toString().endsWith(".java")).toList();
-      assertFalse(sources.isEmpty());
-      int checked = 0;
-      for (Path source : sources) {
-        String filename = source.getFileName().toString();
-        Class<?> type = Class.forName("art.arcane.react.localization.catalog."
-            + filename.substring(0, filename.length() - ".java".length()));
-        for (Field field : type.getDeclaredFields()) {
-          if (!Modifier.isStatic(field.getModifiers()) || !MessageKey.class.isAssignableFrom(field.getType())) {
-            continue;
-          }
-          field.setAccessible(true);
-          MessageKey key = (MessageKey) field.get(null);
-          assertEquals(key, catalog.require(key.id()), type.getSimpleName() + "." + field.getName());
-          checked++;
-        }
+    List<Path> sources = new ArrayList<>();
+    for (Path sourceRoot : SOURCE_ROOTS) {
+      Path catalogRoot = sourceRoot.resolve(CATALOG_PACKAGE);
+      if (!Files.isDirectory(catalogRoot)) {
+        continue;
       }
-      assertTrue(checked > 0);
+      try (Stream<Path> files = Files.list(catalogRoot)) {
+        sources.addAll(files.filter(path -> path.getFileName().toString().endsWith(".java")).toList());
+      }
     }
+    assertFalse(sources.isEmpty());
+    int checked = 0;
+    for (Path source : sources) {
+      String filename = source.getFileName().toString();
+      Class<?> type = Class.forName("art.arcane.react.localization.catalog."
+          + filename.substring(0, filename.length() - ".java".length()));
+      for (Field field : type.getDeclaredFields()) {
+        if (!Modifier.isStatic(field.getModifiers()) || !MessageKey.class.isAssignableFrom(field.getType())) {
+          continue;
+        }
+        field.setAccessible(true);
+        MessageKey key = (MessageKey) field.get(null);
+        assertEquals(key, catalog.require(key.id()), type.getSimpleName() + "." + field.getName());
+        checked++;
+      }
+    }
+    assertTrue(checked > 0);
   }
 
   @Test
   void everyLiteralMessageLookupHasItsExactEnglishFallbackInTheCatalog() throws Exception {
     MessageCatalog catalog = ReactMessages.catalog();
-    try (Stream<Path> files = Files.walk(SOURCE_ROOT)) {
-      List<Path> sources = files.filter(path -> path.getFileName().toString().endsWith(".java")).toList();
-      int checked = 0;
-      for (Path source : sources) {
-        Matcher matcher = LITERAL_RAW_CALL.matcher(Files.readString(source));
-        while (matcher.find()) {
-          String id = GSON.fromJson(matcher.group(1), String.class);
-          String english = GSON.fromJson(matcher.group(2), String.class);
-          assertEquals(new TextValue(english), catalog.require(id).englishValue(), source + ": " + id);
-          checked++;
-        }
+    List<Path> sources = new ArrayList<>();
+    for (Path sourceRoot : SOURCE_ROOTS) {
+      try (Stream<Path> files = Files.walk(sourceRoot)) {
+        sources.addAll(files.filter(path -> path.getFileName().toString().endsWith(".java")).toList());
       }
-      assertTrue(checked > 0);
     }
+    int checked = 0;
+    for (Path source : sources) {
+      Matcher matcher = LITERAL_RAW_CALL.matcher(Files.readString(source));
+      while (matcher.find()) {
+        String id = GSON.fromJson(matcher.group(1), String.class);
+        String english = GSON.fromJson(matcher.group(2), String.class);
+        assertEquals(new TextValue(english), catalog.require(id).englishValue(), source + ": " + id);
+        checked++;
+      }
+    }
+    assertTrue(checked > 0);
   }
 }

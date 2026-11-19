@@ -24,7 +24,6 @@ import art.arcane.react.core.controller.TelemetryController;
 import art.arcane.react.core.telemetry.HostMetric;
 import art.arcane.react.core.telemetry.HostReading;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public class SamplerMemoryGarbage extends ReactCachedSampler {
   public static final String ID = "memory-garbage";
@@ -34,8 +33,8 @@ public class SamplerMemoryGarbage extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.WATER_BUCKET;
+  public String getIcon() {
+    return "minecraft:water_bucket";
   }
 
   @Override

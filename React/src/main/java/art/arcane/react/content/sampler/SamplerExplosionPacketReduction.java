@@ -23,7 +23,6 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.content.feature.FeatureExplosionPacketBatching;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 import java.util.function.LongSupplier;
 
@@ -50,8 +49,8 @@ public class SamplerExplosionPacketReduction extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.TNT;
+  public String getIcon() {
+    return "minecraft:tnt";
   }
 
   @Override

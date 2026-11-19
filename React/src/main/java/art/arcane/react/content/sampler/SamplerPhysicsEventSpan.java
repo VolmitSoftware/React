@@ -24,7 +24,6 @@ import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPhysicsEvent;
@@ -51,8 +50,8 @@ public class SamplerPhysicsEventSpan extends ReactCachedSampler implements Liste
   }
 
   @Override
-  public Material getIcon() {
-    return Material.MUSHROOM_STEW;
+  public String getIcon() {
+    return "minecraft:mushroom_stew";
   }
 
   @EventHandler

@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerHiddenoreDrops extends RemoteIntegrationSampler {
   public static final String ID = "hiddenore-drops";
@@ -11,7 +10,7 @@ public class SamplerHiddenoreDrops extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.RAW_IRON;
+  public String getIcon() {
+    return "minecraft:raw_iron";
   }
 }

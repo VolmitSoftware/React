@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerGlossIndicators extends RemoteIntegrationSampler {
   public static final String ID = "gloss-indicators";
@@ -11,7 +10,7 @@ public class SamplerGlossIndicators extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.IRON_SWORD;
+  public String getIcon() {
+    return "minecraft:iron_sword";
   }
 }

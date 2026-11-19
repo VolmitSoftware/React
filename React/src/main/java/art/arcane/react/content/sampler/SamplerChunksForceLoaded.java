@@ -22,7 +22,6 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.World;
 
 public class SamplerChunksForceLoaded extends ReactCachedSampler {
@@ -34,8 +33,8 @@ public class SamplerChunksForceLoaded extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.LODESTONE;
+  public String getIcon() {
+    return "minecraft:lodestone";
   }
 
   @Override

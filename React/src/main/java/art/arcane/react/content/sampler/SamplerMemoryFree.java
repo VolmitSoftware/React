@@ -21,7 +21,6 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public class SamplerMemoryFree extends ReactCachedSampler {
   public static final String ID = "memory-free";
@@ -33,8 +32,8 @@ public class SamplerMemoryFree extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.WATER_BUCKET;
+  public String getIcon() {
+    return "minecraft:water_bucket";
   }
 
   @Override

@@ -2,7 +2,6 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedRateSampler;
 import art.arcane.volmlib.util.math.RollingSequence;
-import org.bukkit.Material;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -94,8 +93,8 @@ class SamplerConfigurationBoundsTest {
     }
 
     @Override
-    public Material getIcon() {
-      return Material.CLOCK;
+    public String getIcon() {
+      return "minecraft:clock";
     }
 
     @Override

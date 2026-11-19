@@ -17,44 +17,49 @@
 
 package art.arcane.react.util.common.scheduling;
 
-import art.arcane.react.React;
-import art.arcane.react.core.controller.JobController;
+import art.arcane.react.platform.PlatformScheduler;
+import art.arcane.react.platform.ReactPlatform;
+import art.arcane.react.platform.ReactPlatforms;
+import art.arcane.react.platform.ReactWorld;
 import art.arcane.volmlib.util.function.NastyFunction;
 import art.arcane.volmlib.util.function.NastyFuture;
 import art.arcane.volmlib.util.function.NastyRunnable;
 import art.arcane.volmlib.util.math.FinalInteger;
-import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.scheduling.AR;
-import art.arcane.volmlib.util.scheduling.FoliaScheduler;
 import art.arcane.volmlib.util.scheduling.JSupport;
 import art.arcane.volmlib.util.scheduling.SchedulerBridge;
 import art.arcane.volmlib.util.scheduling.SR;
 import art.arcane.volmlib.util.scheduling.StartupQueueSupport;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.IllegalPluginAccessException;
-import org.bukkit.plugin.Plugin;
 
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+/**
+ * React's scheduler facade. Methods that take {@code Object} handles accept the platform's own entity, world or
+ * location objects and hand them to the bound {@link PlatformScheduler}.
+ */
 public class J {
   private static final long TICK_MS = 50L;
   private static final AtomicInteger TASK_IDS = new AtomicInteger(1);
-  private static final Map<Integer, Runnable> REPEATING_CANCELLERS = new java.util.concurrent.ConcurrentHashMap<>();
+  private static final Map<Integer, Runnable> REPEATING_CANCELLERS = new ConcurrentHashMap<>();
   private static final StartupQueueSupport STARTUP_QUEUE = new StartupQueueSupport();
+  private static final Logger FALLBACK_LOG = Logger.getLogger("React");
 
   static {
     SchedulerBridge.setSyncScheduler(J::s);
@@ -64,8 +69,8 @@ public class J {
     SchedulerBridge.setSyncRepeatingScheduler(J::sr);
     SchedulerBridge.setAsyncRepeatingScheduler(J::ar);
     SchedulerBridge.setCancelScheduler(J::car);
-    SchedulerBridge.setErrorHandler(e -> React.reportError("Scheduler bridge task failed", e));
-    SchedulerBridge.setInfoLogger(React::verbose);
+    SchedulerBridge.setErrorHandler(e -> reportError("Scheduler bridge task failed", e));
+    SchedulerBridge.setInfoLogger(J::verbose);
   }
 
   public static void dofor(int a, Function<Integer, Boolean> c, int ch, Consumer<Integer> d) {
@@ -77,11 +82,11 @@ public class J {
   }
 
   public static void a(Runnable a) {
-    ReactExecutors.async().execute(a);
+    asyncExecutor().execute(a);
   }
 
   public static <T> Future<T> a(Callable<T> a) {
-    return ReactExecutors.async().submit(a);
+    return asyncExecutor().submit(a);
   }
 
   public static void attemptAsync(NastyRunnable r) {
@@ -125,7 +130,8 @@ public class J {
   }
 
   public static boolean isPrimaryThread() {
-    return FoliaScheduler.isPrimaryThread();
+    PlatformScheduler scheduler = scheduler();
+    return scheduler != null && scheduler.isPrimaryThread();
   }
 
   /**
@@ -133,30 +139,29 @@ public class J {
    * plugins, and Paper stops ticking, so work queued on a server scheduler from then on never runs.
    */
   public static boolean isServerStopping() {
-    return FoliaScheduler.isStopping(Bukkit.getServer());
+    PlatformScheduler scheduler = scheduler();
+    return scheduler != null && scheduler.isStopping();
   }
 
   public static boolean isFoliaThreading() {
-    return FoliaScheduler.isFoliaThreading(Bukkit.getServer());
+    PlatformScheduler scheduler = scheduler();
+    return scheduler != null && scheduler.isRegionized();
   }
 
-  public static boolean isOwnedByCurrentRegion(Entity entity) {
-    return FoliaScheduler.isOwnedByCurrentRegion(entity);
+  public static boolean isOwnedByCurrentRegion(Object handle) {
+    PlatformScheduler scheduler = scheduler();
+    return scheduler != null && scheduler.isOwnedByCurrentRegion(handle);
   }
 
-  public static boolean isOwnedByCurrentRegion(Location location) {
-    return FoliaScheduler.isOwnedByCurrentRegion(location);
-  }
-
-  public static boolean runEntity(Entity entity, Runnable runnable) {
+  public static boolean runEntity(Object entity, Runnable runnable) {
     return runEntity(entity, runnable, 0);
   }
 
-  public static boolean runEntity(Entity entity, Runnable runnable, int delayTicks) {
+  public static boolean runEntity(Object entity, Runnable runnable, int delayTicks) {
     return runEntity(entity, runnable, delayTicks, null);
   }
 
-  public static boolean runEntity(Entity entity, Runnable runnable, int delayTicks, Runnable retired) {
+  public static boolean runEntity(Object entity, Runnable runnable, int delayTicks, Runnable retired) {
     if (entity == null || runnable == null || !isPluginActive()) {
       return false;
     }
@@ -177,89 +182,37 @@ public class J {
       };
     }
 
-    int safeDelayTicks = Math.max(0, delayTicks);
-    Runnable guarded = guardEntityTask(entity, scheduledRunnable, scheduledRetired);
-    if (!isFoliaThreading()) {
-      if (safeDelayTicks <= 0) {
-        sync(guarded);
-      } else {
-        sync(guarded, safeDelayTicks);
-      }
-      return true;
-    }
-
-    if (safeDelayTicks <= 0 && isOwnedByCurrentRegion(entity)) {
-      guarded.run();
-      return true;
-    }
-
-    if (isServerStopping()) {
-      if (scheduledRetired != null) {
-        scheduledRetired.run();
-      }
-      return false;
-    }
-
-    if (FoliaScheduler.runEntity(
-        React.instance,
-        entity,
-        scheduledRunnable,
-        safeDelayTicks,
-        scheduledRetired
-    )) {
-      return true;
-    }
-
-    if (scheduledRetired != null) {
-      scheduledRetired.run();
-    }
-    return false;
+    return scheduler().entity(entity, scheduledRunnable, Math.max(0, delayTicks), scheduledRetired);
   }
 
-  private static Runnable guardEntityTask(Entity entity, Runnable runnable, Runnable retired) {
-    Runnable localized = entity instanceof Player player
-        ? () -> LanguageAudience.run(player.getUniqueId(), runnable) : runnable;
-    if (retired == null) {
-      return localized;
-    }
-
-    return () -> {
-      boolean active;
-      try {
-        active = entity.isValid();
-      } catch (Throwable ignored) {
-        active = false;
-      }
-
-      if (active) {
-        localized.run();
-      } else {
-        retired.run();
-      }
-    };
-  }
-
-  public static <T> T runChunkResult(World world, int chunkX, int chunkZ, Supplier<T> supplier, T fallback) {
+  public static <T> T runChunkResult(Object world, int chunkX, int chunkZ, Supplier<T> supplier, T fallback) {
     if (world == null) {
       return fallback;
     }
 
-    Location anchor = new Location(world, (chunkX << 4) + 8.0, 64.0, (chunkZ << 4) + 8.0);
-    return runRegionResult(anchor, supplier, fallback);
+    ReactWorld handle = world(world);
+    PlatformScheduler scheduler = scheduler();
+    return regionResult(
+        () -> handle != null,
+        () -> scheduler != null && scheduler.isOwnedByCurrentRegion(handle, chunkX, chunkZ),
+        task -> scheduler != null && scheduler.region(handle, chunkX, chunkZ, task, 0),
+        supplier,
+        fallback
+    );
   }
 
-  public static boolean runChunk(World world, int chunkX, int chunkZ, Runnable runnable) {
+  public static boolean runChunk(Object world, int chunkX, int chunkZ, Runnable runnable) {
     return runChunk(world, chunkX, chunkZ, runnable, 0);
   }
 
-  public static boolean runChunk(World world, int chunkX, int chunkZ, Runnable runnable, int delayTicks) {
+  public static boolean runChunk(Object world, int chunkX, int chunkZ, Runnable runnable, int delayTicks) {
     if (world == null || runnable == null || !isPluginActive()) {
       return false;
     }
 
     int safeDelay = Math.max(0, delayTicks);
-    Location anchor = new Location(world, (chunkX << 4) + 8.0, 64.0, (chunkZ << 4) + 8.0);
-    if (runRegion(anchor, runnable, safeDelay)) {
+    ReactWorld handle = world(world);
+    if (handle != null && scheduler().region(handle, chunkX, chunkZ, runnable, safeDelay)) {
       return true;
     }
 
@@ -276,7 +229,24 @@ public class J {
     return true;
   }
 
-  public static <T> T runRegionResult(Location location, Supplier<T> supplier, T fallback) {
+  public static <T> T runRegionResult(Object location, Supplier<T> supplier, T fallback) {
+    PlatformScheduler scheduler = scheduler();
+    return regionResult(
+        () -> scheduler != null && scheduler.isPlaced(location),
+        () -> isOwnedByCurrentRegion(location),
+        task -> scheduler != null && scheduler.region(location, task, 0),
+        supplier,
+        fallback
+    );
+  }
+
+  private static <T> T regionResult(
+      BooleanSupplier placed,
+      BooleanSupplier owned,
+      Predicate<Runnable> submit,
+      Supplier<T> supplier,
+      T fallback
+  ) {
     if (supplier == null) {
       return fallback;
     }
@@ -285,20 +255,20 @@ public class J {
       try {
         return sResult(supplier);
       } catch (Throwable throwable) {
-        React.reportError(throwable);
+        reportError(throwable);
         return fallback;
       }
     }
 
-    if (location == null || location.getWorld() == null) {
+    if (!placed.getAsBoolean()) {
       return fallback;
     }
 
-    if (isOwnedByCurrentRegion(location)) {
+    if (owned.getAsBoolean()) {
       try {
         return supplier.get();
       } catch (Throwable throwable) {
-        React.reportError(throwable);
+        reportError(throwable);
         return fallback;
       }
     }
@@ -306,7 +276,7 @@ public class J {
     AtomicReference<T> result = new AtomicReference<>(fallback);
     AtomicReference<Throwable> error = new AtomicReference<>();
     CountDownLatch latch = new CountDownLatch(1);
-    if (!runRegion(location, () -> {
+    if (!submit.test(() -> {
       try {
         result.set(supplier.get());
       } catch (Throwable throwable) {
@@ -314,7 +284,7 @@ public class J {
       } finally {
         latch.countDown();
       }
-    }, 0)) {
+    })) {
       return fallback;
     }
 
@@ -329,7 +299,7 @@ public class J {
 
     Throwable throwable = error.get();
     if (throwable != null) {
-      React.reportError(throwable);
+      reportError(throwable);
       return fallback;
     }
 
@@ -355,8 +325,8 @@ public class J {
   }
 
   public static void cancelPluginTasks() {
-    Plugin plugin = React.instance;
-    if (plugin == null) {
+    PlatformScheduler scheduler = scheduler();
+    if (scheduler == null) {
       return;
     }
 
@@ -364,20 +334,13 @@ public class J {
       try {
         cancelAction.run();
       } catch (Throwable ex) {
-        React.verbose(() -> "Failed to run cancel action: " + ex.getClass().getSimpleName()
-            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()), ex);
+        verbose("Failed to run cancel action: " + ex.getClass().getSimpleName()
+            + (ex.getMessage() == null ? "" : " - " + ex.getMessage()));
       }
     }
     REPEATING_CANCELLERS.clear();
 
-    FoliaScheduler.cancelTasks(plugin);
-
-    try {
-      Bukkit.getScheduler().cancelTasks(plugin);
-    } catch (UnsupportedOperationException | IllegalPluginAccessException ex) {
-      // Folia blocks BukkitScheduler usage.
-      React.verbose("Skipping BukkitScheduler#cancelTasks for React on this server.");
-    }
+    scheduler.cancelAll();
   }
 
   public static <T> T sResult(Supplier<T> t) {
@@ -400,11 +363,12 @@ public class J {
 
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
     while (!finished.get()) {
-      if (React.instance == null || !React.instance.isReady()) {
+      PlatformScheduler scheduler = scheduler();
+      if (scheduler == null || !scheduler.isReady()) {
         return result.get();
       }
       if (System.nanoTime() >= deadline) {
-        React.warn("J.sResult timed out after 15s waiting for sync task; returning latest result (likely deadlock or shutdown).");
+        warn("J.sResult timed out after 15s waiting for sync task; returning latest result (likely deadlock or shutdown).");
         return result.get();
       }
 
@@ -416,7 +380,7 @@ public class J {
 
     Throwable throwable = failure.get();
     if (throwable != null) {
-      React.reportError(throwable);
+      reportError(throwable);
       return null;
     }
     return result.get();
@@ -427,13 +391,7 @@ public class J {
       return;
     }
 
-    React react = React.instance;
-    if (!react.isReady()) {
-      react.getPrejobs().add(r);
-      return;
-    }
-
-    React.controller(JobController.class).queue(r);
+    scheduler().queue(r);
   }
 
   public static void s(Runnable r, int delay) {
@@ -442,21 +400,16 @@ public class J {
       return;
     }
 
-    if (React.instance == null || !isPluginActive()) {
+    if (!isPluginActive()) {
       return;
     }
 
     Runnable delayed = () -> {
-      React react = React.instance;
-      if (react == null || !react.isEnabled()) {
+      if (!isPluginActive()) {
         return;
       }
 
-      if (react.isReady()) {
-        React.controller(JobController.class).queue(r);
-      } else {
-        react.getPrejobs().add(r);
-      }
+      scheduler().queue(r);
     };
 
     if (isFoliaThreading()) {
@@ -468,18 +421,7 @@ public class J {
       return;
     }
 
-    try {
-      Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, delayed, delay);
-    } catch (IllegalPluginAccessException e) {
-      if (!isPluginActive()) {
-        return;
-      }
-
-      throw new IllegalStateException("Failed to schedule delayed sync task while plugin is enabled.", e);
-    } catch (UnsupportedOperationException e) {
-      FoliaScheduler.forceFoliaThreading(Bukkit.getServer());
-      retryDelayedSyncOnUnsupported(delayed, delay);
-    }
+    scheduleLater(delayed, delay, "Failed to schedule delayed sync task while plugin is enabled.");
   }
 
   public static void sync(Runnable r, int delay) {
@@ -499,18 +441,7 @@ public class J {
       }
 
       if (!runGlobalImmediate(r)) {
-        try {
-          Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, r);
-        } catch (IllegalPluginAccessException e) {
-          if (!isPluginActive()) {
-            return;
-          }
-
-          throw new IllegalStateException("Failed to schedule sync task while plugin is enabled.", e);
-        } catch (UnsupportedOperationException e) {
-          FoliaScheduler.forceFoliaThreading(Bukkit.getServer());
-          retrySyncOnUnsupported(r);
-        }
+        scheduleLater(r, 0, "Failed to schedule sync task while plugin is enabled.");
       }
       return;
     }
@@ -524,28 +455,18 @@ public class J {
       return;
     }
 
-    try {
-      Bukkit.getScheduler().scheduleSyncDelayedTask(React.instance, r, delay);
-    } catch (IllegalPluginAccessException e) {
-      if (!isPluginActive()) {
-        return;
-      }
-
-      throw new IllegalStateException("Failed to schedule delayed sync task while plugin is enabled.", e);
-    } catch (UnsupportedOperationException e) {
-      FoliaScheduler.forceFoliaThreading(Bukkit.getServer());
-      retryDelayedSyncOnUnsupported(r, delay);
-    }
+    scheduleLater(r, delay, "Failed to schedule delayed sync task while plugin is enabled.");
   }
 
-  public static void s(Location location, Runnable r, int delay) {
+  public static void s(Object location, Runnable r, int delay) {
     if (location == null) {
       sync(r, delay);
       return;
     }
 
     int safeDelay = Math.max(0, delay);
-    if (runRegion(location, r, safeDelay)) {
+    PlatformScheduler scheduler = scheduler();
+    if (scheduler != null && scheduler.region(location, r, safeDelay)) {
       return;
     }
 
@@ -556,7 +477,7 @@ public class J {
     sync(r, safeDelay);
   }
 
-  public static void s(Location location, Runnable r) {
+  public static void s(Object location, Runnable r) {
     s(location, r, 0);
   }
 
@@ -583,7 +504,7 @@ public class J {
       try {
         r.run();
       } catch (Throwable e) {
-        React.reportError(e);
+        reportError(e);
       }
 
       if (state.cancelled || !isPluginActive()) {
@@ -620,13 +541,13 @@ public class J {
     }
 
     if (delay <= 0) {
-      if (!runAsyncImmediate(r)) {
+      if (!scheduler().async(r, 0)) {
         a(r);
       }
       return;
     }
 
-    if (!runAsyncDelayed(r, delay)) {
+    if (!scheduler().async(r, delay)) {
       a(() -> {
         if (sleep(ticksToMilliseconds(delay))) {
           r.run();
@@ -654,7 +575,7 @@ public class J {
       try {
         r.run();
       } catch (Throwable e) {
-        React.reportError(e);
+        reportError(e);
       }
 
       if (state.cancelled || !isPluginActive()) {
@@ -689,6 +610,25 @@ public class J {
     int id = TASK_IDS.getAndIncrement();
     REPEATING_CANCELLERS.put(id, cancelAction);
     return id;
+  }
+
+  private static void scheduleLater(Runnable runnable, int delayTicks, String failure) {
+    boolean scheduled;
+    try {
+      scheduled = scheduler().later(runnable, delayTicks);
+    } catch (UnsupportedOperationException e) {
+      scheduler().forceRegionized();
+      if (delayTicks <= 0) {
+        retrySyncOnUnsupported(runnable);
+      } else {
+        retryDelayedSyncOnUnsupported(runnable, delayTicks);
+      }
+      return;
+    }
+
+    if (!scheduled && isPluginActive()) {
+      throw new IllegalStateException(failure);
+    }
   }
 
   private static void retrySyncOnUnsupported(Runnable runnable) {
@@ -737,7 +677,8 @@ public class J {
       return true;
     }
 
-    return FoliaScheduler.runGlobal(React.instance, runnable);
+    PlatformScheduler scheduler = scheduler();
+    return scheduler != null && scheduler.global(runnable, 0);
   }
 
   private static boolean runGlobalDelayed(Runnable runnable, int delayTicks) {
@@ -745,24 +686,64 @@ public class J {
       return runGlobalImmediate(runnable);
     }
 
-    return FoliaScheduler.runGlobal(React.instance, runnable, Math.max(0, delayTicks));
-  }
-
-  private static boolean runRegion(Location location, Runnable runnable, int delayTicks) {
-    return FoliaScheduler.runRegion(React.instance, location, runnable, Math.max(0, delayTicks));
-  }
-
-  private static boolean runAsyncImmediate(Runnable runnable) {
-    return FoliaScheduler.runAsync(React.instance, runnable);
-  }
-
-  private static boolean runAsyncDelayed(Runnable runnable, int delayTicks) {
-    return FoliaScheduler.runAsync(React.instance, runnable, Math.max(0, delayTicks));
+    PlatformScheduler scheduler = scheduler();
+    return scheduler != null && scheduler.global(runnable, Math.max(0, delayTicks));
   }
 
   private static boolean isPluginActive() {
-    React react = React.instance;
-    return react != null && react.isEnabled();
+    PlatformScheduler scheduler = scheduler();
+    return scheduler != null && scheduler.isActive();
+  }
+
+  private static PlatformScheduler scheduler() {
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    return platform == null ? null : platform.scheduler();
+  }
+
+  private static ReactWorld world(Object world) {
+    if (world instanceof ReactWorld handle) {
+      return handle;
+    }
+
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    return platform == null ? null : platform.world(world).orElse(null);
+  }
+
+  private static ExecutorService asyncExecutor() {
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    return platform == null ? ForkJoinPool.commonPool() : platform.asyncExecutor();
+  }
+
+  private static void verbose(String message) {
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    if (platform != null) {
+      platform.verbose(message);
+    }
+  }
+
+  private static void warn(String message) {
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    if (platform != null) {
+      platform.warn(message);
+    }
+  }
+
+  private static void reportError(Throwable failure) {
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    if (platform != null) {
+      platform.reportError(failure);
+    } else {
+      FALLBACK_LOG.log(Level.SEVERE, "React task failed with no platform bound", failure);
+    }
+  }
+
+  private static void reportError(String context, Throwable failure) {
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    if (platform != null) {
+      platform.reportError(context, failure);
+    } else {
+      FALLBACK_LOG.log(Level.SEVERE, context, failure);
+    }
   }
 
   private static final class RepeatingState {

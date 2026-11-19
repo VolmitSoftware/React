@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerBiletoolsReloadMs extends RemoteIntegrationSampler {
   public static final String ID = "biletools-reload-ms";
@@ -11,7 +10,7 @@ public class SamplerBiletoolsReloadMs extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.CLOCK;
+  public String getIcon() {
+    return "minecraft:clock";
   }
 }

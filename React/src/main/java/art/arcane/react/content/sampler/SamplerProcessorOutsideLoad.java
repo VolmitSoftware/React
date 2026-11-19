@@ -25,7 +25,6 @@ import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
 import art.arcane.react.core.telemetry.HostMetric;
 import art.arcane.react.core.telemetry.HostReading;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 import java.util.function.Supplier;
 
@@ -59,8 +58,8 @@ public class SamplerProcessorOutsideLoad extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.GREEN_CANDLE;
+  public String getIcon() {
+    return "minecraft:green_candle";
   }
 
   @Override

@@ -22,7 +22,6 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public class SamplerEntitiesAnimals extends ReactCachedSampler {
   public static final String ID = "entities-animals";
@@ -44,8 +43,8 @@ public class SamplerEntitiesAnimals extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.HAY_BLOCK;
+  public String getIcon() {
+    return "minecraft:hay_block";
   }
 
   @Override

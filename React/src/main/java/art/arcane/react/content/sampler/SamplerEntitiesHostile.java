@@ -22,7 +22,6 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public class SamplerEntitiesHostile extends ReactCachedSampler {
   public static final String ID = "entities-hostile";
@@ -44,8 +43,8 @@ public class SamplerEntitiesHostile extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.ZOMBIE_HEAD;
+  public String getIcon() {
+    return "minecraft:zombie_head";
   }
 
   @Override

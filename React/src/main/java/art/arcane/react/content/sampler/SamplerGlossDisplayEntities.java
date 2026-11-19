@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerGlossDisplayEntities extends RemoteIntegrationSampler {
   public static final String ID = "gloss-display-entities";
@@ -11,7 +10,7 @@ public class SamplerGlossDisplayEntities extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.ARMOR_STAND;
+  public String getIcon() {
+    return "minecraft:armor_stand";
   }
 }

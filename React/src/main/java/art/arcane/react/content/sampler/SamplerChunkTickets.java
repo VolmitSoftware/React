@@ -27,7 +27,6 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.Material;
 import org.bukkit.World;
 
 import java.util.Collection;
@@ -41,8 +40,8 @@ public class SamplerChunkTickets extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.NAME_TAG;
+  public String getIcon() {
+    return "minecraft:name_tag";
   }
 
   @Override

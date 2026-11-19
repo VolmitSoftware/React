@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerBiletoolsDirtyPlugins extends RemoteIntegrationSampler {
   public static final String ID = "biletools-dirty-plugins";
@@ -11,7 +10,7 @@ public class SamplerBiletoolsDirtyPlugins extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.POISONOUS_POTATO;
+  public String getIcon() {
+    return "minecraft:poisonous_potato";
   }
 }

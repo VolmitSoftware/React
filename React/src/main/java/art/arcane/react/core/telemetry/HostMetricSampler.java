@@ -2,7 +2,6 @@ package art.arcane.react.core.telemetry;
 
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 import java.util.function.Supplier;
 
@@ -27,17 +26,17 @@ public final class HostMetricSampler implements Sampler {
   }
 
   @Override
-  public Material getIcon() {
+  public String getIcon() {
     return switch (metric) {
-      case PHYSICAL_USED -> Material.WATER_BUCKET;
-      case PHYSICAL_FREE -> Material.BUCKET;
-      case UPTIME -> Material.CLOCK;
+      case PHYSICAL_USED -> "minecraft:water_bucket";
+      case PHYSICAL_FREE -> "minecraft:bucket";
+      case UPTIME -> "minecraft:clock";
       default -> switch (metric.definition().source()) {
-        case STORAGE -> Material.IRON_PICKAXE;
-        case NETWORK -> Material.OBSERVER;
-        case JVM, GC -> Material.EXPERIENCE_BOTTLE;
-        case THREADS -> Material.STRING;
-        default -> Material.COMPARATOR;
+        case STORAGE -> "minecraft:iron_pickaxe";
+        case NETWORK -> "minecraft:observer";
+        case JVM, GC -> "minecraft:experience_bottle";
+        case THREADS -> "minecraft:string";
+        default -> "minecraft:comparator";
       };
     };
   }

@@ -25,7 +25,6 @@ import art.arcane.react.content.feature.FeatureSpawnerLightCache;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.volmlib.util.math.RollingSequence;
-import org.bukkit.Material;
 
 public class SamplerSpawnerLightCacheSkipped extends ReactCachedSampler {
   public static final String ID = "spawner-light-cache-skipped";
@@ -39,8 +38,8 @@ public class SamplerSpawnerLightCacheSkipped extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.SPAWNER;
+  public String getIcon() {
+    return "minecraft:spawner";
   }
 
   @Override

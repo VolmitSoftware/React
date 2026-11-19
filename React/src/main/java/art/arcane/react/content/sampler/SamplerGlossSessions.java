@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerGlossSessions extends RemoteIntegrationSampler {
   public static final String ID = "gloss-sessions";
@@ -11,7 +10,7 @@ public class SamplerGlossSessions extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.GLOW_ITEM_FRAME;
+  public String getIcon() {
+    return "minecraft:glow_item_frame";
   }
 }

@@ -24,7 +24,6 @@ import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.CostSnapshot;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public class SamplerTopChunkCost extends ReactCachedSampler {
   public static final String ID = "top-chunk-cost";
@@ -34,8 +33,8 @@ public class SamplerTopChunkCost extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.MAGMA_BLOCK;
+  public String getIcon() {
+    return "minecraft:magma_block";
   }
 
   @Override

@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerAdaptFxPackets extends RemoteIntegrationSampler {
   public static final String ID = "adapt-fx-packets";
@@ -11,7 +10,7 @@ public class SamplerAdaptFxPackets extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.FIREWORK_STAR;
+  public String getIcon() {
+    return "minecraft:firework_star";
   }
 }

@@ -10,6 +10,7 @@ import art.arcane.react.util.project.config.TomlCodec;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import art.arcane.react.util.project.registry.ItemIcons;
 import org.bukkit.Material;
 
 import java.io.IOException;
@@ -115,10 +116,11 @@ public final class PluginApiPackParser {
         throw new IOException("Duplicate sampler id: " + samplerId);
       }
       ReactMetricKind kind = enumValue(ReactMetricKind.class, rawMetric.kind, "metrics[" + index + "].kind");
-      Material icon = Material.matchMaterial(requiredText(rawMetric.icon, "metrics[" + index + "].icon", 64));
-      if (icon == null) {
+      Material iconMaterial = Material.matchMaterial(requiredText(rawMetric.icon, "metrics[" + index + "].icon", 64));
+      if (iconMaterial == null) {
         throw new IOException("metrics[" + index + "].icon must be a material");
       }
+      String icon = ItemIcons.id(iconMaterial);
       int decimals = rawMetric.decimals == null ? defaultDecimals(kind) : rawMetric.decimals;
       if (decimals < 0 || decimals > 4) {
         throw new IOException("metrics[" + index + "].decimals must be between 0 and 4");

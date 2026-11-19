@@ -22,7 +22,6 @@ package art.arcane.react.util.project.registry;
 import art.arcane.react.React;
 import art.arcane.react.util.project.config.ConfigFileSupport;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,8 +39,8 @@ public interface Registered {
     return Form.capitalizeWords(getId().replace("-", " "));
   }
 
-  default Material getIcon() {
-    return Material.SLIME_BALL;
+  default String getIcon() {
+    return "minecraft:slime_ball";
   }
 
   String getId();

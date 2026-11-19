@@ -6,7 +6,6 @@ import art.arcane.react.core.pluginapi.PluginApiPackDefinition.SourceDefinition;
 import art.arcane.react.core.pluginapi.PluginApiPackDefinition.SourceType;
 import art.arcane.react.core.pluginapi.PluginApiPackDefinition.TransformDefinition;
 import art.arcane.react.core.pluginapi.PluginApiPackDefinition.TransformMode;
-import org.bukkit.Material;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,7 +73,7 @@ class PluginApiMetricRuntimeTest {
         "Value",
         ReactMetricKind.GAUGE,
         "",
-        Material.CLOCK,
+        "minecraft:clock",
         1,
         1_000L,
         15_000L,

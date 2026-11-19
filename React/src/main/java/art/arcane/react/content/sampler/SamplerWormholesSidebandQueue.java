@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerWormholesSidebandQueue extends RemoteIntegrationSampler {
   public static final String ID = "wormholes-sideband-queue";
@@ -11,7 +10,7 @@ public class SamplerWormholesSidebandQueue extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.CHEST;
+  public String getIcon() {
+    return "minecraft:chest";
   }
 }

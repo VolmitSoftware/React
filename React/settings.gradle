@@ -4,6 +4,8 @@ plugins {
 
 rootProject.name = 'React'
 
+include('core')
+
 boolean hasVolmLibSettings(File directory) {
     new File(directory, 'settings.gradle.kts').exists() || new File(directory, 'settings.gradle').exists()
 }

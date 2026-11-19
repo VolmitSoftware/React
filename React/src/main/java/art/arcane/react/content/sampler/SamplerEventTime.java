@@ -23,7 +23,6 @@ import art.arcane.react.api.sampler.ReactEventSampler;
 import art.arcane.react.core.controller.EventController;
 import art.arcane.volmlib.util.format.Form;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Material;
 import org.bukkit.event.Listener;
 
 public class SamplerEventTime extends ReactEventSampler implements Listener {
@@ -34,8 +33,8 @@ public class SamplerEventTime extends ReactEventSampler implements Listener {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.HEART_OF_THE_SEA;
+  public String getIcon() {
+    return "minecraft:heart_of_the_sea";
   }
 
   @Override

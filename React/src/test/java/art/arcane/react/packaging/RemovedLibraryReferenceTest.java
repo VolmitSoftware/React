@@ -1,6 +1,7 @@
 package art.arcane.react.packaging;
 
 import art.arcane.react.React;
+import art.arcane.react.testutil.MainClassRoots;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -47,6 +48,7 @@ class RemovedLibraryReferenceTest {
   @Test
   void mainJavaSourcesDoNotMentionRemovedPackages() throws IOException {
     assertEquals(List.of(), matches(Path.of("src", "main", "java"), REMOVED_PACKAGE));
+    assertEquals(List.of(), matches(Path.of("core", "src", "main", "java"), REMOVED_PACKAGE));
   }
 
   @Test
@@ -59,6 +61,9 @@ class RemovedLibraryReferenceTest {
     Path classes = Path.of(React.class.getProtectionDomain().getCodeSource().getLocation().toURI());
 
     assertEquals(List.of(), matches(classes, REMOVED_PACKAGE));
+    for (Path root : MainClassRoots.all()) {
+      assertEquals(List.of(), matches(root, REMOVED_PACKAGE));
+    }
   }
 
   @Test

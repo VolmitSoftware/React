@@ -27,7 +27,6 @@ import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.World;
 
 import java.util.HashSet;
@@ -48,8 +47,8 @@ public class SamplerPerWorldTickTime extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.RECOVERY_COMPASS;
+  public String getIcon() {
+    return "minecraft:recovery_compass";
   }
 
   @Override

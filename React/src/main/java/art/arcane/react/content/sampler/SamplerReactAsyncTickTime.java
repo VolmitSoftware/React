@@ -23,7 +23,6 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Material;
 
 public class SamplerReactAsyncTickTime extends ReactCachedSampler {
   public static final String ID = "react-async-tick-time";
@@ -33,8 +32,8 @@ public class SamplerReactAsyncTickTime extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.MUSIC_DISC_5;
+  public String getIcon() {
+    return "minecraft:music_disc_5";
   }
 
   @Override

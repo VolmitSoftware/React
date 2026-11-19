@@ -24,7 +24,6 @@ import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.core.controller.JobController;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
-import org.bukkit.Material;
 
 public class SamplerBacklogGrowthRate extends ReactCachedSampler {
   public static final String ID = "backlog-growth-rate";
@@ -46,8 +45,8 @@ public class SamplerBacklogGrowthRate extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.COMPARATOR;
+  public String getIcon() {
+    return "minecraft:comparator";
   }
 
   @Override

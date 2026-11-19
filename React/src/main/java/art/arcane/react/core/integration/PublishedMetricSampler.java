@@ -4,8 +4,8 @@ import art.arcane.react.api.metric.ReactMetric;
 import art.arcane.react.api.metric.ReactMetricKind;
 import art.arcane.react.api.metric.internal.PublishedMetricStore;
 import art.arcane.react.api.sampler.ReactCachedSampler;
+import art.arcane.react.util.project.registry.ItemIcons;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 import java.util.Objects;
 
@@ -47,8 +47,8 @@ public class PublishedMetricSampler extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return metric().icon();
+  public String getIcon() {
+    return ItemIcons.id(metric().icon());
   }
 
   @Override

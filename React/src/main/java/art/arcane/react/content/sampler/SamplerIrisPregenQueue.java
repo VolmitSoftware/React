@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerIrisPregenQueue extends RemoteIntegrationSampler {
   public static final String ID = "iris-pregen-queue";
@@ -11,7 +10,7 @@ public class SamplerIrisPregenQueue extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.OAK_SAPLING;
+  public String getIcon() {
+    return "minecraft:oak_sapling";
   }
 }

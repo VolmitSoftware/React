@@ -24,7 +24,6 @@ import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.CostSnapshot;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public class SamplerTopWorldMSPT extends ReactCachedSampler {
   public static final String ID = "top-world-mspt";
@@ -34,8 +33,8 @@ public class SamplerTopWorldMSPT extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.CLOCK;
+  public String getIcon() {
+    return "minecraft:clock";
   }
 
   @Override

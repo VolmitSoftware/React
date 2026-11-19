@@ -1,0 +1,93 @@
+plugins {
+    id 'java-library'
+}
+
+String volmLibCoordinate = providers.gradleProperty('volmLibCoordinate')
+        .orElse('com.github.VolmitSoftware:VolmLib:master-SNAPSHOT')
+        .get()
+
+repositories {
+    mavenCentral()
+    maven {
+        url = uri('https://www.jitpack.io')
+        content { includeGroupByRegex 'com\\.github\\..*' }
+    }
+}
+
+configurations.configureEach {
+    resolutionStrategy.cacheChangingModulesFor(0, 'seconds')
+    resolutionStrategy.cacheDynamicVersionsFor(0, 'seconds')
+}
+
+List<String> providedLibraries = [
+        'net.kyori:adventure-api:4.26.1',
+        'net.kyori:adventure-text-minimessage:4.26.1',
+        'net.kyori:adventure-text-serializer-legacy:4.26.1',
+        'net.kyori:adventure-text-serializer-plain:4.26.1',
+        'net.kyori:adventure-text-serializer-gson:4.26.1',
+        'io.javalin:javalin:6.4.0',
+        'com.fasterxml.jackson.core:jackson-databind:2.17.2',
+        'com.fasterxml.jackson.core:jackson-annotations:2.17.2',
+        'com.github.oshi:oshi-core:6.9.0',
+        'com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru:1.4.2',
+        'com.github.ben-manes.caffeine:caffeine:3.0.6',
+        'com.moandjiezana.toml:toml4j:0.7.2',
+        'it.unimi.dsi:fastutil:8.5.8',
+        'org.apache.commons:commons-lang3:3.12.0',
+        'com.google.code.gson:gson:2.10',
+        'com.google.guava:guava:33.3.1-jre',
+        'org.apache.logging.log4j:log4j-api:2.24.1',
+        'org.jetbrains:annotations:26.0.2'
+]
+
+dependencies {
+    compileOnly('org.projectlombok:lombok:1.18.44')
+    annotationProcessor('org.projectlombok:lombok:1.18.44')
+    testCompileOnly('org.projectlombok:lombok:1.18.44')
+    testAnnotationProcessor('org.projectlombok:lombok:1.18.44')
+
+    compileOnly(volmLibCoordinate) {
+        changing = true
+        transitive = false
+    }
+    testImplementation(volmLibCoordinate) {
+        changing = true
+        transitive = false
+    }
+
+    for (String library : providedLibraries) {
+        compileOnly(library)
+        testImplementation(library)
+    }
+
+    testImplementation('org.junit.jupiter:junit-jupiter:5.11.4')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.11.4')
+    testImplementation('org.mockito:mockito-core:5.18.0')
+    testImplementation('net.bytebuddy:byte-buddy:1.17.6')
+    testImplementation('net.bytebuddy:byte-buddy-agent:1.17.6')
+    testImplementation('net.jqwik:jqwik:1.9.1')
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add('-parameters')
+    options.encoding = 'UTF-8'
+    options.release.set(25)
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform {
+        includeEngines('junit-jupiter', 'jqwik')
+    }
+    maxParallelForks = Math.max(1, (int) (Runtime.runtime.availableProcessors() / 2))
+    systemProperty('net.bytebuddy.experimental', 'true')
+    jvmArgs('-XX:+EnableDynamicAgentLoading')
+    testLogging {
+        events('skipped', 'failed')
+    }
+}

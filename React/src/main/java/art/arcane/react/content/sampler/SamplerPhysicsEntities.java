@@ -22,7 +22,6 @@ package art.arcane.react.content.sampler;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public class SamplerPhysicsEntities extends ReactCachedSampler {
   public static final String ID = "physics-entities";
@@ -44,8 +43,8 @@ public class SamplerPhysicsEntities extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.TNT;
+  public String getIcon() {
+    return "minecraft:tnt";
   }
 
   @Override

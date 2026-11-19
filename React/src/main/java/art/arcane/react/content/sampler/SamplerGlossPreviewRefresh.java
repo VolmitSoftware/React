@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerGlossPreviewRefresh extends RemoteIntegrationSampler {
   public static final String ID = "gloss-preview-refresh";
@@ -11,7 +10,7 @@ public class SamplerGlossPreviewRefresh extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.HOPPER;
+  public String getIcon() {
+    return "minecraft:hopper";
   }
 }

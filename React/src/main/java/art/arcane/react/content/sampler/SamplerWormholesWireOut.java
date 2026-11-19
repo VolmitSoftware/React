@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerWormholesWireOut extends RemoteIntegrationSampler {
   public static final String ID = "wormholes-wire-out";
@@ -11,7 +10,7 @@ public class SamplerWormholesWireOut extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.DISPENSER;
+  public String getIcon() {
+    return "minecraft:dispenser";
   }
 }

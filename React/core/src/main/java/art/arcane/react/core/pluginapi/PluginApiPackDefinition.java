@@ -1,7 +1,6 @@
 package art.arcane.react.core.pluginapi;
 
 import art.arcane.react.api.metric.ReactMetricKind;
-import org.bukkit.Material;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -26,7 +25,7 @@ public record PluginApiPackDefinition(
       String displayName,
       ReactMetricKind kind,
       String unit,
-      Material icon,
+      String icon,
       int decimals,
       long sampleEveryMs,
       long staleAfterMs,

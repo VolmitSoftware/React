@@ -25,7 +25,6 @@ import art.arcane.react.util.project.world.HopperMoveContext;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
@@ -52,8 +51,8 @@ public class SamplerHopperEventSpan extends ReactCachedSampler implements Listen
   }
 
   @Override
-  public Material getIcon() {
-    return Material.HOPPER;
+  public String getIcon() {
+    return "minecraft:hopper";
   }
 
   @EventHandler

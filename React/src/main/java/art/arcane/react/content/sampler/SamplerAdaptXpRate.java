@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerAdaptXpRate extends RemoteIntegrationSampler {
   public static final String ID = "adapt-xp-rate";
@@ -11,7 +10,7 @@ public class SamplerAdaptXpRate extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.EXPERIENCE_BOTTLE;
+  public String getIcon() {
+    return "minecraft:experience_bottle";
   }
 }

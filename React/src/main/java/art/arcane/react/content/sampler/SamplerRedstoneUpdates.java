@@ -21,7 +21,6 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedRateSampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockRedstoneEvent;
@@ -34,8 +33,8 @@ public class SamplerRedstoneUpdates extends ReactCachedRateSampler implements Li
   }
 
   @Override
-  public Material getIcon() {
-    return Material.REDSTONE;
+  public String getIcon() {
+    return "minecraft:redstone";
   }
 
 

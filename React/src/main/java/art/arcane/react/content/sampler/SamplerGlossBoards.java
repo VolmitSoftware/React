@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerGlossBoards extends RemoteIntegrationSampler {
   public static final String ID = "gloss-boards";
@@ -11,7 +10,7 @@ public class SamplerGlossBoards extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.OAK_SIGN;
+  public String getIcon() {
+    return "minecraft:oak_sign";
   }
 }

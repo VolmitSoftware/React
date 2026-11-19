@@ -24,7 +24,6 @@ import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.core.controller.JobController;
 import art.arcane.volmlib.util.format.Form;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Material;
 
 public class SamplerReactJobQueueTime extends ReactCachedSampler {
   public static final String ID = "react-job-queue-time";
@@ -34,8 +33,8 @@ public class SamplerReactJobQueueTime extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.MUSIC_DISC_5;
+  public String getIcon() {
+    return "minecraft:music_disc_5";
   }
 
   @Override

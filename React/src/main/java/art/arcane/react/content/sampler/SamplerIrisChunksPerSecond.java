@@ -1,7 +1,6 @@
 package art.arcane.react.content.sampler;
 
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import org.bukkit.Material;
 
 public class SamplerIrisChunksPerSecond extends RemoteIntegrationSampler {
   public static final String ID = "iris-chunks-per-second";
@@ -11,7 +10,7 @@ public class SamplerIrisChunksPerSecond extends RemoteIntegrationSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.GRASS_BLOCK;
+  public String getIcon() {
+    return "minecraft:grass_block";
   }
 }

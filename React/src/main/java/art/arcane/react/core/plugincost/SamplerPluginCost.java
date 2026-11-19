@@ -24,7 +24,6 @@ import art.arcane.react.core.controller.EventController;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.math.RollingSequence;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Material;
 
 import java.util.Locale;
 
@@ -48,8 +47,8 @@ public class SamplerPluginCost extends ReactEventSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.NOTE_BLOCK;
+  public String getIcon() {
+    return "minecraft:note_block";
   }
 
   @Override

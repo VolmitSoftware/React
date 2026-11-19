@@ -21,7 +21,6 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
-import org.bukkit.Material;
 
 public class SamplerTickSpikeRate extends ReactCachedSampler {
   public static final String ID = "tick-spike-rate";
@@ -51,8 +50,8 @@ public class SamplerTickSpikeRate extends ReactCachedSampler {
   }
 
   @Override
-  public Material getIcon() {
-    return Material.REPEATER;
+  public String getIcon() {
+    return "minecraft:repeater";
   }
 
   @Override
