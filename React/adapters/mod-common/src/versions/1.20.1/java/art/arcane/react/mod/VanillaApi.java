@@ -236,7 +236,7 @@ public final class VanillaApi {
     /** True for the player who owns the singleplayer world this integrated server runs. */
     static boolean worldOwner(ServerPlayer player) {
         MinecraftServer server = player.getServer();
-        return server != null && !server.isDedicatedServer() && server.isSingleplayerOwner(player.getGameProfile());
+        return server != null && ModPermissions.worldOwner(server.isDedicatedServer(), server.isSingleplayerOwner(player.getGameProfile()));
     }
 
     /** Where a portal trip leads, or null for a trip React cannot read. */

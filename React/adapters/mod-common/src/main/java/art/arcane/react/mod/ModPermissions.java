@@ -26,6 +26,11 @@ final class ModPermissions {
     private ModPermissions() {
     }
 
+    /** Only an integrated server has an owner, and only the player who opened the world is it. */
+    static boolean worldOwner(boolean dedicatedServer, boolean singleplayerOwner) {
+        return !dedicatedServer && singleplayerOwner;
+    }
+
     static boolean has(CommandSourceStack source, String node) {
         if (node != null && EVERYONE.contains(node)) {
             return true;

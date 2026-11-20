@@ -254,7 +254,7 @@ public final class VanillaApi {
     /** True for the player who owns the singleplayer world this integrated server runs. */
     static boolean worldOwner(ServerPlayer player) {
         MinecraftServer server = player.level().getServer();
-        return !server.isDedicatedServer() && server.isSingleplayerOwner(player.nameAndId());
+        return ModPermissions.worldOwner(server.isDedicatedServer(), server.isSingleplayerOwner(player.nameAndId()));
     }
 
     private static boolean granted(PermissionSet permissions, String atom) {
