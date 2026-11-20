@@ -7,7 +7,6 @@ import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.ChunkRef;
 import art.arcane.react.platform.ReactWorld;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkLevel;
@@ -37,8 +36,6 @@ import java.util.concurrent.TimeoutException;
  */
 final class ModChunkHost implements ChunkHost {
     private static final long SERVER_WAIT_MS = 2_000L;
-    private static final long DISK_WAIT_MS = 2_000L;
-    private static final String FULL_STATUS = "minecraft:full";
     private final MinecraftServer server;
     private final ModChunkSamples samples;
 
@@ -79,20 +76,7 @@ final class ModChunkHost implements ChunkHost {
 
     @Override
     public boolean isGenerated(ReactWorld world, int chunkX, int chunkZ) {
-        ServerLevel level = level(world);
-        if (level.getChunkSource().getChunkNow(chunkX, chunkZ) != null) {
-            return true;
-        }
-        try {
-            Optional<CompoundTag> stored = level.getChunkSource().chunkMap.read(new ChunkPos(chunkX, chunkZ))
-                    .get(DISK_WAIT_MS, TimeUnit.MILLISECONDS);
-            return stored.isPresent() && FULL_STATUS.equals(VanillaApi.stringOr(stored.get(), "Status", ""));
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            return true;
-        } catch (ExecutionException | TimeoutException unreadable) {
-            return true;
-        }
+        return ModChunkGeneration.generated(level(world), chunkX, chunkZ);
     }
 
     @Override
@@ -109,9 +93,29 @@ final class ModChunkHost implements ChunkHost {
     @Override
     public CompletableFuture<Object> load(ReactWorld world, int chunkX, int chunkZ, boolean generate) {
         ServerLevel level = level(world);
-        if (!generate && !isGenerated(world, chunkX, chunkZ)) {
-            return CompletableFuture.completedFuture(null);
+        if (generate) {
+            return loadNow(level, chunkX, chunkZ);
         }
+        CompletableFuture<Object> loading = new CompletableFuture<>();
+        ModChunkGeneration.read(level, chunkX, chunkZ).whenComplete((Boolean generated, Throwable failure) -> {
+            if (failure != null) {
+                loading.completeExceptionally(failure);
+            } else if (!Boolean.TRUE.equals(generated)) {
+                loading.complete(null);
+            } else {
+                level.getServer().execute(() -> loadNow(level, chunkX, chunkZ).whenComplete((Object chunk, Throwable loadFailure) -> {
+                    if (loadFailure != null) {
+                        loading.completeExceptionally(loadFailure);
+                    } else {
+                        loading.complete(chunk);
+                    }
+                }));
+            }
+        });
+        return loading;
+    }
+
+    private static CompletableFuture<Object> loadNow(ServerLevel level, int chunkX, int chunkZ) {
         return VanillaForms.loadFullChunk(level, chunkX, chunkZ).thenApply((LevelChunk chunk) -> chunk);
     }
 

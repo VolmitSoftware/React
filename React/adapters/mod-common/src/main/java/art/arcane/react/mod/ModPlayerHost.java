@@ -15,7 +15,7 @@ import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.phys.HitResult;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,9 +25,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Player activity on mods, fed by the player mixins at the points where Bukkit fires its player events, plus the
@@ -36,7 +33,6 @@ import java.util.concurrent.TimeoutException;
 public final class ModPlayerHost implements PlayerHost {
     private static final double MOVE_THRESHOLD_SQUARED = 1D / 256D;
     private static final float TURN_THRESHOLD_DEGREES = 10F;
-    private static final long GENERATED_READ_TIMEOUT_MS = 100L;
     private static final List<Listener<Move>> MOVES = new CopyOnWriteArrayList<>();
     private static final List<Listener<Teleport>> TELEPORTS = new CopyOnWriteArrayList<>();
     private static final List<Listener<Portal>> PORTALS = new CopyOnWriteArrayList<>();
@@ -48,7 +44,11 @@ public final class ModPlayerHost implements PlayerHost {
     private static final Map<UUID, ServerPlayer> ONLINE = new ConcurrentHashMap<>();
     private static final Map<UUID, LastMove> LAST_MOVES = new ConcurrentHashMap<>();
     private static final Map<UUID, Integer> SEND_DISTANCE_CAPS = new ConcurrentHashMap<>();
-    private static volatile boolean readingNaturalDistance;
+    private static final Map<UUID, Integer> NATURAL_DISTANCES = new ConcurrentHashMap<>();
+    private static Object lastAttackTarget;
+    private static Object lastAttackSource;
+    private static boolean lastAttackCancelled;
+    private static final Map<Object, Boolean> PORTAL_TRANSITIONS = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
     private final MinecraftServer server;
 
     ModPlayerHost(MinecraftServer server) {
@@ -70,6 +70,10 @@ public final class ModPlayerHost implements PlayerHost {
         ONLINE.clear();
         LAST_MOVES.clear();
         SEND_DISTANCE_CAPS.clear();
+        NATURAL_DISTANCES.clear();
+        PORTAL_TRANSITIONS.clear();
+        lastAttackTarget = null;
+        lastAttackSource = null;
     }
 
     @Override
@@ -152,7 +156,6 @@ public final class ModPlayerHost implements PlayerHost {
         } else {
             SEND_DISTANCE_CAPS.put(handle.getUUID(), Math.max(2, distance));
         }
-        SendViewDistance.refresh(VanillaApi.level(handle).getChunkSource().chunkMap, handle);
     }
 
     @Override
@@ -161,39 +164,31 @@ public final class ModPlayerHost implements PlayerHost {
         if (level == null) {
             return true;
         }
-        int chunkX = location.chunkX();
-        int chunkZ = location.chunkZ();
-        if (level.getChunkSource().getChunkNow(chunkX, chunkZ) != null) {
-            return true;
-        }
-        try {
-            return level.getChunkSource().chunkMap.read(new ChunkPos(chunkX, chunkZ))
-                    .get(GENERATED_READ_TIMEOUT_MS, TimeUnit.MILLISECONDS).isPresent();
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            return true;
-        } catch (ExecutionException | TimeoutException unknown) {
-            return true;
-        }
+        boolean generated = ModChunkGeneration.generated(level, location.chunkX(), location.chunkZ());
+        ModChunkGeneration.prefetchAround(level, location.chunkX(), location.chunkZ());
+        return generated;
     }
 
     /** The chunk map's own distance for the player, capped by React's send distance. */
     public static int capViewDistance(ServerPlayer player, int distance) {
-        if (readingNaturalDistance || SEND_DISTANCE_CAPS.isEmpty()) {
+        if (SEND_DISTANCE_CAPS.isEmpty()) {
             return distance;
         }
         Integer cap = SEND_DISTANCE_CAPS.get(player.getUUID());
         return cap == null ? distance : Math.min(distance, cap);
     }
 
-    private static int naturalDistance(ServerPlayer player) {
-        ChunkMap chunkMap = VanillaApi.level(player).getChunkSource().chunkMap;
-        readingNaturalDistance = true;
-        try {
-            return SendViewDistance.natural(chunkMap, player);
-        } finally {
-            readingNaturalDistance = false;
+    /** The chunk map's own distance for the player before React's cap; the chunk map re-reads it every tick. */
+    public static void rememberNaturalDistance(ServerPlayer player, int distance) {
+        NATURAL_DISTANCES.put(player.getUUID(), distance);
+    }
+
+    private int naturalDistance(ServerPlayer player) {
+        Integer natural = NATURAL_DISTANCES.get(player.getUUID());
+        if (natural != null) {
+            return natural;
         }
+        return SendViewDistance.natural(VanillaApi.level(player).getChunkSource().chunkMap, player);
     }
 
     private static ServerPlayer online(ReactPlayer player) {
@@ -220,6 +215,8 @@ public final class ModPlayerHost implements PlayerHost {
         ONLINE.remove(player.getUUID(), player);
         LAST_MOVES.remove(player.getUUID());
         SEND_DISTANCE_CAPS.remove(player.getUUID());
+        NATURAL_DISTANCES.remove(player.getUUID());
+        ModMapHooks.forget(player.getUUID());
     }
 
     /** True when a listener cancelled the move; the player is then sent back to their position before the packet. */
@@ -280,6 +277,18 @@ public final class ModPlayerHost implements PlayerHost {
         return value;
     }
 
+    /** Remembers a portal's transition, so the teleport it leads to fires the portal event alone, as on Bukkit. */
+    public static void markPortalTransition(Object transition) {
+        if (transition != null) {
+            PORTAL_TRANSITIONS.put(transition, Boolean.TRUE);
+        }
+    }
+
+    /** True once for a transition a portal produced. */
+    public static boolean isPortalTransition(Object transition) {
+        return transition != null && PORTAL_TRANSITIONS.remove(transition) != null;
+    }
+
     /** True when a listener cancelled the portal trip of {@code entity} to {@code transition}. */
     public static boolean cancelsPortal(Entity entity, Object transition) {
         if (PORTALS.isEmpty() || transition == null) {
@@ -292,9 +301,34 @@ public final class ModPlayerHost implements PlayerHost {
         return portal.cancelled;
     }
 
+    /** A swing that hits no block within reach counts as an interaction, as Bukkit's LEFT_CLICK_AIR does. */
+    public static void swung(ServerPlayer player) {
+        if (INTERACTIONS.isEmpty() || player == null || player.hasDisconnected()) {
+            return;
+        }
+        if (player.pick(VanillaApi.blockReach(player), 1.0F, false).getType() == HitResult.Type.MISS) {
+            cancels(INTERACTIONS, player);
+        }
+    }
+
     /** True when a listener cancelled the block or item use. */
     public static boolean cancelsInteraction(ServerPlayer player) {
         return cancels(INTERACTIONS, player);
+    }
+
+    /**
+     * The same for a non-living entity. A hit runs through both a subclass and its parent's damage method, so it is
+     * answered once and the answer reused for the parent.
+     */
+    public static boolean cancelsEntityAttack(Object target, DamageSource source) {
+        if (target == lastAttackTarget && source == lastAttackSource) {
+            return lastAttackCancelled;
+        }
+        boolean cancelled = cancelsAttack(source);
+        lastAttackTarget = target;
+        lastAttackSource = source;
+        lastAttackCancelled = cancelled;
+        return cancelled;
     }
 
     /** True when a listener cancelled damage dealt by a player, directly or with a projectile they shot. */

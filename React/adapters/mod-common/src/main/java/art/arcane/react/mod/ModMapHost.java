@@ -155,7 +155,22 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
         player.connection.send(packet(mapId, source, rect));
     }
 
+    @Override
+    public Packet<?> carried(int mapId, byte scale, boolean locked, ServerPlayer player) {
+        MapHostListener<ItemStack> active = listener;
+        DirtyRect rect = active == null ? DirtyRect.EMPTY : active.pull(mapId, snapshotOf(player), System.currentTimeMillis());
+        byte[] surface = active == null ? null : active.published(mapId);
+        if (rect.isEmpty() || surface == null) {
+            return VanillaItems.carriedMapUpdate(mapId, scale, locked, 0, 0, 0, 0, null);
+        }
+        return VanillaItems.carriedMapUpdate(mapId, scale, locked, rect.x0(), rect.y0(), rect.width(), rect.height(), patch(surface, rect));
+    }
+
     static Packet<?> packet(int mapId, byte[] surface, DirtyRect rect) {
+        return VanillaItems.mapPatch(mapId, rect.x0(), rect.y0(), rect.width(), rect.height(), patch(surface, rect));
+    }
+
+    private static byte[] patch(byte[] surface, DirtyRect rect) {
         int width = rect.width();
         int height = rect.height();
         byte[] patch = new byte[width * height];
@@ -166,7 +181,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
                 patch[to + column] = painted(surface[from + column]);
             }
         }
-        return VanillaItems.mapPatch(mapId, rect.x0(), rect.y0(), width, height, patch);
+        return patch;
     }
 
     private static byte painted(byte value) {
@@ -175,7 +190,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
 
     @Override
     public boolean pullsHeldMaps() {
-        return false;
+        return true;
     }
 
     // Items

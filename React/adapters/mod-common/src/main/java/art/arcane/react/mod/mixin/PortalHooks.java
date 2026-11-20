@@ -19,6 +19,8 @@ public abstract class PortalHooks {
     private void react$portal(ServerLevel level, Entity entity, CallbackInfoReturnable<?> callback) {
         if (ModPlayerHost.cancelsPortal(entity, callback.getReturnValue())) {
             callback.setReturnValue(null);
+        } else {
+            ModPlayerHost.markPortalTransition(callback.getReturnValue());
         }
     }
 }

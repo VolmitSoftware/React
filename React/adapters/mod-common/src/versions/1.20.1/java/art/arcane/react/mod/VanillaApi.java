@@ -219,4 +219,9 @@ public final class VanillaApi {
     static boolean travel(Entity entity, Object transition) {
         return transition instanceof PortalTrip trip && trip.entity() == entity && trip.resume();
     }
+
+    /** How far the player reaches blocks. */
+    static double blockReach(ServerPlayer player) {
+        return player.isCreative() ? 5.0D : 4.5D;
+    }
 }

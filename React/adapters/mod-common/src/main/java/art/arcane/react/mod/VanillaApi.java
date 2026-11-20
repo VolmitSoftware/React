@@ -231,4 +231,9 @@ public final class VanillaApi {
     static boolean travel(Entity entity, Object transition) {
         return transition instanceof TeleportTransition teleport && entity.teleport(teleport) != null;
     }
+
+    /** How far the player reaches blocks. */
+    static double blockReach(ServerPlayer player) {
+        return player.blockInteractionRange();
+    }
 }

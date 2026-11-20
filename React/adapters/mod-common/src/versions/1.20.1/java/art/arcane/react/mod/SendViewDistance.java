@@ -15,7 +15,4 @@ final class SendViewDistance {
     static int natural(ChunkMap chunkMap, ServerPlayer player) {
         return player.server.getPlayerList().getViewDistance();
     }
-
-    static void refresh(ChunkMap chunkMap, ServerPlayer player) {
-    }
 }

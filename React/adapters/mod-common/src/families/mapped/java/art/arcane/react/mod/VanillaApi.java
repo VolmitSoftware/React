@@ -225,4 +225,9 @@ public final class VanillaApi {
     static boolean travel(Entity entity, Object transition) {
         return transition instanceof DimensionTransition dimension && entity.changeDimension(dimension) != null;
     }
+
+    /** How far the player reaches blocks. */
+    static double blockReach(ServerPlayer player) {
+        return player.blockInteractionRange();
+    }
 }

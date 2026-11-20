@@ -17,7 +17,6 @@
     "forgeMixinExtras": "0.5.4",
     "neoforgeUsesForge": true,
     "excludedSources": [
-      "art/arcane/react/mod/mixin/ChunkMapViewAccess.java",
       "art/arcane/react/mod/mixin/ChunkMapViewHooks.java",
       "art/arcane/react/mod/mixin/MinecraftServerHooks.java",
       "art/arcane/react/mod/mixin/TrialSpawnerHooks.java"

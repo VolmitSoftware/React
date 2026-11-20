@@ -18,7 +18,9 @@ import com.mojang.brigadier.tree.CommandNode;
 import com.mojang.brigadier.tree.RootCommandNode;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
@@ -47,6 +49,8 @@ import java.util.regex.Pattern;
 final class ModShorthandHost implements ShorthandHost {
     private static final String COMMAND_NAMESPACE = "react";
     private static final String ARGUMENTS = "arguments";
+    private static final String NO_PERMISSION = "I'm sorry, but you do not have permission to perform this command. "
+            + "Please contact the server administrators if you believe that this is in error.";
     private static final int MAX_GIVE_STACKS = 100;
     private static final Pattern COMMAND_LABEL = Pattern.compile("[a-z0-9][a-z0-9_-]*");
     private final MinecraftServer server;
@@ -95,8 +99,16 @@ final class ModShorthandHost implements ShorthandHost {
                 registerGameMode(dispatcher, registrations, "gmc", GameType.CREATIVE);
             }
             if (settings.isGive()) {
-                register(dispatcher, registrations, "give", true, playerOnly("/give <item> <amount>", this::give),
-                        permitted("react.shorthands.give;minecraft.command.give"), this::completeGive);
+                CommandNode<CommandSourceStack> vanillaGive = dispatcher.getRoot().getChild("give");
+                Handler shorthand = playerOnly("/give <item> <amount>", this::give);
+                register(dispatcher, registrations, "give", true,
+                        (CommandSourceStack source, String[] args) -> giveOrVanilla(vanillaGive, shorthand, source, args),
+                        (CommandSourceStack source) -> vanillaApplies(vanillaGive, source, null)
+                                || permitted("react.shorthands.give;minecraft.command.give").test(source),
+                        (CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) -> completeGiveOrVanilla(vanillaGive, context, builder));
+                if (vanillaGive != null && dispatcher.getRoot().getChild("minecraft:give") == null) {
+                    registerVanillaAlias(dispatcher, registrations, vanillaGive);
+                }
             }
             if (settings.isMore()) {
                 register(dispatcher, registrations, "more", true, playerOnly("/more", this::more), permitted("react.shorthands.more"), null);
@@ -191,19 +203,27 @@ final class ModShorthandHost implements ShorthandHost {
     private static LiteralArgumentBuilder<CommandSourceStack> literal(String label, Handler handler, Predicate<CommandSourceStack> permission,
                                                                       Completer completer) {
         return Commands.literal(label)
-                .requires(permission)
                 .executes((CommandContext<CommandSourceStack> context) -> {
-                    handler.run(context.getSource(), new String[0]);
+                    run(context.getSource(), handler, permission, new String[0]);
                     return 1;
                 })
                 .then(Commands.argument(ARGUMENTS, StringArgumentType.greedyString())
                         .suggests((CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) ->
-                                completer == null ? builder.buildFuture() : completer.complete(context, builder))
+                                completer == null || !permission.test(context.getSource()) ? builder.buildFuture() : completer.complete(context, builder))
                         .executes((CommandContext<CommandSourceStack> context) -> {
                             String input = StringArgumentType.getString(context, ARGUMENTS);
-                            handler.run(context.getSource(), input.isEmpty() ? new String[0] : input.split(" ", -1));
+                            run(context.getSource(), handler, permission, input.isEmpty() ? new String[0] : input.split(" ", -1));
                             return 1;
                         }));
+    }
+
+    /** Bukkit's command permission check: a sender without it gets the server's no-permission message. */
+    private static void run(CommandSourceStack source, Handler handler, Predicate<CommandSourceStack> permission, String[] args) {
+        if (!permission.test(source)) {
+            source.sendSystemMessage(Component.literal(NO_PERMISSION).withStyle(ChatFormatting.RED));
+            return;
+        }
+        handler.run(source, args);
     }
 
     private void unregister(CommandDispatcher<CommandSourceStack> dispatcher, Map<String, Registration> registrations) {
@@ -309,6 +329,67 @@ final class ModShorthandHost implements ShorthandHost {
         giveItems(player, stacks);
         ReactLanguage.send(new ModCommandSender(source), ShorthandMessages.ITEM_GIVEN, MessageArgument.untrusted("amount", amount),
                 MessageArgument.untrusted("item", itemKey(item)));
+    }
+
+    /**
+     * True when the arguments are vanilla's {@code give <targets> <item> [count]} rather than the shorthand's
+     * {@code give <item> <amount>}: sent by a non-player, with a selector or player name first, or with another argument
+     * count. Vanilla's own node then answers, as {@code minecraft:give} does on Bukkit.
+     */
+    private boolean vanillaApplies(CommandNode<CommandSourceStack> vanillaGive, CommandSourceStack source, String[] args) {
+        if (vanillaGive == null) {
+            return false;
+        }
+        if (!(source.getEntity() instanceof ServerPlayer)) {
+            return true;
+        }
+        if (args == null || args.length == 0) {
+            return false;
+        }
+        return args.length != 2 || args[0].startsWith("@") || server.getPlayerList().getPlayerByName(args[0]) != null;
+    }
+
+    private void giveOrVanilla(CommandNode<CommandSourceStack> vanillaGive, Handler shorthand, CommandSourceStack source, String[] args) {
+        if (!vanillaApplies(vanillaGive, source, args)) {
+            shorthand.run(source, args);
+            return;
+        }
+        CommandDispatcher<CommandSourceStack> vanilla = new CommandDispatcher<>();
+        vanilla.getRoot().addChild(vanillaGive);
+        server.getCommands().performCommand(vanilla.parse("give" + (args.length == 0 ? "" : " " + String.join(" ", args)), source),
+                "give " + String.join(" ", args));
+    }
+
+    private CompletableFuture<Suggestions> completeGiveOrVanilla(CommandNode<CommandSourceStack> vanillaGive, CommandContext<CommandSourceStack> context,
+                                                                 SuggestionsBuilder builder) {
+        String remaining = builder.getRemaining();
+        String[] args = remaining.split(" ", -1);
+        boolean vanillaShape = vanillaGive != null && (args[0].startsWith("@") || server.getPlayerList().getPlayerByName(args[0]) != null
+                || !(context.getSource().getEntity() instanceof ServerPlayer));
+        if (!vanillaShape) {
+            return completeGive(context, builder);
+        }
+        CommandDispatcher<CommandSourceStack> vanilla = new CommandDispatcher<>();
+        vanilla.getRoot().addChild(vanillaGive);
+        String line = "give " + remaining;
+        return vanilla.getCompletionSuggestions(vanilla.parse(line, context.getSource())).thenApply((Suggestions suggestions) -> {
+            SuggestionsBuilder shifted = builder.createOffset(builder.getStart() + remaining.lastIndexOf(' ') + 1);
+            for (Suggestion suggestion : suggestions.getList()) {
+                shifted.suggest(suggestion.getText());
+            }
+            return shifted.build();
+        });
+    }
+
+    /** Keeps vanilla's give reachable as {@code minecraft:give} while the shorthand owns {@code give}, as on Bukkit. */
+    private void registerVanillaAlias(CommandDispatcher<CommandSourceStack> dispatcher, Map<String, Registration> registrations,
+                                      CommandNode<CommandSourceStack> vanillaGive) {
+        LiteralArgumentBuilder<CommandSourceStack> alias = Commands.literal("minecraft:give").requires(vanillaGive.getRequirement());
+        for (CommandNode<CommandSourceStack> child : vanillaGive.getChildren()) {
+            alias.then(child);
+        }
+        CommandNode<CommandSourceStack> node = dispatcher.register(alias);
+        registrations.put("minecraft:give", new Registration("minecraft:give", node, node, null, null));
     }
 
     private void more(ServerPlayer player, String[] args, CommandSourceStack source) {

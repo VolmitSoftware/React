@@ -111,4 +111,10 @@ final class VanillaItems {
     static Packet<?> mapPatch(int mapId, int x, int y, int width, int height, byte[] colors) {
         return new ClientboundMapItemDataPacket(mapId, (byte) 0, true, null, new MapItemSavedData.MapPatch(x, y, width, height, colors));
     }
+
+    /** A map update with an empty cursor list and, when {@code colors} is not null, a pixel patch. */
+    static Packet<?> carriedMapUpdate(int mapId, byte scale, boolean locked, int x, int y, int width, int height, byte[] colors) {
+        return new ClientboundMapItemDataPacket(mapId, scale, locked, List.of(),
+                colors == null ? null : new MapItemSavedData.MapPatch(x, y, width, height, colors));
+    }
 }

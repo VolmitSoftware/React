@@ -16,7 +16,7 @@ public abstract class MapItemSavedDataHooks {
             at = @At("HEAD"), cancellable = true, require = 0)
     private void react$ownDelivery(MapId id, Player player, CallbackInfoReturnable<Packet<?>> callback) {
         if (ModMapHooks.isClaimed(id.id())) {
-            callback.setReturnValue(null);
+            callback.setReturnValue(ModMapHooks.carriedUpdate((MapItemSavedData) (Object) this, id.id(), player));
         }
     }
 }

@@ -128,6 +128,24 @@ class MapRuntimeTest {
   }
 
   @Test
+  void pulledMapsReturnTheUnseenAreaOnceAndNothingWhenUnchanged() {
+    FakeHost host = new FakeHost(false, true);
+    MapRuntime<Item> runtime = runtime(host);
+    Item item = runtime.createMap(OVERWORLD, new RendererUnknown());
+    UUID holder = host.addViewer(OVERWORLD, 0D, 64D, 0D);
+    host.holding.put(holder, item.mapId);
+    ViewerSnapshot viewer = host.viewers().get(0);
+    long now = System.currentTimeMillis();
+
+    runtime.onTick(now);
+    Assertions.assertTrue(host.sentRects(holder).isEmpty(), "a pulling host is never pushed held maps");
+    Assertions.assertEquals(DirtyRect.FULL, runtime.pull(item.mapId, viewer, now));
+    Assertions.assertNotNull(runtime.published(item.mapId));
+    Assertions.assertEquals(DirtyRect.EMPTY, runtime.pull(item.mapId, viewer, now));
+    Assertions.assertEquals(DirtyRect.EMPTY, runtime.pull(item.mapId + 1000, viewer, now), "unknown maps pull nothing");
+  }
+
+  @Test
   void stopReleasesEveryClaim() {
     FakeHost host = new FakeHost(true, true);
     MapRuntime<Item> runtime = runtime(host);

@@ -85,4 +85,10 @@ final class VanillaItems {
         return new ClientboundMapItemDataPacket(new MapId(mapId), (byte) 0, true, Optional.empty(),
                 Optional.of(new MapItemSavedData.MapPatch(x, y, width, height, colors)));
     }
+
+    /** A map update with an empty cursor list and, when {@code colors} is not null, a pixel patch. */
+    static Packet<?> carriedMapUpdate(int mapId, byte scale, boolean locked, int x, int y, int width, int height, byte[] colors) {
+        return new ClientboundMapItemDataPacket(new MapId(mapId), scale, locked, Optional.of(List.of()),
+                colors == null ? Optional.empty() : Optional.of(new MapItemSavedData.MapPatch(x, y, width, height, colors)));
+    }
 }

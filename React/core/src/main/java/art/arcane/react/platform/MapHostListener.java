@@ -32,4 +32,19 @@ public interface MapHostListener<I> {
    * Maintenance tick on the main or global thread. Bukkit calls it every maintenance interval, mods every server tick.
    */
   void onTick(long nowMs);
+
+  /**
+   * Renders a map a viewer carries, for hosts whose platform polls carried maps every tick as Bukkit does, and returns
+   * the area that viewer has not seen yet; empty when there is nothing new or the map is not React's.
+   */
+  default DirtyRect pull(int mapId, ViewerSnapshot viewer, long nowMs) {
+    return DirtyRect.EMPTY;
+  }
+
+  /**
+   * The map's current pixels, or null when the map is not React's.
+   */
+  default byte[] published(int mapId) {
+    return null;
+  }
 }

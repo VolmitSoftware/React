@@ -243,6 +243,21 @@ public final class MapRuntime<I> implements MapHostListener<I> {
     host.send(viewerId, mapId, composer.published(), pending);
   }
 
+  @Override
+  public DirtyRect pull(int mapId, ViewerSnapshot viewer, long nowMs) {
+    if (!active || !composers.containsKey(mapId) || !shouldRenderForViewer(mapId, viewer)) {
+      return DirtyRect.EMPTY;
+    }
+    compose(mapId, viewer.viewerId(), nowMs);
+    return delivery.take(mapId, viewer.viewerId(), nowMs);
+  }
+
+  @Override
+  public byte[] published(int mapId) {
+    MapComposer composer = composers.get(mapId);
+    return composer == null ? null : composer.published();
+  }
+
   public long redrawIntervalMsFor(int mapId) {
     if (isKnownFrameMap(mapId, System.currentTimeMillis())) {
       return Math.max(0L, config.getFrameMapRedrawIntervalMs());
