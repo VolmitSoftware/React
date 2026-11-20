@@ -2,6 +2,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.platform.BlockHost;
+import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.ChunkRef;
 import art.arcane.react.platform.FurnaceHost;
 import art.arcane.react.platform.GameLocation;
@@ -52,6 +53,7 @@ class FeatureFurnaceBrewBatchingTest {
   private ExecutorService executor;
   private FurnaceHost furnaces;
   private BlockHost blocks;
+  private ChunkHost chunks;
 
   @BeforeEach
   void setUp() {
@@ -68,18 +70,19 @@ class FeatureFurnaceBrewBatchingTest {
       return Subscription.NONE;
     });
     blocks = Mockito.mock(BlockHost.class);
-    Mockito.when(blocks.onChunkLoad(Mockito.any())).thenAnswer(invocation -> {
-      chunkLoads.set(invocation.getArgument(0));
+    chunks = Mockito.mock(ChunkHost.class);
+    Mockito.when(chunks.onChunkLoad(Mockito.any(), Mockito.any())).thenAnswer(invocation -> {
+      chunkLoads.set(invocation.getArgument(1));
       return Subscription.NONE;
     });
     Mockito.when(blocks.onBreak(Mockito.any(), Mockito.anyBoolean(), Mockito.any())).thenAnswer(invocation -> {
       breaks.set(invocation.getArgument(2));
       return Subscription.NONE;
     });
-    Mockito.when(blocks.onChunkUnload(Mockito.any())).thenReturn(Subscription.NONE);
-    Mockito.when(blocks.onWorldUnload(Mockito.any())).thenReturn(Subscription.NONE);
+    Mockito.when(chunks.onChunkUnload(Mockito.any(), Mockito.any())).thenReturn(Subscription.NONE);
+    Mockito.when(chunks.onWorldUnload(Mockito.any(), Mockito.anyBoolean(), Mockito.any())).thenReturn(Subscription.NONE);
     Mockito.when(blocks.onPlace(Mockito.any(), Mockito.anyBoolean(), Mockito.any())).thenReturn(Subscription.NONE);
-    Mockito.when(blocks.nextLoadedChunks(Mockito.anyInt())).thenReturn(List.of());
+    Mockito.when(chunks.nextLoaded(Mockito.anyInt())).thenReturn(List.of());
     WorldHost worlds = Mockito.mock(WorldHost.class);
     Mockito.when(worlds.world(Mockito.any())).thenReturn(Optional.of(world));
     Mockito.when(worlds.anyPlayerNear(Mockito.any(), Mockito.anyDouble()))
@@ -87,6 +90,7 @@ class FeatureFurnaceBrewBatchingTest {
     ReactPlatform platform = Mockito.mock(ReactPlatform.class);
     Mockito.when(platform.furnaceHost()).thenReturn(Optional.of(furnaces));
     Mockito.when(platform.blockHost()).thenReturn(Optional.of(blocks));
+    Mockito.when(platform.chunkHost()).thenReturn(Optional.of(chunks));
     Mockito.when(platform.worldHost()).thenReturn(Optional.of(worlds));
     ReactPlatforms.unbind();
     ReactPlatforms.bind(platform);
@@ -194,7 +198,7 @@ class FeatureFurnaceBrewBatchingTest {
     feature.onActivate();
     UUID worldId = UUID.randomUUID();
     ChunkRef chunk = new ChunkRef(worldId, 3, -2);
-    Mockito.when(blocks.isChunkLoaded(worldId, 3, -2)).thenReturn(true);
+    Mockito.when(chunks.isLoaded(worldId, 3, -2)).thenReturn(true);
     Mockito.when(furnaces.scan(chunk)).thenReturn(List.of(new FurnaceHost.Station(worldId, 50, 12, -20, FurnaceHost.Kind.FURNACE)));
     List<Runnable> scheduled = new ArrayList<>();
 
@@ -226,7 +230,7 @@ class FeatureFurnaceBrewBatchingTest {
     for (int chunkX = 0; chunkX < 8; chunkX++) {
       rotation.add(new ChunkRef(worldId, chunkX, 100));
     }
-    Mockito.when(blocks.nextLoadedChunks(8)).thenReturn(rotation);
+    Mockito.when(chunks.nextLoaded(8)).thenReturn(rotation);
     List<Integer> loadSeeds = new ArrayList<>();
     List<Integer> rotationSeeds = new ArrayList<>();
 
@@ -320,7 +324,7 @@ class FeatureFurnaceBrewBatchingTest {
 
     assertTrue(field(feature, "seedTasksInFlight", Set.class).isEmpty());
     assertTrue(field(feature, "measurementChunkRotation", Queue.class).isEmpty());
-    Mockito.verify(blocks, Mockito.never()).isChunkLoaded(Mockito.any(), Mockito.anyInt(), Mockito.anyInt());
+    Mockito.verify(chunks, Mockito.never()).isLoaded(Mockito.<UUID>any(), Mockito.anyInt(), Mockito.anyInt());
   }
 
   @Test

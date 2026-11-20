@@ -35,7 +35,6 @@ public final class ModExplosionHost implements ExplosionHost {
     private static final double PACKET_RANGE_SQUARED = 4096.0D;
     private static final HostListeners<Explosion> EXPLOSIONS = new HostListeners<>();
     private static final HostListeners<ExplosionHost.PrimedTnt> PRIMED = new HostListeners<>();
-    private static final HostListeners<WorldUnload> UNLOADS = new HostListeners<>();
     private static volatile PacketHooks packetHooks;
 
     private final Supplier<MinecraftServer> server;
@@ -47,7 +46,6 @@ public final class ModExplosionHost implements ExplosionHost {
     static void clear() {
         EXPLOSIONS.clear();
         PRIMED.clear();
-        UNLOADS.clear();
         packetHooks = null;
     }
 
@@ -59,11 +57,6 @@ public final class ModExplosionHost implements ExplosionHost {
     @Override
     public Subscription onTntPrimed(ListenerPriority priority, boolean ignoreCancelled, Consumer<ExplosionHost.PrimedTnt> listener) {
         return PRIMED.subscribe(priority, ignoreCancelled, listener);
-    }
-
-    @Override
-    public Subscription onWorldUnload(ListenerPriority priority, boolean ignoreCancelled, Consumer<WorldUnload> listener) {
-        return UNLOADS.subscribe(priority, ignoreCancelled, listener);
     }
 
     /**

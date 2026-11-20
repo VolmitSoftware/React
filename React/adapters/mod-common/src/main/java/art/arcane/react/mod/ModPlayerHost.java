@@ -1,6 +1,8 @@
 package art.arcane.react.mod;
 
 import art.arcane.react.platform.GameLocation;
+import art.arcane.react.platform.HostListeners;
+import art.arcane.react.platform.ListenerPriority;
 import art.arcane.react.platform.PlayerHost;
 import art.arcane.react.platform.ReactPlayer;
 import art.arcane.react.platform.Subscription;
@@ -35,7 +37,7 @@ public final class ModPlayerHost implements PlayerHost {
     private static final float TURN_THRESHOLD_DEGREES = 10F;
     private static final List<Listener<Move>> MOVES = new CopyOnWriteArrayList<>();
     private static final List<Listener<Teleport>> TELEPORTS = new CopyOnWriteArrayList<>();
-    private static final List<Listener<Portal>> PORTALS = new CopyOnWriteArrayList<>();
+    private static final HostListeners<Portal> PORTALS = new HostListeners<>();
     private static final List<Listener<ReactPlayer>> JOINS = new CopyOnWriteArrayList<>();
     private static final List<Listener<ReactPlayer>> QUITS = new CopyOnWriteArrayList<>();
     private static final List<Listener<PlayerHost.Cancellable>> INTERACTIONS = new CopyOnWriteArrayList<>();
@@ -102,8 +104,8 @@ public final class ModPlayerHost implements PlayerHost {
     }
 
     @Override
-    public Subscription onPortal(Listener<Portal> listener) {
-        return subscribe(PORTALS, listener);
+    public Subscription onPortal(ListenerPriority priority, boolean ignoreCancelled, Listener<Portal> listener) {
+        return PORTALS.subscribe(priority, ignoreCancelled, listener::on);
     }
 
     @Override
@@ -294,11 +296,7 @@ public final class ModPlayerHost implements PlayerHost {
         if (PORTALS.isEmpty() || transition == null) {
             return false;
         }
-        ModPortal portal = new ModPortal(entity, transition);
-        for (Listener<Portal> listener : PORTALS) {
-            listener.on(portal);
-        }
-        return portal.cancelled;
+        return !PORTALS.dispatch(new ModPortal(entity, transition));
     }
 
     /** A swing that hits no block within reach counts as an interaction, as Bukkit's LEFT_CLICK_AIR does. */
@@ -440,11 +438,13 @@ public final class ModPlayerHost implements PlayerHost {
 
     private static final class ModPortal implements Portal {
         private final Entity entity;
+        private final GameLocation origin;
         private final Object transition;
         private boolean cancelled;
 
         private ModPortal(Entity entity, Object transition) {
             this.entity = entity;
+            this.origin = ModGameEntity.location(entity);
             this.transition = transition;
         }
 
@@ -461,6 +461,11 @@ public final class ModPlayerHost implements PlayerHost {
         @Override
         public Object handle() {
             return entity;
+        }
+
+        @Override
+        public GameLocation origin() {
+            return origin;
         }
 
         @Override

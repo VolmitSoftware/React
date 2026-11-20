@@ -536,10 +536,6 @@ class ExplosionPacketClusteringTest {
       return Subscription.NONE;
     }
 
-    @Override
-    public Subscription onWorldUnload(ListenerPriority priority, boolean ignoreCancelled, Consumer<WorldUnload> listener) {
-      return Subscription.NONE;
-    }
 
     @Override
     public String blockType(GameLocation location) {

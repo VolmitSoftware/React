@@ -4,6 +4,7 @@ import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.PluginApiCatalogDto;
 import art.arcane.react.api.web.dto.PluginApiPackDto;
 import art.arcane.react.api.web.dto.PluginApiValidationErrorDto;
+import art.arcane.react.localization.ReactLanguage;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
 
@@ -27,25 +28,25 @@ public interface PluginApiPackRoutes {
 
     @Override
     public void get(Context context) {
-      throw new NotFoundResponse("Unknown Plugin API pack: " + context.pathParam("id"));
+      throw new NotFoundResponse(ReactLanguage.owned("Unknown Plugin API pack: ") + context.pathParam("id"));
     }
 
     @Override
     public void validate(Context context) {
       WebAuth.requireScope(context, "admin");
-      throw new NotFoundResponse("Plugin API packs are not available on this platform");
+      throw new NotFoundResponse(ReactLanguage.owned("Plugin API packs are not available on this platform"));
     }
 
     @Override
     public void put(Context context) {
       WebAuth.requireScope(context, "admin");
-      throw new NotFoundResponse("Plugin API packs are not available on this platform");
+      throw new NotFoundResponse(ReactLanguage.owned("Plugin API packs are not available on this platform"));
     }
 
     @Override
     public void delete(Context context) {
       WebAuth.requireScope(context, "admin");
-      throw new NotFoundResponse("Unknown Plugin API pack: " + context.pathParam("id"));
+      throw new NotFoundResponse(ReactLanguage.owned("Unknown Plugin API pack: ") + context.pathParam("id"));
     }
   };
 }

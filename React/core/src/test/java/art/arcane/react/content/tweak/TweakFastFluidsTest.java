@@ -51,7 +51,7 @@ class TweakFastFluidsTest {
     Mockito.when(host.blocks.canTickFluids()).thenReturn(true);
     Mockito.when(host.blocks.minHeight(worldId)).thenReturn(-64);
     Mockito.when(host.blocks.maxHeight(worldId)).thenReturn(320);
-    Mockito.when(host.blocks.isChunkLoaded(Mockito.eq(worldId), Mockito.anyInt(), Mockito.anyInt())).thenReturn(true);
+    Mockito.when(host.chunks.isLoaded(Mockito.eq(worldId), Mockito.anyInt(), Mockito.anyInt())).thenReturn(true);
     Mockito.when(host.blocks.tickFluid(Mockito.any(), Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt(), Mockito.anyBoolean(),
         Mockito.anyBoolean())).thenReturn(true);
     tweak = new TweakFastFluids();

@@ -28,7 +28,7 @@ import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ReactComponents;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.ActionMessages;
-import art.arcane.react.platform.BlockHost;
+import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.HopperHost;
 import art.arcane.react.platform.ReactPlatform;
@@ -248,11 +248,11 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
   private NormalizeResult normalizeChunkSync(ChunkTarget target, Params params) {
     ReactPlatform platform = ReactPlatforms.get();
     ReactWorld world = resolveWorld(target.world());
-    BlockHost blocks = platform.blockHost().orElse(null);
+    ChunkHost chunks = platform.chunkHost().orElse(null);
     HopperHost hoppers = platform.hopperHost().orElse(null);
     WorldHost worlds = platform.worldHost().orElse(null);
-    if (world == null || blocks == null || hoppers == null || worlds == null
-        || !blocks.isChunkLoaded(world.id(), target.x(), target.z())) {
+    if (world == null || chunks == null || hoppers == null || worlds == null
+        || !chunks.isLoaded(world.id(), target.x(), target.z())) {
       return new NormalizeResult(0, 0, false);
     }
 
@@ -280,7 +280,7 @@ public class ActionHopperNetworkNormalize extends ReactAction<ActionHopperNetwor
     boolean unloaded = false;
     if (params.isUnloadIdleHotChunks()
         && target.rate() >= params.getMinimumHopperUpdatesPerChunk() * 1.5D
-        && blocks.isChunkLoaded(world.id(), target.x(), target.z())
+        && chunks.isLoaded(world.id(), target.x(), target.z())
         && !nearPlayer(worlds, center, params.getUnsafePlayerRadius())) {
       unloaded = hoppers.unloadChunk(world.id(), target.x(), target.z());
     }

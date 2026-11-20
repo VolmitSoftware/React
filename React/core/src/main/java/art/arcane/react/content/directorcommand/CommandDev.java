@@ -20,6 +20,7 @@
 package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.HostCommand;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
@@ -40,6 +41,7 @@ public class CommandDev implements DirectorExecutor {
       description = "Audit React state, then queue the direct action suite one step at a time in your current world",
       descriptionKey = "command.description.dev.test_all"
   )
+  @HostCommand("devTestAll")
   public void testAll(
       @Param(
           name = "radius",
@@ -61,6 +63,7 @@ public class CommandDev implements DirectorExecutor {
       description = "Verify bridge, sampler, and lazy-gravity behavior and report PASS or FAIL",
       descriptionKey = "command.description.dev.verify"
   )
+  @HostCommand("devVerify")
   public void verify() {
     host().devVerify(sender());
   }

@@ -10,7 +10,6 @@ import art.arcane.react.platform.BlockHost;
 import art.arcane.react.platform.GrowthHost;
 import art.arcane.react.platform.RedstoneHost;
 import art.arcane.react.platform.SpawnHost;
-import art.arcane.react.platform.PortalHost;
 import art.arcane.react.platform.ExplosionHost;
 import art.arcane.react.platform.FurnaceHost;
 import art.arcane.react.platform.ComponentHost;
@@ -102,7 +101,6 @@ public final class BukkitReactPlatform implements ReactPlatform {
   private final GrowthHost growthHost = new BukkitGrowthHost();
   private final RedstoneHost redstoneHost = new BukkitRedstoneHost();
   private final SpawnHost spawnHost = new BukkitSpawnHost();
-  private final PortalHost portalHost = new BukkitPortalHost();
   private final ExplosionHost explosionHost = new BukkitExplosionHost();
   private final FurnaceHost furnaceHost = new BukkitFurnaceHost();
 
@@ -434,10 +432,6 @@ public final class BukkitReactPlatform implements ReactPlatform {
     return Optional.of(spawnHost);
   }
 
-  @Override
-  public Optional<PortalHost> portalHost() {
-    return Optional.of(portalHost);
-  }
 
   @Override
   public Optional<ExplosionHost> explosionHost() {

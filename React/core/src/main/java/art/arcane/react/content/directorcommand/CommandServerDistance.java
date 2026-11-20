@@ -2,6 +2,7 @@ package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.platform.CommandHost.DistanceKind;
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.HostCommand;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
@@ -19,6 +20,7 @@ public final class CommandServerDistance implements DirectorExecutor {
       description = "Set the view distance across every loaded world",
       descriptionKey = "command.description.distance"
   )
+  @HostCommand("serverDistance")
   public void view(
       @Param(
           name = "distance",
@@ -36,6 +38,7 @@ public final class CommandServerDistance implements DirectorExecutor {
       description = "Set the simulation distance across every loaded world",
       descriptionKey = "command.description.distance"
   )
+  @HostCommand("serverDistance")
   public void simulation(
       @Param(
           name = "distance",
@@ -53,6 +56,7 @@ public final class CommandServerDistance implements DirectorExecutor {
       description = "Set the send view distance across every loaded world",
       descriptionKey = "command.description.distance"
   )
+  @HostCommand("serverDistance")
   public void send(
       @Param(
           name = "distance",

@@ -24,6 +24,7 @@ import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.ReactComponents;
 import art.arcane.react.platform.BlockHost;
+import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.ChunkRef;
 import art.arcane.react.platform.Facing;
 import art.arcane.react.platform.GameLocation;
@@ -41,18 +42,19 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.DoubleAdder;
 
-@ConfigDescription("Configuration for Hopper Chain Coalescing feature. Detects linear hopper chains and reports projected tick savings. It remains measurement-only by default; in act mode with the versioned hopper hook, eligible intermediate ticks are skipped and one head-to-tail transfer is synthesized. Synthesized transfers coordinate with FeatureHopperTokenBucket gating instead of cancelling InventoryMoveItemEvent directly.")
+@ConfigDescription("Configuration for Hopper Chain Coalescing feature. Detects linear hopper chains and reports projected tick savings. It remains measurement-only by default; in act mode with the versioned hopper hook, eligible intermediate ticks are skipped and items are moved straight to the tail recipient. Synthesized transfers coordinate with FeatureHopperTokenBucket gating instead of cancelling InventoryMoveItemEvent directly.")
 public class FeatureHopperChainCoalescing extends ReactFeature {
   public static final String ID = "hopper-chain-coalescing";
   private static final int MAX_CHAIN_LENGTH = 256;
@@ -61,6 +63,7 @@ public class FeatureHopperChainCoalescing extends ReactFeature {
   private static final int MAX_PENDING_TRANSFERS = 8192;
   private static final int MAX_COORDINATE_REPAIRS_PER_TICK = 256;
   private static final int MAX_CHAIN_TRANSFERS_PER_TICK = 128;
+  private static final int VANILLA_TRANSFER_COOLDOWN_TICKS = 8;
   private static final Facing[] UPSTREAM_FACES = {
       Facing.NORTH,
       Facing.SOUTH,
@@ -168,6 +171,7 @@ public class FeatureHopperChainCoalescing extends ReactFeature {
   private transient Subscription blockEvents = Subscription.NONE;
   private transient volatile HopperHost hoppers;
   private transient volatile BlockHost blocks;
+  private transient volatile ChunkHost chunkHost;
   private transient volatile WorldHost worlds;
   @Getter
   private transient volatile boolean bridgeActive;
@@ -207,6 +211,7 @@ public class FeatureHopperChainCoalescing extends ReactFeature {
     ReactPlatform platform = ReactPlatforms.get();
     hoppers = platform.hopperHost().orElse(null);
     blocks = platform.blockHost().orElse(null);
+    chunkHost = platform.chunkHost().orElse(null);
     worlds = platform.worldHost().orElse(null);
     subscribeBlockEvents();
     installBridgeHook();
@@ -262,13 +267,16 @@ public class FeatureHopperChainCoalescing extends ReactFeature {
     if (blockHost == null) {
       return;
     }
-    List<Subscription> subscriptions = List.of(
+    List<Subscription> subscriptions = new ArrayList<>(List.of(
         blockHost.onPlace(ListenerPriority.MONITOR, true, event -> queueAffectedChunkRepairs(event.location(), event.type())),
         blockHost.onBreak(ListenerPriority.MONITOR, true, event -> queueAffectedChunkRepairs(event.location(), event.type())),
-        blockHost.onPiston(ListenerPriority.MONITOR, true, this::onPiston),
-        blockHost.onChunkLoad(this::onChunkLoad),
-        blockHost.onChunkUnload(this::onChunkUnload),
-        blockHost.onWorldUnload(this::onWorldUnload));
+        blockHost.onPiston(ListenerPriority.MONITOR, true, this::onPiston)));
+    ChunkHost chunks = chunkHost;
+    if (chunks != null) {
+      subscriptions.add(chunks.onChunkLoad(ListenerPriority.MONITOR, this::onChunkLoad));
+      subscriptions.add(chunks.onChunkUnload(ListenerPriority.MONITOR, this::onChunkUnload));
+      subscriptions.add(chunks.onWorldUnload(ListenerPriority.MONITOR, true, event -> onWorldUnload(event.worldId())));
+    }
     blockEvents = () -> subscriptions.forEach(Subscription::cancel);
   }
 
@@ -334,8 +342,9 @@ public class FeatureHopperChainCoalescing extends ReactFeature {
   }
 
   private void synthesizeChainTransfers(long generation) {
+    int chains = transferRotation.size();
     int remaining = MAX_CHAIN_TRANSFERS_PER_TICK;
-    while (remaining-- > 0 && isActive(generation)) {
+    while (chains-- > 0 && remaining > 0 && isActive(generation)) {
       ChainTarget target = transferRotation.poll();
       if (target == null) {
         return;
@@ -351,12 +360,22 @@ public class FeatureHopperChainCoalescing extends ReactFeature {
       transferRotation.offer(target);
       Object world = worldHandle(target.worldId);
       if (world != null) {
-        synthesizeChainTransfer(world, target.worldId, chain, generation);
+        int budget = Math.min(remaining, transfersPerChainPerEvaluation());
+        remaining -= budget;
+        synthesizeChainTransfer(world, target.worldId, chain, budget, generation);
       }
     }
   }
 
-  private void synthesizeChainTransfer(Object world, UUID worldId, HopperChain chain, long generation) {
+  /**
+   * Twice the item rate a vanilla chain moves over one evaluation, so the coalesced chain keeps pace with its head
+   * and still drains items that piled up in skipped hoppers.
+   */
+  int transfersPerChainPerEvaluation() {
+    return Math.max(2, 2 * (int) Math.ceil(getTickInterval() / (double) (VANILLA_TRANSFER_COOLDOWN_TICKS * 50L)));
+  }
+
+  private void synthesizeChainTransfer(Object world, UUID worldId, HopperChain chain, int budget, long generation) {
     long head = chain.positions[0];
     long tail = chain.positions[chain.length() - 1];
     int hx = unpackX(head);
@@ -370,14 +389,20 @@ public class FeatureHopperChainCoalescing extends ReactFeature {
     int dz = modZ(chain.direction);
     J.runChunk(world, hx >> 4, hz >> 4, () -> {
       if (isActive(generation) && engaged) {
-        applyChainTransfer(worldId, chain, hx, hy, hz, tx, ty, tz, dx, dy, dz);
+        applyChainTransfers(worldId, chain, budget, hx, hy, hz, tx, ty, tz, dx, dy, dz);
       }
     });
   }
 
-  void applyChainTransfer(
+  /**
+   * Moves up to {@code budget} items straight into the tail's recipient. The head keeps ticking and pushes into the
+   * second hopper, whose ticks are skipped, so the skipped hoppers are drained first, the one nearest the tail
+   * leading; the head itself is the last source.
+   */
+  int applyChainTransfers(
       UUID worldId,
       HopperChain chain,
+      int budget,
       int hx,
       int hy,
       int hz,
@@ -394,17 +419,32 @@ public class FeatureHopperChainCoalescing extends ReactFeature {
     BlockHost blockHost = blocks;
     HopperHost host = hoppers;
     if (blockHost == null || host == null
-        || !blockHost.isChunkLoaded(worldId, hx >> 4, hz >> 4) || !blockHost.isChunkLoaded(worldId, tx >> 4, tz >> 4)) {
-      return;
+        || !isChunkLoaded(worldId, hx >> 4, hz >> 4) || !isChunkLoaded(worldId, tx >> 4, tz >> 4)) {
+      return 0;
     }
-    if (!host.isOwnedByCurrentRegion(worldId, tx + dx, ty + dy, tz + dz)) {
-      return;
+    int rx = tx + dx;
+    int ry = ty + dy;
+    int rz = tz + dz;
+    if (!host.isOwnedByCurrentRegion(worldId, rx, ry, rz)) {
+      return 0;
     }
-    GameLocation source = new GameLocation(worldId, hx, hy, hz);
-    if (host.transferOne(worldId, hx, hy, hz, tx + dx, ty + dy, tz + dz, () -> tryConsumeFeatureBucket(source))) {
+    GameLocation headLocation = new GameLocation(worldId, hx, hy, hz);
+    int moved = 0;
+    int source = chain.length() - 2;
+    while (moved < budget && source >= 0) {
+      long packed = chain.positions[source];
+      int sx = unpackX(packed);
+      int sz = unpackZ(packed);
+      if (!isChunkLoaded(worldId, sx >> 4, sz >> 4)
+          || !host.transferOne(worldId, sx, unpackY(packed), sz, rx, ry, rz, () -> tryConsumeFeatureBucket(headLocation))) {
+        source--;
+        continue;
+      }
       chain.bucketPermit = true;
       synthesizedTransfers.incrementAndGet();
+      moved++;
     }
+    return moved;
   }
 
   private boolean tryConsumeFeatureBucket(GameLocation sourceLocation) {
@@ -551,7 +591,7 @@ public class FeatureHopperChainCoalescing extends ReactFeature {
       return;
     }
     int budget = repairBudget();
-    List<ChunkRef> targets = blockHost.nextLoadedChunks(budget);
+    List<ChunkRef> targets = nextLoadedChunks(budget);
     for (ChunkRef target : targets) {
       ChunkCoordinate coordinate = new ChunkCoordinate(target.worldId(), target.chunkX(), target.chunkZ());
       Long lastRepair = lastRepairTickByChunk.get(coordinate);
@@ -585,7 +625,7 @@ public class FeatureHopperChainCoalescing extends ReactFeature {
           }
           BlockHost blockHost = blocks;
           if (worldHandle(coordinate.worldId) == null || blockHost == null
-              || !blockHost.isChunkLoaded(coordinate.worldId, coordinate.chunkX, coordinate.chunkZ)) {
+              || !isChunkLoaded(coordinate.worldId, coordinate.chunkX, coordinate.chunkZ)) {
             removeChunkState(coordinate);
             return;
           }
@@ -1113,5 +1153,15 @@ public class FeatureHopperChainCoalescing extends ReactFeature {
       }
       return chunks;
     }
+  }
+
+  private boolean isChunkLoaded(UUID worldId, int chunkX, int chunkZ) {
+    ChunkHost host = chunkHost;
+    return host != null && host.isLoaded(worldId, chunkX, chunkZ);
+  }
+
+  private List<ChunkRef> nextLoadedChunks(int maximum) {
+    ChunkHost host = chunkHost;
+    return host == null ? List.of() : host.nextLoaded(maximum);
   }
 }

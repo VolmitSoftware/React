@@ -9,7 +9,6 @@ import art.arcane.react.platform.BlockHost;
 import art.arcane.react.platform.GrowthHost;
 import art.arcane.react.platform.RedstoneHost;
 import art.arcane.react.platform.SpawnHost;
-import art.arcane.react.platform.PortalHost;
 import art.arcane.react.platform.ExplosionHost;
 import art.arcane.react.platform.FurnaceHost;
 import art.arcane.react.platform.ComponentHost;
@@ -107,7 +106,6 @@ public final class ModReactPlatform implements ReactPlatform {
     private final GrowthHost growthHost;
     private final RedstoneHost redstoneHost = new ModRedstoneHost();
     private final SpawnHost spawnHost;
-    private final PortalHost portalHost = new ModPortalHost();
     private final ExplosionHost explosionHost = new ModExplosionHost(this::server);
     private final FurnaceHost furnaceHost;
 
@@ -506,10 +504,6 @@ public final class ModReactPlatform implements ReactPlatform {
         return Optional.of(spawnHost);
     }
 
-    @Override
-    public Optional<PortalHost> portalHost() {
-        return Optional.of(portalHost);
-    }
 
     @Override
     public Optional<ExplosionHost> explosionHost() {

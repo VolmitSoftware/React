@@ -25,10 +25,20 @@ public abstract class RedstoneTripwireHooks {
     private static final String NOTIFY = "Lnet/minecraft/world/level/block/TripWireHookBlock;notifyNeighbors(Lnet/minecraft/world/level/block/Block;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;)V";
     private static final String EMIT = "Lnet/minecraft/world/level/block/TripWireHookBlock;emitState(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;ZZZZ)V";
 
-    @WrapWithCondition(method = "calculateState", require = 0,
-            at = {@At(value = "INVOKE", target = SET_AND_UPDATE, ordinal = 0), @At(value = "INVOKE", target = SET, ordinal = 0)})
+    @WrapWithCondition(method = "calculateState", require = 0, at = @At(value = "INVOKE", target = SET_AND_UPDATE, ordinal = 0))
     private static boolean react$receiver(Level level, BlockPos receiver, BlockState receiverState, @Local(argsOnly = true, ordinal = 0) BlockState state,
                                           @Share("receiverHeld") LocalBooleanRef receiverHeld) {
+        return receiving(level, receiver, receiverState, state, receiverHeld);
+    }
+
+    @WrapWithCondition(method = "calculateState", require = 0, at = @At(value = "INVOKE", target = SET, ordinal = 0))
+    private static boolean react$receiverFlags(Level level, BlockPos receiver, BlockState receiverState, int flags,
+                                               @Local(argsOnly = true, ordinal = 0) BlockState state,
+                                               @Share("receiverHeld") LocalBooleanRef receiverHeld) {
+        return receiving(level, receiver, receiverState, state, receiverHeld);
+    }
+
+    private static boolean receiving(Level level, BlockPos receiver, BlockState receiverState, BlockState state, LocalBooleanRef receiverHeld) {
         boolean wasPowered = state.getOptionalValue(TripWireHookBlock.POWERED).orElse(false);
         boolean powered = receiverState.getOptionalValue(TripWireHookBlock.POWERED).orElse(false);
         receiverHeld.set(wasPowered != powered && ModRedstoneHost.held(level, receiver, receiverState, powered));
@@ -54,9 +64,14 @@ public abstract class RedstoneTripwireHooks {
         return !emitterHeld.get();
     }
 
-    @WrapWithCondition(method = "calculateState", require = 0,
-            at = {@At(value = "INVOKE", target = SET_AND_UPDATE, ordinal = 1), @At(value = "INVOKE", target = SET, ordinal = 1)})
+    @WrapWithCondition(method = "calculateState", require = 0, at = @At(value = "INVOKE", target = SET_AND_UPDATE, ordinal = 1))
     private static boolean react$emitterState(Level level, BlockPos pos, BlockState newState, @Share("emitterHeld") LocalBooleanRef emitterHeld) {
+        return !emitterHeld.get();
+    }
+
+    @WrapWithCondition(method = "calculateState", require = 0, at = @At(value = "INVOKE", target = SET, ordinal = 1))
+    private static boolean react$emitterStateFlags(Level level, BlockPos pos, BlockState newState, int flags,
+                                                   @Share("emitterHeld") LocalBooleanRef emitterHeld) {
         return !emitterHeld.get();
     }
 

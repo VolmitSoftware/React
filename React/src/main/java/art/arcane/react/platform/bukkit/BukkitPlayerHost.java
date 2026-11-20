@@ -3,6 +3,7 @@ package art.arcane.react.platform.bukkit;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.platform.GameLocation;
+import art.arcane.react.platform.ListenerPriority;
 import art.arcane.react.platform.PlayerHost;
 import art.arcane.react.platform.ReactPlayer;
 import art.arcane.react.platform.Subscription;
@@ -40,7 +41,6 @@ public final class BukkitPlayerHost implements PlayerHost, Listener {
   private static final Method SET_SEND_VIEW_DISTANCE = method("setSendViewDistance", int.class);
   private final List<Listener<Move>> moves = new CopyOnWriteArrayList<>();
   private final List<Listener<Teleport>> teleports = new CopyOnWriteArrayList<>();
-  private final List<Listener<Portal>> portals = new CopyOnWriteArrayList<>();
   private final List<Listener<ReactPlayer>> joins = new CopyOnWriteArrayList<>();
   private final List<Listener<ReactPlayer>> quits = new CopyOnWriteArrayList<>();
   private final List<Listener<PlayerHost.Cancellable>> interactions = new CopyOnWriteArrayList<>();
@@ -81,8 +81,21 @@ public final class BukkitPlayerHost implements PlayerHost, Listener {
   }
 
   @Override
-  public Subscription onPortal(Listener<Portal> listener) {
-    return subscribe(portals, listener);
+  public Subscription onPortal(ListenerPriority priority, boolean ignoreCancelled, Listener<Portal> listener) {
+    Subscription players = BukkitEvents.subscribe(PlayerPortalEvent.class, priority, ignoreCancelled, event -> listener.on(portal(event)));
+    Subscription entities = BukkitEvents.subscribe(EntityPortalEvent.class, priority, ignoreCancelled, event -> listener.on(portal(event)));
+    return () -> {
+      players.cancel();
+      entities.cancel();
+    };
+  }
+
+  public static Portal portal(PlayerPortalEvent event) {
+    return new BukkitPortal(event, event.getPlayer(), event.getFrom(), event.getTo(), true);
+  }
+
+  public static Portal portal(EntityPortalEvent event) {
+    return new BukkitPortal(event, event.getEntity(), event.getFrom(), event.getTo(), event.getEntity() instanceof Player);
   }
 
   @Override
@@ -159,22 +172,6 @@ public final class BukkitPlayerHost implements PlayerHost, Listener {
     }
   }
 
-  @EventHandler(priority = EventPriority.LOWEST)
-  public void on(PlayerPortalEvent event) {
-    if (portals.isEmpty() || event.isCancelled() || event.getTo() == null) {
-      return;
-    }
-    dispatch(new BukkitPortal(event, event.getPlayer(), event.getTo().clone(), true));
-  }
-
-  @EventHandler(priority = EventPriority.LOWEST)
-  public void on(EntityPortalEvent event) {
-    if (portals.isEmpty() || event.isCancelled() || event.getEntity() instanceof Player || event.getTo() == null) {
-      return;
-    }
-    dispatch(new BukkitPortal(event, event.getEntity(), event.getTo().clone(), false));
-  }
-
   @EventHandler
   public void on(PlayerJoinEvent event) {
     ReactPlayer player = new BukkitReactPlayer(event.getPlayer());
@@ -214,12 +211,6 @@ public final class BukkitPlayerHost implements PlayerHost, Listener {
   public void on(PlayerItemConsumeEvent event) {
     if (!consumes.isEmpty()) {
       dispatch(consumes, new BukkitCancellable(event.getPlayer(), event));
-    }
-  }
-
-  private void dispatch(BukkitPortal portal) {
-    for (Listener<Portal> listener : portals) {
-      listener.on(portal);
     }
   }
 
@@ -383,13 +374,15 @@ public final class BukkitPlayerHost implements PlayerHost, Listener {
   private static final class BukkitPortal implements Portal {
     private final org.bukkit.event.Cancellable event;
     private final Entity entity;
+    private final Location origin;
     private final Location destination;
     private final boolean player;
 
-    private BukkitPortal(org.bukkit.event.Cancellable event, Entity entity, Location destination, boolean player) {
+    private BukkitPortal(org.bukkit.event.Cancellable event, Entity entity, Location origin, Location destination, boolean player) {
       this.event = event;
       this.entity = entity;
-      this.destination = destination;
+      this.origin = origin == null ? entity.getLocation() : origin.clone();
+      this.destination = destination == null ? null : destination.clone();
       this.player = player;
     }
 
@@ -406,6 +399,11 @@ public final class BukkitPlayerHost implements PlayerHost, Listener {
     @Override
     public Object handle() {
       return entity;
+    }
+
+    @Override
+    public GameLocation origin() {
+      return BukkitGameEntity.location(origin);
     }
 
     @Override

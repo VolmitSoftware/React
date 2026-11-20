@@ -33,7 +33,7 @@ import art.arcane.react.platform.IncidentHost;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.HopperHost;
 import art.arcane.react.platform.ListenerPriority;
-import art.arcane.react.platform.PortalHost;
+import art.arcane.react.platform.PlayerHost;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.platform.RedstoneHost;
@@ -118,7 +118,7 @@ public class FeatureIncidentMode extends ReactFeature {
     worlds = platform.worldHost().orElse(null);
     List<Subscription> opened = new ArrayList<>();
     platform.spawnHost().ifPresent(host -> opened.add(host.onCreatureSpawn(ListenerPriority.LOWEST, true, this::onSpawn)));
-    platform.portalHost().ifPresent(host -> opened.add(host.onPortal(ListenerPriority.LOWEST, true, this::onPortal)));
+    platform.playerHost().ifPresent(host -> opened.add(host.onPortal(ListenerPriority.LOWEST, true, this::onPortal)));
     platform.hopperHost().ifPresent(host -> opened.add(host.onMove(this::onMove)));
     platform.redstoneHost().ifPresent(host -> opened.add(host.onSignal(ListenerPriority.LOWEST, this::onSignal)));
     subscriptions = opened;
@@ -255,12 +255,12 @@ public class FeatureIncidentMode extends ReactFeature {
     }
   }
 
-  void onPortal(PortalHost.Portal event) {
+  void onPortal(PlayerHost.Portal event) {
     if (!incident) {
       return;
     }
 
-    GameLocation location = event.to() == null ? event.entity().location() : event.to();
+    GameLocation location = event.destination() == null ? event.origin() : event.destination();
     if (shouldBypass(location)) {
       return;
     }

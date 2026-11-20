@@ -21,6 +21,7 @@ package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.api.benchmark.BenchmarkTarget;
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.HostCommand;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import java.util.EnumSet;
@@ -39,6 +40,7 @@ public class CommandBenchmark implements DirectorExecutor {
       description = "Benchmark the CPU",
       descriptionKey = "command.description.benchmark.cpu"
   )
+  @HostCommand("benchmark")
   public void cpuBenchmark() {
     host().benchmark(sender(), EnumSet.of(BenchmarkTarget.PROCESSOR));
   }
@@ -49,6 +51,7 @@ public class CommandBenchmark implements DirectorExecutor {
       description = "Benchmark the storage drive",
       descriptionKey = "command.description.benchmark.drive"
   )
+  @HostCommand("benchmark")
   public void driveBenchmark() {
     host().benchmark(sender(), EnumSet.of(BenchmarkTarget.DRIVE));
   }
@@ -59,6 +62,7 @@ public class CommandBenchmark implements DirectorExecutor {
       description = "Benchmark memory",
       descriptionKey = "command.description.benchmark.memory"
   )
+  @HostCommand("benchmark")
   public void memoryBenchmark() {
     host().benchmark(sender(), EnumSet.of(BenchmarkTarget.MEMORY));
   }
@@ -69,6 +73,7 @@ public class CommandBenchmark implements DirectorExecutor {
       description = "Benchmark the CPU, memory and storage drive",
       descriptionKey = "command.description.benchmark.all"
   )
+  @HostCommand("benchmark")
   public void allBenchmark() {
     host().benchmark(sender(), EnumSet.allOf(BenchmarkTarget.class));
   }

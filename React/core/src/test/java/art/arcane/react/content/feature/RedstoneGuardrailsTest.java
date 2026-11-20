@@ -5,7 +5,7 @@ import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.ListenerPriority;
 import art.arcane.react.platform.PlatformKind;
 import art.arcane.react.platform.PlatformScheduler;
-import art.arcane.react.platform.PortalHost;
+import art.arcane.react.platform.PlayerHost;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.platform.RedstoneHost;
@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
@@ -32,7 +33,7 @@ class RedstoneGuardrailsTest {
   private final List<Consumer<RedstoneHost.Signal>> signals = new ArrayList<>();
   private final List<ListenerPriority> signalPriorities = new ArrayList<>();
   private final List<Consumer<SpawnHost.Spawn>> spawns = new ArrayList<>();
-  private final List<Consumer<PortalHost.Portal>> portals = new ArrayList<>();
+  private final List<PlayerHost.Listener<PlayerHost.Portal>> portals = new ArrayList<>();
 
   @BeforeEach
   void bind() {
@@ -160,8 +161,8 @@ class RedstoneGuardrailsTest {
 
   private TestPortal portal() {
     TestPortal portal = new TestPortal();
-    for (Consumer<PortalHost.Portal> listener : List.copyOf(portals)) {
-      listener.accept(portal);
+    for (PlayerHost.Listener<PlayerHost.Portal> listener : List.copyOf(portals)) {
+      listener.on(portal);
     }
     return portal;
   }
@@ -263,12 +264,12 @@ class RedstoneGuardrailsTest {
     }
   }
 
-  private static final class TestPortal implements PortalHost.Portal {
+  private static final class TestPortal implements PlayerHost.Portal {
     private boolean cancelled;
 
     @Override
-    public GameEntity entity() {
-      return Mockito.mock(GameEntity.class);
+    public UUID entityId() {
+      return UUID.randomUUID();
     }
 
     @Override
@@ -277,12 +278,17 @@ class RedstoneGuardrailsTest {
     }
 
     @Override
-    public GameLocation from() {
+    public Object handle() {
+      return null;
+    }
+
+    @Override
+    public GameLocation origin() {
       return new GameLocation(WORLD, 0, 64, 0);
     }
 
     @Override
-    public GameLocation to() {
+    public GameLocation destination() {
       return new GameLocation(WORLD, 0, 64, 0);
     }
 
@@ -294,6 +300,16 @@ class RedstoneGuardrailsTest {
     @Override
     public void cancel() {
       cancelled = true;
+    }
+
+    @Override
+    public boolean canTravel() {
+      return true;
+    }
+
+    @Override
+    public CompletableFuture<Boolean> travel() {
+      return CompletableFuture.completedFuture(true);
     }
   }
 
@@ -361,8 +377,11 @@ class RedstoneGuardrailsTest {
     }
 
     @Override
-    public Optional<PortalHost> portalHost() {
-      return Optional.of((priority, ignoreCancelled, listener) -> add(portals, listener));
+    public Optional<PlayerHost> playerHost() {
+      PlayerHost host = Mockito.mock(PlayerHost.class);
+      Mockito.when(host.onPortal(Mockito.any(), Mockito.anyBoolean(), Mockito.any()))
+          .thenAnswer(invocation -> add(portals, invocation.getArgument(2)));
+      return Optional.of(host);
     }
   }
 }

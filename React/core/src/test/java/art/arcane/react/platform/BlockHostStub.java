@@ -5,10 +5,11 @@ import org.mockito.Mockito;
 import java.util.function.Consumer;
 
 /**
- * A mocked {@link BlockHost} and {@link WorldHost} bound as the platform, keeping the listeners features subscribe.
+ * A mocked {@link BlockHost}, {@link ChunkHost} and {@link WorldHost} bound as the platform, keeping the listeners features subscribe.
  */
 public final class BlockHostStub implements AutoCloseable {
   public final BlockHost blocks = Mockito.mock(BlockHost.class);
+  public final ChunkHost chunks = Mockito.mock(ChunkHost.class);
   public final WorldHost worlds = Mockito.mock(WorldHost.class);
   public final ReactPlatform platform = Mockito.mock(ReactPlatform.class);
   public Consumer<BlockHost.BlockEvent> breaks;
@@ -23,6 +24,7 @@ public final class BlockHostStub implements AutoCloseable {
   @SuppressWarnings("unchecked")
   public BlockHostStub() {
     Mockito.when(platform.blockHost()).thenReturn(java.util.Optional.of(blocks));
+    Mockito.when(platform.chunkHost()).thenReturn(java.util.Optional.of(chunks));
     Mockito.when(platform.worldHost()).thenReturn(java.util.Optional.of(worlds));
     Mockito.when(blocks.onBreak(Mockito.any(), Mockito.anyBoolean(), Mockito.any())).thenAnswer(invocation -> {
       breaks = invocation.getArgument(2);
@@ -50,6 +52,9 @@ public final class BlockHostStub implements AutoCloseable {
       falling = invocation.getArgument(2);
       return Subscription.NONE;
     });
+    Mockito.when(chunks.onChunkLoad(Mockito.any(), Mockito.any())).thenReturn(Subscription.NONE);
+    Mockito.when(chunks.onChunkUnload(Mockito.any(), Mockito.any())).thenReturn(Subscription.NONE);
+    Mockito.when(chunks.onWorldUnload(Mockito.any(), Mockito.anyBoolean(), Mockito.any())).thenReturn(Subscription.NONE);
     ReactPlatforms.unbind();
     ReactPlatforms.bind(platform);
   }

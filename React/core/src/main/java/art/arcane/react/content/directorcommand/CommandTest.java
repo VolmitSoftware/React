@@ -1,6 +1,7 @@
 package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.HostCommand;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 import art.arcane.volmlib.util.director.annotations.Param;
@@ -21,6 +22,7 @@ public class CommandTest implements DirectorExecutor {
       description = "Run the React validation suite",
       descriptionKey = "command.description.test.run"
   )
+  @HostCommand("testRun")
   public void run(
       @Param(name = "full", description = "Run the full deep test suite", descriptionKey = "command.parameter.test.full", defaultValue = "true", aliases = {"f"})
       boolean full,
@@ -38,6 +40,7 @@ public class CommandTest implements DirectorExecutor {
       description = "Run a two-pass synthetic load test",
       descriptionKey = "command.description.test.load"
   )
+  @HostCommand("testLoad")
   public void loadtest(
       @Param(name = "confirm", description = "Must be true; this spawns heavy synthetic load on world 0", descriptionKey = "command.parameter.test.confirm")
       boolean confirm,

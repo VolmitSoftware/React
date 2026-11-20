@@ -20,6 +20,7 @@
 package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.HostCommand;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 
@@ -37,6 +38,7 @@ public class CommandEnvironment implements DirectorExecutor {
       description = "Print environment details",
       descriptionKey = "command.description.environment.info"
   )
+  @HostCommand("environmentInfo")
   public void info() {
     host().environmentInfo(sender());
   }

@@ -24,6 +24,7 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.platform.BlockHost;
+import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.GameEntity;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.ListenerPriority;
@@ -80,6 +81,7 @@ public class FeatureLazyGravity extends ReactFeature {
   private transient final PressureGate gate = new PressureGate();
   private transient final List<Subscription> subscriptions = new ArrayList<>();
   private transient volatile BlockHost blocks;
+  private transient volatile ChunkHost chunkHost;
   private transient volatile WorldHost worlds;
   @Getter
   private transient volatile boolean bridgeActive;
@@ -101,6 +103,7 @@ public class FeatureLazyGravity extends ReactFeature {
     ReactPlatform platform = ReactPlatforms.get();
     worlds = platform.worldHost().orElse(null);
     blocks = platform.blockHost().orElse(null);
+    chunkHost = platform.chunkHost().orElse(null);
     BlockHost host = blocks;
     if (host != null) {
       subscriptions.add(host.onFallingBlockChange(ListenerPriority.MONITOR, true, this::onFallingBlockChange));
@@ -283,7 +286,7 @@ public class FeatureLazyGravity extends ReactFeature {
 
     for (int y = startY; y >= min && scanned < MAX_SCAN_DEPTH; y--) {
       scanned++;
-      if (!host.isChunkLoaded(worldId, x >> 4, z >> 4)) {
+      if (!isChunkLoaded(worldId, x >> 4, z >> 4)) {
         return -1;
       }
 
@@ -372,5 +375,10 @@ public class FeatureLazyGravity extends ReactFeature {
       this.columnKey = columnKey;
       this.expiresAtMs = expiresAtMs;
     }
+  }
+
+  private boolean isChunkLoaded(UUID worldId, int chunkX, int chunkZ) {
+    ChunkHost host = chunkHost;
+    return host != null && host.isLoaded(worldId, chunkX, chunkZ);
   }
 }

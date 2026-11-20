@@ -225,10 +225,6 @@ public interface ReactPlatform {
     return Optional.empty();
   }
 
-  default Optional<PortalHost> portalHost() {
-    return Optional.empty();
-  }
-
   default Optional<ExplosionHost> explosionHost() {
     return Optional.empty();
   }

@@ -7,7 +7,7 @@ import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.HopperItemIndex;
 import art.arcane.react.core.controller.HopperPositionIndex;
 import art.arcane.react.core.controller.ReactComponents;
-import art.arcane.react.platform.BlockHost;
+import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.HopperHost;
 import art.arcane.react.platform.ReactPlatform;
@@ -61,7 +61,7 @@ public class TweakHopperIndex extends ReactTweak {
     private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
     private transient final AtomicBoolean idleStretchFailureReported = new AtomicBoolean();
     private transient HopperHost hoppers;
-    private transient BlockHost blocks;
+    private transient volatile ChunkHost chunkHost;
     private transient WorldHost worlds;
     private transient boolean bridgesAvailable;
     private transient volatile boolean active = true;
@@ -81,9 +81,9 @@ public class TweakHopperIndex extends ReactTweak {
         resetItemChunkState(null);
         ReactPlatform platform = ReactPlatforms.get();
         hoppers = platform.hopperHost().orElse(null);
-        blocks = platform.blockHost().orElse(null);
+        chunkHost = platform.chunkHost().orElse(null);
         worlds = platform.worldHost().orElse(null);
-        bridgesAvailable = hoppers != null && blocks != null && worlds != null && hoppers.supportsHopperAccess();
+        bridgesAvailable = hoppers != null && chunkHost != null && worlds != null && hoppers.supportsHopperAccess();
         if (!bridgesAvailable) {
             platform.warn("Hopper index fast-path disabled: native world access is unavailable");
             return;
@@ -311,7 +311,7 @@ public class TweakHopperIndex extends ReactTweak {
 
     private void processItemChunk(ReactWorld world, UUID worldId, int chunkX, int chunkZ, long[] hoppers,
             HopperItemIndex itemIndex, boolean requireRegionOwnership) {
-        if (!blocks.isChunkLoaded(worldId, chunkX, chunkZ)) {
+        if (!isChunkLoaded(worldId, chunkX, chunkZ)) {
             HopperThroughputHeatmap.SUCK_IN_ITEMS_INVOCATIONS.addAndGet(hoppers.length);
             return;
         }
@@ -578,7 +578,7 @@ public class TweakHopperIndex extends ReactTweak {
             int chunkZ,
             LongArrayList positions,
             int stretchCooldown) {
-        if (!blocks.isChunkLoaded(world.id(), chunkX, chunkZ)) {
+        if (!isChunkLoaded(world.id(), chunkX, chunkZ)) {
             return;
         }
         for (int i = 0; i < positions.size(); i++) {
@@ -633,5 +633,10 @@ public class TweakHopperIndex extends ReactTweak {
     }
 
     private record ItemChunkClaim(long generation) {
+    }
+
+    private boolean isChunkLoaded(UUID worldId, int chunkX, int chunkZ) {
+        ChunkHost host = chunkHost;
+        return host != null && host.isLoaded(worldId, chunkX, chunkZ);
     }
 }

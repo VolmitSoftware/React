@@ -23,7 +23,7 @@ class FeatureLazyGravityTest {
   void setUp() {
     host = new BlockHostStub();
     Mockito.when(host.blocks.minHeight(worldId)).thenReturn(-64);
-    Mockito.when(host.blocks.isChunkLoaded(Mockito.eq(worldId), Mockito.anyInt(), Mockito.anyInt())).thenReturn(true);
+    Mockito.when(host.chunks.isLoaded(Mockito.eq(worldId), Mockito.anyInt(), Mockito.anyInt())).thenReturn(true);
     Mockito.when(host.blocks.blockType(Mockito.eq(worldId), Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt()))
         .thenAnswer(invocation -> invocation.<Integer>getArgument(2) > 60 ? "AIR" : "STONE");
     feature = new FeatureLazyGravity();

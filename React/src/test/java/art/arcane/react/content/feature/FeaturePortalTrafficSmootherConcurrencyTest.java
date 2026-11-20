@@ -162,7 +162,7 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
         return true;
       });
 
-      portals(feature).on(event);
+      feature.portal(BukkitPlayerHost.portal(event));
       Mockito.verify(event).setCancelled(true);
       Assertions.assertNotNull(callback.get());
       Assertions.assertNotNull(retired.get());
@@ -229,7 +229,7 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
         return true;
       });
 
-      portals(feature).on(firstEvent);
+      feature.portal(BukkitPlayerHost.portal(firstEvent));
       Assertions.assertEquals(1, callbacks.size());
       Mockito.verify(firstEvent).setCancelled(true);
       callbacks.getFirst().run();
@@ -243,12 +243,12 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
           Mockito.any(org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.class)
       );
 
-      portals(feature).on(secondEvent);
+      feature.portal(BukkitPlayerHost.portal(secondEvent));
       Assertions.assertEquals(1, callbacks.size());
       Mockito.verify(secondEvent, Mockito.never()).setCancelled(true);
 
       traversal.complete(true);
-      portals(feature).on(secondEvent);
+      feature.portal(BukkitPlayerHost.portal(secondEvent));
       Assertions.assertEquals(2, callbacks.size());
       Mockito.verify(secondEvent).setCancelled(true);
 
@@ -290,8 +290,8 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
         return true;
       });
 
-      portals(feature).on(acceptedEvent);
-      portals(feature).on(duplicateEvent);
+      feature.portal(BukkitPlayerHost.portal(acceptedEvent));
+      feature.portal(BukkitPlayerHost.portal(duplicateEvent));
 
       Mockito.verify(acceptedEvent).setCancelled(true);
       Mockito.verify(duplicateEvent, Mockito.never()).setCancelled(true);
@@ -326,7 +326,7 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
     Mockito.when(event.getTo()).thenReturn(new Location(world, 8, 64, 8));
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      portals(feature).on(event);
+      feature.portal(BukkitPlayerHost.portal(event));
 
       Mockito.verify(event, Mockito.never()).setCancelled(true);
       scheduling.verify(() -> J.runEntity(
@@ -376,11 +376,11 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
         return true;
       });
 
-      portals(feature).on(firstEvent);
+      feature.portal(BukkitPlayerHost.portal(firstEvent));
       Assertions.assertEquals(1, callbacks.size());
       retired.getFirst().run();
 
-      portals(feature).on(secondEvent);
+      feature.portal(BukkitPlayerHost.portal(secondEvent));
       Assertions.assertEquals(2, callbacks.size());
       callbacks.getFirst().run();
 
@@ -394,11 +394,6 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
     }
   }
 
-  private static BukkitPlayerHost portals(FeaturePortalTrafficSmoother feature) {
-    BukkitPlayerHost host = new BukkitPlayerHost();
-    host.onPortal(feature::portal);
-    return host;
-  }
 
   private static void setBoolean(Object target, String fieldName, boolean value)
       throws ReflectiveOperationException {

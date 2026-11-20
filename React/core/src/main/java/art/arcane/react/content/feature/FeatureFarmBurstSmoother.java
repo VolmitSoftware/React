@@ -110,7 +110,9 @@ public class FeatureFarmBurstSmoother extends ReactFeature {
     grows = platform.growthHost()
         .map(host -> host.onGrow(ListenerPriority.LOWEST, true, this::on))
         .orElse(Subscription.NONE);
-    unloads = platform.blockHost().map(host -> host.onWorldUnload(this::onWorldUnload)).orElse(Subscription.NONE);
+    unloads = platform.chunkHost()
+        .map(host -> host.onWorldUnload(ListenerPriority.MONITOR, true, event -> onWorldUnload(event.worldId())))
+        .orElse(Subscription.NONE);
     accepting = true;
   }
 

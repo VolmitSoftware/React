@@ -20,6 +20,7 @@
 package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.HostCommand;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 
@@ -38,6 +39,7 @@ public class CommandConfig implements DirectorExecutor {
       descriptionKey = "command.description.config.gui",
       origin = DirectorOrigin.PLAYER
   )
+  @HostCommand("configGui")
   public void gui() {
     host().configGui(sender());
   }
@@ -49,6 +51,7 @@ public class CommandConfig implements DirectorExecutor {
       descriptionKey = "command.description.config.monitor",
       origin = DirectorOrigin.PLAYER
   )
+  @HostCommand("configMonitor")
   public void monitor() {
     host().configMonitor(sender());
   }

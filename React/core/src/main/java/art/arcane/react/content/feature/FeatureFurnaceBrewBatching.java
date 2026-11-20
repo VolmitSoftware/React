@@ -25,9 +25,10 @@ import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.ReactComponents;
 import art.arcane.react.platform.BlockHost;
+import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.ChunkRef;
-import art.arcane.react.platform.FurnaceHost;
 import art.arcane.react.platform.FurnaceHost.Kind;
+import art.arcane.react.platform.FurnaceHost;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.ListenerPriority;
 import art.arcane.react.platform.ReactPlatform;
@@ -38,10 +39,9 @@ import art.arcane.react.platform.WorldHost;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
-import lombok.Getter;
-
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -115,6 +115,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature {
   private transient volatile MeasurementSweep measurementSweep;
   private transient volatile FurnaceHost furnaces;
   private transient volatile BlockHost blocks;
+  private transient volatile ChunkHost chunkHost;
   private transient volatile WorldHost worlds;
   private transient final List<Subscription> subscriptions = new ArrayList<>();
   private transient Subscription tickHooks = Subscription.NONE;
@@ -129,6 +130,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature {
     ReactPlatform platform = ReactPlatforms.get();
     furnaces = platform.furnaceHost().orElse(null);
     blocks = platform.blockHost().orElse(null);
+    chunkHost = platform.chunkHost().orElse(null);
     worlds = platform.worldHost().orElse(null);
     subscribe();
     active = true;
@@ -179,9 +181,12 @@ public class FeatureFurnaceBrewBatching extends ReactFeature {
   private void subscribe() {
     BlockHost blockHost = blocks;
     if (blockHost != null) {
-      subscriptions.add(blockHost.onChunkLoad(chunk -> queueLoadSeed(ChunkCoordinate.of(chunk))));
-      subscriptions.add(blockHost.onChunkUnload(this::onChunkUnload));
-      subscriptions.add(blockHost.onWorldUnload(this::onWorldUnload));
+      ChunkHost chunks = chunkHost;
+      if (chunks != null) {
+        subscriptions.add(chunks.onChunkLoad(ListenerPriority.MONITOR, chunk -> queueLoadSeed(ChunkCoordinate.of(chunk))));
+        subscriptions.add(chunks.onChunkUnload(ListenerPriority.MONITOR, this::onChunkUnload));
+        subscriptions.add(chunks.onWorldUnload(ListenerPriority.MONITOR, true, event -> onWorldUnload(event.worldId())));
+      }
       subscriptions.add(blockHost.onPlace(ListenerPriority.MONITOR, true, this::onPlace));
       subscriptions.add(blockHost.onBreak(ListenerPriority.MONITOR, true, this::onBreak));
     }
@@ -538,7 +543,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature {
     if (remaining <= 0 || blockHost == null) {
       return;
     }
-    scheduleReseedTargets(blockHost.nextLoadedChunks(remaining), generation);
+    scheduleReseedTargets(nextLoadedChunks(remaining), generation);
   }
 
   private int scheduleLoadSeeds(long generation) {
@@ -620,8 +625,7 @@ public class FeatureFurnaceBrewBatching extends ReactFeature {
   }
 
   private boolean isChunkLoaded(ChunkCoordinate coordinate) {
-    BlockHost host = blocks;
-    return host != null && host.isChunkLoaded(coordinate.worldId, coordinate.chunkX, coordinate.chunkZ);
+    return isChunkLoaded(coordinate.worldId, coordinate.chunkX, coordinate.chunkZ);
   }
 
   private void registerMeasurementChunk(ChunkCoordinate coordinate) {
@@ -831,5 +835,15 @@ public class FeatureFurnaceBrewBatching extends ReactFeature {
       this.z = z;
       this.kind = kind;
     }
+  }
+
+  private boolean isChunkLoaded(UUID worldId, int chunkX, int chunkZ) {
+    ChunkHost host = chunkHost;
+    return host != null && host.isLoaded(worldId, chunkX, chunkZ);
+  }
+
+  private List<ChunkRef> nextLoadedChunks(int maximum) {
+    ChunkHost host = chunkHost;
+    return host == null ? List.of() : host.nextLoaded(maximum);
   }
 }

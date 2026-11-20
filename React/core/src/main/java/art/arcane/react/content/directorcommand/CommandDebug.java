@@ -21,6 +21,7 @@ package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.platform.ReactCommandSender;
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.HostCommand;
 import art.arcane.react.util.plugin.VolmitSender;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
@@ -34,6 +35,7 @@ import art.arcane.volmlib.util.director.annotations.Param;
 )
 public class CommandDebug implements DirectorExecutor {
   @Director(name = "dump", sync = true, description = "Create and optionally upload a diagnostic report", descriptionKey = "command.description.debugdump")
+  @HostCommand("debugDump")
   public void dump(
       @Param(name = "upload", defaultValue = "true", description = "Upload the report to mclo.gs", descriptionKey = "command.parameter.debugdump_upload") boolean upload,
       @Param(name = "sender", contextual = true) ReactCommandSender sender
@@ -49,6 +51,7 @@ public class CommandDebug implements DirectorExecutor {
       origin = DirectorOrigin.PLAYER,
       sync = true
   )
+  @HostCommand("debugEntityData")
   public void entityData() {
     host().debugEntityData(sender());
   }

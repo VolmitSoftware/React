@@ -1,5 +1,6 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.ExplosionHost;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.PlatformScheduler;
@@ -631,7 +632,7 @@ class FeatureFastExplosionsTest {
     }
   }
 
-  private static final class TestUnload implements ExplosionHost.WorldUnload {
+  private static final class TestUnload implements ChunkHost.WorldUnload {
     private final UUID world;
     private boolean cancelled;
 
@@ -744,10 +745,6 @@ class FeatureFastExplosionsTest {
       return Subscription.NONE;
     }
 
-    @Override
-    public Subscription onWorldUnload(art.arcane.react.platform.ListenerPriority priority, boolean ignoreCancelled, Consumer<WorldUnload> listener) {
-      return Subscription.NONE;
-    }
 
     @Override
     public String blockType(GameLocation location) {

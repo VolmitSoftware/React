@@ -190,7 +190,8 @@ public final class ReactDirector implements DirectorInvocationHook {
       return false;
     }
 
-    deliverHelp(sender, page.get(), DirectorMiniMenu.Theme.reactBlue());
+    DirectorMiniMenu.DirectorHelpPage listed = page.get().withEntries(CommandAvailability.listed(page.get().entries()));
+    deliverHelp(sender, listed, DirectorMiniMenu.Theme.reactBlue());
     return true;
   }
 
@@ -198,7 +199,7 @@ public final class ReactDirector implements DirectorInvocationHook {
     if (!sender.isPlayer()) {
       for (String line : DirectorMiniMenu.renderConsole(page, ReactLanguage.directorResolver())) {
         if (line != null && !line.trim().isEmpty()) {
-          sender.sendMessage(line);
+          sender.sendMessage(ReactLanguage.owned(line));
         }
       }
       return;
@@ -217,7 +218,7 @@ public final class ReactDirector implements DirectorInvocationHook {
     }
     for (String line : lines) {
       if (line != null && !line.trim().isEmpty()) {
-        sender.send(ComponentText.component(HELP_MARKUP.deserialize(line)));
+        sender.send(ComponentText.component(HELP_MARKUP.deserialize(ReactLanguage.owned(line))));
       }
     }
   }
@@ -275,12 +276,46 @@ public final class ReactDirector implements DirectorInvocationHook {
 
   private List<String> runDirectorTab(ReactCommandSender sender, String alias, String[] args) {
     try {
-      return getDirector().tabComplete(new DirectorInvocation(new SenderBridge(sender), alias, Arrays.asList(args)));
+      DirectorRuntimeEngine engine = getDirector();
+      List<String> suggestions = engine.tabComplete(new DirectorInvocation(new SenderBridge(sender), alias, Arrays.asList(args)));
+      return withoutUnlisted(engine.getRoot(), args, suggestions);
     } catch (Throwable e) {
       ReactPlatforms.get().warn("Director tab completion failed: " + e.getClass().getSimpleName()
           + " " + e.getMessage() + ": " + e);
       return List.of();
     }
+  }
+
+  static List<String> withoutUnlisted(DirectorRuntimeNode root, String[] args, List<String> suggestions) {
+    DirectorRuntimeNode cursor = root;
+    for (int index = 0; cursor != null && index < args.length - 1; index++) {
+      cursor = child(cursor, args[index]);
+    }
+    if (cursor == null || suggestions == null || suggestions.isEmpty()) {
+      return suggestions;
+    }
+    List<String> listed = new ArrayList<>(suggestions.size());
+    for (String suggestion : suggestions) {
+      DirectorRuntimeNode node = child(cursor, suggestion);
+      if (node == null || CommandAvailability.listed(node)) {
+        listed.add(suggestion);
+      }
+    }
+    return listed;
+  }
+
+  private static DirectorRuntimeNode child(DirectorRuntimeNode node, String token) {
+    if (token == null) {
+      return null;
+    }
+    for (DirectorRuntimeNode child : node.getChildren()) {
+      for (String name : child.allNames()) {
+        if (name.equalsIgnoreCase(token)) {
+          return child;
+        }
+      }
+    }
+    return null;
   }
 
   private static void playFailureSound(ReactCommandSender sender) {

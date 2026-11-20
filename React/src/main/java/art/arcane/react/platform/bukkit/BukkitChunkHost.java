@@ -8,7 +8,9 @@ import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.ChunkRef;
+import art.arcane.react.platform.ListenerPriority;
 import art.arcane.react.platform.ReactWorld;
+import art.arcane.react.platform.Subscription;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.scheduling.WorldChunks;
@@ -16,12 +18,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
+import org.bukkit.event.world.WorldUnloadEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 public final class BukkitChunkHost implements ChunkHost {
   @Override
@@ -157,5 +163,61 @@ public final class BukkitChunkHost implements ChunkHost {
 
   private static World bukkit(ReactWorld world) {
     return (World) world.handle();
+  }
+
+  @Override
+  public boolean isLoaded(UUID worldId, int chunkX, int chunkZ) {
+    World world = worldId == null ? null : Bukkit.getWorld(worldId);
+    return world != null && world.isChunkLoaded(chunkX, chunkZ);
+  }
+
+  @Override
+  public List<ChunkRef> nextLoaded(int maximum) {
+    ObserverController observer = React.controller(ObserverController.class);
+    if (observer == null) {
+      return List.of();
+    }
+    List<ObserverController.LoadedChunkTarget> targets = observer.nextLoadedChunkCoordinateBatch(maximum);
+    List<ChunkRef> chunks = new ArrayList<>(targets.size());
+    for (ObserverController.LoadedChunkTarget target : targets) {
+      chunks.add(new ChunkRef(target.worldId(), target.chunkX(), target.chunkZ()));
+    }
+    return chunks;
+  }
+
+  @Override
+  public Subscription onChunkLoad(ListenerPriority priority, Consumer<ChunkRef> listener) {
+    return BukkitEvents.subscribe(ChunkLoadEvent.class, priority, false, event -> listener.accept(ref(event.getChunk())));
+  }
+
+  @Override
+  public Subscription onChunkUnload(ListenerPriority priority, Consumer<ChunkRef> listener) {
+    return BukkitEvents.subscribe(ChunkUnloadEvent.class, priority, false, event -> listener.accept(ref(event.getChunk())));
+  }
+
+  @Override
+  public Subscription onWorldUnload(ListenerPriority priority, boolean ignoreCancelled, Consumer<WorldUnload> listener) {
+    return BukkitEvents.subscribe(WorldUnloadEvent.class, priority, ignoreCancelled, event -> listener.accept(new BukkitWorldUnload(event)));
+  }
+
+  private static ChunkRef ref(Chunk chunk) {
+    return new ChunkRef(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ());
+  }
+
+  private record BukkitWorldUnload(WorldUnloadEvent event) implements WorldUnload {
+    @Override
+    public UUID worldId() {
+      return event.getWorld().getUID();
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return event.isCancelled();
+    }
+
+    @Override
+    public void cancel() {
+      event.setCancelled(true);
+    }
   }
 }

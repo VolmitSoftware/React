@@ -4,9 +4,11 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.core.controller.HopperItemIndex;
 import art.arcane.react.core.controller.HopperPositionIndex;
 import art.arcane.react.platform.BlockHost;
+import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.ChunkRef;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.HopperHost;
+import art.arcane.react.platform.ListenerPriority;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.platform.ReactWorld;
@@ -65,6 +67,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements HopperHost.I
     private transient HopperPositionIndex positionIndex;
     private transient volatile HopperHost hoppers;
     private transient volatile BlockHost blocks;
+    private transient volatile ChunkHost chunkHost;
     private transient volatile WorldHost worlds;
     private transient Subscription subscriptions = Subscription.NONE;
 
@@ -89,6 +92,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements HopperHost.I
         ReactPlatform platform = ReactPlatforms.get();
         hoppers = platform.hopperHost().orElse(null);
         blocks = platform.blockHost().orElse(null);
+        chunkHost = platform.chunkHost().orElse(null);
         worlds = platform.worldHost().orElse(null);
         active = true;
         subscribe();
@@ -102,9 +106,12 @@ public class FeatureHopperItemIndex extends ReactFeature implements HopperHost.I
             opened.add(hopperHost.onIndexChange(this));
         }
         if (blockHost != null) {
-            opened.add(blockHost.onChunkLoad(this::onChunkLoad));
-            opened.add(blockHost.onChunkUnload(this::onChunkUnload));
-            opened.add(blockHost.onWorldUnload(this::onWorldUnload));
+            ChunkHost chunks = chunkHost;
+            if (chunks != null) {
+                opened.add(chunks.onChunkLoad(ListenerPriority.MONITOR, this::onChunkLoad));
+                opened.add(chunks.onChunkUnload(ListenerPriority.MONITOR, this::onChunkUnload));
+                opened.add(chunks.onWorldUnload(ListenerPriority.MONITOR, true, event -> onWorldUnload(event.worldId())));
+            }
         }
         subscriptions = () -> opened.forEach(Subscription::cancel);
     }
@@ -279,7 +286,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements HopperHost.I
             return;
         }
 
-        List<ChunkRef> coordinates = blockHost.nextLoadedChunks(MAX_PAPER_CHUNKS_PER_SWEEP);
+        List<ChunkRef> coordinates = nextLoadedChunks(MAX_PAPER_CHUNKS_PER_SWEEP);
         for (ChunkRef coordinate : coordinates) {
             Object world = worldHandle(coordinate.worldId());
             if (world != null) {
@@ -761,8 +768,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements HopperHost.I
     }
 
     private boolean isChunkLoaded(ChunkKey key) {
-        BlockHost blockHost = blocks;
-        return blockHost != null && blockHost.isChunkLoaded(key.worldId(), key.chunkX(), key.chunkZ());
+        return isChunkLoaded(key.worldId(), key.chunkX(), key.chunkZ());
     }
 
     private void enqueueFoliaChunk(FoliaChunkWorkState workState, FoliaChunkTarget target) {
@@ -1230,5 +1236,15 @@ public class FeatureHopperItemIndex extends ReactFeature implements HopperHost.I
                 : "Hopper item index " + site + " failed (" + suppressed + " repeats suppressed since last report)";
             ReactPlatforms.get().reportError(context, failure);
         }
+    }
+
+    private boolean isChunkLoaded(UUID worldId, int chunkX, int chunkZ) {
+        ChunkHost host = chunkHost;
+        return host != null && host.isLoaded(worldId, chunkX, chunkZ);
+    }
+
+    private List<ChunkRef> nextLoadedChunks(int maximum) {
+        ChunkHost host = chunkHost;
+        return host == null ? List.of() : host.nextLoaded(maximum);
     }
 }

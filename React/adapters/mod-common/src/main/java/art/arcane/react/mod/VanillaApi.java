@@ -6,7 +6,6 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ColorParticleOption;
-import net.minecraft.core.particles.ExplosionParticleInfo;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -16,7 +15,6 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -398,9 +396,7 @@ public final class VanillaApi {
     }
 
     static Packet<?> mergedExplosionPacket(double x, double y, double z, float radius) {
-        return new ClientboundExplodePacket(new Vec3(x, y, z), radius, 0, Optional.<Vec3>empty(),
-                radius >= 2.0F ? ParticleTypes.EXPLOSION_EMITTER : ParticleTypes.EXPLOSION, SoundEvents.GENERIC_EXPLODE,
-                WeightedList.<ExplosionParticleInfo>of(), true);
+        return VanillaCompat.mergedExplosionPacket(x, y, z, radius);
     }
 
     /** A block's type as React's config files name it: the Bukkit material constant for vanilla blocks. */

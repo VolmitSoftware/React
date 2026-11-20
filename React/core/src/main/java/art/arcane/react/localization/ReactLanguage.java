@@ -5,6 +5,7 @@ import art.arcane.react.platform.LanguageHost;
 import art.arcane.react.platform.ReactCommandSender;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
+import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.react.util.plugin.VolmitSender;
 import art.arcane.volmlib.util.director.DirectorTextResolver;
 import art.arcane.volmlib.util.io.AtomicFileIO;
@@ -579,7 +580,14 @@ public final class ReactLanguage {
       throw new IllegalArgumentException("Raw messages must use text keys: " + key.id());
     }
     ResolvedText resolved = snapshot.resolve(textKey, arguments);
-    return interpolate(resolved.template(), resolved.arguments(), false);
+    return interpolate(owned(resolved.template()), resolved.arguments(), false);
+  }
+
+  /**
+   * The template with mod wording on mod loaders, so owner-facing text never says "plugin" there.
+   */
+  public static String owned(String template) {
+    return OwnerNoun.modded() ? OwnerWording.forMods(template) : template;
   }
 
   public static String raw(String id, String fallback) {
@@ -632,7 +640,7 @@ public final class ReactLanguage {
     return (key, arguments) -> {
       MessageKey definition = CATALOG.key(key.id());
       if (!(definition instanceof TextKey textKey)) {
-        return DirectorTextResolver.ENGLISH.resolve(key, arguments);
+        return owned(DirectorTextResolver.ENGLISH.resolve(key, arguments));
       }
       return plain(textKey, arguments).replace(String.valueOf('\u00A7'), "");
     };
@@ -946,7 +954,8 @@ public final class ReactLanguage {
     throw new IllegalArgumentException("Unsupported message key: " + key.id());
   }
 
-  private static Component renderTemplate(MessageKey key, String template, MessageArgs arguments) {
+  private static Component renderTemplate(MessageKey key, String ownerTemplate, MessageArgs arguments) {
+    String template = owned(ownerTemplate);
     if (isRawTextKey(key.id())) {
       return Component.text(interpolate(template, arguments, false));
     }

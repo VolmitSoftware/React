@@ -7,8 +7,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 public interface ChunkHost {
+  /**
+   * A world about to unload. Cancelling keeps it loaded where the platform allows it; mod servers close their worlds
+   * regardless.
+   */
+  interface WorldUnload extends HostEvent {
+    UUID worldId();
+  }
+
   /**
    * Streams the chunks that were loaded when the cursor opened, in batches of at most 256.
    */
@@ -94,4 +103,17 @@ public interface ChunkHost {
    * cannot tell yet.
    */
   boolean mayHavePlayerNear(ReactWorld world, double x, double z, double radius);
+
+  boolean isLoaded(UUID worldId, int chunkX, int chunkZ);
+
+  /**
+   * The next loaded chunks from a cursor that walks every loaded chunk in turn, at most {@code maximum} of them.
+   */
+  List<ChunkRef> nextLoaded(int maximum);
+
+  Subscription onChunkLoad(ListenerPriority priority, Consumer<ChunkRef> listener);
+
+  Subscription onChunkUnload(ListenerPriority priority, Consumer<ChunkRef> listener);
+
+  Subscription onWorldUnload(ListenerPriority priority, boolean ignoreCancelled, Consumer<WorldUnload> listener);
 }

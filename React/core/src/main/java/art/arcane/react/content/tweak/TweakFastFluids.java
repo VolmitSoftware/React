@@ -21,6 +21,7 @@ package art.arcane.react.content.tweak;
 
 import art.arcane.react.api.tweak.ReactTweak;
 import art.arcane.react.platform.BlockHost;
+import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.ListenerPriority;
 import art.arcane.react.platform.ReactPlatform;
@@ -63,6 +64,7 @@ public class TweakFastFluids extends ReactTweak {
   private boolean accelerateDrain = true;
   private transient FluidPulseQueue pulses;
   private transient volatile BlockHost blocks;
+  private transient volatile ChunkHost chunkHost;
   private transient volatile WorldHost worlds;
   private transient final List<Subscription> subscriptions = new ArrayList<>();
   private transient boolean fluidBridgesAvailable;
@@ -91,6 +93,7 @@ public class TweakFastFluids extends ReactTweak {
         clampInt(Integer.getInteger("react.fastfluids.bridgeFailureThreshold", 8), 1, 64));
     ReactPlatform platform = ReactPlatforms.get();
     blocks = platform.blockHost().orElse(null);
+    chunkHost = platform.chunkHost().orElse(null);
     worlds = platform.worldHost().orElse(null);
     fluidBridgesAvailable = blocks != null && blocks.canTickFluids();
     if (!fluidBridgesAvailable) {
@@ -293,7 +296,7 @@ public class TweakFastFluids extends ReactTweak {
 
     int chunkX = x >> 4;
     int chunkZ = z >> 4;
-    if (!host.isChunkLoaded(worldId, chunkX, chunkZ)) {
+    if (!isChunkLoaded(worldId, chunkX, chunkZ)) {
       return;
     }
 
@@ -365,34 +368,34 @@ public class TweakFastFluids extends ReactTweak {
 
     int chunkX = x >> 4;
     int chunkZ = z >> 4;
-    if (!host.isChunkLoaded(worldId, chunkX, chunkZ)) {
+    if (!isChunkLoaded(worldId, chunkX, chunkZ)) {
       return false;
     }
 
     int localX = x & 15;
     int localZ = z & 15;
-    if (localX == 0 && !host.isChunkLoaded(worldId, chunkX - 1, chunkZ)) {
+    if (localX == 0 && !isChunkLoaded(worldId, chunkX - 1, chunkZ)) {
       return false;
     }
-    if (localX == 15 && !host.isChunkLoaded(worldId, chunkX + 1, chunkZ)) {
+    if (localX == 15 && !isChunkLoaded(worldId, chunkX + 1, chunkZ)) {
       return false;
     }
-    if (localZ == 0 && !host.isChunkLoaded(worldId, chunkX, chunkZ - 1)) {
+    if (localZ == 0 && !isChunkLoaded(worldId, chunkX, chunkZ - 1)) {
       return false;
     }
-    if (localZ == 15 && !host.isChunkLoaded(worldId, chunkX, chunkZ + 1)) {
+    if (localZ == 15 && !isChunkLoaded(worldId, chunkX, chunkZ + 1)) {
       return false;
     }
-    if (localX == 0 && localZ == 0 && !host.isChunkLoaded(worldId, chunkX - 1, chunkZ - 1)) {
+    if (localX == 0 && localZ == 0 && !isChunkLoaded(worldId, chunkX - 1, chunkZ - 1)) {
       return false;
     }
-    if (localX == 0 && localZ == 15 && !host.isChunkLoaded(worldId, chunkX - 1, chunkZ + 1)) {
+    if (localX == 0 && localZ == 15 && !isChunkLoaded(worldId, chunkX - 1, chunkZ + 1)) {
       return false;
     }
-    if (localX == 15 && localZ == 0 && !host.isChunkLoaded(worldId, chunkX + 1, chunkZ - 1)) {
+    if (localX == 15 && localZ == 0 && !isChunkLoaded(worldId, chunkX + 1, chunkZ - 1)) {
       return false;
     }
-    if (localX == 15 && localZ == 15 && !host.isChunkLoaded(worldId, chunkX + 1, chunkZ + 1)) {
+    if (localX == 15 && localZ == 15 && !isChunkLoaded(worldId, chunkX + 1, chunkZ + 1)) {
       return false;
     }
 
@@ -441,5 +444,10 @@ public class TweakFastFluids extends ReactTweak {
     void markWarned() {
       warned = true;
     }
+  }
+
+  private boolean isChunkLoaded(UUID worldId, int chunkX, int chunkZ) {
+    ChunkHost host = chunkHost;
+    return host != null && host.isLoaded(worldId, chunkX, chunkZ);
   }
 }

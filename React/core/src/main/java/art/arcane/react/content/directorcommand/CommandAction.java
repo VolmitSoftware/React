@@ -220,7 +220,7 @@ public class CommandAction implements DirectorExecutor {
       )
       String world
   ) {
-    host().hopperNetworkNormalize(sender(), maxChunks, minHopperUpdates, world);
+    ActionCommands.hopperNetworkNormalize(sender(), maxChunks, minHopperUpdates, world);
   }
 
   @Director(

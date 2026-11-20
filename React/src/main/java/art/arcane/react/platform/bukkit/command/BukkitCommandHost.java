@@ -29,7 +29,6 @@ import java.util.Set;
 
 public final class BukkitCommandHost implements CommandHost {
   private final BukkitCommandReact root = new BukkitCommandReact();
-  private final BukkitCommandAction action = new BukkitCommandAction();
   private final BukkitCommandBridge bridge = new BukkitCommandBridge();
   private final BukkitCommandChunk chunk = new BukkitCommandChunk();
   private final BukkitCommandConfig config = new BukkitCommandConfig();
@@ -109,11 +108,6 @@ public final class BukkitCommandHost implements CommandHost {
   @Override
   public void monitoringOnly(VolmitSender sender) {
     root.monitoringOnly(sender);
-  }
-
-  @Override
-  public void hopperNetworkNormalize(VolmitSender sender, int maxChunks, double minHopperUpdates, String world) {
-    action.hopperNetworkNormalize(sender, maxChunks, minHopperUpdates, world);
   }
 
   @Override

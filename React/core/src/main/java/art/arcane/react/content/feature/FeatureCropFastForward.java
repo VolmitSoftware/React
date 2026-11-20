@@ -23,9 +23,11 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.platform.BlockHost;
+import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.ChunkRef;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.GrowthHost;
+import art.arcane.react.platform.ListenerPriority;
 import art.arcane.react.platform.PlayerPosition;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
@@ -36,6 +38,7 @@ import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -88,6 +91,7 @@ public class FeatureCropFastForward extends ReactFeature {
   private transient volatile boolean active;
   private transient volatile GrowthHost growth;
   private transient volatile BlockHost blocks;
+  private transient volatile ChunkHost chunkHost;
   private transient Subscription chunkLoads = Subscription.NONE;
   private transient Subscription chunkUnloads = Subscription.NONE;
 
@@ -108,8 +112,10 @@ public class FeatureCropFastForward extends ReactFeature {
     ReactPlatform platform = ReactPlatforms.get();
     growth = platform.growthHost().orElse(null);
     blocks = platform.blockHost().orElse(null);
-    chunkLoads = blocks == null ? Subscription.NONE : blocks.onChunkLoad(this::onChunkLoad);
-    chunkUnloads = blocks == null ? Subscription.NONE : blocks.onChunkUnload(this::onChunkUnload);
+    chunkHost = platform.chunkHost().orElse(null);
+    ChunkHost chunks = chunkHost;
+    chunkLoads = chunks == null ? Subscription.NONE : chunks.onChunkLoad(ListenerPriority.MONITOR, this::onChunkLoad);
+    chunkUnloads = chunks == null ? Subscription.NONE : chunks.onChunkUnload(ListenerPriority.MONITOR, this::onChunkUnload);
     active = true;
   }
 
@@ -202,7 +208,7 @@ public class FeatureCropFastForward extends ReactFeature {
     if (host == null) {
       return;
     }
-    List<ChunkRef> targets = host.nextLoadedChunks(MAX_CHUNKS_SCANNED_PER_PASS);
+    List<ChunkRef> targets = nextLoadedChunks(MAX_CHUNKS_SCANNED_PER_PASS);
     for (ChunkRef target : targets) {
       ledger(tracked, target.worldId()).seed(CropActivityLedger.pack(target.chunkX(), target.chunkZ()), now);
     }
@@ -301,7 +307,7 @@ public class FeatureCropFastForward extends ReactFeature {
     if (!isCurrent(generation) || worldId == null || host == null || chunks == null) {
       return;
     }
-    if (!chunks.isChunkLoaded(worldId, chunkX, chunkZ)) {
+    if (!isChunkLoaded(worldId, chunkX, chunkZ)) {
       return;
     }
 
@@ -500,5 +506,15 @@ public class FeatureCropFastForward extends ReactFeature {
 
   private boolean isCurrent(long generation) {
     return active && generation == lifecycleGeneration.get();
+  }
+
+  private boolean isChunkLoaded(UUID worldId, int chunkX, int chunkZ) {
+    ChunkHost host = chunkHost;
+    return host != null && host.isLoaded(worldId, chunkX, chunkZ);
+  }
+
+  private List<ChunkRef> nextLoadedChunks(int maximum) {
+    ChunkHost host = chunkHost;
+    return host == null ? List.of() : host.nextLoaded(maximum);
   }
 }

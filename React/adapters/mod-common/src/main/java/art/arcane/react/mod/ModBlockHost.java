@@ -3,14 +3,12 @@ package art.arcane.react.mod;
 import art.arcane.react.api.tweak.Tweak;
 import art.arcane.react.core.controller.ReactComponents;
 import art.arcane.react.platform.BlockHost;
-import art.arcane.react.platform.ChunkRef;
 import art.arcane.react.platform.GameEntity;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.HostEvent;
 import art.arcane.react.platform.HostListeners;
 import art.arcane.react.platform.ListenerPriority;
 import art.arcane.react.platform.Subscription;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.BlockParticleOption;
@@ -34,16 +32,11 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.FluidState;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -60,15 +53,9 @@ public final class ModBlockHost implements BlockHost {
     private static final HostListeners<FluidFlowEvent> FLOWS = new HostListeners<>();
     private static final HostListeners<FluidLevelEvent> LEVELS = new HostListeners<>();
     private static final HostListeners<FallingBlockEvent> FALLING = new HostListeners<>();
-    private static final List<Consumer<ChunkRef>> CHUNK_LOADS = new CopyOnWriteArrayList<>();
-    private static final List<Consumer<ChunkRef>> CHUNK_UNLOADS = new CopyOnWriteArrayList<>();
-    private static final List<Consumer<UUID>> WORLD_UNLOADS = new CopyOnWriteArrayList<>();
-    private static final Map<UUID, LongOpenHashSet> LOADED = new ConcurrentHashMap<>();
     private static volatile FallingTickHook fallingHook;
 
     private final MinecraftServer server;
-    private final Map<UUID, Cursor> cursors = new HashMap<>();
-    private int worldRotation;
 
     ModBlockHost(MinecraftServer server) {
         this.server = server;
@@ -92,54 +79,6 @@ public final class ModBlockHost implements BlockHost {
     @Override
     public Subscription onPiston(ListenerPriority priority, boolean ignoreCancelled, Consumer<PistonEvent> listener) {
         return PISTONS.subscribe(priority, ignoreCancelled, listener);
-    }
-
-    @Override
-    public Subscription onChunkLoad(Consumer<ChunkRef> listener) {
-        CHUNK_LOADS.add(listener);
-        return () -> CHUNK_LOADS.remove(listener);
-    }
-
-    @Override
-    public Subscription onChunkUnload(Consumer<ChunkRef> listener) {
-        CHUNK_UNLOADS.add(listener);
-        return () -> CHUNK_UNLOADS.remove(listener);
-    }
-
-    @Override
-    public Subscription onWorldUnload(Consumer<UUID> listener) {
-        WORLD_UNLOADS.add(listener);
-        return () -> WORLD_UNLOADS.remove(listener);
-    }
-
-    @Override
-    public synchronized List<ChunkRef> nextLoadedChunks(int maximum) {
-        if (maximum <= 0 || LOADED.isEmpty()) {
-            return List.of();
-        }
-        List<UUID> worlds = new ArrayList<>(LOADED.keySet());
-        cursors.keySet().retainAll(worlds);
-        List<ChunkRef> result = new ArrayList<>(Math.min(maximum, 256));
-        int worldBudget = Math.min(maximum, worlds.size());
-        for (int inspected = 0; inspected < worldBudget && result.size() < maximum; inspected++) {
-            UUID worldId = worlds.get(Math.floorMod(worldRotation++, worlds.size()));
-            LongOpenHashSet chunks = LOADED.get(worldId);
-            if (chunks != null) {
-                cursors.computeIfAbsent(worldId, ignored -> new Cursor()).append(worldId, chunks, maximum - result.size(), result);
-            }
-        }
-        return result;
-    }
-
-    @Override
-    public boolean isChunkLoaded(UUID worldId, int chunkX, int chunkZ) {
-        LongOpenHashSet chunks = worldId == null ? null : LOADED.get(worldId);
-        if (chunks == null) {
-            return false;
-        }
-        synchronized (chunks) {
-            return chunks.contains(pack(chunkX, chunkZ));
-        }
     }
 
     @Override
@@ -328,9 +267,6 @@ public final class ModBlockHost implements BlockHost {
         FLOWS.clear();
         LEVELS.clear();
         FALLING.clear();
-        CHUNK_LOADS.clear();
-        CHUNK_UNLOADS.clear();
-        WORLD_UNLOADS.clear();
         fallingHook = null;
     }
 
@@ -400,51 +336,6 @@ public final class ModBlockHost implements BlockHost {
         return hook != null && falling.level() instanceof ServerLevel && hook.skipTick(new ModGameEntity(falling));
     }
 
-    public static void chunkLoaded(LevelChunk chunk) {
-        if (!(chunk.getLevel() instanceof ServerLevel level)) {
-            return;
-        }
-        UUID worldId = ModReactWorld.idOf(level);
-        int chunkX = VanillaApi.chunkX(chunk.getPos());
-        int chunkZ = VanillaApi.chunkZ(chunk.getPos());
-        LongOpenHashSet chunks = LOADED.computeIfAbsent(worldId, ignored -> new LongOpenHashSet());
-        synchronized (chunks) {
-            chunks.add(pack(chunkX, chunkZ));
-        }
-        if (!CHUNK_LOADS.isEmpty()) {
-            ChunkRef ref = new ChunkRef(worldId, chunkX, chunkZ);
-            for (Consumer<ChunkRef> listener : CHUNK_LOADS) {
-                listener.accept(ref);
-            }
-        }
-    }
-
-    public static void chunkUnloading(ServerLevel level, LevelChunk chunk) {
-        UUID worldId = ModReactWorld.idOf(level);
-        int chunkX = VanillaApi.chunkX(chunk.getPos());
-        int chunkZ = VanillaApi.chunkZ(chunk.getPos());
-        if (!CHUNK_UNLOADS.isEmpty()) {
-            ChunkRef ref = new ChunkRef(worldId, chunkX, chunkZ);
-            for (Consumer<ChunkRef> listener : CHUNK_UNLOADS) {
-                listener.accept(ref);
-            }
-        }
-        LongOpenHashSet chunks = LOADED.get(worldId);
-        if (chunks != null) {
-            synchronized (chunks) {
-                chunks.remove(pack(chunkX, chunkZ));
-            }
-        }
-    }
-
-    public static void worldUnloading(ServerLevel level) {
-        UUID worldId = ModReactWorld.idOf(level);
-        for (Consumer<UUID> listener : WORLD_UNLOADS) {
-            listener.accept(worldId);
-        }
-        LOADED.remove(worldId);
-    }
-
     private static void dropNaturally(ServerLevel level, double x, double y, double z, ItemStack stack) {
         RandomSource random = level.getRandom();
         ItemEntity item = new ItemEntity(level,
@@ -483,30 +374,6 @@ public final class ModBlockHost implements BlockHost {
 
     private static int fluidLevel(BlockState state) {
         return state.hasProperty(BlockStateProperties.LEVEL) ? state.getValue(BlockStateProperties.LEVEL) : -1;
-    }
-
-    private static long pack(int chunkX, int chunkZ) {
-        return VanillaApi.pack(chunkX, chunkZ);
-    }
-
-    private static final class Cursor {
-        private long[] snapshot = new long[0];
-        private int index;
-
-        private void append(UUID worldId, LongOpenHashSet chunks, int budget, List<ChunkRef> result) {
-            if (index >= snapshot.length) {
-                synchronized (chunks) {
-                    snapshot = chunks.toLongArray();
-                }
-                index = 0;
-            }
-            int added = 0;
-            while (index < snapshot.length && added < budget) {
-                long key = snapshot[index++];
-                result.add(new ChunkRef(worldId, (int) key, (int) (key >> 32)));
-                added++;
-            }
-        }
     }
 
     private abstract static class Cancellable implements HostEvent {

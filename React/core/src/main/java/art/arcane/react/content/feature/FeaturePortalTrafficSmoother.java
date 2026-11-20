@@ -23,6 +23,7 @@ import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.platform.GameLocation;
+import art.arcane.react.platform.ListenerPriority;
 import art.arcane.react.platform.PlayerHost;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
@@ -84,7 +85,7 @@ public class FeaturePortalTrafficSmoother extends ReactFeature {
     ReactPlatform platform = ReactPlatforms.getOrNull();
     PlayerHost host = platform == null ? null : platform.playerHost().orElse(null);
     portalSubscription.cancel();
-    portalSubscription = host == null ? Subscription.NONE : host.onPortal(this::portal);
+    portalSubscription = host == null ? Subscription.NONE : host.onPortal(ListenerPriority.LOWEST, true, this::portal);
   }
 
   @Override

@@ -120,6 +120,8 @@ class HopperChainTokenBucketTest {
       Mockito.when(headInventory.getStorageContents()).thenReturn(new ItemStack[]{sourceStack});
       bindInventory(world, 0, 64, 0, headInventory);
       bindInventory(world, 3, 64, 0, recipientInventory);
+    bindInventory(world, 1, 64, 0, emptyInventory());
+      bindInventory(world, 1, 64, 0, emptyInventory());
 
       Object chain = chain(new long[]{packPos(0, 64, 0), packPos(1, 64, 0), packPos(2, 64, 0)});
       setBoolean(chain, "fastPathEligible", true);
@@ -167,6 +169,7 @@ class HopperChainTokenBucketTest {
     Mockito.when(recipientInventory.addItem(Mockito.any(ItemStack[].class))).thenReturn(new HashMap<>());
     bindInventory(world, 0, 64, 0, headInventory);
     bindInventory(world, 3, 64, 0, recipientInventory);
+    bindInventory(world, 1, 64, 0, emptyInventory());
     Object chain = chain(new long[]{packPos(0, 64, 0), packPos(1, 64, 0), packPos(2, 64, 0)});
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
@@ -184,6 +187,12 @@ class HopperChainTokenBucketTest {
     Mockito.verify(sourceStack).setAmount(1);
     Mockito.verify(headInventory).setStorageContents(Mockito.any(ItemStack[].class));
     assertEquals(1L, feature.readAndResetSynthesizedTransfers());
+  }
+
+  private static Inventory emptyInventory() {
+    Inventory inventory = Mockito.mock(Inventory.class);
+    Mockito.when(inventory.isEmpty()).thenReturn(true);
+    return inventory;
   }
 
   private static void bindInventory(World world, int x, int y, int z, Inventory inventory) {
@@ -207,9 +216,10 @@ class HopperChainTokenBucketTest {
       Object chain
   ) throws Exception {
     Method method = FeatureHopperChainCoalescing.class.getDeclaredMethod(
-        "applyChainTransfer",
+        "applyChainTransfers",
         UUID.class,
         nestedClass("HopperChain"),
+        int.class,
         int.class,
         int.class,
         int.class,
@@ -221,7 +231,7 @@ class HopperChainTokenBucketTest {
         int.class
     );
     method.setAccessible(true);
-    method.invoke(feature, world.getUID(), chain, 0, 64, 0, 2, 64, 0, 1, 0, 0);
+    method.invoke(feature, world.getUID(), chain, 1, 0, 64, 0, 2, 64, 0, 1, 0, 0);
   }
 
   private static void putMiddleMapping(

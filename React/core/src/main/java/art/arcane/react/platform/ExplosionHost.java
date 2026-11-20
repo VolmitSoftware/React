@@ -48,10 +48,6 @@ public interface ExplosionHost {
     void setFuseTicks(int ticks);
   }
 
-  interface WorldUnload extends HostEvent {
-    UUID worldId();
-  }
-
   /**
    * React's side of the explosion packet path, called on the thread that sends the packets.
    */
@@ -78,11 +74,6 @@ public interface ExplosionHost {
   Subscription onExplode(ListenerPriority priority, boolean ignoreCancelled, Consumer<Explosion> listener);
 
   Subscription onTntPrimed(ListenerPriority priority, boolean ignoreCancelled, Consumer<PrimedTnt> listener);
-
-  /**
-   * World unloads that listeners may cancel, for work that still has to finish in that world.
-   */
-  Subscription onWorldUnload(ListenerPriority priority, boolean ignoreCancelled, Consumer<WorldUnload> listener);
 
   /**
    * The block type at the location now; null when the world is not loaded.

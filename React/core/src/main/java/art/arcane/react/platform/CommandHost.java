@@ -76,10 +76,6 @@ public interface CommandHost {
     unavailable(sender, "monitoring-only");
   }
 
-  default void hopperNetworkNormalize(VolmitSender sender, int maxChunks, double minHopperUpdates, String world) {
-    unavailable(sender, "action hopper-network-normalize");
-  }
-
   default void benchmark(VolmitSender sender, Set<BenchmarkTarget> targets) {
     unavailable(sender, "benchmark");
   }

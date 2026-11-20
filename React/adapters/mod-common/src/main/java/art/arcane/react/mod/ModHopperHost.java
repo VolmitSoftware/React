@@ -372,7 +372,8 @@ public final class ModHopperHost implements HopperHost {
 
     @Override
     public boolean unloadChunk(UUID worldId, int chunkX, int chunkZ) {
-        return false;
+        ServerLevel level = ModWorldHost.level(server, worldId);
+        return level != null && ModChunkHost.unloadNow(level, chunkX, chunkZ);
     }
 
     private LevelChunk loadedChunk(UUID worldId, int chunkX, int chunkZ) {

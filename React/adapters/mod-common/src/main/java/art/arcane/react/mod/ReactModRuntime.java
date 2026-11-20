@@ -235,8 +235,8 @@ public final class ReactModRuntime {
         ModDropHost.clear();
         ModPlayerHost.clear();
         ModBlockHost.clear();
+        ModChunkHost.clear();
         ModSpawnHost.clear();
-        ModPortalHost.clear();
         ModRedstoneHost.clear();
         ModGrowthHost.clear();
         ModFurnaceHost.clear();

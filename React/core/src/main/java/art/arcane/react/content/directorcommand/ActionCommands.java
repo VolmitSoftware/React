@@ -5,6 +5,7 @@ import art.arcane.react.content.action.ActionCaptureProfile;
 import art.arcane.react.content.action.ActionCollectGarbage;
 import art.arcane.react.content.action.ActionIncidentPlaybook;
 import art.arcane.react.content.action.ActionPrewarmCriticalChunks;
+import art.arcane.react.content.action.ActionHopperNetworkNormalize;
 import art.arcane.react.content.action.ActionPurgeChunks;
 import art.arcane.react.content.action.ActionPurgeEntities;
 import art.arcane.react.content.action.ActionQuarantineHotChunks;
@@ -76,6 +77,23 @@ final class ActionCommands {
     ActionQuarantineHotChunks.Params params = action.getDefaultParams()
         .setMaxChunks(Math.max(1, Math.min(maxChunks, 256)))
         .setMinimumChunkScore(Math.max(0D, minScore));
+
+    if (!world.equals("ALL")) {
+      params.withWorld(worldKey(world));
+    }
+
+    action.create(params, sender).queue();
+  }
+
+  static void hopperNetworkNormalize(VolmitSender sender, int maxChunks, double minHopperUpdates, String world) {
+    Action<ActionHopperNetworkNormalize.Params> action = ReactComponents.action(ActionHopperNetworkNormalize.ID);
+    if (action == null) {
+      ReactLanguage.sendPrefixed(sender, CommandMessages.ACTION_CONTROLLER_UNAVAILABLE);
+      return;
+    }
+    ActionHopperNetworkNormalize.Params params = action.getDefaultParams()
+        .setMaxChunks(Math.max(1, Math.min(maxChunks, 256)))
+        .setMinimumHopperUpdatesPerChunk(Math.max(1D, minHopperUpdates));
 
     if (!world.equals("ALL")) {
       params.withWorld(worldKey(world));

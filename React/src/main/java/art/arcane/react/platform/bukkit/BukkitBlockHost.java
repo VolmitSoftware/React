@@ -10,15 +10,12 @@ import art.arcane.volmlib.nativelib.monitor.FallingBlockTickHook;
 import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
 import art.arcane.volmlib.nativelib.monitor.TickDecision;
-import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.platform.BlockHost;
-import art.arcane.react.platform.ChunkRef;
 import art.arcane.react.platform.GameEntity;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.ListenerPriority;
 import art.arcane.react.platform.Subscription;
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -37,10 +34,7 @@ import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.world.ChunkLoadEvent;
-import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -77,41 +71,6 @@ public class BukkitBlockHost implements BlockHost {
       extend.cancel();
       retract.cancel();
     };
-  }
-
-  @Override
-  public Subscription onChunkLoad(Consumer<ChunkRef> listener) {
-    return BukkitEvents.subscribe(ChunkLoadEvent.class, ListenerPriority.MONITOR, false, event -> listener.accept(ref(event.getChunk())));
-  }
-
-  @Override
-  public Subscription onChunkUnload(Consumer<ChunkRef> listener) {
-    return BukkitEvents.subscribe(ChunkUnloadEvent.class, ListenerPriority.MONITOR, false, event -> listener.accept(ref(event.getChunk())));
-  }
-
-  @Override
-  public Subscription onWorldUnload(Consumer<UUID> listener) {
-    return BukkitEvents.subscribe(WorldUnloadEvent.class, ListenerPriority.MONITOR, true, event -> listener.accept(event.getWorld().getUID()));
-  }
-
-  @Override
-  public List<ChunkRef> nextLoadedChunks(int maximum) {
-    ObserverController observer = React.controller(ObserverController.class);
-    if (observer == null) {
-      return List.of();
-    }
-    List<ObserverController.LoadedChunkTarget> targets = observer.nextLoadedChunkCoordinateBatch(maximum);
-    List<ChunkRef> chunks = new ArrayList<>(targets.size());
-    for (ObserverController.LoadedChunkTarget target : targets) {
-      chunks.add(new ChunkRef(target.worldId(), target.chunkX(), target.chunkZ()));
-    }
-    return chunks;
-  }
-
-  @Override
-  public boolean isChunkLoaded(UUID worldId, int chunkX, int chunkZ) {
-    World world = Bukkit.getWorld(worldId);
-    return world != null && world.isChunkLoaded(chunkX, chunkZ);
   }
 
   @Override
@@ -302,10 +261,6 @@ public class BukkitBlockHost implements BlockHost {
   private static Location bukkit(GameLocation location) {
     World world = location == null ? null : Bukkit.getWorld(location.worldId());
     return world == null ? null : new Location(world, location.x(), location.y(), location.z());
-  }
-
-  private static ChunkRef ref(Chunk chunk) {
-    return new ChunkRef(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ());
   }
 
   private static class Change<T extends org.bukkit.event.block.BlockEvent & Cancellable> implements BlockEvent {

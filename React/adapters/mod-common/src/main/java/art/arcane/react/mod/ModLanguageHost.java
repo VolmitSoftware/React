@@ -40,7 +40,7 @@ final class ModLanguageHost implements LanguageHost {
         @ConfigDoc(value = "Entity priority model used by multiple React subsystems.", impact = "Changing these weights can alter culling, queueing, and visibility behavior.")
         EntityPriority priority = new EntityPriority();
 
-        @ConfigDoc(value = "Enables plugin-gated secret integration features.", impact = "Disabled by default. Enable to allow Iris/Adapt secret bundles when dependencies are present.")
+        @ConfigDoc(value = "Enables mod-gated secret integration features.", impact = "Disabled by default. Enable to allow Iris/Adapt secret bundles when dependencies are present.")
         boolean integrationSecretsEnabled = false;
 
         @ConfigDoc(value = "Default monitor layout shown to players.", impact = "Changes affect the baseline monitoring dashboard composition and sampler grouping.")

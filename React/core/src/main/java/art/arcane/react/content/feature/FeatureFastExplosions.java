@@ -21,6 +21,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.core.controller.ReactComponents;
+import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.ExplosionHost;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.ListenerPriority;
@@ -103,11 +104,12 @@ public class FeatureFastExplosions extends ReactFeature {
     worlds = platform.worldHost().orElse(null);
     ExplosionHost host = explosions;
     if (host != null) {
-      subscriptions = List.of(
+      List<Subscription> opened = new ArrayList<>(List.of(
           host.onTntPrimed(ListenerPriority.HIGHEST, true, this::onPrimed),
-          host.onExplode(ListenerPriority.HIGHEST, true, this::onExplode),
-          host.onWorldUnload(ListenerPriority.HIGHEST, false, this::onWorldUnload)
-      );
+          host.onExplode(ListenerPriority.HIGHEST, true, this::onExplode)
+      ));
+      platform.chunkHost().ifPresent(chunks -> opened.add(chunks.onWorldUnload(ListenerPriority.HIGHEST, false, this::onWorldUnload)));
+      subscriptions = opened;
     }
     retryPendingBatches(MAX_RETRY_BATCHES_PER_TICK);
   }
@@ -179,7 +181,7 @@ public class FeatureFastExplosions extends ReactFeature {
     processExplosion(explosion);
   }
 
-  void onWorldUnload(ExplosionHost.WorldUnload event) {
+  void onWorldUnload(ChunkHost.WorldUnload event) {
     UUID world = event.worldId();
     if (!hasPendingAdmission(world)) {
       return;

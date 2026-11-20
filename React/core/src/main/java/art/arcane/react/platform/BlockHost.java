@@ -5,7 +5,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * Block changes and loaded-chunk lifecycle for features. Block types use React's config naming: the Bukkit
+ * Block changes for features. Block types use React's config naming: the Bukkit
  * {@code Material} constant for vanilla blocks, such as {@code OAK_LEAVES}, and the namespaced id for modded ones.
  * Listeners run on the thread that owns the block.
  */
@@ -48,19 +48,6 @@ public interface BlockHost {
   Subscription onPhysics(ListenerPriority priority, boolean ignoreCancelled, Consumer<PhysicsEvent> listener);
 
   Subscription onPiston(ListenerPriority priority, boolean ignoreCancelled, Consumer<PistonEvent> listener);
-
-  Subscription onChunkLoad(Consumer<ChunkRef> listener);
-
-  Subscription onChunkUnload(Consumer<ChunkRef> listener);
-
-  Subscription onWorldUnload(Consumer<UUID> listener);
-
-  /**
-   * The next loaded chunks from a cursor that walks every loaded chunk in turn, at most {@code maximum} of them.
-   */
-  List<ChunkRef> nextLoadedChunks(int maximum);
-
-  boolean isChunkLoaded(UUID worldId, int chunkX, int chunkZ);
 
   interface FluidFlowEvent extends HostEvent {
     GameLocation from();

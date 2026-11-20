@@ -40,7 +40,7 @@ public interface PlayerHost {
    * An entity about to travel through a portal. Cancelling it keeps the entity where it is; {@link #travel()} later
    * sends it to the same destination.
    */
-  interface Portal {
+  interface Portal extends HostEvent {
     UUID entityId();
 
     boolean isPlayer();
@@ -51,13 +51,14 @@ public interface PlayerHost {
     Object handle();
 
     /**
+     * Where the traveller stands before the trip.
+     */
+    GameLocation origin();
+
+    /**
      * Null when the portal leads nowhere.
      */
     GameLocation destination();
-
-    boolean isCancelled();
-
-    void cancel();
 
     /**
      * True while the traveller can still be sent: an online, living player or a valid, living entity.
@@ -89,7 +90,10 @@ public interface PlayerHost {
 
   Subscription onTeleport(Listener<Teleport> listener);
 
-  Subscription onPortal(Listener<Portal> listener);
+  /**
+   * Portal trips, run in {@link ListenerPriority} order; a listener that ignores cancelled trips skips them.
+   */
+  Subscription onPortal(ListenerPriority priority, boolean ignoreCancelled, Listener<Portal> listener);
 
   Subscription onJoin(Listener<ReactPlayer> listener);
 

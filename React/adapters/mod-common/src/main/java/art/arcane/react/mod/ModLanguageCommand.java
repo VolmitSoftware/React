@@ -1,5 +1,6 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.localization.OwnerWording;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.platform.ReactCommandSender;
 import art.arcane.volmlib.util.localization.BukkitLanguageMessages;
@@ -183,6 +184,7 @@ final class ModLanguageCommand {
             template = key.english();
             resolvedArguments = args;
         }
+        template = OwnerWording.forMods(template);
         for (MessageArgument argument : resolvedArguments.arguments().values()) {
             template = template.replace("{" + argument.name() + "}", String.valueOf(argument.value()));
         }

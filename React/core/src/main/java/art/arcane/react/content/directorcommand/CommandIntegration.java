@@ -1,6 +1,7 @@
 package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.HostCommand;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 
@@ -19,6 +20,7 @@ public class CommandIntegration implements DirectorExecutor {
       description = "Show Iris, Adapt, Wormholes, Gloss, HiddenOre, and BileTools integration health",
       descriptionKey = "command.description.integration.status"
   )
+  @HostCommand("integrationStatus")
   public void status() {
     host().integrationStatus(sender());
   }

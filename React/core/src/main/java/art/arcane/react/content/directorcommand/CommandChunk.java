@@ -20,6 +20,7 @@
 package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.HostCommand;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 
@@ -37,6 +38,7 @@ public class CommandChunk implements DirectorExecutor {
       descriptionKey = "command.description.chunk.sample",
       origin = DirectorOrigin.PLAYER
   )
+  @HostCommand("chunkSample")
   public void sample() {
     host().chunkSample(sender());
   }
@@ -48,6 +50,7 @@ public class CommandChunk implements DirectorExecutor {
       descriptionKey = "command.description.chunk.worst",
       origin = DirectorOrigin.PLAYER
   )
+  @HostCommand("chunkWorst")
   public void worst() {
     host().chunkWorst(sender());
   }

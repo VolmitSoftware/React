@@ -555,7 +555,7 @@ class TweakHopperIndexBatchTest {
             Mockito.when(feature.getPositionIndex()).thenReturn(positionIndex);
             ReactPlatform platform = ReactPlatforms.get();
             setField(tweak, "hoppers", platform.hopperHost().orElseThrow());
-            setField(tweak, "blocks", platform.blockHost().orElseThrow());
+            setField(tweak, "chunkHost", platform.chunkHost().orElseThrow());
             setField(tweak, "worlds", platform.worldHost().orElseThrow());
             setField(tweak, "bridgesAvailable", true);
             setField(tweak, "indexFeature", feature);

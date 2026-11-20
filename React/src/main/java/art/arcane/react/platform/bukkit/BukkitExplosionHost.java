@@ -26,7 +26,6 @@ import org.bukkit.event.Cancellable;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
-import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -69,11 +68,6 @@ public class BukkitExplosionHost implements ExplosionHost {
     if (event.getEntity() instanceof TNTPrimed tnt) {
       listener.accept(new BukkitPrimedTnt(event, tnt));
     }
-  }
-
-  @Override
-  public Subscription onWorldUnload(ListenerPriority priority, boolean ignoreCancelled, Consumer<WorldUnload> listener) {
-    return BukkitEvents.subscribe(WorldUnloadEvent.class, priority, ignoreCancelled, event -> listener.accept(new BukkitWorldUnload(event)));
   }
 
   static Explosion blockExplosion(BlockExplodeEvent event) {
@@ -283,23 +277,6 @@ public class BukkitExplosionHost implements ExplosionHost {
     @Override
     public void setFuseTicks(int ticks) {
       tnt.setFuseTicks(ticks);
-    }
-
-    @Override
-    public boolean isCancelled() {
-      return event.isCancelled();
-    }
-
-    @Override
-    public void cancel() {
-      event.setCancelled(true);
-    }
-  }
-
-  private record BukkitWorldUnload(WorldUnloadEvent event) implements WorldUnload {
-    @Override
-    public UUID worldId() {
-      return event.getWorld().getUID();
     }
 
     @Override

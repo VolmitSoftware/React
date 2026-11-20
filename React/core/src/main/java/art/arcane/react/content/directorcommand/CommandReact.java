@@ -21,6 +21,7 @@ package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.platform.CommandTargets;
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.HostCommand;
 import art.arcane.react.util.director.handlers.ReactRendererHandler;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
@@ -57,6 +58,7 @@ public class CommandReact implements DirectorExecutor {
       description = "Choose your language or the server language",
       descriptionKey = "command.description.language"
   )
+  @HostCommand("language")
   public void language() {
     host().openLanguage(sender());
   }
@@ -68,6 +70,7 @@ public class CommandReact implements DirectorExecutor {
       descriptionKey = "command.description.monitor",
       origin = DirectorOrigin.PLAYER
   )
+  @HostCommand("monitor")
   public void monitor() {
     host().monitor(sender());
   }
@@ -78,6 +81,7 @@ public class CommandReact implements DirectorExecutor {
       descriptionKey = "command.description.map",
       origin = DirectorOrigin.PLAYER
   )
+  @HostCommand("map")
   public void map(
       @Param(
           name = "renderer",
@@ -96,6 +100,7 @@ public class CommandReact implements DirectorExecutor {
       description = "Toggle monitoring-only mode without changing configuration",
       descriptionKey = "command.description.monitoring_only"
   )
+  @HostCommand("monitoringOnly")
   public void monitoringOnly() {
     host().monitoringOnly(sender());
   }

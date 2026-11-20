@@ -1,6 +1,7 @@
 package art.arcane.react.content.directorcommand;
 
 import art.arcane.react.util.director.DirectorExecutor;
+import art.arcane.react.util.director.HostCommand;
 import art.arcane.volmlib.util.director.DirectorOrigin;
 import art.arcane.volmlib.util.director.annotations.Director;
 
@@ -19,6 +20,7 @@ public final class CommandPluginApi implements DirectorExecutor {
       description = "Show loaded Plugin API packs and validation errors",
       descriptionKey = "command.description.plugin_api.status"
   )
+  @HostCommand("pluginApiStatus")
   public void status() {
     host().pluginApiStatus(sender());
   }
@@ -30,6 +32,7 @@ public final class CommandPluginApi implements DirectorExecutor {
       description = "Rescan the Plugin API pack folder",
       descriptionKey = "command.description.plugin_api.reload"
   )
+  @HostCommand("pluginApiReload")
   public void reload() {
     host().pluginApiReload(sender());
   }
