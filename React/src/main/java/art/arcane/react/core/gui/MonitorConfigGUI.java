@@ -67,7 +67,7 @@ public class MonitorConfigGUI {
           continue;
         }
         window.setElement(w, h, new UIElement("sample-" + i.getId())
-            .setMaterial(new MaterialBlock(ReactGuiTaxonomy.iconForId(i.getId())))
+            .setMaterial(new MaterialBlock(Guis.icon(ReactGuiTaxonomy.iconForId(i.getId()))))
             .setName(i.getName())
             .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_GROUP, MessageArgument.untrusted("group", ReactGuiTaxonomy.groupLabel(i.getId()))))
             .addLore(i.format(i.sample()))

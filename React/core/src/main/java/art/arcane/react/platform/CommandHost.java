@@ -76,20 +76,12 @@ public interface CommandHost {
     unavailable(sender, "monitoring-only");
   }
 
-  default void captureProfile(VolmitSender sender, int seconds) {
-    unavailable(sender, "action capture-profile");
-  }
-
   default void purgeEntities(VolmitSender sender, int radius, String world) {
     unavailable(sender, "action purge-entities");
   }
 
   default void purgeChunks(VolmitSender sender, String world) {
     unavailable(sender, "action purge-chunks");
-  }
-
-  default void collectGarbage(VolmitSender sender) {
-    unavailable(sender, "action collect-garbage");
   }
 
   default void quarantineHotChunks(VolmitSender sender, int maxChunks, double minScore, String world) {
@@ -110,10 +102,6 @@ public interface CommandHost {
 
   default void incidentPlaybook(VolmitSender sender, boolean includeGarbageCollection, int tier, String world) {
     unavailable(sender, "action incident-playbook");
-  }
-
-  default void actionAudit(VolmitSender sender) {
-    unavailable(sender, "action audit");
   }
 
   default void benchmark(VolmitSender sender, Set<BenchmarkTarget> targets) {

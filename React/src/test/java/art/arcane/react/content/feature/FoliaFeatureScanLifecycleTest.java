@@ -539,7 +539,9 @@ class FoliaFeatureScanLifecycleTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<ReactEntity> entityState = Mockito.mockStatic(ReactEntity.class);
-         MockedStatic<ReactProtection> protection = Mockito.mockStatic(ReactProtection.class)) {
+         MockedStatic<ReactProtection> protection = Mockito.mockStatic(ReactProtection.class);
+         MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(() -> Bukkit.getWorld(Mockito.any(UUID.class))).thenReturn(world);
       react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Entity.class))).thenReturn(true);

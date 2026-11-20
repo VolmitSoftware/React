@@ -6,6 +6,11 @@ import art.arcane.react.core.controller.WebController;
 import art.arcane.react.core.controller.EventController;
 import art.arcane.react.platform.CapabilityRefusal;
 import art.arcane.react.platform.CommandHost;
+import art.arcane.react.platform.ComponentHost;
+import art.arcane.react.platform.EntityHost;
+import art.arcane.react.platform.HopperHost;
+import art.arcane.react.platform.ViewDistanceHost;
+import art.arcane.react.platform.WorldHost;
 import art.arcane.react.platform.LanguageHost;
 import art.arcane.react.platform.ReactCommandSender;
 import art.arcane.react.platform.bukkit.command.BukkitCommandHost;
@@ -48,6 +53,11 @@ public final class BukkitReactPlatform implements ReactPlatform {
   private final RuntimeStatsHost runtimeStatsHost = new BukkitRuntimeStatsHost();
   private final CommandHost commandHost = new BukkitCommandHost();
   private final LanguageHost languageHost = new BukkitLanguageHost();
+  private final ComponentHost componentHost = new BukkitComponentHost();
+  private final WorldHost worldHost = new BukkitWorldHost();
+  private final EntityHost entityHost = new BukkitEntityHost();
+  private final HopperHost hopperHost = new BukkitHopperHost();
+  private final ViewDistanceHost viewDistanceHost = new BukkitViewDistanceHost();
 
   public static BukkitReactPlatform instance() {
     return INSTANCE;
@@ -228,6 +238,31 @@ public final class BukkitReactPlatform implements ReactPlatform {
       return Optional.of(sender);
     }
     return handle instanceof CommandSender sender ? Optional.of(new BukkitCommandSender(sender)) : Optional.empty();
+  }
+
+  @Override
+  public Optional<ComponentHost> componentHost() {
+    return Optional.of(componentHost);
+  }
+
+  @Override
+  public Optional<WorldHost> worldHost() {
+    return Optional.of(worldHost);
+  }
+
+  @Override
+  public Optional<EntityHost> entityHost() {
+    return Optional.of(entityHost);
+  }
+
+  @Override
+  public Optional<HopperHost> hopperHost() {
+    return Optional.of(hopperHost);
+  }
+
+  @Override
+  public Optional<ViewDistanceHost> viewDistanceHost() {
+    return Optional.of(viewDistanceHost);
   }
 
   @Override

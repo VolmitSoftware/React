@@ -1,8 +1,22 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.action.Action;
+import art.arcane.react.api.feature.Feature;
+import art.arcane.react.api.tweak.Tweak;
+import art.arcane.react.api.web.ActionBackend;
+import art.arcane.react.api.web.ActionParamSerializer;
+import art.arcane.react.api.web.ControlBackend;
+import art.arcane.react.api.web.ControlSerializer;
+import art.arcane.react.api.web.RegistryActionBackend;
+import art.arcane.react.api.web.RegistryControlBackend;
 import art.arcane.react.api.web.heatmap.ChunkGridExporter;
 import art.arcane.react.api.web.heatmap.HeatmapChunkSampler;
 import art.arcane.react.api.web.WebConfiguration;
+import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.core.controller.FeatureController;
+import art.arcane.react.core.controller.ReactComponents;
+import art.arcane.react.core.controller.TweakController;
+import art.arcane.react.platform.ComponentHost;
 import art.arcane.react.platform.WebHost;
 import art.arcane.react.platform.WebMetricsSource;
 import art.arcane.react.util.project.config.TomlFiles;
@@ -78,5 +92,48 @@ final class ModWebHost implements WebHost {
     @Override
     public String serverVersion() {
         return loader + " " + server.getServerVersion();
+    }
+
+    @Override
+    public ControlBackend features() {
+        return new RegistryControlBackend<Feature>(
+                "feature",
+                () -> {
+                    FeatureController controller = ReactComponents.features();
+                    return controller == null || controller.getFeatures() == null ? List.of() : controller.getFeatures().all();
+                },
+                ReactComponents::feature,
+                Feature::isEnabled,
+                new ControlSerializer(),
+                ModWebHost::applyConfigValue);
+    }
+
+    @Override
+    public ControlBackend tweaks() {
+        return new RegistryControlBackend<Tweak>(
+                "tweak",
+                () -> {
+                    TweakController controller = ReactComponents.tweaks();
+                    return controller == null || controller.getTweaks() == null ? List.of() : controller.getTweaks().all();
+                },
+                ReactComponents::tweak,
+                Tweak::isEnabled,
+                new ControlSerializer(),
+                ModWebHost::applyConfigValue);
+    }
+
+    @Override
+    public ActionBackend actions() {
+        return new RegistryActionBackend(
+                () -> {
+                    ActionController controller = ReactComponents.actions();
+                    return controller == null || controller.getActions() == null ? List.<Action<?>>of() : controller.getActions().all();
+                },
+                ReactComponents::action,
+                new ActionParamSerializer());
+    }
+
+    private static boolean applyConfigValue(String path, Object value) {
+        return ReactComponents.host().map((ComponentHost host) -> host.applyConfigValue(path, value)).orElse(false);
     }
 }

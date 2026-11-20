@@ -112,11 +112,6 @@ public final class BukkitCommandHost implements CommandHost {
   }
 
   @Override
-  public void captureProfile(VolmitSender sender, int seconds) {
-    action.captureProfile(sender, seconds);
-  }
-
-  @Override
   public void purgeEntities(VolmitSender sender, int radius, String world) {
     action.purgeEntities(sender, radius, world);
   }
@@ -124,11 +119,6 @@ public final class BukkitCommandHost implements CommandHost {
   @Override
   public void purgeChunks(VolmitSender sender, String world) {
     action.purgeChunks(sender, world);
-  }
-
-  @Override
-  public void collectGarbage(VolmitSender sender) {
-    action.collectGarbage(sender);
   }
 
   @Override
@@ -154,11 +144,6 @@ public final class BukkitCommandHost implements CommandHost {
   @Override
   public void incidentPlaybook(VolmitSender sender, boolean includeGarbageCollection, int tier, String world) {
     action.incidentPlaybook(sender, includeGarbageCollection, tier, world);
-  }
-
-  @Override
-  public void actionAudit(VolmitSender sender) {
-    action.audit(sender);
   }
 
   @Override

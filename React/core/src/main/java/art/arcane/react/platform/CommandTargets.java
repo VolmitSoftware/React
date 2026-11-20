@@ -48,4 +48,16 @@ public final class CommandTargets {
       return id;
     }
   }
+
+  public record Feature(String id) {
+    public Feature {
+      Objects.requireNonNull(id, "id");
+    }
+  }
+
+  public record Tweak(String id) {
+    public Tweak {
+      Objects.requireNonNull(id, "id");
+    }
+  }
 }

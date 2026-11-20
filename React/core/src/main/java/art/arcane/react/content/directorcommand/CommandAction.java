@@ -47,7 +47,7 @@ public class CommandAction implements DirectorExecutor {
       )
       int seconds
   ) {
-    host().captureProfile(sender(), seconds);
+    ActionCommands.captureProfile(sender(), seconds);
   }
 
   @Director(
@@ -106,7 +106,7 @@ public class CommandAction implements DirectorExecutor {
       descriptionKey = "command.description.action.collect_garbage"
   )
   public void collectGarbage() {
-    host().collectGarbage(sender());
+    ActionCommands.collectGarbage(sender());
   }
 
   @Director(
@@ -306,6 +306,6 @@ public class CommandAction implements DirectorExecutor {
       descriptionKey = "command.description.action.audit"
   )
   public void audit() {
-    host().actionAudit(sender());
+    ActionCommands.audit(sender());
   }
 }

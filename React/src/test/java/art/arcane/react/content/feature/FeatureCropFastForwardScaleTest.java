@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import art.arcane.react.core.controller.SampleController;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -191,6 +192,9 @@ class FeatureCropFastForwardScaleTest {
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
       stubControllers(react, bukkit);
       react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(tickTime);
+      SampleController samplers = Mockito.mock(SampleController.class);
+      Mockito.when(samplers.getSampler(SamplerTickTime.ID)).thenReturn(tickTime);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samplers);
       scheduling.when(J::isFoliaThreading).thenReturn(false);
 
       feature.onTick();

@@ -193,7 +193,7 @@ public class FeatureItemBackpressure extends ReactFeature {
       }
 
       World world = worlds.get((worldStart + worldOffset) % worlds.size());
-      if (!includeAllWorlds && !PerWorldPressure.get(world).isPressure()) {
+      if (!includeAllWorlds && !PerWorldPressure.get(world.getUID()).isPressure()) {
         continue;
       }
 
@@ -299,7 +299,7 @@ public class FeatureItemBackpressure extends ReactFeature {
       return;
     }
 
-    if (!includeAllWorlds && !PerWorldPressure.get(item.getWorld()).isPressure()) {
+    if (!includeAllWorlds && !PerWorldPressure.get(item.getWorld().getUID()).isPressure()) {
       return;
     }
 

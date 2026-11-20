@@ -21,6 +21,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.FeatureController;
@@ -440,7 +441,7 @@ public class FeatureHopperChainCoalescing extends ReactFeature implements Listen
       return true;
     }
     FeatureHopperTokenBucket tokenBucket = hopperTokenBucket;
-    return tokenBucket == null || tokenBucket.tryConsume(sourceLocation);
+    return tokenBucket == null || tokenBucket.tryConsume(BukkitGameEntity.location(sourceLocation));
   }
 
   private boolean requiresBucketPermit() {

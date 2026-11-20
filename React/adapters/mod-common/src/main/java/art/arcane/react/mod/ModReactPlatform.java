@@ -5,6 +5,9 @@ import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.telemetry.RuntimeTelemetry;
 import art.arcane.react.platform.CapabilityRefusal;
 import art.arcane.react.platform.CommandHost;
+import art.arcane.react.platform.ComponentHost;
+import art.arcane.react.platform.EntityHost;
+import art.arcane.react.platform.HopperHost;
 import art.arcane.react.platform.LanguageHost;
 import art.arcane.react.platform.PlatformCapability;
 import art.arcane.react.platform.PlatformKind;
@@ -18,6 +21,8 @@ import art.arcane.react.platform.RegistryHost;
 import art.arcane.react.platform.RuntimeStatsHost;
 import art.arcane.react.platform.SamplerHost;
 import art.arcane.react.platform.TickStatsHost;
+import art.arcane.react.platform.ViewDistanceHost;
+import art.arcane.react.platform.WorldHost;
 import art.arcane.react.platform.WorldStatsHost;
 import art.arcane.react.platform.cost.OwnerCostProbe;
 import net.minecraft.SharedConstants;
@@ -54,6 +59,12 @@ public final class ModReactPlatform implements ReactPlatform {
     private final OwnerCostProbe costProbe;
     private final ModOwnerCost ownerCost;
     private final Supplier<ReactWebServer> webServer;
+    private final ModComponentHost componentHost;
+    private final ModEntityKiller entityKiller = new ModEntityKiller();
+    private final WorldHost worldHost;
+    private final EntityHost entityHost;
+    private final HopperHost hopperHost = new ModHopperHost();
+    private final ViewDistanceHost viewDistanceHost;
 
     ModReactPlatform(String loader, MinecraftServer server, File dataFolder, Logger logger, ModTicks ticks, ExecutorService async,
                      List<Runnable> startupTasks, LanguageHost languageHost, OwnerCostProbe costProbe, Supplier<SampleController> samples,
@@ -77,6 +88,18 @@ public final class ModReactPlatform implements ReactPlatform {
         this.playerStatsHost = new ModPlayerStatsHost(server);
         this.ownerCost = new ModOwnerCost(costProbe, samples);
         this.runtimeStatsHost = new ModRuntimeStatsHost(telemetry, modSamplerHost.chunks(), ownerCost);
+        this.componentHost = new ModComponentHost(ticks, async, telemetry.jobs(), scheduler::isReady, logger, registryHost);
+        this.worldHost = new ModWorldHost(server);
+        this.entityHost = new ModEntityHost(server, entityKiller);
+        this.viewDistanceHost = new ModViewDistanceHost(server);
+    }
+
+    ModComponentHost components() {
+        return componentHost;
+    }
+
+    ModEntityKiller entityKiller() {
+        return entityKiller;
     }
 
     ModChunkSamples chunkSamples() {
@@ -227,6 +250,32 @@ public final class ModReactPlatform implements ReactPlatform {
     @Override
     public Optional<LanguageHost> languageHost() {
         return Optional.of(languageHost);
+    }
+
+    // Features, tweaks and actions
+    @Override
+    public Optional<ComponentHost> componentHost() {
+        return Optional.of(componentHost);
+    }
+
+    @Override
+    public Optional<WorldHost> worldHost() {
+        return Optional.of(worldHost);
+    }
+
+    @Override
+    public Optional<EntityHost> entityHost() {
+        return Optional.of(entityHost);
+    }
+
+    @Override
+    public Optional<HopperHost> hopperHost() {
+        return Optional.of(hopperHost);
+    }
+
+    @Override
+    public Optional<ViewDistanceHost> viewDistanceHost() {
+        return Optional.of(viewDistanceHost);
     }
 
     // Owner cost

@@ -343,7 +343,7 @@ public class FeaturePathfinderBudget extends ReactFeature implements FeatureInte
 
     try {
       BudgetClaim claim = reconcileClaimState(mob, generation);
-      boolean engagedLoad = lastTickMs >= engageTickTimeMs || PerWorldPressure.get(mob.getWorld()).isPressure();
+      boolean engagedLoad = lastTickMs >= engageTickTimeMs || PerWorldPressure.get(mob.getWorld().getUID()).isPressure();
       if (!engagedLoad || React.hasNearbyPlayer(mob.getLocation(), fullBudgetWithinDistance)) {
         if (claim != null || hasMarker(mob)) {
           restoreBudget(mob, generation);

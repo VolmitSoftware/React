@@ -488,7 +488,7 @@ public final class ReactConfigGUI {
       int total = tally[1];
 
       UIElement element = new UIElement("cfg-cat-" + category.key())
-          .setMaterial(new MaterialBlock(category.icon()))
+          .setMaterial(new MaterialBlock(Guis.icon(category.icon())))
           .setName(C.WHITE + category.label());
       element.addLore(C.GRAY + category.description());
       element.addLore(C.GREEN + ReactLanguage.plain(
@@ -599,7 +599,7 @@ public final class ReactConfigGUI {
         entries.add(new SectionIndexEntry(
             ROOT_FEATURE + "." + feature.getId(),
             C.stripColor(feature.getName()),
-            ReactGuiTaxonomy.iconForId(feature.getId()),
+            Guis.icon(ReactGuiTaxonomy.iconForId(feature.getId())),
             ReactLanguage.plain(
                 GuiMessages.CONFIG_LORE_STATUS_PATH,
                 MessageArgument.untrusted("status", configurationStatus(active)),
@@ -623,7 +623,7 @@ public final class ReactConfigGUI {
         entries.add(new SectionIndexEntry(
             ROOT_TWEAK + "." + tweak.getId(),
             C.stripColor(tweak.getName()),
-            ReactGuiTaxonomy.iconForId(tweak.getId()),
+            Guis.icon(ReactGuiTaxonomy.iconForId(tweak.getId())),
             ReactLanguage.plain(
                 GuiMessages.CONFIG_LORE_STATUS_PATH,
                 MessageArgument.untrusted("status", configurationStatus(active)),
@@ -864,7 +864,7 @@ public final class ReactConfigGUI {
         entries.add(new SectionIndexEntry(
             ROOT_FEATURE + "." + feature.getId(),
             C.stripColor(feature.getName()),
-            ReactGuiTaxonomy.iconForId(feature.getId()),
+            Guis.icon(ReactGuiTaxonomy.iconForId(feature.getId())),
             ReactLanguage.plain(
                 GuiMessages.CONFIG_LORE_STATUS_GROUP_PATH,
                 MessageArgument.untrusted("status", configurationStatus(active)),
@@ -904,7 +904,7 @@ public final class ReactConfigGUI {
         entries.add(new SectionIndexEntry(
             ROOT_TWEAK + "." + tweak.getId(),
             C.stripColor(tweak.getName()),
-            ReactGuiTaxonomy.iconForId(tweak.getId()),
+            Guis.icon(ReactGuiTaxonomy.iconForId(tweak.getId())),
             ReactLanguage.plain(
                 GuiMessages.CONFIG_LORE_STATUS_GROUP_PATH,
                 MessageArgument.untrusted("status", configurationStatus(active)),
@@ -943,7 +943,7 @@ public final class ReactConfigGUI {
         entries.add(new SectionIndexEntry(
             ROOT_ACTION + "." + action.getId(),
             C.stripColor(action.getName()),
-            ReactGuiTaxonomy.iconForId(action.getId()),
+            Guis.icon(ReactGuiTaxonomy.iconForId(action.getId())),
             ReactLanguage.plain(
                 GuiMessages.CONFIG_LORE_GROUP_PATH,
                 MessageArgument.untrusted("group", ReactGuiTaxonomy.groupLabel(action.getId())),
@@ -978,7 +978,7 @@ public final class ReactConfigGUI {
         entries.add(new SectionIndexEntry(
             ROOT_SAMPLER + "." + sampler.getId(),
             C.stripColor(sampler.getName()),
-            ReactGuiTaxonomy.iconForId(sampler.getId()),
+            Guis.icon(ReactGuiTaxonomy.iconForId(sampler.getId())),
             ReactLanguage.plain(
                 GuiMessages.CONFIG_LORE_GROUP_PATH,
                 MessageArgument.untrusted("group", ReactGuiTaxonomy.groupLabel(sampler.getId())),

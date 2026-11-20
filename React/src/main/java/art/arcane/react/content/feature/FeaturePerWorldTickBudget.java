@@ -165,7 +165,7 @@ public class FeaturePerWorldTickBudget extends ReactFeature {
       WorldState state = stateByWorld.computeIfAbsent(worldId, ignored -> new WorldState());
       double meanMs = SamplerPerWorldTickTime.meanMsFor(world == null ? null : world.getUID());
       PerWorldPressure.Mode next = step(state, meanMs, effectiveBudgetMsFor(worldKey), effectivePanicMsFor(worldKey), effectiveReleaseMsFor(worldKey));
-      ReactScopedPressure.publish(world, new PerWorldPressure(next, meanMs));
+      ReactScopedPressure.publish(worldId, new PerWorldPressure(next, meanMs));
     }
 
     Iterator<Map.Entry<UUID, WorldState>> iterator = stateByWorld.entrySet().iterator();
@@ -177,7 +177,7 @@ public class FeaturePerWorldTickBudget extends ReactFeature {
       iterator.remove();
       World stale = Bukkit.getWorld(entry.getKey());
       if (stale != null) {
-        ReactScopedPressure.clear(stale);
+        ReactScopedPressure.clear(stale.getUID());
       }
     }
   }

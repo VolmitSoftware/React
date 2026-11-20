@@ -5,6 +5,8 @@ import art.arcane.volmlib.nativelib.monitor.HopperTickHook;
 import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
 import art.arcane.volmlib.nativelib.monitor.TickDecision;
+import art.arcane.react.platform.GameLocation;
+import art.arcane.react.platform.WorldHost;
 import art.arcane.react.util.common.scheduling.J;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.bukkit.Location;
@@ -40,9 +42,7 @@ class HopperChainTokenBucketTest {
     setDouble(bucket, "bucketCapacity", 1D);
     setDouble(bucket, "refillPerSecond", 0D);
     setDouble(bucket, "costPerMove", 1D);
-    World world = Mockito.mock(World.class);
-    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
-    Location location = new Location(world, 15D, 64D, -1D);
+    GameLocation location = new GameLocation(UUID.randomUUID(), 15D, 64D, -1D);
 
     bucket.onActivate();
 
@@ -61,16 +61,14 @@ class HopperChainTokenBucketTest {
     setDouble(bucket, "bucketCapacity", 1D);
     setDouble(bucket, "refillPerSecond", 0D);
     setDouble(bucket, "costPerMove", 1D);
-    World world = Mockito.mock(World.class);
-    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
-    Location location = new Location(world, 32D, 70D, 32D);
+    GameLocation location = new GameLocation(UUID.randomUUID(), 32D, 70D, 32D);
     bucket.onActivate();
+    WorldHost worlds = Mockito.mock(WorldHost.class);
+    Mockito.when(worlds.anyPlayerNear(location, 16D)).thenReturn(true);
+    setObject(bucket, "worlds", worlds);
 
-    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
-      react.when(() -> React.hasNearbyPlayer(location, 16D)).thenReturn(true);
-      assertTrue(bucket.tryConsume(location));
-      assertTrue(bucket.tryConsume(location));
-    }
+    assertTrue(bucket.tryConsume(location));
+    assertTrue(bucket.tryConsume(location));
 
     setBoolean(bucket, "bypassWhenNearbyPlayers", false);
     assertTrue(bucket.tryConsume(location));
@@ -99,7 +97,7 @@ class HopperChainTokenBucketTest {
 
       FeatureHopperTokenBucket bucket = Mockito.mock(FeatureHopperTokenBucket.class);
       Mockito.when(bucket.isEnforcing()).thenReturn(true);
-      Mockito.when(bucket.tryConsume(Mockito.any(Location.class))).thenReturn(false);
+      Mockito.when(bucket.tryConsume(Mockito.any(GameLocation.class))).thenReturn(false);
       setObject(feature, "hopperTokenBucket", bucket);
 
       World world = Mockito.mock(World.class);
@@ -126,7 +124,7 @@ class HopperChainTokenBucketTest {
 
       applyChainTransfer(feature, world, chain);
 
-      Mockito.verify(bucket).tryConsume(Mockito.any(Location.class));
+      Mockito.verify(bucket).tryConsume(Mockito.any(GameLocation.class));
       Mockito.verify(recipientInventory, Mockito.never()).addItem(Mockito.any(ItemStack[].class));
       Mockito.verify(headInventory, Mockito.never()).setStorageContents(Mockito.any(ItemStack[].class));
       assertEquals(TickDecision.RUN_VANILLA, installedHook.get().decide(world, 1, 64, 0));

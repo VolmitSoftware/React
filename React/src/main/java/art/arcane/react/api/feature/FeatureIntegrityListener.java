@@ -21,7 +21,5 @@ package art.arcane.react.api.feature;
 
 import org.bukkit.event.Listener;
 
-public interface FeatureIntegrityListener extends Listener {
-  default void onIntegrityTick() {
-  }
+public interface FeatureIntegrityListener extends FeatureIntegrity, Listener {
 }

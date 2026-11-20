@@ -101,7 +101,7 @@ public class SamplerGUI {
         int position = window.getPosition(rp);
         rp++;
         window.setElement(position, row, new UIElement("hub-group-" + group.order())
-            .setMaterial(new MaterialBlock(group.icon()))
+            .setMaterial(new MaterialBlock(Guis.icon(group.icon())))
             .setName(group.label())
             .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_HUB_GROUP_COUNT, MessageArgument.untrusted("count", count)))
             .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_HUB_OPEN_GROUP))
@@ -152,7 +152,7 @@ public class SamplerGUI {
         int w = window.getPosition(rp);
         rp++;
         window.setElement(w, h, new UIElement("sample-" + i.getId())
-            .setMaterial(new MaterialBlock(ReactGuiTaxonomy.iconForId(i.getId())))
+            .setMaterial(new MaterialBlock(Guis.icon(ReactGuiTaxonomy.iconForId(i.getId()))))
             .setName(MapMessages.localizedSamplerName(i.getId(), i.getName()))
             .addLore(ReactLanguage.plain(GuiMessages.SAMPLER_GROUP, MessageArgument.untrusted("group", ReactGuiTaxonomy.groupLabel(i.getId()))))
             .addLore(i.format(i.sample()))

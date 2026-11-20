@@ -312,7 +312,7 @@ public class FeatureDynamicActivationRange extends ReactFeature implements Liste
     }
 
     double effectiveRange = activationRange;
-    PerWorldPressure pressure = PerWorldPressure.get(entity.getWorld());
+    PerWorldPressure pressure = PerWorldPressure.get(entity.getWorld().getUID());
     if (pressure.isPanic()) {
       effectiveRange = minimumActivationRange;
     } else if (pressure.isPressure()) {

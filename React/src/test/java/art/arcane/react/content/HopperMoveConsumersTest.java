@@ -1,5 +1,8 @@
 package art.arcane.react.content;
 
+import art.arcane.react.api.sampler.SamplerHosts;
+import art.arcane.react.platform.ReactPlatforms;
+import art.arcane.react.platform.bukkit.BukkitHopperHost;
 import art.arcane.react.platform.bukkit.BukkitSamplerEventBridge;
 
 import art.arcane.react.React;
@@ -40,14 +43,18 @@ class HopperMoveConsumersTest {
     set(bucket, "bypassWhenNearbyPlayers", false);
     set(bucket, "bucketCapacity", 1D);
     set(bucket, "refillPerSecond", 0D);
-    bucket.onActivate();
-
+    BukkitHopperHost host = hopperHost();
     InventoryMoveItemEvent first = FakeInventories.move(chest, hopper);
     InventoryMoveItemEvent second = FakeInventories.move(chest, hopper);
     InventoryMoveItemEvent chestOnly = FakeInventories.move(chest, otherChest);
-    bucket.on(first);
-    bucket.on(second);
-    bucket.on(chestOnly);
+    bucket.onActivate();
+    try {
+      host.on(first);
+      host.on(second);
+      host.on(chestOnly);
+    } finally {
+      bucket.onDeactivate();
+    }
 
     Mockito.verify(chest, Mockito.never()).getHolder();
     Mockito.verify(hopper, Mockito.never()).getHolder();
@@ -93,11 +100,17 @@ class HopperMoveConsumersTest {
     InventoryMoveItemEvent outOfHopper = FakeInventories.move(hopper, chest);
     InventoryMoveItemEvent intoMinecart = FakeInventories.move(chest, minecart);
 
-    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
-      react.when(() -> React.sampler(SamplerHopperEventSpan.class)).thenReturn(span);
-      tweak.on(intoHopper);
-      tweak.on(outOfHopper);
-      tweak.on(intoMinecart);
+    BukkitHopperHost host = hopperHost();
+    try (MockedStatic<SamplerHosts> samplers = Mockito.mockStatic(SamplerHosts.class)) {
+      samplers.when(() -> SamplerHosts.sampler(SamplerHopperEventSpan.ID)).thenReturn(span);
+      tweak.onActivate();
+      try {
+        host.on(intoHopper);
+        host.on(outOfHopper);
+        host.on(intoMinecart);
+      } finally {
+        tweak.onDeactivate();
+      }
     }
 
     Mockito.verify(chest, Mockito.never()).getHolder();
@@ -137,6 +150,10 @@ class HopperMoveConsumersTest {
     Mockito.verify(hopper, Mockito.never()).getHolder();
     assertTrue(span.onSample() > 0D);
     span.stop();
+  }
+
+  private static BukkitHopperHost hopperHost() {
+    return (BukkitHopperHost) ReactPlatforms.get().hopperHost().orElseThrow();
   }
 
   private static void set(Object target, String name, Object value) throws Exception {

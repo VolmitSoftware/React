@@ -26,6 +26,11 @@ import org.bukkit.inventory.meta.LeatherArmorMeta;
 import java.awt.*;
 
 public class Guis {
+  public static Material icon(String key) {
+    Material material = key == null ? null : Material.matchMaterial(key);
+    return material == null ? Material.CHEST : material;
+  }
+
   public static ItemStack generateColorIcon(String title, Color color) {
     ItemStack is = new ItemStack(Material.LEATHER_CHESTPLATE);
     LeatherArmorMeta meta = (LeatherArmorMeta) is.getItemMeta();

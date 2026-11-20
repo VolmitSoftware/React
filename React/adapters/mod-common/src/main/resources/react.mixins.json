@@ -13,6 +13,7 @@
     "EntityTypeMixin",
     "FlowingFluidHooks",
     "HopperHooks",
+    "HopperMoveHooks",
     "ItemFrameHooks",
     "LevelAccess",
     "LevelChunkHooks",

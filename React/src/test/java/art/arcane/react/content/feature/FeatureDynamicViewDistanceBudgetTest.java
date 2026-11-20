@@ -2,6 +2,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.sampler.SamplerHosts;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.core.controller.NearbyPlayerIndexController.PlayerViewSnapshot;
@@ -132,6 +133,7 @@ class FeatureDynamicViewDistanceBudgetTest {
     private final MockedStatic<React> react = Mockito.mockStatic(React.class);
     private final MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
     private final MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
+    private final MockedStatic<SamplerHosts> samplers = Mockito.mockStatic(SamplerHosts.class);
     private final FeatureDynamicViewDistance feature = new FeatureDynamicViewDistance();
     private final NearbyPlayerIndexController index = Mockito.mock(NearbyPlayerIndexController.class);
     private final Sampler sampler = Mockito.mock(Sampler.class);
@@ -161,7 +163,7 @@ class FeatureDynamicViewDistanceBudgetTest {
       Mockito.when(sampler.sample()).thenReturn(20D);
       Mockito.when(sampler.isSampleAvailable()).thenReturn(true);
       react.when(() -> React.controller(NearbyPlayerIndexController.class)).thenReturn(index);
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      samplers.when(() -> SamplerHosts.sampler(SamplerTickTime.ID)).thenReturn(sampler);
       bukkit.when(Bukkit::getServer).thenReturn(server);
       bukkit.when(Bukkit::getWorlds).thenReturn(List.of(world));
       bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
@@ -187,6 +189,7 @@ class FeatureDynamicViewDistanceBudgetTest {
 
     @Override
     public void close() {
+      samplers.close();
       scheduling.close();
       bukkit.close();
       react.close();

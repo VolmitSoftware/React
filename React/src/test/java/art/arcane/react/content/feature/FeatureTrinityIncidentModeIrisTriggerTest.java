@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import art.arcane.react.core.controller.SampleController;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -83,6 +84,9 @@ class FeatureTrinityIncidentModeIrisTriggerTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(tickSampler);
+      SampleController samplers = Mockito.mock(SampleController.class);
+      Mockito.when(samplers.getSampler(SamplerTickTime.ID)).thenReturn(tickSampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samplers);
       react.when(() -> React.controller(IntegrationController.class)).thenReturn(integration);
       react.when(() -> React.controller(IncidentController.class)).thenReturn(incidents);
       feature.onActivate();

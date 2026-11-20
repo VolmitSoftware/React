@@ -3,7 +3,10 @@ package art.arcane.react.mod;
 import art.arcane.react.api.web.HistoryWebMetricsSource;
 import art.arcane.react.api.web.MetricsSerializer;
 import art.arcane.react.api.web.ReactWebServer;
+import art.arcane.react.core.controller.ActionController;
+import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.core.telemetry.RuntimeTelemetry;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.mod.cost.ModCostProbe;
@@ -53,7 +56,28 @@ public final class ReactModRuntime {
     private volatile Running running;
 
     private record Running(ModReactPlatform platform, ModTicks ticks, ExecutorService async, SampleController samples,
-                           ReactWebServer web, ModMaps maps, RuntimeTelemetry telemetry) {
+                           ReactWebServer web, ModMaps maps, RuntimeTelemetry telemetry, Components components) {
+    }
+
+    /** React's optimisation layer: features, tweaks and actions, started after the samplers they read. */
+    private record Components(FeatureController features, TweakController tweaks, ActionController actions) {
+        void start() {
+            features.start();
+            tweaks.start();
+            actions.start();
+        }
+
+        void postStart() {
+            features.postStart();
+            tweaks.postStart();
+            actions.postStart();
+        }
+
+        void stop() {
+            actions.stop();
+            tweaks.stop();
+            features.stop();
+        }
     }
 
     public ReactModRuntime(String platform, Path configDirectory, ModCostProbe costProbe) {
@@ -99,18 +123,22 @@ public final class ReactModRuntime {
             return;
         }
         web[0] = new ReactWebServer(new ModWebHost(server, dataFolder, platform, metrics, maps, LOGGER::info));
-        running = new Running(modPlatform, ticks, async, samples, web[0], maps, telemetry);
+        Components components = new Components(new FeatureController(), new TweakController(), new ActionController());
+        running = new Running(modPlatform, ticks, async, samples, web[0], maps, telemetry, components);
         costProbe.start(server, ticks::later);
         ticks.every(costProbe::tick);
         try {
             ReactLanguage.initialize();
             telemetry.startJobs();
             samples.start();
+            components.start();
             for (Runnable task : startupTasks) {
                 task.run();
             }
             startupTasks.clear();
             samples.postStart();
+            ticks.every(modPlatform.entityKiller()::tick);
+            components.postStart();
             telemetry.start(samples);
             maps.start(modPlatform);
             ticks.every(maps::tick);
@@ -158,6 +186,14 @@ public final class ReactModRuntime {
         if (active == null) {
             return;
         }
+        active.platform().components().disable();
+        try {
+            active.components().stop();
+        } catch (RuntimeException failure) {
+            LOGGER.warn("React features did not stop cleanly", failure);
+        }
+        active.platform().entityKiller().stopAll();
+        ModHopperHost.clear();
         active.platform().modScheduler().deactivate();
         active.platform().ownerCost().stop();
         costProbe.stop();

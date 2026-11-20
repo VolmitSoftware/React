@@ -2,6 +2,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.sampler.SamplerHosts;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
@@ -66,8 +67,9 @@ class FeatureDynamicViewDistanceLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
-         MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+         MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
+         MockedStatic<SamplerHosts> samplers = Mockito.mockStatic(SamplerHosts.class)) {
+      samplers.when(() -> SamplerHosts.sampler(SamplerTickTime.ID)).thenReturn(sampler);
       scheduling.when(J::isPrimaryThread).thenReturn(true);
       scheduling.when(() -> J.sync(Mockito.any(Runnable.class))).thenAnswer(invocation -> {
         queued.add(invocation.getArgument(0));

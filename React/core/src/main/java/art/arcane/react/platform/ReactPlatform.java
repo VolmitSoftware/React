@@ -102,6 +102,28 @@ public interface ReactPlatform {
     return Optional.empty();
   }
 
+  // Features, tweaks and actions
+
+  default Optional<ComponentHost> componentHost() {
+    return Optional.empty();
+  }
+
+  default Optional<WorldHost> worldHost() {
+    return Optional.empty();
+  }
+
+  default Optional<EntityHost> entityHost() {
+    return Optional.empty();
+  }
+
+  default Optional<HopperHost> hopperHost() {
+    return Optional.empty();
+  }
+
+  default Optional<ViewDistanceHost> viewDistanceHost() {
+    return Optional.empty();
+  }
+
   default Optional<TickStatsHost> tickStatsHost() {
     return Optional.empty();
   }

@@ -37,6 +37,8 @@ public class CommandReact implements DirectorExecutor {
   private CommandConfig config;
   private CommandDistance distance;
   private CommandAction action;
+  private CommandFeature feature;
+  private CommandTweak tweak;
   private CommandChunk chunk;
   private CommandEnvironment environment;
   private CommandBenchmark benchmark;

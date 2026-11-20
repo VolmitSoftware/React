@@ -49,6 +49,14 @@ final class ModCommandHost implements CommandHost {
     }
 
     @Override
+    public void configGui(VolmitSender sender) {
+        ReactPlayer player = sender.player();
+        if (player != null && player.handle() instanceof ServerPlayer serverPlayer) {
+            ModSettingsScreens.openRoot(serverPlayer);
+        }
+    }
+
+    @Override
     public List<CommandTargets.Player> players() {
         List<CommandTargets.Player> players = new ArrayList<>();
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {

@@ -428,7 +428,7 @@ public class FeatureAdaptiveEntitySleep extends ReactFeature implements Listener
     }
 
     double effectiveTickMs = lastTickMs;
-    if (PerWorldPressure.get(entity.getWorld()).isPressure()) {
+    if (PerWorldPressure.get(entity.getWorld().getUID()).isPressure()) {
       effectiveTickMs = Math.max(effectiveTickMs, dutyCycleMinTickMs);
     }
 
