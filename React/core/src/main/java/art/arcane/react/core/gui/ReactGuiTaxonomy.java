@@ -1,5 +1,6 @@
 package art.arcane.react.core.gui;
 
+import art.arcane.react.core.telemetry.timing.WorldTickSeries;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.TaxonomyMessages;
 import art.arcane.react.platform.cost.OwnerCostModel;
@@ -94,6 +95,9 @@ public final class ReactGuiTaxonomy {
     }
     if (OwnerCostModel.isOwnerScopedId(normalizedId)) {
       return group(6, OwnerNoun.pick(TaxonomyMessages.GROUP_PLUGINS, TaxonomyMessages.GROUP_MODS), "minecraft:note_block");
+    }
+    if (WorldTickSeries.isWorldTickId(normalizedId)) {
+      return group(9, TaxonomyMessages.GROUP_DIMENSIONS, "minecraft:recovery_compass");
     }
     if (containsAny(normalizedId, "tick", "tps", "mspt", "incident", "spike")) {
       return group(10, TaxonomyMessages.GROUP_TICK, "minecraft:clock");

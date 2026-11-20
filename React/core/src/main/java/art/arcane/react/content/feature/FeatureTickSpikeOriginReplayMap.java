@@ -19,6 +19,7 @@
 
 package art.arcane.react.content.feature;
 
+import art.arcane.react.api.sampler.SamplerHosts;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.platform.ChunkHeatmapHost;
@@ -27,13 +28,16 @@ import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.platform.ReactWorld;
+import art.arcane.react.platform.TickStatsHost;
 import art.arcane.react.platform.WorldHost;
+import art.arcane.react.platform.timing.SaveTimings;
 
 import java.util.UUID;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Tick Spike Origin Replay Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
 public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase implements TickSpikeReplay.Settings {
   public static final String ID = TickSpikeReplayHeatmap.ID;
+  private static final long SAVE_ATTRIBUTION_MS = 5_000L;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for tick spike origin replay map in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
   private int tickIntervalMS = 250;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Trigger threshold for spike in tick spike origin replay map.", impact = "Higher values trigger mitigation later; lower values trigger earlier and more aggressively.")
@@ -83,7 +87,10 @@ public class FeatureTickSpikeOriginReplayMap extends FeatureChunkHeatmapBase imp
   public void onTick() {
     long now = System.currentTimeMillis();
     double tickMS = sample(SamplerTickTime.ID);
-    if (replay.claimCapture(now, tickMS)) {
+    SaveTimings.Save recentSave = SamplerHosts.ticks().flatMap(TickStatsHost::saveTimings)
+        .flatMap((SaveTimings saves) -> saves.endedWithin(SAVE_ATTRIBUTION_MS)).orElse(null);
+    replay.noteSave(recentSave);
+    if (replay.claimCapture(now, tickMS) && !replay.causedBySave(recentSave)) {
       if (J.isFoliaThreading()) {
         captureSpikeFolia(now, tickMS);
       } else {

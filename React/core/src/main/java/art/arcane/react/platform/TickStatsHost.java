@@ -1,6 +1,8 @@
 package art.arcane.react.platform;
 
 import art.arcane.react.content.sampler.TickTimeSource;
+import art.arcane.react.platform.timing.SaveTimings;
+import art.arcane.react.platform.timing.WorldTickTimes;
 
 import java.util.Optional;
 
@@ -19,4 +21,18 @@ public interface TickStatsHost {
    * @throws UnsupportedOperationException when the scheduler cannot list pending tasks
    */
   int pendingSchedulerTasks();
+
+  /**
+   * Tick time measured per world. Empty when this server can only estimate it.
+   */
+  default Optional<WorldTickTimes> worldTickTimes() {
+    return Optional.empty();
+  }
+
+  /**
+   * Full world save durations. Empty when this server cannot time its saves.
+   */
+  default Optional<SaveTimings> saveTimings() {
+    return Optional.empty();
+  }
 }

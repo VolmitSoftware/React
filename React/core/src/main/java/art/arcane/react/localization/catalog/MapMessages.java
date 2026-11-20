@@ -1,5 +1,6 @@
 package art.arcane.react.localization.catalog;
 
+import art.arcane.react.core.telemetry.timing.WorldTickSeries;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.volmlib.util.localization.MessageArgument;
@@ -102,7 +103,7 @@ public final class MapMessages {
       samplerSummary("chunk-gen-listener-ms", "Main-thread milliseconds that other plugins' listeners spend on each newly generated chunk's load event."),
       samplerSummary("top-chunk-cost", "Highest observed per-chunk cost from React chunk sampling."),
       samplerSummary("top-world-mspt", "Worst world-level MSPT observed across loaded worlds."),
-      samplerSummary("per-world-tick-time", "Worst per-world rolling tick share used by the per-world tick budget hysteresis layer."),
+      samplerSummary("per-world-tick-time", "Worst world tick time, measured on mod loaders and estimated from each world's load share elsewhere."),
       samplerSummary("chunks-force-loaded", "Chunks pinned loaded permanently by force load tickets."),
       samplerSummary("chunk-tickets", "Chunks pinned loaded by plugin chunk tickets."),
       samplerSummary("worlds", "Worlds currently loaded on the server."),
@@ -161,6 +162,9 @@ public final class MapMessages {
       samplerSummary("pdc-write-batcher", "Persistent-data writes combined by React's write batcher."),
       samplerSummary("spawner-light-cache-skipped", "Repeated spawner light checks served from the short-lived cache."),
       samplerSummary("world-save-event-interval", "Elapsed time between successive world-save events for a world."),
+      samplerSummary("world-save-duration", "Duration of the latest full world save, every dimension included."),
+      samplerSummary("world-save-duration-max", "Longest full world save in the last 15 minutes."),
+      samplerSummary("world-save-frequency", "Full world saves per hour, autosaves and manual saves together."),
       samplerSummary("wormholes-block-changes", "Wormholes projected block changes published through the integration bridge."),
       samplerSummary("wormholes-block-entities", "Projected block-entity updates sent to viewers per second."),
       samplerSummary("wormholes-compression", "Outbound wire compression ratio; near 1.0 means a stale dictionary."),
@@ -355,6 +359,9 @@ public final class MapMessages {
       samplerName("unknown", "Unknown"),
       samplerName("villagers", "Villagers"),
       samplerName("world-save-event-interval", "World Save Event Interval"),
+      samplerName("world-save-duration", "World Save Duration"),
+      samplerName("world-save-duration-max", "World Save Duration Max"),
+      samplerName("world-save-frequency", "World Save Frequency"),
       samplerName("worlds", "Worlds"),
       samplerName("wormholes-block-changes", "Wormholes Block Changes"),
       samplerName("wormholes-block-entities", "Wormholes Block Entities"),
@@ -395,6 +402,7 @@ public final class MapMessages {
   private static final TextKey RENDERER_FALLBACK = TextKey.of("gui.map.summary.renderer.fallback", "Map renderer for {name}.");
   private static final TextKey SAMPLER_DETAIL = TextKey.of("gui.map.detail.sampler", "Live graph with current, minimum, and maximum values.");
   private static final TextKey SAMPLER_WORLDGEN = keywordSummary("worldgen", "World generation time on the generator threads, for one mod or one chunk step.");
+  private static final TextKey SAMPLER_WORLD_TICK = keywordSummary("world_tick", "Measured tick time of one dimension in milliseconds per tick.");
   private static final TextKey SAMPLER_TICK = keywordSummary("tick", "Server tick-path timing and spike behavior.");
   private static final TextKey SAMPLER_MEMORY = keywordSummary("memory", "JVM memory pressure and garbage-collection behavior.");
   private static final TextKey SAMPLER_CHUNK = keywordSummary("chunk", "Chunk activity, latency, and load pressure.");
@@ -453,6 +461,7 @@ public final class MapMessages {
     builder.add(SAMPLER_DETAIL);
     builder.add(SAMPLER_WORLDGEN_OWNER);
     builder.add(SAMPLER_WORLDGEN);
+    builder.add(SAMPLER_WORLD_TICK);
     builder.add(SAMPLER_TICK);
     builder.add(SAMPLER_MEMORY);
     builder.add(SAMPLER_CHUNK);
@@ -532,6 +541,9 @@ public final class MapMessages {
   private static TextKey samplerKeyword(String normalizedId) {
     if (normalizedId.startsWith("worldgen-")) {
       return SAMPLER_WORLDGEN;
+    }
+    if (WorldTickSeries.isWorldTickId(normalizedId)) {
+      return SAMPLER_WORLD_TICK;
     }
     if (normalizedId.contains("tick")) {
       return SAMPLER_TICK;

@@ -1,5 +1,6 @@
 package art.arcane.react.api.rendering;
 
+import art.arcane.react.core.telemetry.timing.WorldTickSeries;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.platform.cost.OwnerCostModel;
 import art.arcane.react.platform.cost.OwnerNoun;
@@ -299,6 +300,9 @@ public final class MapHubModel {
       return group(7, TaxonomyMessages.GROUP_ANIMUS, MapHubIcon.GROUP_ANIMUS);
     }
 
+    if (WorldTickSeries.isWorldTickId(normalizedId)) {
+      return group(9, TaxonomyMessages.GROUP_DIMENSIONS, MapHubIcon.GROUP_DIMENSIONS);
+    }
     if (containsAny(normalizedId, "tick", "tps", "mspt", "incident", "spike")) {
       return group(10, TaxonomyMessages.GROUP_TICK, MapHubIcon.GROUP_TICK);
     }

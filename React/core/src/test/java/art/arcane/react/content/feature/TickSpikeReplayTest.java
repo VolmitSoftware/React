@@ -1,6 +1,7 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.core.controller.LoadedChunkCoordinate;
+import art.arcane.react.platform.timing.SaveTimings;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -58,5 +59,22 @@ class TickSpikeReplayTest {
     });
     replay.captureUniform(WORLD, 0, 0, 60D, 0L);
     Assertions.assertEquals(2, replay.trackedChunks());
+  }
+
+  @Test
+  void keepsSaveStallsAboveTheThresholdUntilStale() {
+    TickSpikeReplay replay = new TickSpikeReplay(TickSpikeReplay.DEFAULT_SETTINGS);
+    SaveTimings.Save quick = new SaveTimings.Save(SaveTimings.Kind.AUTOSAVE, 1_000L, 12D, "minecraft:overworld", 10D);
+    SaveTimings.Save stall = new SaveTimings.Save(SaveTimings.Kind.AUTOSAVE, 2_000L, 420D, "minecraft:the_nether", 300D);
+
+    replay.noteSave(quick);
+    Assertions.assertFalse(replay.causedBySave(quick));
+    Assertions.assertTrue(replay.recentSaveStall(1_500L).isEmpty(), "a quick save is no stall");
+
+    replay.noteSave(stall);
+    Assertions.assertTrue(replay.causedBySave(stall));
+    Assertions.assertEquals("minecraft:the_nether", replay.recentSaveStall(3_000L).orElseThrow().slowestWorld());
+    Assertions.assertTrue(replay.recentSaveStall(2_000L + 120_001L).isEmpty());
+    Assertions.assertFalse(replay.causedBySave(null));
   }
 }

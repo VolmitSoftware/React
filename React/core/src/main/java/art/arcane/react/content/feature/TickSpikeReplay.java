@@ -1,13 +1,16 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.core.controller.LoadedChunkCoordinate;
+import art.arcane.react.platform.timing.SaveTimings;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Decaying per-chunk heat left by tick spikes around the chunk that was costliest when each spike happened.
+ * Decaying per-chunk heat left by tick spikes around the chunk that was costliest when each spike happened. A spike
+ * caused by a world save is kept as a save stall instead, since no chunk caused it.
  */
 public final class TickSpikeReplay {
   public static final Settings DEFAULT_SETTINGS = new Settings() {
@@ -17,6 +20,7 @@ public final class TickSpikeReplay {
   private final Map<ChunkKey, HeatCell> heat = new ConcurrentHashMap<>();
   private volatile long lastCaptureMs;
   private volatile long lastDecayMs;
+  private volatile SaveTimings.Save lastSaveStall;
 
   public TickSpikeReplay(Settings settings) {
     this.settings = settings;
@@ -66,12 +70,38 @@ public final class TickSpikeReplay {
 
   public void reset(long nowMs) {
     heat.clear();
+    lastSaveStall = null;
     lastCaptureMs = nowMs;
     lastDecayMs = nowMs;
   }
 
   public void clear() {
     heat.clear();
+    lastSaveStall = null;
+  }
+
+  /**
+   * Keeps {@code save} as the latest save stall when it took at least the spike threshold.
+   */
+  public void noteSave(SaveTimings.Save save) {
+    if (save != null && save.durationMs() >= settings.spikeThresholdMS()) {
+      lastSaveStall = save;
+    }
+  }
+
+  /**
+   * True when {@code save} explains a spike seen now: it stalled the server at least as long as the threshold.
+   */
+  public boolean causedBySave(SaveTimings.Save save) {
+    return save != null && save.durationMs() >= settings.spikeThresholdMS();
+  }
+
+  /**
+   * The latest save stall while it is younger than the stale-chunk window.
+   */
+  public Optional<SaveTimings.Save> recentSaveStall(long nowMs) {
+    SaveTimings.Save save = lastSaveStall;
+    return save != null && nowMs - save.endedAtMs() <= settings.staleChunkMS() ? Optional.of(save) : Optional.empty();
   }
 
   public Settings settings() {

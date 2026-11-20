@@ -2,19 +2,26 @@ package art.arcane.react.mod;
 
 import art.arcane.react.content.sampler.TickTimeSource;
 import art.arcane.react.platform.TickStatsHost;
+import art.arcane.react.platform.timing.SaveTimings;
+import art.arcane.react.platform.timing.WorldTickTimes;
 import net.minecraft.server.MinecraftServer;
 
 import java.util.Optional;
 
-/** Tick work times straight from {@link MinecraftServer}'s 100-tick ring, read at the end of each server tick. */
+/**
+ * Tick work times straight from {@link MinecraftServer}'s 100-tick ring, read at the end of each server tick, plus
+ * each dimension's measured tick time and full save durations.
+ */
 final class ModTickStatsHost implements TickStatsHost {
     private static final long[] EMPTY_TICKS = new long[0];
     private final MinecraftServer server;
     private final ModTicks ticks;
+    private final ModWorldTimings worldTimings;
 
-    ModTickStatsHost(MinecraftServer server, ModTicks ticks) {
+    ModTickStatsHost(MinecraftServer server, ModTicks ticks, ModWorldTimings worldTimings) {
         this.server = server;
         this.ticks = ticks;
+        this.worldTimings = worldTimings;
     }
 
     @Override
@@ -25,6 +32,16 @@ final class ModTickStatsHost implements TickStatsHost {
     @Override
     public int pendingSchedulerTasks() {
         return ticks.pending();
+    }
+
+    @Override
+    public Optional<WorldTickTimes> worldTickTimes() {
+        return Optional.of(worldTimings.ticks());
+    }
+
+    @Override
+    public Optional<SaveTimings> saveTimings() {
+        return Optional.of(worldTimings.saves());
     }
 
     /** The ring slot for tick {@code n} is {@code n % 100}, written before the end-of-tick event fires. */

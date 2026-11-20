@@ -80,6 +80,7 @@ public final class ModReactPlatform implements ReactPlatform {
     private final OwnerCostProbe costProbe;
     private final ModOwnerCost ownerCost;
     private final ModOwnerGauges ownerGauges;
+    private final ModWorldTimings worldTimings;
     private final Supplier<ReactWebServer> webServer;
     private final ModComponentHost componentHost;
     private final ModEntityKiller entityKiller = new ModEntityKiller();
@@ -128,7 +129,8 @@ public final class ModReactPlatform implements ReactPlatform {
         ModSamplerHost modSamplerHost = new ModSamplerHost(samples, maps);
         this.samplerHost = modSamplerHost;
         this.registryHost = new ModRegistryHost(dataFolder, startupTasks, this::verbose, this::warn);
-        this.tickStatsHost = new ModTickStatsHost(server, ticks);
+        this.worldTimings = new ModWorldTimings(server, samples);
+        this.tickStatsHost = new ModTickStatsHost(server, ticks, worldTimings);
         this.ownerGauges = new ModOwnerGauges(server, samples);
         this.worldStatsHost = new ModWorldStatsHost(server, ownerGauges);
         this.playerStatsHost = new ModPlayerStatsHost(server);
@@ -189,6 +191,10 @@ public final class ModReactPlatform implements ReactPlatform {
 
     ModOwnerGauges ownerGauges() {
         return ownerGauges;
+    }
+
+    ModWorldTimings worldTimings() {
+        return worldTimings;
     }
 
     ModMapData mapData() {

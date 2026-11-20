@@ -10,7 +10,9 @@ import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.platform.ChunkHeatmapHost;
 import art.arcane.react.platform.MapAnchorHost;
+import art.arcane.react.platform.timing.SaveTimings;
 import art.arcane.react.util.data.TinyColor;
+import art.arcane.volmlib.util.localization.MessageArgument;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +61,7 @@ public class TickSpikeReplayHeatmap extends ChunkHeatmapRenderer {
 
   @Override
   protected void renderOverlay(Map<LoadedChunkCoordinate, Double> score, double min, double max) {
+    replay.recentSaveStall(System.currentTimeMillis()).ifPresent(this::drawSaveStall);
     MegamapGrid.MegamapDetail detail = megamapDetail();
     if (score.isEmpty() || !detail.atLeast(MegamapGrid.MegamapDetail.EXPANDED)) {
       return;
@@ -77,6 +80,21 @@ public class TickSpikeReplayHeatmap extends ChunkHeatmapRenderer {
 
       Region label = new Region(badge.right() + scale, pixel.y() - (MapTheme.lineHeight(scale) / 2), 40 * scale, MapTheme.lineHeight(scale));
       textIn(label, 0, 0, "#" + (i + 1) + " " + RendererLayout.compact(entry.getValue()), MapTheme.TEXT_STRONG);
+    }
+  }
+
+  private void drawSaveStall(SaveTimings.Save save) {
+    String text = ReactLanguage.raw(
+        save.kind() == SaveTimings.Kind.AUTOSAVE ? RendererMessages.TICK_SPIKE_AUTOSAVE : RendererMessages.TICK_SPIKE_SAVE,
+        MessageArgument.untrusted("duration", RendererLayout.compact(save.durationMs()) + " ms")
+    );
+    int scale = uiScale();
+    Region line = bodyRegion().bottomBand(MapTheme.lineHeight(scale));
+    fill(line, MapTheme.SURFACE_2);
+    textIn(line, scale, 0, text, MapTheme.WARN);
+    String world = save.slowestWorld();
+    if (!world.isBlank() && textWidth(text) + textWidth(world) + (3 * MapTheme.gutter(scale)) <= line.width()) {
+      textRightIn(line, scale, 0, world, MapTheme.TEXT_MUTED);
     }
   }
 

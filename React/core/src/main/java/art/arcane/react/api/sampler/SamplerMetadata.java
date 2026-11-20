@@ -22,11 +22,12 @@ public final class SamplerMetadata {
       case "ticks-per-second" -> "ticks/s";
       case "tick-time", "react-sync-tick-time", "react-async-tick-time", "react-job-queue-time",
           "react-job-budget", "gc-pause-p95", "ping-jitter", "player-ping-p95", "chunk-load-listener-ms",
-          "chunk-gen-listener-ms", "per-world-tick-time", "world-save-event-interval", "top-world-mspt", "top-chunk-cost",
+          "chunk-gen-listener-ms", "per-world-tick-time", "world-save-event-interval", "world-save-duration", "world-save-duration-max", "top-world-mspt", "top-chunk-cost",
           "physics-event-span", "hopper-event-span", "fluid-event-span", "redstone-event-span" -> "ms";
       case "event-time" -> "ms/s";
       case "event-handles-per-tick" -> "calls/tick";
       case "redstone-burst-rate", "tick-spike-rate" -> "/min";
+      case "world-save-frequency" -> "/h";
       case "chunks-loaded", "chunks-generated", "chunk-unloads", "spawner-spawns", "entities-spawns",
           "hopper", "fluid", "commands", "physics", "redstone", "crop-fast-forward",
           "hopper-chain-coalescing", "spawner-light-cache-skipped", "lazy-gravity-skipped",

@@ -21,7 +21,9 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.sampler.SamplerHosts;
+import art.arcane.react.platform.TickStatsHost;
 import art.arcane.react.platform.WorldStatsHost;
+import art.arcane.react.platform.timing.WorldTickTimes;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.format.Form;
@@ -57,7 +59,18 @@ public class SamplerPerWorldTickTime extends ReactCachedSampler {
 
   @Override
   public double onSample() {
+    WorldTickTimes measured = measuredTimes();
+    if (measured != null) {
+      return pushMeasured(measured);
+    }
     return sampleOnMainThread(this::computeWorst);
+  }
+
+  @Override
+  public Metadata metadata() {
+    Metadata metadata = super.metadata();
+    return measuredTimes() == null ? metadata
+        : new Metadata(metadata.intervalMs(), metadata.windowMs(), Quality.MEASURED, metadata.unit());
   }
 
   @Override
@@ -95,7 +108,24 @@ public class SamplerPerWorldTickTime extends ReactCachedSampler {
   }
 
   public static String measurementMode() {
+    if (measuredTimes() != null) {
+      return "measured";
+    }
     return J.isFoliaThreading() ? "folia-region-proxy" : "paper-share-proxy";
+  }
+
+  private static WorldTickTimes measuredTimes() {
+    return SamplerHosts.ticks().flatMap(TickStatsHost::worldTickTimes).filter(WorldTickTimes::measuring).orElse(null);
+  }
+
+  private double pushMeasured(WorldTickTimes measured) {
+    Map<UUID, WorldTickTimes.World> worlds = measured.worlds();
+    double worst = 0D;
+    for (WorldTickTimes.World world : worlds.values()) {
+      worst = Math.max(worst, pushSample(world.id(), world.meanMs()));
+    }
+    SERIES.keySet().retainAll(worlds.keySet());
+    return worst;
   }
 
   private double computeWorst() {
@@ -123,7 +153,7 @@ public class SamplerPerWorldTickTime extends ReactCachedSampler {
       double evenShare = tickMs / worlds.size();
       double worstEven = 0D;
       for (WorldStatsHost.WorldLoad world : worlds) {
-        worstEven = Math.max(worstEven, pushSample(world, evenShare));
+        worstEven = Math.max(worstEven, pushSample(world.worldId(), evenShare));
       }
       pruneSeries(worlds);
       return worstEven;
@@ -133,7 +163,7 @@ public class SamplerPerWorldTickTime extends ReactCachedSampler {
     for (int i = 0; i < worlds.size(); i++) {
       WorldStatsHost.WorldLoad world = worlds.get(i);
       double share = (weights[i] / (double) totalWeight) * tickMs;
-      double mean = pushSample(world, share);
+      double mean = pushSample(world.worldId(), share);
       if (mean > worst) {
         worst = mean;
       }
@@ -150,8 +180,7 @@ public class SamplerPerWorldTickTime extends ReactCachedSampler {
     return Math.max(1L, world.entityCount() + world.chunkCount());
   }
 
-  private double pushSample(WorldStatsHost.WorldLoad world, double share) {
-    UUID worldId = world.worldId();
+  private double pushSample(UUID worldId, double share) {
     WorldSeries series = SERIES.computeIfAbsent(worldId, ignored -> new WorldSeries(ROLLING_WINDOW));
     series.push(share);
     return series.lastMean;

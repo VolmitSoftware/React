@@ -30,6 +30,7 @@ public final class TaxonomyMessages {
   public static final TextKey GROUP_REACT = TextKey.of("taxonomy.group.react", "React Integration");
   public static final TextKey GROUP_CORE = TextKey.of("taxonomy.group.core", "React Core");
   public static final TextKey GROUP_TICK = TextKey.of("taxonomy.group.tick", "Tick & Stability");
+  public static final TextKey GROUP_DIMENSIONS = TextKey.of("taxonomy.group.dimensions", "Dimension Ticks");
   public static final TextKey GROUP_MEMORY = TextKey.of("taxonomy.group.memory", "Memory & GC");
   public static final TextKey GROUP_PLAYERS = TextKey.of("taxonomy.group.players", "Players & Network");
   public static final TextKey GROUP_ENTITIES = TextKey.of("taxonomy.group.entities", "Entities & Spawns");
@@ -76,6 +77,7 @@ public final class TaxonomyMessages {
     builder.add(GROUP_REACT);
     builder.add(GROUP_CORE);
     builder.add(GROUP_TICK);
+    builder.add(GROUP_DIMENSIONS);
     builder.add(GROUP_MEMORY);
     builder.add(GROUP_PLAYERS);
     builder.add(GROUP_ENTITIES);

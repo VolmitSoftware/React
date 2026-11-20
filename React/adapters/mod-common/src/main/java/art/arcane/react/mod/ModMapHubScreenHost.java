@@ -130,6 +130,7 @@ final class ModMapHubScreenHost implements MapHubScreenHost {
             case GROUP_BILETOOLS -> vanilla("lime_dye");
             case GROUP_ANIMUS -> Items.ARMOR_STAND;
             case GROUP_TICK -> Items.CLOCK;
+            case GROUP_DIMENSIONS -> Items.RECOVERY_COMPASS;
             case GROUP_MEMORY -> Items.EXPERIENCE_BOTTLE;
             case GROUP_PLAYERS -> Items.PLAYER_HEAD;
             case GROUP_ENTITIES -> Items.ZOMBIE_HEAD;

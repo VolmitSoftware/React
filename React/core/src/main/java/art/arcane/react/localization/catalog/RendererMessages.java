@@ -190,6 +190,8 @@ public final class RendererMessages {
   public static final TextKey UNKNOWN_RESELECT = key("unknown.reselect", "to reselect.");
   public static final TextKey HEATMAP_NO_ACTIVITY = key("heatmap.no_activity", "No activity nearby");
   public static final TextKey HEATMAP_QUIET = key("heatmap.quiet", "quiet");
+  public static final TextKey TICK_SPIKE_AUTOSAVE = key("tick_spike.autosave", "Autosave stall {duration}");
+  public static final TextKey TICK_SPIKE_SAVE = key("tick_spike.save", "Save stall {duration}");
   public static final TextKey PIE_VIEWER_UNAVAILABLE = key("pie.viewer_unavailable", "Viewer unavailable");
   public static final TextKey PIE_NO_DATA = key("pie.no_data", "No data");
   public static final TextKey PIE_TOTAL = key("pie.total", "Total: {total} {unit}");
@@ -256,7 +258,7 @@ public final class RendererMessages {
       METRIC_WATCHED_JARS, METRIC_DIRTY_PLUGINS, METRIC_RELOADS, METRIC_LAST_RELOAD, METRIC_REMOTE_SLAVE,
       UNKNOWN_RENDERER_UNAVAILABLE, UNKNOWN_MAP_WAS, UNKNOWN_BOUND, UNKNOWN_MISSING,
       UNKNOWN_RESELECT_COMMAND, UNKNOWN_RESELECT, HEATMAP_NO_ACTIVITY, HEATMAP_QUIET,
-      PIE_VIEWER_UNAVAILABLE, PIE_NO_DATA, PIE_TOTAL, PIE_UNIT_CHUNKS, PIE_UNIT_IMPACT, PIE_UNIT_MS_PER_SECOND,
+      TICK_SPIKE_AUTOSAVE, TICK_SPIKE_SAVE, PIE_VIEWER_UNAVAILABLE, PIE_NO_DATA, PIE_TOTAL, PIE_UNIT_CHUNKS, PIE_UNIT_IMPACT, PIE_UNIT_MS_PER_SECOND,
       PIE_UNKNOWN, PIE_OTHER, ADAPT_MEASURED_UNAVAILABLE, ADAPT_GUARD_ONLY, ADAPT_NO_ACTIVITY, ADAPT_USE_ABILITIES,
       ADAPT_TOP_VALUE, ANIMUS_UNAVAILABLE, ANIMUS_UPDATE_HINT, ANIMUS_NO_TRAFFIC, ANIMUS_TRAFFIC_HINT,
       ANIMUS_BANDWIDTH, ANIMUS_PACKET_RATE, ANIMUS_PLAYER_PEAK, PLUGIN_NO_IMPACT, MOD_NO_IMPACT, PLUGIN_WAIT_FOR_DATA,
