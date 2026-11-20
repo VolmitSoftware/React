@@ -71,7 +71,7 @@ class DashboardMapsGoldenTest {
       "plugin-event-impact-list-map", "cbe4d63824bb9975",
       "plugin-event-impact-list-map-wall", "cac99e5722bbe340",
       "plugin-event-impact-list-map-empty", "60e398b6dde34ab0",
-      "plugin-event-impact-pie-map", "d55a7a0c3dfffe7b",
+      "plugin-event-impact-pie-map", "1228ac91f6fc8989",
       "plugin-event-impact-pie-map-wall", "1d759bb5d2279ec8",
       "tick-spike-origin-replay-map", "0f60933dcf71e485",
       "tick-spike-origin-replay-map-wall", "536f40c7b91bbcbc",

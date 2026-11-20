@@ -22,6 +22,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.ToIntFunction;
 
 /**
  * A donut chart of named shares with a legend, for the viewer holding or framing the map.
@@ -316,7 +317,9 @@ public abstract class SharePieRenderer implements ReactRenderer {
 
     int cx = area.centerX();
     int cy = area.centerY();
-    int innerRadius = Math.max(3, (radius * 2) / 5);
+    CentreLabel label = centreLabel(radius, compact(total), compactShort(total), this::textWidth,
+        MapTheme.lineHeight(scale), textHeight());
+    int innerRadius = label.innerRadius();
     int radiusSq = radius * radius;
     int innerSq = innerRadius * innerRadius;
 
@@ -354,29 +357,68 @@ public abstract class SharePieRenderer implements ReactRenderer {
       }
 
       drawDonutRing(disc, cx, cy, radius, innerRadius);
-      drawDonutLabels(cx, cy, innerRadius, total);
+      drawDonutLabels(cx, cy, innerRadius, label.value());
     } finally {
       popClip();
     }
   }
 
-  private void drawDonutLabels(int cx, int cy, int innerRadius, long total) {
-    int extent = (innerRadius * 7) / 10;
+  /**
+   * The hole and the total drawn in it. The hole grows toward three fifths of the radius until the total fits, then
+   * the total drops its decimal; a total that never fits is left to the footer.
+   */
+  static CentreLabel centreLabel(int radius, String full, String shortened, ToIntFunction<String> width, int lineHeight,
+                                 int textHeight) {
+    int innerRadius = Math.max(3, (radius * 2) / 5);
+    int widest = Math.max(innerRadius, (radius * 3) / 5);
+    for (String form : new String[] {full, shortened}) {
+      for (int inner = innerRadius; inner <= widest; inner++) {
+        if (width.applyAsInt(form) <= labelRoom(inner, lineHeight, textHeight)) {
+          return new CentreLabel(inner, form);
+        }
+      }
+    }
+    return new CentreLabel(innerRadius, "");
+  }
+
+  private static int labelExtent(int innerRadius) {
+    return (innerRadius * 7) / 10;
+  }
+
+  private static boolean twoLineLabel(int innerRadius, int lineHeight) {
+    return labelExtent(innerRadius) >= lineHeight;
+  }
+
+  /** Width for the total: the square inside the hole when the unit fits under it, else the hole's chord at the text. */
+  static int labelRoom(int innerRadius, int lineHeight, int textHeight) {
+    if (labelExtent(innerRadius) <= 2) {
+      return 0;
+    }
+    if (twoLineLabel(innerRadius, lineHeight)) {
+      return labelExtent(innerRadius) * 2;
+    }
+    int halfText = (textHeight + 1) / 2;
+    return 2 * (int) Math.sqrt(Math.max(0, (innerRadius * innerRadius) - (halfText * halfText)));
+  }
+
+  private void drawDonutLabels(int cx, int cy, int innerRadius, String value) {
+    int extent = labelExtent(innerRadius);
     if (extent <= 2) {
       return;
     }
 
     Region hole = new Region(cx - extent, cy - extent, extent * 2, extent * 2);
     int lineHeight = MapTheme.lineHeight(uiScale());
-    String value = compact(total);
-    if (hole.height() >= (2 * lineHeight)) {
+    if (twoLineLabel(innerRadius, lineHeight)) {
       int top = (hole.height() - (2 * lineHeight)) / 2;
       textCenteredIn(hole, top, value, MapTheme.TEXT);
       textCenteredIn(hole, top + lineHeight, totalUnitLabel(), MapTheme.TEXT_MUTED);
       return;
     }
 
-    textCenteredIn(hole, Math.max(0, (hole.height() - textHeight()) / 2), value, MapTheme.TEXT);
+    int half = labelRoom(innerRadius, lineHeight, textHeight()) / 2;
+    Region chord = new Region(cx - half, hole.y(), half * 2, hole.height());
+    textCenteredIn(chord, Math.max(0, (hole.height() - textHeight()) / 2), value, MapTheme.TEXT);
   }
 
   private void drawLegend(Region area, int rowHeight, List<Slice> slices) {
@@ -420,6 +462,9 @@ public abstract class SharePieRenderer implements ReactRenderer {
       if (textWidth(percent) > columns[1].width()) {
         percent = Math.round(slice.ratio() * 100D) + "%";
       }
+      if (textWidth(percent) > columns[1].width()) {
+        percent = Long.toString(Math.round(slice.ratio() * 100D));
+      }
       textRightIn(columns[1], 0, baseline, percent, MapTheme.TEXT_SOFT);
       if (showCount) {
         textRightIn(columns[2], 0, baseline, compact(slice.count()), MapTheme.TEXT_MUTED);
@@ -460,6 +505,21 @@ public abstract class SharePieRenderer implements ReactRenderer {
 
   protected String compact(long value) {
     return compactCount(value);
+  }
+
+  /** The total without its decimal, for a hole too narrow for {@link #compact(long)}. */
+  protected String compactShort(long value) {
+    return compactCountShort(value);
+  }
+
+  public static String compactCountShort(long value) {
+    if (value >= 999_500L) {
+      return Math.round(value / 1_000_000D) + "m";
+    }
+    if (value >= 1_000L) {
+      return Math.round(value / 1_000D) + "k";
+    }
+    return Long.toString(Math.max(0L, value));
   }
 
   public static String compactCount(long value) {
@@ -507,6 +567,9 @@ public abstract class SharePieRenderer implements ReactRenderer {
   }
 
   private record Bucket(String label, long count) {
+  }
+
+  record CentreLabel(int innerRadius, String value) {
   }
 
   private record Slice(

@@ -57,6 +57,12 @@ public class AnimusCostSharePieRenderer extends SharePieRenderer {
     return formatMillis(value);
   }
 
+  @Override
+  protected String compactShort(long value) {
+    double millis = Math.max(0L, value) / MICROS_PER_MILLI;
+    return Form.f(millis, millis >= 10D ? 0 : 1);
+  }
+
   public static Map<String, Long> costBuckets(AnimusMetrics.Snapshot snapshot) {
     Map<String, Long> buckets = newCounterMap();
     for (AnimusMetrics.Entry cost : snapshot.costs()) {

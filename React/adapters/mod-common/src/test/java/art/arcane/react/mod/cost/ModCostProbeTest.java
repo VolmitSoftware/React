@@ -112,6 +112,21 @@ class ModCostProbeTest {
         assertEquals(Map.of("block_entity", 2L, "entity", 1L), calls);
     }
 
+    @Test
+    void reactsOwnWorkIsLeftOutButStaysExclusiveOfItsCaller() {
+        CostBucket caller = CostRegistry.bucket("test-caller", CostKind.EVENT);
+        CostBucket react = CostRegistry.bucket("react", CostKind.EVENT);
+        long callerStart = CostFrame.enter();
+        long reactStart = CostFrame.enter();
+        spin(10_000_000L);
+        CostFrame.exit(reactStart, react);
+        CostFrame.exit(callerStart, caller);
+
+        Map<String, ModCostProbe.OwnerCost> costs = drain();
+        assertTrue(!costs.containsKey("react"), "react listed: " + costs.keySet());
+        assertTrue(costs.get("test-caller").exclusiveNanos() < 10_000_000L, "caller " + costs.get("test-caller").exclusiveNanos());
+    }
+
     private Map<String, ModCostProbe.OwnerCost> drain() {
         List<ModCostProbe.OwnerCost> costs = new ArrayList<>();
         probe.drainInto(costs);
