@@ -82,9 +82,40 @@ if (targetProperties.forgeRuntimeMappings == 'srg') {
     developmentJar.configure {
         destinationDirectory.set(layout.buildDirectory.dir('devlibs'))
     }
+    // The Mixin processor writes @Shadow SRG names as flat "owner member [desc] srg" lines that the
+    // merged map drops, so they are appended here as class blocks for the rename pass.
+    Provider<RegularFile> shadowSource = layout.buildDirectory.file('tmp/compileJava/compileJava-mappings.tsrg')
+    Provider<RegularFile> renameMap = layout.buildDirectory.file('mappings/reobfWithShadows.tsrg')
+    TaskProvider<Task> shadowMappings = tasks.register('shadowMixinMappings') {
+        Provider<RegularFile> merged = renamer.mixin.generatedMappings.flatMap { task -> task.output }
+        dependsOn(tasks.named('compileJava'))
+        inputs.file(merged)
+        inputs.file(shadowSource)
+        outputs.file(renameMap)
+        doLast {
+            Map<String, List<String>> members = new LinkedHashMap<>()
+            shadowSource.get().asFile.eachLine { String line ->
+                String[] parts = line.trim().split(' ')
+                if (parts.length < 3) {
+                    return
+                }
+                String member = parts.length == 4 ? "${parts[1]} ${parts[2]} ${parts[3]}" : "${parts[1]} ${parts[2]}"
+                members.computeIfAbsent(parts[0]) { String key -> new ArrayList<String>() }.add(member)
+            }
+            File output = renameMap.get().asFile
+            output.parentFile.mkdirs()
+            output.text = merged.get().asFile.text
+            output.withWriterAppend { Writer writer ->
+                members.each { String owner, List<String> entries ->
+                    writer.write("\n${owner} ${owner}\n")
+                    entries.each { String entry -> writer.write("\t${entry}\n") }
+                }
+            }
+        }
+    }
     TaskProvider<RenameJar> productionJar = renamer.classes('reobfShadowJar', developmentJar) {
-        // The Mixin processor adds the SRG names of @Shadow members to the merged map.
-        map.setFrom(renamer.mixin.generatedMappings.flatMap { task -> task.output })
+        dependsOn(shadowMappings)
+        map.setFrom(renameMap)
         output.set(layout.buildDirectory.file(developmentJar.flatMap { Jar task -> task.archiveFileName }
             .map { String filename -> "libs/${filename}" }))
     }
