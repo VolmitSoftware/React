@@ -8,6 +8,7 @@ import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.platform.Subscription;
+import art.arcane.react.util.format.C;
 import art.arcane.react.util.math.ApproachingValue;
 import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.math.M;
@@ -16,7 +17,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.awt.Color;
 import java.time.Duration;
@@ -485,7 +485,7 @@ public class ActionBarMonitor {
       }
     }
 
-    display.actionBar(viewerId, LegacyComponentSerializer.legacySection().serialize(writeHeader()));
+    display.actionBar(viewerId, C.LEGACY.serialize(writeHeader()));
   }
 
   private static void verbose(String message) {

@@ -139,7 +139,12 @@ public enum C {
    */
   public static final char COLOR_CHAR = '\u00A7';
   public final static C[] COLORCYCLE = new C[]{C.GOLD, C.YELLOW, C.GREEN, C.AQUA, C.LIGHT_PURPLE, C.AQUA, C.GREEN, C.YELLOW, C.GOLD, C.RED};
-  private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
+  /** Section-sign legacy text that keeps hex colours as {@code §x§r§r§g§g§b§b}, the form Paper and the mod adapters read back. */
+  public static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.builder()
+      .character(COLOR_CHAR)
+      .hexColors()
+      .useUnusualXRepeatedCharacterHexFormat()
+      .build();
   private static final Pattern STRIP_COLOR_PATTERN = Pattern.compile("(?i)" + COLOR_CHAR + "[0-9A-FK-OR]");
   private final static C[] COLORS = new C[]{C.BLACK, C.DARK_BLUE, C.DARK_GREEN, C.DARK_AQUA, C.DARK_RED, C.DARK_PURPLE, C.GOLD, C.GRAY, C.DARK_GRAY, C.BLUE, C.GREEN, C.AQUA, C.RED, C.LIGHT_PURPLE, C.YELLOW, C.WHITE};
   @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")

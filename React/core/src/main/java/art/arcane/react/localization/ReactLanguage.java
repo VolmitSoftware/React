@@ -6,6 +6,7 @@ import art.arcane.react.platform.ReactCommandSender;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.platform.cost.OwnerNoun;
+import art.arcane.react.util.format.C;
 import art.arcane.react.util.plugin.VolmitSender;
 import art.arcane.volmlib.util.director.DirectorTextResolver;
 import art.arcane.volmlib.util.io.AtomicFileIO;
@@ -52,7 +53,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import java.io.File;
@@ -91,7 +91,6 @@ public final class ReactLanguage {
   private static final String ENGLISH_FALLBACK_SOURCE = "code-owned-English:";
   private static final MessageCatalog CATALOG = ReactMessages.catalog();
   private static final MiniMessage MINI_MESSAGE = MiniMessage.builder().strict(true).build();
-  private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacySection();
   private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
   private static final LocalizationManager MANAGER = new LocalizationManager(
       LocalizationCandidate.english(CATALOG, PluralSelector.oneOther())
@@ -555,11 +554,11 @@ public final class ReactLanguage {
   }
 
   public static String text(MessageKey key, MessageArgs arguments) {
-    return LEGACY.serialize(component(key, arguments));
+    return C.LEGACY.serialize(component(key, arguments));
   }
 
   public static String prefixedText(MessageKey key, MessageArgument... arguments) {
-    return LEGACY.serialize(prefixedComponent(key, arguments));
+    return C.LEGACY.serialize(prefixedComponent(key, arguments));
   }
 
   public static String plain(MessageKey key, MessageArgument... arguments) {

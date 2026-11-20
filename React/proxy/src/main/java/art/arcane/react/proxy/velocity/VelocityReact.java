@@ -3,9 +3,9 @@ package art.arcane.react.proxy.velocity;
 import art.arcane.react.platform.ReactCommandSender;
 import art.arcane.react.proxy.ProxyHost;
 import art.arcane.react.proxy.ProxyRuntime;
+import com.velocitypowered.api.command.BrigadierCommand;
 import com.velocitypowered.api.command.CommandMeta;
 import com.velocitypowered.api.command.CommandSource;
-import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
@@ -45,28 +45,15 @@ final class VelocityReact implements ProxyHost {
 
   void start() {
     runtime.start();
-    CommandMeta meta = proxy.getCommandManager().metaBuilder(ProxyRuntime.COMMAND_LABELS.get(0))
+    BrigadierCommand command = new BrigadierCommand(ReactCommandTree.<CommandSource>literal(ProxyRuntime.COMMAND_LABELS.get(0),
+        (CommandSource source) -> source.hasPermission(ProxyRuntime.PERMISSION) || source.hasPermission("react.*"),
+        (CommandSource source, String alias, String[] arguments) -> runtime.execute(new VelocitySender(source), alias, arguments),
+        (CommandSource source, String alias, String[] arguments) -> runtime.complete(new VelocitySender(source), alias, arguments)));
+    CommandMeta meta = proxy.getCommandManager().metaBuilder(command)
         .aliases(ProxyRuntime.COMMAND_LABELS.subList(1, ProxyRuntime.COMMAND_LABELS.size()).toArray(new String[0]))
         .plugin(plugin)
         .build();
-    proxy.getCommandManager().register(meta, new SimpleCommand() {
-      @Override
-      public void execute(Invocation invocation) {
-        runtime.execute(new VelocitySender(invocation.source()), invocation.alias(), invocation.arguments());
-      }
-
-      @Override
-      public List<String> suggest(Invocation invocation) {
-        String[] arguments = invocation.arguments();
-        return runtime.complete(new VelocitySender(invocation.source()), invocation.alias(),
-            arguments.length == 0 ? new String[]{""} : arguments);
-      }
-
-      @Override
-      public boolean hasPermission(Invocation invocation) {
-        return invocation.source().hasPermission(ProxyRuntime.PERMISSION) || invocation.source().hasPermission("react.*");
-      }
-    });
+    proxy.getCommandManager().register(meta, command);
   }
 
   void stop() {
