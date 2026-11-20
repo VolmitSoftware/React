@@ -20,6 +20,7 @@
 package art.arcane.react.util.common.scheduling;
 
 
+import art.arcane.react.core.telemetry.TickerDiagnostics;
 import art.arcane.volmlib.util.math.RollingSequence;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.Feature;
@@ -144,13 +145,9 @@ public class Ticker {
     }
   }
 
-  public Diagnostics diagnostics() {
-    return new Diagnostics(submitted.sum(), executed.sum(), failures.sum(), skipped.sum(), rejected.sum(),
+  public TickerDiagnostics diagnostics() {
+    return new TickerDiagnostics(submitted.sum(), executed.sum(), failures.sum(), skipped.sum(), rejected.sum(),
         backedOff.sum(), runtimeNanos.sum(), queueNanos.sum(), maxQueueNanos.get(), activeExecutionCount());
-  }
-
-  public record Diagnostics(long submitted, long executed, long failures, long skipped, long rejected,
-                            long backedOff, long runtimeNanos, long queueNanos, long maxQueueNanos, int active) {
   }
 
   public double getTasksPerSecond() {

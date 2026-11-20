@@ -14,9 +14,10 @@ import java.util.regex.Pattern;
 
 /**
  * API packs on a mod server. Packs target a loaded mod by id and read integration metrics; placeholders and event
- * counters are Bukkit sources and stay unavailable here.
+ * counters are Bukkit sources and stay unavailable here. The Adapt example ships here too, since Adapt runs on mods.
  */
 final class ModPluginApiHost implements PluginApiHost {
+    private static final List<String> EXAMPLES = List.of("adapt-ability-ops.toml");
     private static final Pattern ITEM_ID = Pattern.compile("[a-z0-9_.-]+:[a-z0-9_./-]+");
     private final Supplier<Optional<ModIntegrationMetrics>> integrations;
 
@@ -41,12 +42,12 @@ final class ModPluginApiHost implements PluginApiHost {
 
     @Override
     public List<String> bundledExamples() {
-        return List.of();
+        return EXAMPLES;
     }
 
     @Override
     public InputStream bundledExample(String name) {
-        return null;
+        return ModPluginApiHost.class.getClassLoader().getResourceAsStream("plugin-apis/examples/" + name);
     }
 
     @Override

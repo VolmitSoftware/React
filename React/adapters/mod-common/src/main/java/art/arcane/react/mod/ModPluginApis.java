@@ -1,5 +1,6 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.metric.internal.PublishedMetricStore;
 import art.arcane.react.api.protect.internal.ModProtectionEngine;
 import art.arcane.react.core.integration.ModApiRegistrations;
 import art.arcane.react.core.integration.ThirdPartyMetricRegistry;
@@ -47,6 +48,11 @@ final class ModPluginApis {
         });
         registry.reconcile(System.currentTimeMillis());
         started.requestReload();
+    }
+
+    PublishedMetricStore publishedStore() {
+        ThirdPartyMetricRegistry current = metrics;
+        return current == null ? null : current.store();
     }
 
     void stop() {

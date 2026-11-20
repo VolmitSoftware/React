@@ -4846,3 +4846,14 @@ impact = "Adiciona trabalho de gravação JFR com limites de retenção de 30 se
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "Duração mínima em milissegundos para eventos JVM de E/S de ficheiros, entrada em monitores, espera em monitores e estacionamento de threads, limitada de 1 a 1000. As fases de geração de chunks não têm limiar de duração."
 impact = "Limiares mais baixos produzem mais eventos JVM. Estas métricas descrevem apenas os eventos que atingem este limiar."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "O JFR regista totais de tráfego do protocolo, fases de geração de chunks, atividade de armazenamento e esperas acima do limiar configurado."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "Ativa a telemetria JFR seletiva. Desativada por predefinição. Os resumos publicados omitem endereços, caminhos de ficheiros e rastreios da pilha."
+impact = "Adiciona trabalho de gravação JFR com limites de retenção de 30 segundos e 64 MiB. As séries agregadas são repostas a zero a cada segundo."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "Duração mínima em milissegundos para eventos JVM de E/S de ficheiros, entrada em monitores, espera em monitores e estacionamento de threads, limitada de 1 a 1000. As fases de geração de chunks não têm limiar de duração."
+impact = "Limiares mais baixos produzem mais eventos JVM. Estas métricas descrevem apenas os eventos que atingem este limiar."

@@ -19,6 +19,7 @@
 
 package art.arcane.react;
 
+import art.arcane.react.content.sampler.SamplerAdaptAbilityOps;
 import art.arcane.react.api.monitor.MonitoringSettings;
 import art.arcane.react.model.PlayerSettings;
 
@@ -491,6 +492,7 @@ public class React extends VolmitPlugin implements ReloadAware {
     instance = this;
     ReactPlatforms.bind(BukkitReactPlatform.instance());
     MonitoringSettings.bind(() -> ReactConfiguration.get().getMonitoring());
+    SamplerAdaptAbilityOps.bindMetricKey(ReactConfiguration::adaptAbilityOpsMetricKey);
     PlayerSettings.bind((UUID player) -> getDataFile("player-settings", player + ".json"));
     BukkitSamplerEventBridge.install();
     closeAudienceProvider();
@@ -738,6 +740,7 @@ public class React extends VolmitPlugin implements ReloadAware {
     closeAudienceProvider();
     BukkitSamplerEventBridge.uninstall();
     MonitoringSettings.bind(null);
+    SamplerAdaptAbilityOps.bindMetricKey(null);
     ReactPlatforms.unbind();
   }
 

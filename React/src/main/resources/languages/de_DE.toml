@@ -4846,3 +4846,14 @@ impact = "Verursacht JFR-Aufzeichnungsarbeit mit Aufbewahrungsgrenzen von 30 Sek
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "Mindestdauer in Millisekunden für JVM-Dateizugriffe, Monitoreintritt, Monitor-Wartezeiten und Thread-Parken, begrenzt auf 1 bis 1000. Für Chunk-Generierungsphasen gilt kein Dauerschwellenwert."
 impact = "Niedrigere Schwellenwerte erzeugen mehr JVM-Ereignisse. Diese Metriken erfassen nur Ereignisse, die diesen Schwellenwert erreichen."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR erfasst Protokollverkehrssummen, Chunk-Generierungsphasen, Speicherzugriffe und Wartezeiten oberhalb des konfigurierten Schwellenwerts."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "Aktiviert ausgewählte JFR-Messungen. Standardmäßig deaktiviert. Veröffentlichte Zusammenfassungen enthalten keine Adressen, Dateipfade oder Stacktraces."
+impact = "Verursacht JFR-Aufzeichnungsarbeit mit Aufbewahrungsgrenzen von 30 Sekunden und 64 MiB. Aggregierte Messreihen werden jede Sekunde zurückgesetzt."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "Mindestdauer in Millisekunden für JVM-Dateizugriffe, Monitoreintritt, Monitor-Wartezeiten und Thread-Parken, begrenzt auf 1 bis 1000. Für Chunk-Generierungsphasen gilt kein Dauerschwellenwert."
+impact = "Niedrigere Schwellenwerte erzeugen mehr JVM-Ereignisse. Diese Metriken erfassen nur Ereignisse, die diesen Schwellenwert erreichen."

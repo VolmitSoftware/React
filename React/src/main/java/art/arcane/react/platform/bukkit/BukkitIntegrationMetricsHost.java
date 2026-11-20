@@ -42,6 +42,12 @@ public final class BukkitIntegrationMetricsHost implements IntegrationMetricsHos
   }
 
   @Override
+  public IntegrationMetricSample storedSample(String integrationId, String key) {
+    RemoteSamplerBridge bridge = bridge();
+    return bridge == null ? null : bridge.storedSample(integrationId, key);
+  }
+
+  @Override
   public Map<String, IntegrationMetricSample> samples(String integrationId) {
     RemoteSamplerBridge bridge = bridge();
     return bridge == null ? Map.of() : bridge.snapshot(integrationId);

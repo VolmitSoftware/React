@@ -4846,3 +4846,14 @@ impact = "Aggiunge lavoro di registrazione JFR con limiti di conservazione di 30
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "Durata minima in millisecondi per gli eventi JVM di I/O dei file, ingresso nei monitor, attesa sui monitor e parcheggio dei thread, limitata da 1 a 1000. Le fasi di generazione dei chunk non hanno soglie di durata."
 impact = "Soglie più basse producono più eventi JVM. Queste metriche descrivono solo gli eventi che raggiungono la soglia."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR rileva i totali del traffico di protocollo, le fasi di generazione dei chunk, le attività di archiviazione e le attese oltre la soglia configurata."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "Abilita la telemetria JFR selettiva. Disabilitata per impostazione predefinita. I riepiloghi pubblicati omettono indirizzi, percorsi dei file e stack trace."
+impact = "Aggiunge lavoro di registrazione JFR con limiti di conservazione di 30 secondi e 64 MiB. Le serie aggregate vengono azzerate ogni secondo."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "Durata minima in millisecondi per gli eventi JVM di I/O dei file, ingresso nei monitor, attesa sui monitor e parcheggio dei thread, limitata da 1 a 1000. Le fasi di generazione dei chunk non hanno soglie di durata."
+impact = "Soglie più basse producono più eventi JVM. Queste metriche descrivono solo gli eventi che raggiungono la soglia."

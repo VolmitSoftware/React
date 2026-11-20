@@ -1,5 +1,7 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.core.telemetry.TickerDiagnostics;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -7,12 +9,16 @@ import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 
 /**
  * Server-thread scheduling driven by the loader's end-of-server-tick event. Work handed over from another thread runs
  * at the start of the next tick, delayed work once its tick comes, then every repeating task runs once. A failing task
- * is reported and keeps its slot, like a Bukkit repeating task.
+ * is reported and keeps its slot, like a Bukkit repeating task. Every run counts toward {@link #diagnostics}; a run's queue
+ * wait is the time from the start of its tick until it begins.
  */
 final class ModTicks implements AutoCloseable {
     private final ConcurrentLinkedQueue<Runnable> later = new ConcurrentLinkedQueue<>();
@@ -21,6 +27,13 @@ final class ModTicks implements AutoCloseable {
     private final Consumer<String> warnings;
     private long tickNumber;
     private long delayedOrder;
+    private final LongAdder submitted = new LongAdder();
+    private final LongAdder executed = new LongAdder();
+    private final LongAdder failures = new LongAdder();
+    private final LongAdder runtimeNanos = new LongAdder();
+    private final LongAdder queueNanos = new LongAdder();
+    private final AtomicLong maxQueueNanos = new AtomicLong();
+    private final AtomicInteger active = new AtomicInteger();
     private volatile boolean closed;
 
     private record Delayed(long due, long order, Runnable work) {
@@ -36,6 +49,7 @@ final class ModTicks implements AutoCloseable {
             return false;
         }
         later.add(Objects.requireNonNull(work));
+        submitted.increment();
         return true;
     }
 
@@ -51,6 +65,7 @@ final class ModTicks implements AutoCloseable {
             }
             delayed.add(new Delayed(tickNumber + delayTicks, delayedOrder++, work));
         }
+        submitted.increment();
         return true;
     }
 
@@ -73,6 +88,7 @@ final class ModTicks implements AutoCloseable {
         if (closed) {
             return;
         }
+        long tickStarted = System.nanoTime();
         List<Runnable> due = new ArrayList<>();
         synchronized (delayed) {
             tickNumber++;
@@ -85,27 +101,43 @@ final class ModTicks implements AutoCloseable {
             if (work == null) {
                 break;
             }
-            run(work);
+            run(work, tickStarted);
         }
         for (Runnable work : due) {
             if (closed) {
                 return;
             }
-            run(work);
+            run(work, tickStarted);
         }
         for (Runnable entry : repeating) {
             if (closed) {
                 return;
             }
-            run(entry);
+            submitted.increment();
+            run(entry, tickStarted);
         }
     }
 
-    private void run(Runnable work) {
+    TickerDiagnostics diagnostics() {
+        return new TickerDiagnostics(submitted.sum(), executed.sum(), failures.sum(), 0L, 0L, 0L, runtimeNanos.sum(),
+                queueNanos.sum(), maxQueueNanos.get(), active.get());
+    }
+
+    private void run(Runnable work, long tickStarted) {
+        long started = System.nanoTime();
+        long waited = Math.max(0L, started - tickStarted);
+        queueNanos.add(waited);
+        maxQueueNanos.accumulateAndGet(waited, Math::max);
+        active.incrementAndGet();
         try {
             work.run();
         } catch (RuntimeException failure) {
+            failures.increment();
             warnings.accept("Server task failed: " + failure.getClass().getSimpleName() + ": " + failure.getMessage());
+        } finally {
+            active.decrementAndGet();
+            executed.increment();
+            runtimeNanos.add(System.nanoTime() - started);
         }
     }
 

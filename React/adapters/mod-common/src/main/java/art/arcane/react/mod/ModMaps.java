@@ -79,7 +79,9 @@ final class ModMaps implements MapRuntimeConfig {
         createdDashboards.registerInto(created);
         dashboards = createdDashboards;
         for (ReactRenderer renderer : samplerRenderers("", "")) {
-            created.register(renderer);
+            if (!createdDashboards.absentIntegration(renderer.getId())) {
+                created.register(renderer);
+            }
         }
         started.seedOnlineState();
     }
@@ -153,6 +155,22 @@ final class ModMaps implements MapRuntimeConfig {
             }
         }
         return candidates;
+    }
+
+    /** Adds the graph map of a sampler registered after startup; ignored while maps are stopped. */
+    void registerSampler(Sampler sampler) {
+        MapRendererRegistry current = registry;
+        ModDashboardMaps active = dashboards;
+        if (current != null && sampler != null && (active == null || !active.absentIntegration(sampler.getId()))) {
+            current.register(SamplerRenderer.of(sampler));
+        }
+    }
+
+    void unregisterRenderer(String rendererId) {
+        MapRendererRegistry current = registry;
+        if (current != null) {
+            current.unregister(rendererId);
+        }
     }
 
     List<String> rendererIds() {

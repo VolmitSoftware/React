@@ -4846,3 +4846,14 @@ impact = "JFR の記録処理が追加されます。保持上限は 30 秒と 6
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "JVM のファイル入出力、モニター取得、モニター待機、スレッドのパークを記録する最小時間です。単位はミリ秒で、1～1000 に制限します。チャンク生成段階には時間のしきい値を適用しません。"
 impact = "しきい値を下げると JVM イベントが増えます。これらの指標は、しきい値に達したイベントのみを示します。"
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR はプロトコル通信量の合計、チャンク生成段階、ストレージ操作、設定したしきい値を超える待機を記録します。"
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "対象を限定した JFR テレメトリーを有効にします。既定では無効です。公開する集計にはアドレス、ファイルパス、スタックトレースを含めません。"
+impact = "JFR の記録処理が追加されます。保持上限は 30 秒と 64 MiB です。集計系列は毎秒リセットします。"
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "JVM のファイル入出力、モニター取得、モニター待機、スレッドのパークを記録する最小時間です。単位はミリ秒で、1～1000 に制限します。チャンク生成段階には時間のしきい値を適用しません。"
+impact = "しきい値を下げると JVM イベントが増えます。これらの指標は、しきい値に達したイベントのみを示します。"

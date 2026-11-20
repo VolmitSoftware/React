@@ -1,5 +1,6 @@
 package art.arcane.react.util.common.scheduling;
 
+import art.arcane.react.core.telemetry.TickerDiagnostics;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -31,7 +32,7 @@ class TickerDiagnosticsTest {
 
       queued.removeFirst().run();
 
-      Ticker.Diagnostics diagnostics = ticker.diagnostics();
+      TickerDiagnostics diagnostics = ticker.diagnostics();
       assertEquals(1L, diagnostics.executed());
       assertEquals(1L, diagnostics.failures());
       assertEquals(0L, diagnostics.rejected());
@@ -56,7 +57,7 @@ class TickerDiagnosticsTest {
       ticker.register(task);
       ticker.tick();
       assertThrows(IllegalStateException.class, ticker::tick);
-      Ticker.Diagnostics diagnostics = ticker.diagnostics();
+      TickerDiagnostics diagnostics = ticker.diagnostics();
       assertEquals(1L, diagnostics.rejected());
       assertEquals(0L, diagnostics.submitted());
       assertEquals(0L, diagnostics.executed());

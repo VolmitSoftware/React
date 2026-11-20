@@ -4846,3 +4846,14 @@ impact = "Lisää JFR-tallennustyötä 30 sekunnin ja 64 MiB:n säilytysrajoilla
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "Vähimmäiskesto millisekunteina JVM:n tiedosto-I/O-, monitorin sisäänmeno-, monitorin odotus- ja säikeen park-tapahtumille, rajattu välille 1–1000. Chunk-generoinnin vaiheilla ei ole kestokynnystä."
 impact = "Pienemmät kynnykset tuottavat enemmän JVM-tapahtumia. Nämä mittarit kuvaavat vain tämän kynnyksen täyttäviä tapahtumia."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR tallentaa protokollaliikenteen kokonaismäärät, chunk-generoinnin vaiheet, tallennusaktiivisuuden ja asetetun kynnyksen ylittävät odotukset."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "Ota käyttöön valikoiva JFR-telemetria. Pois käytöstä oletuksena. Julkaistut yhteenvedot jättävät pois osoitteet, tiedostopolut ja pinojäljet."
+impact = "Lisää JFR-tallennustyötä 30 sekunnin ja 64 MiB:n säilytysrajoilla. Koostesarjat nollataan joka sekunti."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "Vähimmäiskesto millisekunteina JVM:n tiedosto-I/O-, monitorin sisäänmeno-, monitorin odotus- ja säikeen park-tapahtumille, rajattu välille 1–1000. Chunk-generoinnin vaiheilla ei ole kestokynnystä."
+impact = "Pienemmät kynnykset tuottavat enemmän JVM-tapahtumia. Nämä mittarit kuvaavat vain tämän kynnyksen täyttäviä tapahtumia."

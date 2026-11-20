@@ -4846,3 +4846,14 @@ impact = "Voegt JFR-opnamewerk toe met bewaarlimieten van 30 seconden en 64 MiB.
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "Minimale duur in milliseconden voor JVM-bestands-I/O, monitorbetreding, monitorwachten en threadparkeren, begrensd van 1 tot 1000. Fasen van chunkgeneratie hebben geen duurdrempel."
 impact = "Lagere drempels leveren meer JVM-gebeurtenissen op. Deze metrieken beschrijven alleen gebeurtenissen die deze drempel bereiken."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR registreert totalen van protocolverkeer, fasen van chunkgeneratie, opslagactiviteit en wachttijden boven de ingestelde drempel."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "Schakelt selectieve JFR-telemetrie in. Standaard uitgeschakeld. Gepubliceerde samenvattingen bevatten geen adressen, bestandspaden of stacktraces."
+impact = "Voegt JFR-opnamewerk toe met bewaarlimieten van 30 seconden en 64 MiB. Samengevoegde meetreeksen worden elke seconde gereset."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "Minimale duur in milliseconden voor JVM-bestands-I/O, monitorbetreding, monitorwachten en threadparkeren, begrensd van 1 tot 1000. Fasen van chunkgeneratie hebben geen duurdrempel."
+impact = "Lagere drempels leveren meer JVM-gebeurtenissen op. Deze metrieken beschrijven alleen gebeurtenissen die deze drempel bereiken."

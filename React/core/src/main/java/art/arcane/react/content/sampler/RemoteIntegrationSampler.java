@@ -1,12 +1,16 @@
 package art.arcane.react.content.sampler;
 
-import art.arcane.react.React;
 import art.arcane.react.api.sampler.ReactCachedSampler;
-import art.arcane.react.core.controller.IntegrationController;
+import art.arcane.react.platform.IntegrationMetricsHost;
+import art.arcane.react.platform.ReactPlatform;
+import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
 
-abstract class RemoteIntegrationSampler extends ReactCachedSampler {
+/**
+ * One metric another plugin or mod publishes to React, read from the platform's integration host.
+ */
+public abstract class RemoteIntegrationSampler extends ReactCachedSampler {
   private final String pluginId;
   private final String defaultMetricKey;
   private final int decimals;
@@ -30,11 +34,7 @@ abstract class RemoteIntegrationSampler extends ReactCachedSampler {
 
   @Override
   public Reading captureReading() {
-    IntegrationController controller = React.controller(IntegrationController.class);
-    if (controller == null || controller.getRemoteSamplerBridge() == null) {
-      return reading(0D, 0L, false);
-    }
-    IntegrationMetricSample sample = controller.getRemoteSamplerBridge().storedSample(pluginId, metricKey());
+    IntegrationMetricSample sample = storedSample();
     return sample == null ? reading(0D, 0L, false)
         : reading(sample.valueOr(0D), sample.sampledAtMs(), sample.available());
   }
@@ -46,15 +46,11 @@ abstract class RemoteIntegrationSampler extends ReactCachedSampler {
 
   @Override
   public double onSample() {
-    IntegrationController controller = React.controller(IntegrationController.class);
-    if (controller == null || controller.getRemoteSamplerBridge() == null) {
+    IntegrationMetricSample sample = storedSample();
+    if (sample == null || !sample.available()) {
       return hasAvailableValue ? lastAvailableValue : 0D;
     }
-
-    if (!controller.getRemoteSamplerBridge().isAvailable(pluginId, metricKey())) {
-      return hasAvailableValue ? lastAvailableValue : 0D;
-    }
-    double value = controller.getRemoteSamplerBridge().valueOr(pluginId, metricKey(), 0D);
+    double value = sample.valueOr(0D);
     if (Double.isFinite(value)) {
       lastAvailableValue = value;
       hasAvailableValue = true;
@@ -87,12 +83,14 @@ abstract class RemoteIntegrationSampler extends ReactCachedSampler {
 
   @Override
   public boolean isSampleAvailable() {
-    IntegrationController controller = React.controller(IntegrationController.class);
-    if (controller == null || controller.getRemoteSamplerBridge() == null) {
-      return false;
-    }
+    IntegrationMetricSample sample = storedSample();
+    return sample != null && sample.available();
+  }
 
-    return controller.getRemoteSamplerBridge().isAvailable(pluginId, metricKey());
+  private IntegrationMetricSample storedSample() {
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    IntegrationMetricsHost host = platform == null ? null : platform.integrationMetricsHost().orElse(null);
+    return host == null ? null : host.storedSample(pluginId, metricKey());
   }
 
   protected String metricKey() {

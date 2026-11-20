@@ -4846,3 +4846,14 @@ impact = "增加 JFR 錄製工作，保留上限為 30 秒和 64 MiB。彙總序
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "JVM 檔案輸入輸出、監視器進入、監視器等待和執行緒停駐事件的最短持續時間，單位為毫秒，限制在 1 至 1000 之間。區塊生成階段不使用持續時間門檻。"
 impact = "門檻越低，產生的 JVM 事件越多。這些指標僅描述達到此門檻的事件。"
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR 記錄協定流量總量、區塊生成階段、儲存活動及超過設定門檻的等待。"
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "啟用選擇性 JFR 遙測。預設停用。發布的摘要不包含位址、檔案路徑或堆疊追蹤。"
+impact = "增加 JFR 錄製工作，保留上限為 30 秒和 64 MiB。彙總序列每秒重設。"
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "JVM 檔案輸入輸出、監視器進入、監視器等待和執行緒停駐事件的最短持續時間，單位為毫秒，限制在 1 至 1000 之間。區塊生成階段不使用持續時間門檻。"
+impact = "門檻越低，產生的 JVM 事件越多。這些指標僅描述達到此門檻的事件。"

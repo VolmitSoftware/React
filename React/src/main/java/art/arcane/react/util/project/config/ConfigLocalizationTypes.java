@@ -97,6 +97,7 @@ import art.arcane.react.core.controller.HotloadController;
 import art.arcane.react.core.controller.IncidentController;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.RuntimeTelemetryController;
+import art.arcane.react.core.telemetry.runtime.JfrTelemetryController;
 import art.arcane.react.model.ReactConfiguration;
 
 import java.util.ArrayList;
@@ -120,6 +121,7 @@ public final class ConfigLocalizationTypes {
         ReactTweak.class,
         WebConfiguration.class,
         RuntimeTelemetryController.class,
+        JfrTelemetryController.class,
         ActionCaptureProfile.class,
         ActionCollectGarbage.class,
         ActionHopperNetworkNormalize.class,

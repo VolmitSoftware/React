@@ -4846,3 +4846,14 @@ impact = "增加 JFR 录制工作，保留上限为 30 秒和 64 MiB。聚合序
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "JVM 文件输入输出、监视器进入、监视器等待和线程停驻事件的最短持续时间，单位为毫秒，限制在 1 至 1000 之间。区块生成阶段不使用持续时间阈值。"
 impact = "阈值越低，产生的 JVM 事件越多。这些指标仅描述达到此阈值的事件。"
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR 记录协议流量总量、区块生成阶段、存储活动及超过配置阈值的等待。"
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "启用选择性 JFR 遥测。默认禁用。发布的摘要不包含地址、文件路径或堆栈跟踪。"
+impact = "增加 JFR 录制工作，保留上限为 30 秒和 64 MiB。聚合序列每秒重置。"
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "JVM 文件输入输出、监视器进入、监视器等待和线程停驻事件的最短持续时间，单位为毫秒，限制在 1 至 1000 之间。区块生成阶段不使用持续时间阈值。"
+impact = "阈值越低，产生的 JVM 事件越多。这些指标仅描述达到此阈值的事件。"

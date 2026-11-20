@@ -1,5 +1,6 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.core.telemetry.TickerDiagnostics;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -13,6 +14,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ModTicksTest {
     private final List<String> warnings = new ArrayList<>();
     private final ModTicks ticks = new ModTicks(warnings::add);
+
+    @Test
+    void diagnosticsCountSubmittedExecutedAndFailedRuns() {
+        ticks.every(() -> {
+        });
+        ticks.later(() -> {
+            throw new IllegalStateException("boom");
+        });
+        ticks.later(() -> {
+        }, 2);
+        ticks.tick();
+        ticks.tick();
+        TickerDiagnostics diagnostics = ticks.diagnostics();
+        assertEquals(4L, diagnostics.submitted());
+        assertEquals(4L, diagnostics.executed());
+        assertEquals(1L, diagnostics.failures());
+        assertEquals(0, diagnostics.active());
+        assertTrue(diagnostics.runtimeNanos() >= 0L);
+        assertTrue(diagnostics.maxQueueNanos() <= diagnostics.queueNanos());
+    }
 
     @Test
     void handedOverWorkRunsOnceAtTheNextTickBeforeRepeatingTasks() {

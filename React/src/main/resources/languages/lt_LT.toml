@@ -4846,3 +4846,14 @@ impact = "Prideda JFR įrašymo darbą su 30 sekundžių ir 64 MiB saugojimo rib
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "Mažiausia JVM failų įvesties ir išvesties, įėjimo į monitorių, laukimo monitoriuje ir gijų parkavimo įvykių trukmė milisekundėmis, apribota nuo 1 iki 1000. Pasaulio segmentų generavimo etapams trukmės riba netaikoma."
 impact = "Mažesni slenksčiai sukuria daugiau JVM įvykių. Šie rodikliai aprašo tik įvykius, pasiekiančius šią ribą."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR fiksuoja protokolo srauto sumas, pasaulio segmentų generavimo etapus, saugyklos veiklą ir laukimus virš nustatytos ribos."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "Įjungia atrankinę JFR telemetriją. Pagal numatytuosius nustatymus išjungta. Skelbiamose suvestinėse nėra adresų, failų kelių ar iškvietimų dėklo pėdsakų."
+impact = "Prideda JFR įrašymo darbą su 30 sekundžių ir 64 MiB saugojimo ribomis. Apibendrintos matavimų sekos iš naujo pradedamos kas sekundę."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "Mažiausia JVM failų įvesties ir išvesties, įėjimo į monitorių, laukimo monitoriuje ir gijų parkavimo įvykių trukmė milisekundėmis, apribota nuo 1 iki 1000. Pasaulio segmentų generavimo etapams trukmės riba netaikoma."
+impact = "Mažesni slenksčiai sukuria daugiau JVM įvykių. Šie rodikliai aprašo tik įvykius, pasiekiančius šią ribą."

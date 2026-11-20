@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,13 +17,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PluginApiPackParserTest {
   private static final BukkitPluginApiHost HOST = new BukkitPluginApiHost();
 
-  private static final Path EXAMPLES = Path.of("src/main/resources/plugin-apis/examples");
+  private static final List<Path> EXAMPLES = List.of(Path.of("src/main/resources/plugin-apis/examples"),
+      Path.of("core/src/main/resources/plugin-apis/examples"));
 
   @Test
   void parsesEveryBundledExample() throws IOException {
-    List<Path> examples;
-    try (java.util.stream.Stream<Path> stream = Files.list(EXAMPLES)) {
-      examples = stream.filter(path -> path.toString().endsWith(".toml")).sorted().toList();
+    List<Path> examples = new ArrayList<>();
+    for (Path folder : EXAMPLES) {
+      try (java.util.stream.Stream<Path> stream = Files.list(folder)) {
+        examples.addAll(stream.filter(path -> path.toString().endsWith(".toml")).sorted().toList());
+      }
     }
     assertEquals(3, examples.size());
     for (Path example : examples) {

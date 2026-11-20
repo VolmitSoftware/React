@@ -61,6 +61,13 @@ public interface IntegrationMetricsHost {
   IntegrationMetricSample sample(String integrationId, String key);
 
   /**
+   * The sample the integration actually published, or null when it never published this key.
+   */
+  default IntegrationMetricSample storedSample(String integrationId, String key) {
+    return sample(integrationId, key);
+  }
+
+  /**
    * Every sample the integration published, keyed by metric key.
    */
   Map<String, IntegrationMetricSample> samples(String integrationId);

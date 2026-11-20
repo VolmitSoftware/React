@@ -4846,3 +4846,14 @@ impact = "30 saniye ve 64 MiB saklama sınırlarıyla JFR kayıt işi ekler. Top
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "JVM dosya G/Ç, monitöre giriş, monitörde bekleme ve iş parçacığı park etme olayları için milisaniye cinsinden en düşük süredir. 1 ile 1000 arasında sınırlandırılır. Chunk üretim aşamalarında süre eşiği yoktur."
 impact = "Daha düşük eşikler daha fazla JVM olayı üretir. Bu metrikler yalnızca bu eşiğe ulaşan olayları açıklar."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR, protokol trafiği toplamlarını, chunk üretim aşamalarını, depolama etkinliğini ve yapılandırılan eşiği aşan beklemeleri kaydeder."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "Seçici JFR telemetrisini etkinleştirir. Varsayılan olarak devre dışıdır. Yayımlanan özetler adresleri, dosya yollarını ve yığın izlerini içermez."
+impact = "30 saniye ve 64 MiB saklama sınırlarıyla JFR kayıt işi ekler. Toplu ölçüm serileri her saniye sıfırlanır."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "JVM dosya G/Ç, monitöre giriş, monitörde bekleme ve iş parçacığı park etme olayları için milisaniye cinsinden en düşük süredir. 1 ile 1000 arasında sınırlandırılır. Chunk üretim aşamalarında süre eşiği yoktur."
+impact = "Daha düşük eşikler daha fazla JVM olayı üretir. Bu metrikler yalnızca bu eşiğe ulaşan olayları açıklar."

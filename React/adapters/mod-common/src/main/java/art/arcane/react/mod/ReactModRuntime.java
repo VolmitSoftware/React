@@ -1,5 +1,7 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.metric.internal.PublishedMetricStore;
+import art.arcane.react.core.telemetry.TickerDiagnostics;
 import art.arcane.react.api.entity.EntityPriority;
 import art.arcane.react.api.monitor.MonitoringSettings;
 import art.arcane.react.api.web.HistoryWebMetricsSource;
@@ -113,9 +115,30 @@ public final class ReactModRuntime {
         ExecutorService async = Executors.newCachedThreadPool(daemonThreads());
         List<Runnable> startupTasks = new ArrayList<>();
         SampleController samples = new SampleController();
-        RuntimeTelemetry telemetry = new RuntimeTelemetry(dataFolder);
-        HistoryWebMetricsSource metrics = new HistoryWebMetricsSource(() -> samples, telemetry::history, new MetricsSerializer());
         ReactWebServer[] web = new ReactWebServer[1];
+        RuntimeTelemetry telemetry = new RuntimeTelemetry(dataFolder, new RuntimeTelemetry.ServerSources() {
+            @Override
+            public boolean webAvailable() {
+                return web[0] != null;
+            }
+
+            @Override
+            public int activeWebSocketSessions() {
+                ReactWebServer server = web[0];
+                return server == null ? 0 : server.activeWebSocketSessions();
+            }
+
+            @Override
+            public PublishedMetricStore publishedStore() {
+                return pluginApis.publishedStore();
+            }
+
+            @Override
+            public TickerDiagnostics ticker() {
+                return ticks.diagnostics();
+            }
+        });
+        HistoryWebMetricsSource metrics = new HistoryWebMetricsSource(() -> samples, telemetry::history, new MetricsSerializer());
         ModMaps maps = new ModMaps(server, dataFolder, ticks, () -> samples);
         ModReactPlatform modPlatform = new ModReactPlatform(platform, server, dataFolder, LOGGER, ticks, async, startupTasks,
                 languageHost, costProbe, () -> samples, () -> web[0], maps, telemetry);
@@ -135,7 +158,7 @@ public final class ReactModRuntime {
         WebConfigWatcher webConfig = new WebConfigWatcher(new File(dataFolder, "web.toml"), webHost, web[0]);
         Components components = new Components(new FeatureController(), new TweakController(), new ActionController());
         List<IController> coreControllers = List.of(components.features(), components.tweaks(), components.actions(), samples,
-                telemetry.jobs(), telemetry.history());
+                telemetry.jobs(), telemetry.history(), telemetry.jfr());
         ModSettings settings = new ModSettings(server, dataFolder, languageHost, maps, () -> samples, ticks, coreControllers);
         ModConfigHotload hotload = new ModConfigHotload(server, dataFolder, languageHost, maps, () -> samples, modPlatform, ticks);
         running = new Running(modPlatform, ticks, async, samples, web[0], maps, telemetry, components, webConfig, settings, hotload);

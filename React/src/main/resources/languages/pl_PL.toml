@@ -4846,3 +4846,14 @@ impact = "Dodaje pracę rejestrowania JFR z limitami przechowywania 30 sekund i 
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "Minimalny czas w milisekundach dla zdarzeń JVM dotyczących wejścia i wyjścia plików, wejścia do monitora, oczekiwania na monitorze i parkowania wątków, ograniczony do zakresu od 1 do 1000. Etapy generowania chunków nie mają progu czasu trwania."
 impact = "Niższe progi generują więcej zdarzeń JVM. Te metryki opisują wyłącznie zdarzenia osiągające ten próg."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR rejestruje sumy ruchu protokołu, etapy generowania chunków, operacje pamięci masowej i oczekiwania przekraczające ustawiony próg."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "Włącza selektywną telemetrię JFR. Domyślnie wyłączona. Publikowane podsumowania pomijają adresy, ścieżki plików i ślady stosu."
+impact = "Dodaje pracę rejestrowania JFR z limitami przechowywania 30 sekund i 64 MiB. Zagregowane serie są zerowane co sekundę."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "Minimalny czas w milisekundach dla zdarzeń JVM dotyczących wejścia i wyjścia plików, wejścia do monitora, oczekiwania na monitorze i parkowania wątków, ograniczony do zakresu od 1 do 1000. Etapy generowania chunków nie mają progu czasu trwania."
+impact = "Niższe progi generują więcej zdarzeń JVM. Te metryki opisują wyłącznie zdarzenia osiągające ten próg."

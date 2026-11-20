@@ -2,6 +2,7 @@ package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
 import art.arcane.react.core.telemetry.runtime.FoliaRegionTps;
+import art.arcane.react.core.telemetry.runtime.JfrSession;
 import art.arcane.react.core.telemetry.runtime.JfrTelemetry;
 import art.arcane.react.core.telemetry.runtime.PaperPathfindingDecisions;
 import art.arcane.react.core.telemetry.runtime.PathfindingRates;
@@ -33,20 +34,16 @@ public final class RuntimeTelemetryController implements IController {
   private boolean jfrEnabled = false;
   @ConfigDoc(value = "Minimum duration in milliseconds for JVM file IO, monitor entry, monitor wait, and thread park events, clamped from 1 to 1000. Chunk generation stages use no duration threshold.", impact = "Lower thresholds emit more JVM events. These metrics describe only events meeting this threshold.")
   private long jfrSlowThresholdMs = 10L;
-  private transient final Object lifecycleLock = new Object();
-  private transient final AtomicLong jfrGeneration = new AtomicLong();
+  private transient final JfrSession jfr = new JfrSession();
   private transient final AtomicLong configurationRevision = new AtomicLong();
   private transient final RegionalHealth regionalHealth = new RegionalHealth();
   private transient final List<String> registeredIds = new ArrayList<>();
   private transient volatile Options options = new Options(true, 64, false, 10L);
   private transient volatile boolean active;
   private transient volatile RegionalHealth.Snapshot regionalSnapshot = RegionalHealth.Snapshot.EMPTY;
-  private transient volatile JfrTelemetry.Snapshot jfrSnapshot = JfrTelemetry.Snapshot.EMPTY;
   private transient volatile String regionalReason = "warming-up";
-  private transient volatile String jfrReason = "disabled";
   private transient ScheduledExecutorService executor;
   private transient FoliaRegionTps regionSource;
-  private transient volatile JfrTelemetry jfr;
   private transient Options appliedOptions;
   private transient long appliedRevision = -1L;
   private final transient PathfindingRates pathfindingRates = new PathfindingRates(false);
@@ -68,10 +65,11 @@ public final class RuntimeTelemetryController implements IController {
     appliedOptions = null;
     appliedRevision = -1L;
     active = true;
+    jfr.activate();
     registeredIds.clear();
     regionalHealth.clear();
     regionalSnapshot = RegionalHealth.Snapshot.EMPTY;
-    jfrSnapshot = JfrTelemetry.Snapshot.EMPTY;
+    jfr.reset();
   }
 
   @Override
@@ -104,11 +102,12 @@ public final class RuntimeTelemetryController implements IController {
   @Override
   public void stop() {
     active = false;
+    jfr.deactivate();
     try {
       try {
         stopExecutor();
       } finally {
-        closeJfr();
+        jfr.close();
       }
     } finally {
       if (pathfinding != null) {
@@ -117,7 +116,7 @@ public final class RuntimeTelemetryController implements IController {
       }
       pathfindingRates.reset(System.nanoTime());
       regionalSnapshot = RegionalHealth.Snapshot.EMPTY;
-      jfrSnapshot = JfrTelemetry.Snapshot.EMPTY;
+      jfr.reset();
       SampleController controller = React.controller(SampleController.class);
       if (controller != null) {
         for (String id : registeredIds) {
@@ -153,7 +152,7 @@ public final class RuntimeTelemetryController implements IController {
   }
 
   public JfrTelemetry.Snapshot jfrSnapshot() {
-    return jfrSnapshot;
+    return jfr.snapshot();
   }
 
   public RuntimeMetric metric(String id) {
@@ -184,14 +183,7 @@ public final class RuntimeTelemetryController implements IController {
           && (!id.equals("region-tps-lowest") || snapshot.observedPlayers() > 0);
       return new RuntimeMetric(Double.isFinite(value) ? value : 0D, snapshot.sampledAtMs(), available, available ? "" : "no-observation");
     }
-    if (!jfrReason.isEmpty()) {
-      return RuntimeMetric.unavailable(jfrReason);
-    }
-    JfrTelemetry.Snapshot snapshot = jfrSnapshot;
-    if (snapshot.sampledAtMs() == 0L || nowMs < snapshot.sampledAtMs() || nowMs - snapshot.sampledAtMs() > MAX_SNAPSHOT_AGE_MS) {
-      return RuntimeMetric.unavailable("stale");
-    }
-    return snapshot.metrics().getOrDefault(id, RuntimeMetric.unavailable("source-unavailable"));
+    return jfr.metric(id, nowMs);
   }
 
   private Options configuredOptions() {
@@ -217,7 +209,7 @@ public final class RuntimeTelemetryController implements IController {
         reconfigure(desired);
       } catch (RuntimeException | LinkageError failure) {
         regionalReason = "sampling-failed";
-        jfrReason = "sampling-failed";
+        jfr.fail();
         React.warn("Runtime telemetry configuration failed", failure);
         return;
       }
@@ -235,19 +227,7 @@ public final class RuntimeTelemetryController implements IController {
         React.warn("Folia player-region telemetry stopped after a sampling failure", failure);
       }
     }
-    if (jfr != null) {
-      try {
-        jfrSnapshot = jfr.snapshot(nowMs);
-        if (!jfrSnapshot.available()) {
-          jfrReason = "sampling-failed";
-          closeJfr();
-        }
-      } catch (RuntimeException failure) {
-        jfrReason = "sampling-failed";
-        closeJfr();
-        React.warn("JFR telemetry stopped after an aggregation failure", failure);
-      }
-    }
+    jfr.refresh(nowMs);
   }
 
   private void reconfigure(Options desired) {
@@ -262,31 +242,7 @@ public final class RuntimeTelemetryController implements IController {
         regionalReason = "warming-up";
       }
     }
-    closeJfr();
-    jfrSnapshot = JfrTelemetry.Snapshot.EMPTY;
-    jfrReason = desired.jfrEnabled() ? "warming-up" : "disabled";
-    if (desired.jfrEnabled()) {
-      try {
-        long generation = jfrGeneration.get();
-        JfrTelemetry started = JfrTelemetry.start(new JfrTelemetry.Options(desired.thresholdMs()), failure -> {
-          if (active && generation == jfrGeneration.get()) {
-            jfrReason = "sampling-failed";
-            React.warn("JFR telemetry stream failed", failure);
-          }
-        });
-        synchronized (lifecycleLock) {
-          if (active && generation == jfrGeneration.get()) {
-            jfr = started;
-            jfrReason = "";
-          } else {
-            started.close();
-          }
-        }
-      } catch (RuntimeException | LinkageError failure) {
-        jfrReason = "source-unavailable";
-        React.warn("Could not start JFR telemetry", failure);
-      }
-    }
+    jfr.configure(desired.jfrEnabled(), desired.thresholdMs());
   }
 
   private void refreshRegions(long nowMs, int limit) {
@@ -321,18 +277,6 @@ public final class RuntimeTelemetryController implements IController {
       current.shutdownNow();
       Thread.currentThread().interrupt();
       throw new IllegalStateException("Interrupted while stopping runtime telemetry", failure);
-    }
-  }
-
-  private void closeJfr() {
-    JfrTelemetry previous;
-    synchronized (lifecycleLock) {
-      jfrGeneration.incrementAndGet();
-      previous = jfr;
-      jfr = null;
-    }
-    if (previous != null) {
-      previous.close();
     }
   }
 

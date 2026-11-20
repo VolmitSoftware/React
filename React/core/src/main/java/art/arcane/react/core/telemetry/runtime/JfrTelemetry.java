@@ -117,7 +117,7 @@ public final class JfrTelemetry implements AutoCloseable {
 
   public record Options(long slowThresholdMs) {
     public Options {
-      slowThresholdMs = Math.clamp(slowThresholdMs, 1L, 1_000L);
+      slowThresholdMs = Math.max(1L, Math.min(slowThresholdMs, 1_000L));
     }
   }
 

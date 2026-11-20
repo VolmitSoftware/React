@@ -4846,3 +4846,14 @@ impact = "Thêm công việc ghi JFR với giới hạn lưu giữ 30 giây và 
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "Thời lượng tối thiểu tính bằng mili giây cho các sự kiện vào/ra tệp JVM, vào monitor, chờ monitor và tạm dừng luồng bằng park, giới hạn từ 1 đến 1000. Các giai đoạn tạo chunk không có ngưỡng thời lượng."
 impact = "Ngưỡng thấp hơn tạo nhiều sự kiện JVM hơn. Các chỉ số này chỉ mô tả những sự kiện đạt ngưỡng này."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR ghi tổng lưu lượng giao thức, các giai đoạn tạo chunk, hoạt động lưu trữ và thời gian chờ vượt ngưỡng đã cấu hình."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "Bật thu thập dữ liệu JFR có chọn lọc. Mặc định tắt. Các bản tổng hợp được công bố không chứa địa chỉ, đường dẫn tệp hoặc dấu vết ngăn xếp."
+impact = "Thêm công việc ghi JFR với giới hạn lưu giữ 30 giây và 64 MiB. Các chuỗi tổng hợp được đặt lại mỗi giây."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "Thời lượng tối thiểu tính bằng mili giây cho các sự kiện vào/ra tệp JVM, vào monitor, chờ monitor và tạm dừng luồng bằng park, giới hạn từ 1 đến 1000. Các giai đoạn tạo chunk không có ngưỡng thời lượng."
+impact = "Ngưỡng thấp hơn tạo nhiều sự kiện JVM hơn. Các chỉ số này chỉ mô tả những sự kiện đạt ngưỡng này."

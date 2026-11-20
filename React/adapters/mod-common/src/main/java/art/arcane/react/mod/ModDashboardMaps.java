@@ -59,7 +59,8 @@ public final class ModDashboardMaps {
         return maps;
     }
 
-    private boolean absentIntegration(String rendererId) {
+    /** True for a renderer of an integration mod that is not installed, which Bukkit leaves off its map list too. */
+    boolean absentIntegration(String rendererId) {
         String normalized = MapRendererRegistry.normalize(rendererId == null ? "" : rendererId).toLowerCase(Locale.ROOT);
         for (String integration : INTEGRATION_IDS) {
             if (normalized.startsWith(integration + "-")) {

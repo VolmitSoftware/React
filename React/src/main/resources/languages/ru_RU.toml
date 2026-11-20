@@ -4846,3 +4846,14 @@ impact = "Добавляет работу по записи JFR с предел�
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "Минимальная длительность событий файлового ввода-вывода JVM, входа в монитор, ожидания монитора и парковки потоков в миллисекундах, ограничена диапазоном от 1 до 1000. Для этапов генерации чанков порог длительности не применяется."
 impact = "Меньшие пороги создают больше событий JVM. Эти метрики описывают только события, достигшие данного порога."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR записывает суммарный трафик протокола, этапы генерации чанков, операции хранилища и ожидания сверх заданного порога."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "Включает выборочную телеметрию JFR. По умолчанию отключена. Публикуемые сводки не содержат адресов, путей к файлам и трассировок стека."
+impact = "Добавляет работу по записи JFR с пределами хранения 30 секунд и 64 MiB. Сводные ряды обнуляются каждую секунду."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "Минимальная длительность событий файлового ввода-вывода JVM, входа в монитор, ожидания монитора и парковки потоков в миллисекундах, ограничена диапазоном от 1 до 1000. Для этапов генерации чанков порог длительности не применяется."
+impact = "Меньшие пороги создают больше событий JVM. Эти метрики описывают только события, достигшие данного порога."

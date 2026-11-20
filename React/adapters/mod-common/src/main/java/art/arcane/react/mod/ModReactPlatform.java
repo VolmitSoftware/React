@@ -123,7 +123,7 @@ public final class ModReactPlatform implements ReactPlatform {
         this.costProbe = costProbe;
         this.commandHost = new ModCommandHost(server, maps, new ModLanguageCommand(ticks::later));
         this.scheduler = new ModPlatformScheduler(server, ticks, async, telemetry.jobs());
-        ModSamplerHost modSamplerHost = new ModSamplerHost(samples);
+        ModSamplerHost modSamplerHost = new ModSamplerHost(samples, maps);
         this.samplerHost = modSamplerHost;
         this.registryHost = new ModRegistryHost(dataFolder, startupTasks, this::verbose, this::warn);
         this.tickStatsHost = new ModTickStatsHost(server, ticks);

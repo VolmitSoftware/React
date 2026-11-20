@@ -4846,3 +4846,14 @@ impact = "מוסיף עבודת הקלטת JFR עם מגבלות שמירה של
 [config.documentation.annotation.art.arcane.react.core.controller.runtimetelemetrycontroller.field.jfrslowthresholdms]
 summary = "משך מזערי באלפיות שנייה לאירועי קלט ופלט בקובצי JVM, כניסה למוניטור, המתנה במוניטור וחניית תהליכונים, מוגבל לטווח 1 עד 1000. לשלבי יצירת צ'אנקים אין סף משך."
 impact = "ספים נמוכים יותר מפיקים יותר אירועי JVM. המדדים האלה מתארים רק אירועים שמגיעים לסף הזה."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller]
+description = "JFR לוכד סיכומי תעבורת פרוטוקול, שלבי יצירת צ'אנקים, פעילות אחסון והמתנות מעבר לסף שהוגדר."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrenabled]
+summary = "מפעיל טלמטריית JFR סלקטיבית. מושבת כברירת מחדל. הסיכומים המפורסמים אינם כוללים כתובות, נתיבי קבצים או עקבות מחסנית."
+impact = "מוסיף עבודת הקלטת JFR עם מגבלות שמירה של 30 שניות ו-64 MiB. סדרות מצטברות מתאפסות בכל שנייה."
+
+[config.documentation.annotation.art.arcane.react.core.telemetry.runtime.jfrtelemetrycontroller.field.jfrslowthresholdms]
+summary = "משך מזערי באלפיות שנייה לאירועי קלט ופלט בקובצי JVM, כניסה למוניטור, המתנה במוניטור וחניית תהליכונים, מוגבל לטווח 1 עד 1000. לשלבי יצירת צ'אנקים אין סף משך."
+impact = "ספים נמוכים יותר מפיקים יותר אירועי JVM. המדדים האלה מתארים רק אירועים שמגיעים לסף הזה."
