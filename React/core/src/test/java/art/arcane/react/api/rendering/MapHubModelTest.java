@@ -5,6 +5,8 @@ import art.arcane.react.platform.MapHubClick;
 import art.arcane.react.platform.MapHubIcon;
 import art.arcane.react.platform.MapHubScreen;
 import art.arcane.react.platform.MapHubTile;
+import art.arcane.react.platform.cost.OwnerCostSampler;
+import art.arcane.react.platform.cost.OwnerSampler;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -39,6 +41,48 @@ class MapHubModelTest {
     assertEquals(22, model.groupOf(fake("heap-used")).order());
     assertEquals(30, model.groupOf(fake("lava-overlay")).order());
     assertEquals(99, model.groupOf(fake("mystery")).order());
+  }
+
+  @Test
+  void ownerCostMapsShareOneGroupWithOverviewsFirstThenMostExpensive() {
+    List<ReactRenderer> sorted = model.sortedRenderers(List.of(
+        owner("plugin-entityculling", 0.5D), fake("plugin-event-impact-list-map"), owner("plugin-worldedit", 4D),
+        owner("plugin-zeta", 0D), fake("plugin-event-impact-pie-map"), owner("plugin-alpha", 0D), owner("plugin-chunky", 9D)
+    ));
+
+    assertEquals(List.of("plugin-event-impact-list-map", "plugin-event-impact-pie-map", "plugin-chunky", "plugin-worldedit",
+        "plugin-entityculling", "plugin-alpha", "plugin-zeta"), ids(sorted));
+    assertEquals(99, model.groupOf(fake("plugin-api-adapt-earth-mover-guard-checks")).order());
+    for (ReactRenderer renderer : sorted) {
+      assertEquals(MapHubModel.OWNER_GROUP, model.groupOf(renderer).order(), renderer.getId());
+      assertEquals(MapHubIcon.GROUP_OWNERS, model.groupOf(renderer).icon());
+    }
+
+    MapHubScreen screen = model.group(sorted, MapHubModel.OWNER_GROUP, 0, Map.of());
+    MapHubTile chunky = tile(screen, "map-renderer-plugin-chunky");
+    assertTrue(chunky.lore().stream().anyMatch(line -> line.contains(" 9 ms/s, #1 of 5")), String.valueOf(chunky.lore()));
+    MapHubTile list = tile(screen, "map-renderer-plugin-event-impact-list-map");
+    assertTrue(list.lore().stream().noneMatch(line -> line.contains("ms/s, #")));
+
+    MapHubTile group = tile(model.hub(sorted, Map.of()), "map-hub-group-" + MapHubModel.OWNER_GROUP);
+    assertTrue(group.lore().get(1).contains("#1") && group.lore().get(1).contains(" 9 ms/s"), String.valueOf(group.lore()));
+    assertEquals(3, group.lore().stream().filter(line -> line.contains("ms/s")).count());
+  }
+
+  @Test
+  void everyOwnerFamilyJoinsTheGroupFamilyByFamilyBusiestFirst() {
+    List<ReactRenderer> sorted = model.sortedRenderers(List.of(
+        family("network-out-create", OwnerSampler.FAMILY_GAUGES + 1, 900D), family("chunk-loader-ae2", OwnerSampler.FAMILY_GAUGES, 4D),
+        family("worldgen-mod-terralith", OwnerSampler.FAMILY_WORLDGEN, 2D), owner("mod-create", 1D),
+        family("chunk-loader-create", OwnerSampler.FAMILY_GAUGES, 40D), family("worldgen-step-features", OwnerSampler.FAMILY_WORLDGEN, Double.NaN),
+        fake("worldgen-mod-pie-map")
+    ));
+
+    List<ReactRenderer> owners = model.filterByGroup(sorted, MapHubModel.OWNER_GROUP);
+    assertEquals(List.of("worldgen-mod-pie-map", "mod-create", "worldgen-mod-terralith", "chunk-loader-create", "chunk-loader-ae2",
+        "network-out-create"), ids(owners));
+    MapHubTile loader = tile(model.group(sorted, MapHubModel.OWNER_GROUP, 0, Map.of()), "map-renderer-chunk-loader-ae2");
+    assertTrue(loader.lore().stream().anyMatch(line -> line.contains("Now: 4, #2 of 2")), String.valueOf(loader.lore()));
   }
 
   @Test
@@ -113,6 +157,51 @@ class MapHubModelTest {
 
   private static List<String> ids(List<ReactRenderer> renderers) {
     return renderers.stream().map(ReactRenderer::getId).toList();
+  }
+
+  private static ReactRenderer family(String id, int family, double value) {
+    return new FamilyRenderer(id, family, value);
+  }
+
+  private record FamilyRenderer(String id, int family, double value) implements ReactRenderer, OwnerSampler {
+    @Override
+    public String getId() {
+      return id;
+    }
+
+    @Override
+    public void render() {
+    }
+
+    @Override
+    public int ownerFamily() {
+      return family;
+    }
+
+    @Override
+    public double ownerRankValue() {
+      return value;
+    }
+  }
+
+  private static ReactRenderer owner(String id, double cost) {
+    return new OwnerRenderer(id, cost);
+  }
+
+  private record OwnerRenderer(String id, double cost) implements ReactRenderer, OwnerCostSampler {
+    @Override
+    public String getId() {
+      return id;
+    }
+
+    @Override
+    public void render() {
+    }
+
+    @Override
+    public double recentCostMsPerSecond() {
+      return cost;
+    }
   }
 
   private static ReactRenderer fake(String id) {

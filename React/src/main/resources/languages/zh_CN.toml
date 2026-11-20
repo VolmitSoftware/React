@@ -130,6 +130,7 @@
 #   {protocol}  集成协议版本
 #   {radius}  开发测试套件操作的区块半径
 #   {range}  允许的视野、模拟或发送距离范围（区块）
+#   {rank}  排名列表中的位置，从 1 开始
 #   {rate}  配置的作物生长加速倍率
 #   {rating}  带格式的基准测试评级
 #   {react_errors}  服务器日志中发现的 React 错误行数
@@ -2248,6 +2249,10 @@ description = "插件事件影响列表地图功能的配置。此功能会持�
 impact = "设为 0 时，更高的地图墙会列出每个插件；设为固定值时会乘以垂直图块数，因此更高的地图墙仍会列出更多插件。"
 summary = "每个地图图块的最大行数，为 0 时填满可用高度。"
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactlistmap.field.pageseconds]
+summary = "当有开销的插件或模组多于地图能容纳的行数时，列表每页显示的秒数；设为 0 则只显示开销最高的一页。"
+impact = "列表按此间隔翻到下一页，使每个已测量的插件或模组轮流出现。更大的地图墙每页显示更多行。"
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactpiemap]
 description = "插件事件影响饼图地图功能的配置。此功能会持续监控服务器行为，并在运行时应用保护限制。"
 
@@ -3648,6 +3653,8 @@ controller_unavailable = "&c渲染器控制器不可用。&r"
 group = "组 : {group}"
 id = "ID: {id}"
 none_available = "&c没有可用的地图渲染器。&r"
+owner_cost = "近期开销：{value}，{total} 个中第 {rank}"
+owner_rank = "当前：{value}，{total} 个中第 {rank}"
 scope = "范围: {scope}"
 select = "左键点击: 选择此监视器"
 selected = "&a已选择地图: &f{renderer}&a &8[{scope}]&r"
@@ -3679,6 +3686,7 @@ iris_biome_chunk_share_pie_map = "每个扇区代表每个生物群系所占已�
 iris_generation_pressure_overlay = "颜色越热，表示已采样区块中的压力越大。"
 iris_metrics = "监控: 受管理的世界、运行中的引擎、已加载区块、实体、生成速率和故障。"
 iris_world_chunk_share_pie_map = "每个扇区代表每个世界所占已加载区块的百分比。"
+mod_cost_kind_list_map = "顶部条按类型拆分全部模组开销；每一行以同样方式拆分单个模组的开销。"
 player_impact_overlay = "颜色越热，表示已采样区块中的压力越大。"
 plugin_event_impact_list_map = "各行按插件滚动影响从高到低排序。"
 mod_event_impact_list_map = "各行按模组滚动影响从高到低排序。"
@@ -3890,6 +3898,7 @@ column_name = "名称"
 column_ops = "操作"
 column_share = "占比"
 more_items = "另外 +{count} 项"
+rows_paged = "{from}-{to}/{total}"
 rows_shown = "{shown}/{total}"
 total_cost = "{value} ms/s"
 
@@ -3924,6 +3933,7 @@ iris_fallback = "用于 {name} 的 Iris 集成渲染器。"
 iris_generation_pressure_overlay = "使用预生成队列和区块流延迟的 Iris 压力叠加层。"
 iris_metrics = "Iris 集成概览，涵盖引擎、世界、区块、实体和生成。"
 iris_world_chunk_share_pie_map = "饼图，显示 Iris 管理的各世界中已加载区块的占比。"
+mod_cost_kind_list_map = "将模组开销拆分为事件、方块实体刻、实体刻和世界生成。"
 player_impact_overlay = "复合压力图，带有每位玩家的标记，显示可能的世界影响。"
 plugin_event_impact_list_map = "按滚动事件影响分数排名的插件列表。"
 mod_event_impact_list_map = "按滚动事件影响分数排名的模组列表。"
@@ -4108,8 +4118,10 @@ fluid = "流体更新活动和模拟开销。"
 hopper = "漏斗传输活动和处理开销。"
 iris = "通过远程采样器桥公开的 Iris 集成指标。"
 memory = "JVM 内存压力和垃圾回收行为。"
+mod_cost = "此模组在事件、方块实体、实体和世界生成上占用的时间，单位为每秒毫秒。"
 physics = "物理更新活动和模拟开销。"
 player = "玩家活动和网络延迟质量。"
+plugin_cost = "此插件的事件处理器占用的服务器线程时间，单位为每秒毫秒。"
 processor = "服务器运行环境周围的 CPU 和主机负载压力。"
 react = "React 调度器队列深度和执行压力。"
 redstone = "红石状态切换活动和处理开销。"
@@ -4175,6 +4187,12 @@ update_hint = "请更新 Animus 以发布 React 指标"
 [renderer.heatmap]
 no_activity = "附近没有活动"
 quiet = "安静"
+
+[renderer.cost_kind]
+event = "事件"
+block_entity = "方块实体"
+entity = "实体"
+worldgen = "世界生成"
 
 [renderer.metric]
 2d_caches = "2D 缓存"
@@ -4363,7 +4381,9 @@ iris_world_mantle = "Iris 世界 Mantle"
 iris_world_overview = "Iris 世界概览"
 iris_world_pregen = "Iris 世界预生成"
 iris_world_pregen_time = "Iris 世界预生成耗时"
+mod_cost_kinds = "按类型的模组开销"
 player_impact = "玩家影响"
+plugin_cost_kinds = "按类型的插件开销"
 plugin_impact = "插件影响"
 mod_impact = "模组影响"
 plugin_impact_share = "插件影响占比"

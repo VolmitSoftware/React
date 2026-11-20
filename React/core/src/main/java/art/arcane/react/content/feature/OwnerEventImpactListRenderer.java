@@ -35,6 +35,7 @@ import art.arcane.volmlib.util.localization.MessageArgument;
 
 import java.util.List;
 import java.util.function.IntSupplier;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -46,14 +47,41 @@ public class OwnerEventImpactListRenderer implements ReactRenderer {
   private final MapAnchorHost anchors;
   private final Supplier<EventMeasurement> events;
   private final IntSupplier maxRowsPerTile;
+  private final IntSupplier pageSeconds;
+  private final LongSupplier clockMs;
 
   /**
    * @param maxRowsPerTile rows drawn per map tile, or 0 to fill the available height
+   * @param pageSeconds    seconds each page stays up when the owners do not fit, or 0 to show only the first page
    */
-  public OwnerEventImpactListRenderer(MapAnchorHost anchors, Supplier<EventMeasurement> events, IntSupplier maxRowsPerTile) {
+  public OwnerEventImpactListRenderer(MapAnchorHost anchors, Supplier<EventMeasurement> events, IntSupplier maxRowsPerTile,
+                                      IntSupplier pageSeconds) {
+    this(anchors, events, maxRowsPerTile, pageSeconds, System::currentTimeMillis);
+  }
+
+  OwnerEventImpactListRenderer(MapAnchorHost anchors, Supplier<EventMeasurement> events, IntSupplier maxRowsPerTile,
+                               IntSupplier pageSeconds, LongSupplier clockMs) {
     this.anchors = anchors;
     this.events = events;
     this.maxRowsPerTile = maxRowsPerTile;
+    this.pageSeconds = pageSeconds;
+    this.clockMs = clockMs;
+  }
+
+  /**
+   * The page a list of {@code total} rows shows at {@code nowMs} when {@code capacity} rows fit, turning every
+   * {@code pageSeconds}; every tile of a wall computes the same page from the same clock.
+   */
+  static int page(int total, int capacity, int pageSeconds, long nowMs) {
+    int pages = pageCount(total, capacity);
+    if (pages <= 1 || pageSeconds <= 0) {
+      return 0;
+    }
+    return (int) ((nowMs / (pageSeconds * 1000L)) % pages);
+  }
+
+  static int pageCount(int total, int capacity) {
+    return Math.max(1, (total + Math.max(1, capacity) - 1) / Math.max(1, capacity));
   }
 
   @Override
@@ -108,7 +136,9 @@ public class OwnerEventImpactListRenderer implements ReactRenderer {
       capacity = (int) Math.min(capacity, (long) maxRowsPerTile * gridHeight());
     }
 
-    int limit = Math.min(entries.size(), capacity);
+    int page = page(entries.size(), capacity, pageSeconds.getAsInt(), clockMs.getAsLong());
+    int first = page * capacity;
+    int limit = Math.min(entries.size() - first, capacity);
     double maxImpact = Math.max(0.0001D, entries.get(0).impact());
     double total = Math.max(0.0001D, snapshot.totalImpact());
     double windowSeconds = windowSeconds();
@@ -123,20 +153,29 @@ public class OwnerEventImpactListRenderer implements ReactRenderer {
         continue;
       }
 
-      PluginEventImpactSeries.Entry entry = entries.get(i);
+      int rank = first + i;
+      PluginEventImpactSeries.Entry entry = entries.get(rank);
       double normalized = Math.max(0D, Math.min(1D, entry.impact() / maxImpact));
       double share = Math.max(0D, Math.min(1D, entry.impact() / total));
-      String[] values = columnValues(columns, i, share, entry.currentMS() / windowSeconds, entry);
-      RendererLayout.listRow(this, i, row.withoutBottom(gutter), weights, gutter, normalized, values);
+      String[] values = columnValues(columns, rank, share, entry.currentMS() / windowSeconds, entry);
+      RendererLayout.listRow(this, rank, row.withoutBottom(gutter), weights, gutter, normalized, values);
     }
 
-    RendererLayout.footer(
-        this,
-        ReactLanguage.raw(
+    String rows = pageCount(entries.size(), capacity) > 1
+        ? ReactLanguage.raw(
+            MapMessages.ROWS_PAGED,
+            MessageArgument.untrusted("from", Integer.toString(first + 1)),
+            MessageArgument.untrusted("to", Integer.toString(first + limit)),
+            MessageArgument.untrusted("total", Integer.toString(entries.size()))
+        )
+        : ReactLanguage.raw(
             MapMessages.ROWS_SHOWN,
             MessageArgument.untrusted("shown", Integer.toString(limit)),
             MessageArgument.untrusted("total", Integer.toString(entries.size()))
-        ),
+        );
+    RendererLayout.footer(
+        this,
+        rows,
         ReactLanguage.raw(
             MapMessages.TOTAL_COST,
             MessageArgument.untrusted("value", RendererLayout.compact(totalMillis))

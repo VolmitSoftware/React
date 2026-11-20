@@ -130,6 +130,7 @@
 #   {protocol}  Integracijos protokolo versija
 #   {radius}  Kūrėjo testo veiksmo spindulys pasaulio segmentais
 #   {range}  Leidžiamas matymo, simuliavimo arba siuntimo atstumo intervalas pasaulio segmentais
+#   {rank}  Vieta reitingo sąraše, pradedant nuo 1
 #   {rate}  Nustatytas augalų augimo spartinimo greitis
 #   {rating}  Suformatuotas našumo testo įvertinimas
 #   {react_errors}  Serverio žurnale rastų React klaidų eilučių skaičius
@@ -2248,6 +2249,10 @@ description = "Įskiepių įvykių poveikio sąrašo žemėlapio funkcijos konfi
 impact = "Nulis leidžia aukštesnei žemėlapių sienai išvardyti visus įskiepius; fiksuota reikšmė dauginama iš vertikalių žemėlapių skaičiaus, todėl aukštesnė siena vis tiek išvardija daugiau įskiepių."
 summary = "Didžiausias viename žemėlapyje piešiamų eilučių skaičius arba 0, kad būtų užpildytas visas turimas aukštis."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactlistmap.field.pageseconds]
+summary = "Kiek sekundžių rodomas kiekvienas sąrašo puslapis, kai sąnaudų turinčių įskiepių ar modų yra daugiau, nei telpa žemėlapyje, arba 0, kad būtų rodomas tik brangiausias puslapis."
+impact = "Sąrašas šiuo intervalu pereina į kitą puslapį, todėl kiekvienas išmatuotas įskiepis ar modas parodomas paeiliui. Didesnė siena viename puslapyje rodo daugiau eilučių."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactpiemap]
 description = "Įskiepių įvykių poveikio skritulinės diagramos žemėlapio funkcijos konfigūracija. Ši funkcija nuolat stebi serverio elgseną ir vykdymo metu taiko apsaugas."
 
@@ -3648,6 +3653,8 @@ controller_unavailable = "&cPiešiklių valdiklis nepasiekiamas.&r"
 group = "Grupė: {group}"
 id = "ID: {id}"
 none_available = "&cNėra prieinamų žemėlapių piešiklių.&r"
+owner_cost = "Naujausios sąnaudos: {value}, {rank} iš {total}"
+owner_rank = "Dabar: {value}, {rank} iš {total}"
 scope = "Taikymo sritis: {scope}"
 select = "Kairysis spustelėjimas: pasirinkti šį monitorių"
 selected = "&aPažymėtas žemėlapis: &f{renderer}&a &8[{scope}]&r"
@@ -3679,6 +3686,7 @@ iris_biome_chunk_share_pie_map = "Kiekviena dalis rodo įkeltų pasaulio segment
 iris_generation_pressure_overlay = "Karštesnės spalvos rodo didesnę apkrovą išmatuotame pasaulio segmente."
 iris_metrics = "Stebima: valdomi pasauliai, veikiantys varikliai, įkelti pasaulio segmentai, objektai, generavimo sparta ir klaidos."
 iris_world_chunk_share_pie_map = "Kiekviena dalis rodo įkeltų pasaulio segmentų procentą pagal pasaulį."
+mod_cost_kind_list_map = "Viršutinė juosta padalija visas modų sąnaudas pagal rūšį; kiekviena eilutė taip pat padalija vieno modo sąnaudas."
 player_impact_overlay = "Karštesnės spalvos rodo didesnę apkrovą išmatuotame pasaulio segmente."
 plugin_event_impact_list_map = "Eilutės surikiuotos nuo didžiausio iki mažiausio slenkančio įskiepio poveikio."
 mod_event_impact_list_map = "Eilutės surikiuotos nuo didžiausio iki mažiausio slenkančio modo poveikio."
@@ -3890,6 +3898,7 @@ column_name = "Pavadinimas"
 column_ops = "Operacijos"
 column_share = "Dalis"
 more_items = "dar +{count}"
+rows_paged = "{from}-{to}/{total}"
 rows_shown = "{shown}/{total}"
 total_cost = "{value} ms/s"
 
@@ -3924,6 +3933,7 @@ iris_fallback = "Iris integracijos piešiklis: {name}."
 iris_generation_pressure_overlay = "Iris apkrovos perdanga, naudojanti išankstinio generavimo eilę ir pasaulio segmentų srauto delsą."
 iris_metrics = "Iris integracijos apžvalga: varikliai, pasauliai, pasaulio segmentai, objektai ir generavimas."
 iris_world_chunk_share_pie_map = "Skritulinė diagrama, rodanti įkeltų pasaulio segmentų dalį Iris valdomuose pasauliuose."
+mod_cost_kind_list_map = "Modų sąnaudos, padalytos į įvykius, blokų esybių tikus, esybių tikus ir pasaulio generavimą."
 player_impact_overlay = "Sudėtinis apkrovos žemėlapis su kiekvieno žaidėjo žymekliais, rodančiais tikėtiną poveikį pasauliui."
 plugin_event_impact_list_map = "Įskiepių reitingas pagal slenkantį įvykių poveikio balą."
 mod_event_impact_list_map = "Modų reitingas pagal slenkantį įvykių poveikio balą."
@@ -4108,8 +4118,10 @@ fluid = "Skysčių atnaujinimų aktyvumas ir simuliacijos sąnaudos."
 hopper = "Piltuvų perdavimo aktyvumas ir apdorojimo sąnaudos."
 iris = "Iris integracijos rodiklis, pateikiamas per nuotolinį matuoklių tiltą."
 memory = "JVM atminties apkrova ir šiukšlių surinkimo elgsena."
+mod_cost = "Šio modo laikas įvykiams, blokų esybėms, esybėms ir pasaulio generavimui ms per sekundę."
 physics = "Fizikos atnaujinimų aktyvumas ir simuliacijos sąnaudos."
 player = "Žaidėjų aktyvumas ir tinklo delsos kokybė."
+plugin_cost = "Šio įskiepio įvykių tvarkyklių naudojamas serverio gijos laikas ms per sekundę."
 processor = "CPU ir pagrindinio kompiuterio apkrova aplink serverio vykdymą."
 react = "React planuoklio eilės gylis ir vykdymo apkrova."
 redstone = "Redstone perėjimų aktyvumas ir apdorojimo sąnaudos."
@@ -4175,6 +4187,12 @@ update_hint = "Atnaujinkite Animus, kad būtų skelbiamos React metrikos"
 [renderer.heatmap]
 no_activity = "Šalia nevykdoma jokia veikla"
 quiet = "ramu"
+
+[renderer.cost_kind]
+event = "Įvykiai"
+block_entity = "Blokų esybės"
+entity = "Esybės"
+worldgen = "Pasaulio generavimas"
 
 [renderer.metric]
 2d_caches = "2D podėliai"
@@ -4363,7 +4381,9 @@ iris_world_mantle = "Iris pasaulio Mantle"
 iris_world_overview = "Iris Pasaulio apžvalga"
 iris_world_pregen = "Iris pasaulio išank. gen."
 iris_world_pregen_time = "Iris pasaulio išank. gen. laikas"
+mod_cost_kinds = "Modų sąnaudos pagal rūšį"
 player_impact = "Žaidėjo poveikis"
+plugin_cost_kinds = "Įskiepių sąnaudos pagal rūšį"
 plugin_impact = "Įskiepio poveikis"
 mod_impact = "Modo poveikis"
 plugin_impact_share = "Įskiepio poveikio dalis"

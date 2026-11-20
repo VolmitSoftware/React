@@ -223,6 +223,49 @@ class OwnerCostModelTest {
   }
 
   @Test
+  void kindsAreSummedPerOwnerAndAcrossOwners() {
+    Fixture fixture = new Fixture();
+    fixture.model.mode(OwnerCostMode.ALWAYS);
+    fixture.model.start();
+    fixture.model.tick();
+    fixture.probe.record("alpha", "Alpha", "event", 4 * MS_TO_NANOS, 2L, 0L);
+    fixture.probe.record("alpha", "Alpha", "entity", 6 * MS_TO_NANOS, 3L, 0L);
+    fixture.probe.record("beta", "Beta", "Block_Entity", 5 * MS_TO_NANOS, 1L, 0L);
+    fixture.probe.record("beta", "Beta", null, 1 * MS_TO_NANOS, 1L, 0L);
+    fixture.clock.advance(1_000L);
+    fixture.model.collect();
+
+    Assertions.assertEquals(10D, fixture.model.snapshotMs().get("alpha"), 1.0E-9D);
+    Assertions.assertEquals(5, fixture.model.snapshotCalls().get("alpha"));
+    Assertions.assertEquals(Map.of("event", 4D, "entity", 6D), fixture.model.snapshotOwnerKindMs().get("alpha"));
+    Assertions.assertEquals(Map.of("block_entity", 5D, "event", 1D), fixture.model.snapshotOwnerKindMs().get("beta"));
+    Assertions.assertEquals(Map.of("event", 5D, "entity", 6D, "block_entity", 5D), fixture.model.snapshotKindMs());
+  }
+
+  @Test
+  void recentCostSmoothsWindowsAndHoldsWhileIdle() {
+    Fixture fixture = new Fixture();
+    fixture.model.mode(OwnerCostMode.ALWAYS);
+    fixture.model.start();
+    fixture.model.tick();
+
+    fixture.publish("alpha", 10L);
+    Assertions.assertEquals(10D, fixture.model.recentMsPerSecond("alpha"), 1.0E-9D);
+    fixture.publish("alpha", 20L);
+    Assertions.assertEquals(13D, fixture.model.recentMsPerSecond("alpha"), 1.0E-9D);
+    fixture.publish("beta", 1L);
+    Assertions.assertEquals(9.1D, fixture.model.recentMsPerSecond("alpha"), 1.0E-9D);
+
+    fixture.clock.advance(60_000L);
+    Assertions.assertFalse(fixture.model.measuring());
+    Assertions.assertEquals(9.1D, fixture.model.recentMsPerSecond("alpha"), 1.0E-9D);
+    Assertions.assertEquals(Map.of("alpha", 9.1D, "beta", 1D).keySet(), fixture.model.recentSnapshot().keySet());
+
+    fixture.model.forgetOwner("beta");
+    Assertions.assertEquals(0D, fixture.model.recentMsPerSecond("beta"));
+  }
+
+  @Test
   void unavailableProbeIsNeverActivated() {
     Fixture fixture = new Fixture();
     fixture.probe.available = false;
@@ -276,7 +319,11 @@ class OwnerCostModelTest {
     private boolean active;
 
     private void record(String owner, String display, long nanos, long sync, long async) {
-      pending.add(new Object[]{owner, display, nanos, sync, async});
+      record(owner, display, null, nanos, sync, async);
+    }
+
+    private void record(String owner, String display, String kind, long nanos, long sync, long async) {
+      pending.add(new Object[]{owner, display, kind, nanos, sync, async});
     }
 
     @Override
@@ -303,7 +350,7 @@ class OwnerCostModelTest {
     @Override
     public void drain(OwnerCostConsumer consumer) {
       for (Object[] entry : pending) {
-        consumer.accept((String) entry[0], (String) entry[1], (Long) entry[2], (Long) entry[3], (Long) entry[4]);
+        consumer.accept((String) entry[0], (String) entry[1], (String) entry[2], (Long) entry[3], (Long) entry[4], (Long) entry[5]);
       }
       pending.clear();
     }

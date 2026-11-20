@@ -130,6 +130,7 @@
 #   {protocol}  연동 프로토콜 버전
 #   {radius}  개발 테스트 작업의 청크 반경
 #   {range}  허용되는 시야·시뮬레이션·전송 거리 범위(청크 단위)
+#   {rank}  순위 목록에서의 위치(1부터)
 #   {rate}  설정된 작물 성장 가속 비율
 #   {rating}  서식이 적용된 벤치마크 등급
 #   {react_errors}  서버 로그에서 찾은 React 오류 줄 수
@@ -2248,6 +2249,10 @@ description = "플러그인 이벤트 영향 목록 지도 기능 설정. 이 �
 impact = "0이면 더 높은 지도 벽이 모든 플러그인을 나열합니다. 고정 값은 세로 타일 수에 곱해지므로 벽이 높을수록 더 많은 플러그인을 나열합니다."
 summary = "지도 타일당 최대 행 수이며, 0이면 사용 가능한 높이를 채웁니다."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactlistmap.field.pageseconds]
+summary = "비용이 있는 플러그인이나 모드가 지도에 다 들어가지 않을 때 목록의 각 페이지를 보여 주는 시간(초)입니다. 0이면 가장 비싼 페이지만 보여 줍니다."
+impact = "이 간격마다 목록이 다음 페이지로 넘어가므로 측정된 플러그인이나 모드가 차례로 표시됩니다. 더 큰 벽은 페이지마다 더 많은 행을 보여 줍니다."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactpiemap]
 description = "플러그인 이벤트 영향 파이 지도 기능 설정. 이 기능은 서버 동작을 지속적으로 모니터링하고 실행 중에 보호 장치를 적용합니다."
 
@@ -3648,6 +3653,8 @@ controller_unavailable = "&c렌더러 컨트롤러를 사용할 수 없습니다
 group = "그룹: {group}"
 id = "ID: {id}"
 none_available = "&c사용 가능한 지도 렌더러가 없습니다.&r"
+owner_cost = "최근 비용: {value}, {total}개 중 {rank}위"
+owner_rank = "현재: {value}, {total}개 중 {rank}위"
 scope = "범위: {scope}"
 select = "왼쪽 클릭: 이 모니터 선택"
 selected = "&a선택된 지도: &f{renderer}&a &8[{scope}]&r"
@@ -3679,6 +3686,7 @@ iris_biome_chunk_share_pie_map = "각 조각은 로드된 청크 중 각 바이�
 iris_generation_pressure_overlay = "더 뜨거운 색상은 측정된 청크에 더 많은 압력을 나타냅니다."
 iris_metrics = "모니터: 관리되는 월드, 실시간 엔진, 로드된 청크, 엔티티, 생성 속도, 실패."
 iris_world_chunk_share_pie_map = "각 조각은 월드별로 로드된 청크의 비율을 나타냅니다."
+mod_cost_kind_list_map = "위쪽 막대는 전체 모드 비용을 종류별로 나누고, 각 행은 모드 하나의 비용을 같은 방식으로 나눕니다."
 player_impact_overlay = "더 뜨거운 색상은 측정된 청크에 더 많은 압력을 나타냅니다."
 plugin_event_impact_list_map = "행은 최근 플러그인 영향이 큰 순서대로 정렬됩니다."
 mod_event_impact_list_map = "행은 최근 모드 영향이 큰 순서대로 정렬됩니다."
@@ -3890,6 +3898,7 @@ column_name = "이름"
 column_ops = "연산"
 column_share = "비율"
 more_items = "+{count}개 더"
+rows_paged = "{from}-{to}/{total}"
 rows_shown = "{shown}/{total}"
 total_cost = "{value} ms/s"
 
@@ -3924,6 +3933,7 @@ iris_fallback = "{name}용 Iris 통합 렌더러."
 iris_generation_pressure_overlay = "사전 생성 큐와 청크 스트림 지연을 사용하는 Iris 인식 부하 오버레이."
 iris_metrics = "엔진, 월드, 청크, 엔티티, 생성에 대한 Iris 통합 개요."
 iris_world_chunk_share_pie_map = "Iris가 관리하는 월드별 로드된 청크 점유 비율을 보여주는 파이 차트."
+mod_cost_kind_list_map = "모드 비용을 이벤트, 블록 엔티티 틱, 엔티티 틱, 월드 생성으로 나누어 보여줍니다."
 player_impact_overlay = "플레이어별 마커로 월드에 미칠 가능성이 높은 영향을 보여주는 복합 부하 지도."
 plugin_event_impact_list_map = "롤링 이벤트 영향 점수에 따른 플러그인 순위 목록."
 mod_event_impact_list_map = "롤링 이벤트 영향 점수에 따른 모드 순위 목록."
@@ -4108,8 +4118,10 @@ fluid = "유체 업데이트 활동 및 시뮬레이션 비용."
 hopper = "호퍼 전송 활동 및 처리 비용."
 iris = "원격 샘플러 브리지를 통해 노출된 Iris 통합 지표."
 memory = "JVM 메모리 부하와 가비지 컬렉션 동작."
+mod_cost = "이 모드가 이벤트, 블록 엔티티, 엔티티, 월드 생성에 쓰는 시간(초당 ms)입니다."
 physics = "물리 업데이트 활동 및 시뮬레이션 비용."
 player = "플레이어 활동과 네트워크 지연 품질."
+plugin_cost = "이 플러그인의 이벤트 핸들러가 쓰는 서버 스레드 시간(초당 ms)입니다."
 processor = "서버 런타임 주변의 CPU 및 호스트 부하."
 react = "React 스케줄러 큐 깊이와 실행 압력."
 redstone = "레드스톤 전환 활동 및 처리 비용."
@@ -4175,6 +4187,12 @@ update_hint = "React 지표를 게시하려면 Animus를 업데이트하세요"
 [renderer.heatmap]
 no_activity = "근처에 활동 없음"
 quiet = "한산"
+
+[renderer.cost_kind]
+event = "이벤트"
+block_entity = "블록 엔티티"
+entity = "엔티티"
+worldgen = "월드 생성"
 
 [renderer.metric]
 2d_caches = "2D 캐시"
@@ -4363,7 +4381,9 @@ iris_world_mantle = "Iris 월드 맨틀"
 iris_world_overview = "Iris 월드 개요"
 iris_world_pregen = "Iris 월드 사전 생성"
 iris_world_pregen_time = "Iris 월드 사전 생성 시간"
+mod_cost_kinds = "종류별 모드 비용"
 player_impact = "플레이어 영향"
+plugin_cost_kinds = "종류별 플러그인 비용"
 plugin_impact = "플러그인 영향"
 mod_impact = "모드 영향"
 plugin_impact_share = "플러그인 영향 비율"

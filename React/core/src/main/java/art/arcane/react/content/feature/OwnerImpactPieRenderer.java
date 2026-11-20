@@ -18,6 +18,7 @@ import java.util.function.Supplier;
 public class OwnerImpactPieRenderer extends SharePieRenderer {
   public static final String ID = "plugin-event-impact-pie-map";
   private static final TinyColor HEADER = new TinyColor(162, 94, 48);
+  private static final double MINIMUM_SLICE_SHARE = 0.02D;
   private final Supplier<EventMeasurement> events;
   private final Predicate<UUID> viewerOnline;
 
@@ -40,6 +41,11 @@ public class OwnerImpactPieRenderer extends SharePieRenderer {
   @Override
   protected TextKey totalUnit() {
     return RendererMessages.PIE_UNIT_IMPACT;
+  }
+
+  @Override
+  protected double minimumSliceShare() {
+    return MINIMUM_SLICE_SHARE;
   }
 
   @Override

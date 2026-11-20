@@ -12,8 +12,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongSupplier;
 
 /**
- * Per-owner event cost in ms/s, fed only by an {@link OwnerCostProbe}. Decides when the probe should measure
- * (always, on demand after a read, or in a periodic duty-cycle window) and publishes each drain as a window.
+ * Per-owner cost in ms/s, split by kind of work and fed only by an {@link OwnerCostProbe}. Decides when the probe
+ * should measure (always, on demand after a read, or in a periodic duty-cycle window) and publishes each drain as a
+ * window.
  */
 public final class OwnerCostModel {
   public static final int AVERAGE_SAMPLES = 5;
@@ -22,7 +23,10 @@ public final class OwnerCostModel {
   public static final long DEFAULT_DUTY_PERIOD_MS = 60_000L;
   public static final long DEFAULT_FRESHNESS_MS = 15_000L;
   private static final long MIN_DUTY_PERIOD_MS = 1_000L;
-  private static final Window NO_WINDOW = new Window(0D, 0L, 0L, 0L, 0L, Map.of(), Map.of(), Map.of());
+  private static final String PLUGIN_API_PREFIX = "plugin-api-";
+  private static final double RECENT_WEIGHT = 0.3D;
+  private static final double RECENT_FLOOR_MS_PER_SECOND = 1.0E-4D;
+  private static final Window NO_WINDOW = new Window(0D, 0L, 0L, 0L, 0L, Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
 
   private final OwnerCostProbe probe;
   private final LongSupplier clockMs;
@@ -30,6 +34,7 @@ public final class OwnerCostModel {
   private final AtomicBoolean running = new AtomicBoolean(false);
   private final AtomicBoolean requested = new AtomicBoolean(false);
   private final Map<String, RollingAverage> averages = new ConcurrentHashMap<>();
+  private final Map<String, Double> recent = new ConcurrentHashMap<>();
   private volatile OwnerCostMode mode = OwnerCostMode.ON_DEMAND;
   private volatile long activityWindowMs = DEFAULT_ACTIVITY_WINDOW_MS;
   private volatile long dutyOnMs = DEFAULT_DUTY_ON_MS;
@@ -64,6 +69,14 @@ public final class OwnerCostModel {
    */
   public static boolean isOwnerScopedId(String id) {
     return id != null && (id.startsWith("plugin-") || id.startsWith(samplerId("")));
+  }
+
+  /**
+   * Whether a sampler id is one owner's cost sampler, as opposed to another {@code plugin-} metric such as a Plugin API
+   * pack's.
+   */
+  public static boolean isOwnerCostSamplerId(String id) {
+    return isOwnerScopedId(id) && !id.startsWith(PLUGIN_API_PREFIX);
   }
 
   public static String samplerId(String ownerNoun, String owner) {
@@ -128,6 +141,7 @@ public final class OwnerCostModel {
     dutyWindowStartMs = 0L;
     window = NO_WINDOW;
     averages.clear();
+    recent.clear();
     requested.set(mode() == OwnerCostMode.ALWAYS);
     beginWindow();
     running.set(true);
@@ -197,35 +211,67 @@ public final class OwnerCostModel {
     Map<String, Long> nanos = new HashMap<>();
     Map<String, Long> calls = new HashMap<>();
     Map<String, String> names = new HashMap<>();
+    Map<String, Map<String, Long>> kindNanos = new HashMap<>();
     long[] totals = new long[3];
-    probe.drain((ownerId, displayName, exclusiveNanos, syncCalls, asyncCalls) -> {
+    probe.drain((String ownerId, String displayName, String kind, long exclusiveNanos, long syncCalls, long asyncCalls) -> {
       String owner = ownerId == null ? "" : ownerId;
-      nanos.merge(owner, Math.max(0L, exclusiveNanos), Long::sum);
+      long ownerNanos = Math.max(0L, exclusiveNanos);
+      nanos.merge(owner, ownerNanos, Long::sum);
       calls.merge(owner, Math.max(0L, syncCalls), Long::sum);
       names.putIfAbsent(owner, displayName == null || displayName.isBlank() ? owner : displayName);
-      totals[0] += Math.max(0L, exclusiveNanos);
+      kindNanos.computeIfAbsent(owner, (String ignored) -> new HashMap<>())
+          .merge(normalizeKind(kind), ownerNanos, Long::sum);
+      totals[0] += ownerNanos;
       totals[1] += Math.max(0L, syncCalls);
       totals[2] += Math.max(0L, asyncCalls);
     });
     long nowNanos = clockNanos.getAsLong();
     long elapsedNanos = nowNanos - windowStartNanos;
     windowStartNanos = nowNanos;
+    double windowSeconds = Math.max(1.0E-6D, elapsedNanos / 1.0E9D);
     Map<String, Double> ownerMs = new HashMap<>();
     Map<String, Integer> ownerCalls = new HashMap<>();
     for (Map.Entry<String, Long> entry : nanos.entrySet()) {
       ownerMs.put(entry.getKey(), entry.getValue() / 1.0E6D);
       ownerCalls.put(entry.getKey(), saturatingInt(calls.getOrDefault(entry.getKey(), 0L)));
     }
+    Map<String, Map<String, Double>> ownerKindMs = new HashMap<>();
+    Map<String, Double> kindMs = new HashMap<>();
+    for (Map.Entry<String, Map<String, Long>> owner : kindNanos.entrySet()) {
+      Map<String, Double> kinds = new HashMap<>();
+      for (Map.Entry<String, Long> kind : owner.getValue().entrySet()) {
+        double ms = kind.getValue() / 1.0E6D;
+        kinds.put(kind.getKey(), ms);
+        kindMs.merge(kind.getKey(), ms, Double::sum);
+      }
+      ownerKindMs.put(owner.getKey(), Map.copyOf(kinds));
+    }
+    foldRecent(ownerMs, windowSeconds);
     window = new Window(
-        Math.max(1.0E-6D, elapsedNanos / 1.0E9D),
+        windowSeconds,
         clockMs.getAsLong(),
         totals[0],
         totals[1],
         totals[2],
         Map.copyOf(ownerMs),
         Map.copyOf(ownerCalls),
-        Map.copyOf(names)
+        Map.copyOf(names),
+        Map.copyOf(ownerKindMs),
+        Map.copyOf(kindMs)
     );
+  }
+
+  private void foldRecent(Map<String, Double> ownerMs, double windowSeconds) {
+    for (Map.Entry<String, Double> entry : ownerMs.entrySet()) {
+      double current = entry.getValue() / windowSeconds;
+      recent.merge(entry.getKey(), current, (Double previous, Double next) -> previous + ((next - previous) * RECENT_WEIGHT));
+    }
+    recent.replaceAll((String owner, Double previous) -> ownerMs.containsKey(owner) ? previous : previous * (1D - RECENT_WEIGHT));
+    recent.values().removeIf((Double value) -> value < RECENT_FLOOR_MS_PER_SECOND);
+  }
+
+  static String normalizeKind(String kind) {
+    return kind == null || kind.isBlank() ? OwnerCostProbe.KIND_EVENT : kind.trim().toLowerCase(Locale.ROOT);
   }
 
   public boolean measuring() {
@@ -255,6 +301,34 @@ public final class OwnerCostModel {
   public Map<String, Integer> snapshotCalls() {
     Window published = window;
     return isFresh(published) ? new HashMap<>(published.ownerCalls()) : new HashMap<>();
+  }
+
+  /**
+   * Milliseconds per owner and kind of work in the published window, keyed by owner id then kind id.
+   */
+  public Map<String, Map<String, Double>> snapshotOwnerKindMs() {
+    Window published = window;
+    return isFresh(published) ? published.ownerKindMs() : Map.of();
+  }
+
+  /**
+   * Milliseconds per kind of work across all owners in the published window.
+   */
+  public Map<String, Double> snapshotKindMs() {
+    Window published = window;
+    return isFresh(published) ? published.kindMs() : Map.of();
+  }
+
+  /**
+   * The owner's smoothed ms/s; it keeps its last value while the probe is not measuring.
+   */
+  public double recentMsPerSecond(String owner) {
+    Double value = owner == null ? null : recent.get(owner);
+    return value == null ? 0D : value;
+  }
+
+  public Map<String, Double> recentSnapshot() {
+    return new HashMap<>(recent);
   }
 
   public Map<String, String> displayNames() {
@@ -291,6 +365,7 @@ public final class OwnerCostModel {
 
   public void forgetOwner(String owner) {
     averages.remove(owner == null ? "" : owner);
+    recent.remove(owner == null ? "" : owner);
   }
 
   private boolean wanted(long nowMs) {
@@ -330,7 +405,8 @@ public final class OwnerCostModel {
 
   private record Window(double windowSeconds, long publishedAtMs, long totalNanos, long syncCalls, long asyncCalls,
                         Map<String, Double> ownerMs, Map<String, Integer> ownerCalls,
-                        Map<String, String> displayNames) {
+                        Map<String, String> displayNames, Map<String, Map<String, Double>> ownerKindMs,
+                        Map<String, Double> kindMs) {
     private double totalMs() {
       return totalNanos / 1.0E6D;
     }

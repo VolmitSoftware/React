@@ -130,6 +130,7 @@
 #   {protocol}  連携プロトコルのバージョン
 #   {radius}  開発テストのアクションのチャンク半径
 #   {range}  描画・シミュレーション・送信距離の許容範囲（チャンク単位）
+#   {rank}  順位リスト内の位置（1 から）
 #   {rate}  設定された作物の成長早送り速度
 #   {rating}  書式設定済みのベンチマーク評価
 #   {react_errors}  サーバーログで見つかった React エラーの行数
@@ -2248,6 +2249,10 @@ description = "プラグインイベント影響リストマップ機能の設�
 impact = "0 にすると高いマップの壁がすべてのプラグインを一覧表示します。固定値では壁の大きさに関係なく行数が一定になります。"
 summary = "マップタイルごとの最大行数。0 なら利用可能な高さを埋めます。"
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactlistmap.field.pageseconds]
+summary = "コストのあるプラグインやMODがマップに収まりきらないとき、リストの各ページを表示する秒数。0 にすると最もコストの高いページだけを表示します。"
+impact = "この間隔でリストが次のページに切り替わるため、計測されたプラグインやMODが順に表示されます。大きなウォールではページあたりの行数が増えます。"
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactpiemap]
 description = "プラグインイベント影響円グラフマップ機能の設定。この機能はサーバーの動作を継続的に監視し、実行中にガードレールを適用します。"
 
@@ -3648,6 +3653,8 @@ controller_unavailable = "&cレンダラーコントローラーは利用でき�
 group = "グループ: {group}"
 id = "ID: {id}"
 none_available = "&c利用可能なマップレンダラーがありません。&r"
+owner_cost = "最近のコスト: {value}、{total} 中 {rank} 位"
+owner_rank = "現在: {value}、{total} 中 {rank} 位"
 scope = "スコープ: {scope}"
 select = "左クリック:このモニターを選択"
 selected = "&a選択したマップ: &f{renderer}&a &8[{scope}]&r"
@@ -3679,6 +3686,7 @@ iris_biome_chunk_share_pie_map = "各スライスは、読み込まれている�
 iris_generation_pressure_overlay = "色が熱いほど、測定されたチャンクの負荷が高いことを示します。"
 iris_metrics = "監視項目: 管理対象ワールド、ライブエンジン、読み込み済みチャンク、エンティティ、生成レート、失敗数。"
 iris_world_chunk_share_pie_map = "各スライスは、ワールドごとの読み込み済みチャンクの割合を示します。"
+mod_cost_kind_list_map = "上のバーはMOD全体のコストを種類ごとに分け、各行は1つのMODのコストを同じように分けます。"
 player_impact_overlay = "色が熱いほど、測定されたチャンクの負荷が高いことを示します。"
 plugin_event_impact_list_map = "行は、プラグインの直近の影響が大きい順に並びます。"
 mod_event_impact_list_map = "行は、MODの直近の影響が大きい順に並びます。"
@@ -3890,6 +3898,7 @@ column_name = "名前"
 column_ops = "処理"
 column_share = "割合"
 more_items = "他{count}件"
+rows_paged = "{from}-{to}/{total}"
 rows_shown = "{shown}/{total}"
 total_cost = "{value} ms/s"
 
@@ -3924,6 +3933,7 @@ iris_fallback = "{name} 用の Iris 統合レンダラー。"
 iris_generation_pressure_overlay = "事前生成キューとチャンクストリームのレイテンシを使った Iris 対応の負荷オーバーレイ。"
 iris_metrics = "エンジン、ワールド、チャンク、エンティティ、生成に関する Iris 統合の概要。"
 iris_world_chunk_share_pie_map = "Iris が管理するワールドごとの読み込み済みチャンクの割合を示す円グラフ。"
+mod_cost_kind_list_map = "MODのコストをイベント、ブロックエンティティのティック、エンティティのティック、ワールド生成に分けて表示します。"
 player_impact_overlay = "プレイヤーごとのマーカーでワールドへの影響を示す合成負荷マップ。"
 plugin_event_impact_list_map = "プラグインを、ローリングのイベント影響スコアでランク付けした一覧。"
 mod_event_impact_list_map = "MODを、ローリングのイベント影響スコアでランク付けした一覧。"
@@ -4108,8 +4118,10 @@ fluid = "流体更新の活動とシミュレーションコスト。"
 hopper = "ホッパー転送の活動と処理コスト。"
 iris = "リモートサンプラーブリッジ経由で公開された Iris 統合メトリクス。"
 memory = "JVM メモリ圧力とゴミ収集の動作。"
+mod_cost = "このMODがイベント、ブロックエンティティ、エンティティ、ワールド生成で使う時間（ms/秒）。"
 physics = "物理更新活動とシミュレーションコスト。"
 player = "プレイヤーの活動とネットワークレイテンシーの品質。"
+plugin_cost = "このプラグインのイベントハンドラーが使うサーバースレッド時間（ms/秒）。"
 processor = "サーバーランタイム周辺の CPU とホストの負荷。"
 react = "React スケジューラーのキューの深さと実行負荷。"
 redstone = "レッドストーン遷移の活動と処理コスト。"
@@ -4175,6 +4187,12 @@ update_hint = "React メトリクスを公開するには Animus を更新して
 [renderer.heatmap]
 no_activity = "近隣のアクティビティなし"
 quiet = "静穏"
+
+[renderer.cost_kind]
+event = "イベント"
+block_entity = "ブロックエンティティ"
+entity = "エンティティ"
+worldgen = "ワールド生成"
 
 [renderer.metric]
 2d_caches = "2D キャッシュ"
@@ -4363,7 +4381,9 @@ iris_world_mantle = "Iris ワールドマントル"
 iris_world_overview = "Iris ワールド概要"
 iris_world_pregen = "Iris ワールド事前生成"
 iris_world_pregen_time = "Iris ワールド事前生成時間"
+mod_cost_kinds = "種類別MODコスト"
 player_impact = "プレイヤーの影響"
+plugin_cost_kinds = "種類別プラグインコスト"
 plugin_impact = "プラグインの影響"
 mod_impact = "MODの影響"
 plugin_impact_share = "プラグイン影響割合"

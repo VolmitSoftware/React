@@ -94,13 +94,13 @@ class DashboardRenderersParityTest {
     actual.put("heatmap-no-world", hash(new EntityPressureHeatmap(chunks, new FixedAnchors(null), settings), held, null));
 
     resetImpactSeries();
-    actual.put("plugin-event-impact-list-map", hash(new OwnerEventImpactListRenderer(framed, () -> events, () -> 0), held, null));
+    actual.put("plugin-event-impact-list-map", hash(new OwnerEventImpactListRenderer(framed, () -> events, () -> 0, () -> 6), held, null));
     resetImpactSeries();
     actual.put("plugin-event-impact-list-map-wall",
-        hash(new OwnerEventImpactListRenderer(framed, () -> events, () -> 0), held, new MegamapGrid.MegamapTile(4, 2, 0, 0)));
+        hash(new OwnerEventImpactListRenderer(framed, () -> events, () -> 0, () -> 6), held, new MegamapGrid.MegamapTile(4, 2, 0, 0)));
     resetImpactSeries();
     FixedEvents idle = new FixedEvents(Map.of(), Map.of(), Map.of());
-    actual.put("plugin-event-impact-list-map-empty", hash(new OwnerEventImpactListRenderer(framed, () -> idle, () -> 0), held, null));
+    actual.put("plugin-event-impact-list-map-empty", hash(new OwnerEventImpactListRenderer(framed, () -> idle, () -> 0, () -> 6), held, null));
 
     Assertions.assertEquals(BUKKIT_GOLDEN, actual);
   }
@@ -111,10 +111,10 @@ class DashboardRenderersParityTest {
     FixedAnchors anchors = new FixedAnchors(null);
     FixedEvents mods = new FixedEvents(Map.of("create", 42.5D, "ae2", 12D), Map.of("create", 1200, "ae2", 300),
         Map.of("create", "Create", "ae2", "Applied Energistics 2"));
-    String plugin = hash(new OwnerEventImpactListRenderer(anchors, () -> mods, () -> 0), held, null);
+    String plugin = hash(new OwnerEventImpactListRenderer(anchors, () -> mods, () -> 0, () -> 6), held, null);
     resetImpactSeries();
     ReactPlatforms.bind(new ModdedPlatform());
-    String mod = hash(new OwnerEventImpactListRenderer(anchors, () -> mods, () -> 0), held, null);
+    String mod = hash(new OwnerEventImpactListRenderer(anchors, () -> mods, () -> 0, () -> 6), held, null);
 
     Assertions.assertNotEquals(plugin, mod, "the mod list must not reuse plugin wording");
     Assertions.assertEquals("234ed9c2cb545c68", mod);

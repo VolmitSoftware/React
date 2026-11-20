@@ -1,5 +1,7 @@
 package art.arcane.react.platform;
 
+import art.arcane.react.platform.cost.OwnerCostModel;
+
 import java.util.Map;
 
 /**
@@ -32,5 +34,19 @@ public interface EventMeasurement {
    */
   default Map<String, String> ownerDisplayNames() {
     return Map.of();
+  }
+
+  /**
+   * The per-owner cost model behind this measurement, or null when the platform has none.
+   */
+  default OwnerCostModel ownerCostModel() {
+    return null;
+  }
+
+  /**
+   * Every owner that can be charged cost, measured or not, as owner id to display name: the loaded plugins or mods.
+   */
+  default Map<String, String> ownerCatalog() {
+    return ownerDisplayNames();
   }
 }

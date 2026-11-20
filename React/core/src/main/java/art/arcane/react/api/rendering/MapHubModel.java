@@ -1,8 +1,10 @@
 package art.arcane.react.api.rendering;
 
 import art.arcane.react.core.telemetry.timing.WorldTickSeries;
+import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.platform.cost.OwnerCostModel;
+import art.arcane.react.platform.cost.OwnerSampler;
 import art.arcane.react.platform.cost.OwnerNoun;
 
 import art.arcane.react.localization.catalog.GuiMessages;
@@ -20,6 +22,7 @@ import art.arcane.volmlib.util.localization.TextKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -32,6 +35,11 @@ public final class MapHubModel {
   public static final int PAGE_JUMP = 5;
   public static final int ALL_GROUPS = -1;
   public static final String UNKNOWN_RENDERER_ID = "unknown";
+  public static final int OWNER_GROUP = 8;
+  private static final int OWNER_GROUP_TOP_LINES = 3;
+  private static final Set<String> OWNER_VIEW_IDS = Set.of(
+      "plugin-event-impact-list-map", "plugin-event-impact-pie-map", "plugin-cost-kind-list-map", "worldgen-mod-pie-map"
+  );
 
   private static final String WHITE = "§f";
   private static final String GRAY = "§7";
@@ -69,12 +77,17 @@ public final class MapHubModel {
     }
 
     List<ReactRenderer> renderers = new ArrayList<>(unique.values());
+    Map<ReactRenderer, OwnerKey> owners = ownerKeys(renderers);
     renderers.sort((a, b) -> {
       String aNormalized = normalizeRendererId(a);
       String bNormalized = normalizeRendererId(b);
       int groupCompare = Integer.compare(groupOf(a).order(), groupOf(b).order());
       if (groupCompare != 0) {
         return groupCompare;
+      }
+      int costCompare = compareOwners(owners.get(a), owners.get(b));
+      if (costCompare != 0) {
+        return costCompare;
       }
       boolean aMetrics = aNormalized.endsWith("-metrics");
       boolean bMetrics = bNormalized.endsWith("-metrics");
@@ -115,14 +128,17 @@ public final class MapHubModel {
       int groupOrder = entry.getKey();
       Group group = entry.getValue();
       int count = groupCounts.getOrDefault(groupOrder, 0);
+      List<String> lore = new ArrayList<>();
+      lore.add(DARK_GRAY + ReactLanguage.plain(GuiMessages.MAP_HUB_GROUP_COUNT, MessageArgument.untrusted("count", count)));
+      if (groupOrder == OWNER_GROUP) {
+        lore.addAll(topOwnerLines(renderers));
+      }
+      lore.add(GREEN + ReactLanguage.plain(GuiMessages.MAP_HUB_OPEN_GROUP));
       contents.add(new TileContent(
           "map-hub-group-" + groupOrder,
           group.icon(),
           WHITE + group.label(),
-          List.of(
-              DARK_GRAY + ReactLanguage.plain(GuiMessages.MAP_HUB_GROUP_COUNT, MessageArgument.untrusted("count", count)),
-              GREEN + ReactLanguage.plain(GuiMessages.MAP_HUB_OPEN_GROUP)
-          ),
+          lore,
           Map.of(MapHubClick.LEFT, new MapHubAction.OpenGroup(groupOrder, 0))
       ));
     }
@@ -159,6 +175,7 @@ public final class MapHubModel {
     }
 
     Map<String, MegamapStatus> statuses = megamapStatus == null ? Map.of() : megamapStatus;
+    Map<String, OwnerRank> ownerRanks = ownerRanks(renderers);
     PageLayout layout = pageLayout(renderers.size());
     int currentPage = clampPage(page, layout.pageCount());
     int start = currentPage * layout.itemsPerPage();
@@ -188,7 +205,7 @@ public final class MapHubModel {
             row,
             groupOf(renderer).icon(),
             WHITE + rendererName + DARK_GRAY + " [" + scopeTag + "]",
-            loreFor(renderer, statuses.get(normalizedId)),
+            loreFor(renderer, statuses.get(normalizedId), ownerRanks.get(renderer.getId())),
             actions
         ));
       }
@@ -299,6 +316,9 @@ public final class MapHubModel {
     if (normalizedId.startsWith("animus-")) {
       return group(7, TaxonomyMessages.GROUP_ANIMUS, MapHubIcon.GROUP_ANIMUS);
     }
+    if (OWNER_VIEW_IDS.contains(normalizedId) || ownerSampler(renderer) != null) {
+      return group(OWNER_GROUP, OwnerNoun.pick(TaxonomyMessages.GROUP_PLUGINS, TaxonomyMessages.GROUP_MODS), MapHubIcon.GROUP_OWNERS);
+    }
 
     if (WorldTickSeries.isWorldTickId(normalizedId)) {
       return group(9, TaxonomyMessages.GROUP_DIMENSIONS, MapHubIcon.GROUP_DIMENSIONS);
@@ -385,7 +405,7 @@ public final class MapHubModel {
     if (normalizedId.startsWith("react-")) {
       return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_REACT);
     }
-    if (OwnerCostModel.isOwnerScopedId(normalizedId)) {
+    if (OwnerCostModel.isOwnerScopedId(normalizedId) || OWNER_VIEW_IDS.contains(normalizedId)) {
       return ReactLanguage.plain(OwnerNoun.pick(GuiMessages.MAP_SCOPE_TAG_PLUGIN, GuiMessages.MAP_SCOPE_TAG_MOD));
     }
     return ReactLanguage.plain(GuiMessages.MAP_SCOPE_TAG_CORE);
@@ -431,7 +451,7 @@ public final class MapHubModel {
     return ReactLanguage.plain(GuiMessages.MAP_GROUP_TITLE, MessageArgument.untrusted("group", groupOf(renderers.get(0)).label()));
   }
 
-  private List<String> loreFor(ReactRenderer renderer, MegamapStatus megamapStatus) {
+  private List<String> loreFor(ReactRenderer renderer, MegamapStatus megamapStatus, OwnerRank ownerRank) {
     List<String> lore = new ArrayList<>();
     String id = renderer == null ? "unknown" : Objects.toString(renderer.getId(), "unknown");
     String normalizedId = normalizeRendererId(renderer);
@@ -446,6 +466,14 @@ public final class MapHubModel {
     String detail = MapMessages.rendererDetail(normalizedId, sampler);
     if (detail != null && !detail.isBlank()) {
       lore.add(DARK_GRAY + detail);
+    }
+    if (ownerRank != null) {
+      lore.add(YELLOW + ReactLanguage.plain(
+          ownerRank.family() == OwnerSampler.FAMILY_COST ? GuiMessages.MAP_OWNER_COST : GuiMessages.MAP_OWNER_RANK,
+          MessageArgument.untrusted("value", ownerValue(ownerRank)),
+          MessageArgument.untrusted("rank", ownerRank.rank()),
+          MessageArgument.untrusted("total", ownerRank.total())
+      ));
     }
     lore.add(DARK_GRAY + ReactLanguage.plain(GuiMessages.MAP_ID, MessageArgument.untrusted("id", id)));
     lore.add(AQUA + megamapCapabilityLine(renderer));
@@ -581,10 +609,86 @@ public final class MapHubModel {
     if (normalizedId.startsWith("react-")) {
       return ReactLanguage.plain(TaxonomyMessages.GROUP_REACT);
     }
-    if (OwnerCostModel.isOwnerScopedId(normalizedId)) {
+    if (OwnerCostModel.isOwnerScopedId(normalizedId) || OWNER_VIEW_IDS.contains(normalizedId)) {
       return ReactLanguage.plain(OwnerNoun.pick(TaxonomyMessages.GROUP_PLUGINS, TaxonomyMessages.GROUP_MODS));
     }
     return ReactLanguage.plain(TaxonomyMessages.GROUP_CORE);
+  }
+
+  /**
+   * The per-owner sampler a renderer graphs, or null when it does not read a single plugin or mod.
+   */
+  public static OwnerSampler ownerSampler(ReactRenderer renderer) {
+    OwnerSampler owner = renderer instanceof OwnerSampler direct
+        ? direct
+        : SamplerRenderer.samplerOf(renderer) instanceof OwnerSampler graphed ? graphed : null;
+    return owner == null || Double.isNaN(owner.ownerRankValue()) ? null : owner;
+  }
+
+  // Values are read once per listing; samplers publish while a sort runs.
+  private static Map<ReactRenderer, OwnerKey> ownerKeys(List<ReactRenderer> renderers) {
+    Map<ReactRenderer, OwnerKey> keys = new IdentityHashMap<>();
+    for (ReactRenderer renderer : renderers) {
+      OwnerSampler owner = ownerSampler(renderer);
+      double value = owner == null ? Double.NaN : owner.ownerRankValue();
+      keys.put(renderer, owner == null || Double.isNaN(value) ? null : new OwnerKey(owner.ownerFamily(), value));
+    }
+    return keys;
+  }
+
+  // Owner overviews first, then each family of owner graphs from the busiest owner down; anything else keeps its name order.
+  private static int compareOwners(OwnerKey a, OwnerKey b) {
+    if ((a == null) != (b == null)) {
+      return a == null ? -1 : 1;
+    }
+    if (a == null) {
+      return 0;
+    }
+    int family = Integer.compare(a.family(), b.family());
+    return family != 0 ? family : Double.compare(b.value(), a.value());
+  }
+
+  private static Map<String, OwnerRank> ownerRanks(List<ReactRenderer> renderers) {
+    Map<ReactRenderer, OwnerKey> keys = ownerKeys(renderers);
+    List<ReactRenderer> owners = new ArrayList<>();
+    for (ReactRenderer renderer : renderers) {
+      if (keys.get(renderer) != null) {
+        owners.add(renderer);
+      }
+    }
+    owners.sort((ReactRenderer a, ReactRenderer b) -> compareOwners(keys.get(a), keys.get(b)));
+    Map<Integer, Integer> familySizes = new LinkedHashMap<>();
+    for (ReactRenderer owner : owners) {
+      familySizes.merge(keys.get(owner).family(), 1, Integer::sum);
+    }
+    Map<String, OwnerRank> ranked = new LinkedHashMap<>();
+    Map<Integer, Integer> nextRank = new LinkedHashMap<>();
+    for (ReactRenderer owner : owners) {
+      OwnerKey key = keys.get(owner);
+      int rank = nextRank.merge(key.family(), 1, Integer::sum);
+      ranked.put(owner.getId(), new OwnerRank(owner, key.family(), key.value(), rank, familySizes.get(key.family())));
+    }
+    return ranked;
+  }
+
+  private List<String> topOwnerLines(List<ReactRenderer> renderers) {
+    List<String> lines = new ArrayList<>();
+    for (OwnerRank owner : ownerRanks(filterByGroup(renderers, OWNER_GROUP)).values()) {
+      if (lines.size() >= OWNER_GROUP_TOP_LINES || owner.family() != OwnerSampler.FAMILY_COST || owner.value() <= 0D) {
+        break;
+      }
+      lines.add(GRAY + "#" + owner.rank() + " " + WHITE + rendererDisplayName(owner.renderer()) + GRAY + "  "
+          + RendererLayout.compact(owner.value()) + " ms/s");
+    }
+    return lines;
+  }
+
+  private static String ownerValue(OwnerRank owner) {
+    if (owner.family() == OwnerSampler.FAMILY_COST) {
+      return RendererLayout.compact(owner.value()) + " ms/s";
+    }
+    Sampler sampler = SamplerRenderer.samplerOf(owner.renderer());
+    return sampler == null ? RendererLayout.compact(owner.value()) : sampler.format(owner.value()).trim();
   }
 
   private boolean isSampler(ReactRenderer renderer) {
@@ -621,6 +725,12 @@ public final class MapHubModel {
   }
 
   public record Group(int order, String label, MapHubIcon icon) {
+  }
+
+  private record OwnerKey(int family, double value) {
+  }
+
+  private record OwnerRank(ReactRenderer renderer, int family, double value, int rank, int total) {
   }
 
   public record PageLayout(int rows, int contentRows, int itemsPerPage, int pageCount, boolean pagination, int controlRow) {

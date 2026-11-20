@@ -130,6 +130,7 @@
 #   {protocol}  גרסת פרוטוקול האינטגרציה
 #   {radius}  רדיוס בצ'אנקים לפעולה בחבילת בדיקות הפיתוח
 #   {range}  הטווח המותר למרחק צפייה, סימולציה או שליחה, בצ'אנקים
+#   {rank}  מיקום ברשימה מדורגת, החל מ-1
 #   {rate}  קצב האצת גידול היבולים שהוגדר
 #   {rating}  דירוג ביצועים מעוצב
 #   {react_errors}  מספר שורות השגיאה של React שנמצאו ביומן השרת
@@ -2248,6 +2249,10 @@ description = "תצורה של תכונת מפת רשימת ההשפעה של א
 impact = "אפס מאפשר לקיר מפות גבוה יותר להציג כל תוסף; ערך קבוע שומר על מספר שורות קבוע ללא קשר לגודל הקיר."
 summary = "מספר השורות המרבי לכל אריח מפה, או 0 כדי למלא את הגובה הזמין."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactlistmap.field.pageseconds]
+summary = "מספר השניות שכל עמוד ברשימה מוצג כאשר יש יותר תוספים או מודים עם עלות ממה שנכנס במפה, או 0 כדי להציג רק את העמוד היקר ביותר."
+impact = "הרשימה עוברת לעמוד הבא במרווח הזה, כך שכל תוסף או מוד שנמדד מופיע בתורו. קיר גדול יותר מציג יותר שורות בכל עמוד."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactpiemap]
 description = "תצורה של תכונת מפת העוגה של השפעת אירועי תוספים. התכונה הזו עוקבת ברציפות אחר התנהגות השרת ומחילה אמצעי הגנה בזמן ריצה."
 
@@ -3648,6 +3653,8 @@ controller_unavailable = "&cבקר המרנדרים אינו זמין.&r"
 group = "קבוצה: {group}"
 id = "ID: {id}"
 none_available = "&cאין מרנדרי מפות זמינים.&r"
+owner_cost = "עלות אחרונה: {value}, מקום {rank} מתוך {total}"
+owner_rank = "כעת: {value}, מקום {rank} מתוך {total}"
 scope = "תחום: {scope}"
 select = "לחיצה שמאלית: בחירת צג זה"
 selected = "&aמפה שנבחרה: &f{renderer}&a &8[{scope}]&r"
@@ -3679,6 +3686,7 @@ iris_biome_chunk_share_pie_map = "כל פרוסה מייצגת את אחוז ה�
 iris_generation_pressure_overlay = "צבעים חמים יותר מצביעים על עומס רב יותר בצ'אנק שנדגם."
 iris_metrics = "ניטור: עולמות מנוהלים, מנועים חיים, צ'אנקים טעונים, ישויות, קצב יצירה וכשלים."
 iris_world_chunk_share_pie_map = "כל פרוסה מייצגת את אחוז הצ'אנקים הטעונים לכל עולם."
+mod_cost_kind_list_map = "הפס העליון מחלק את כל עלות המודים לפי סוג; כל שורה מחלקת את עלות המוד באותה צורה."
 player_impact_overlay = "צבעים חמים יותר מצביעים על עומס רב יותר בצ'אנק שנדגם."
 plugin_event_impact_list_map = "השורות מסודרות מההשפעה הנעה הגבוהה ביותר של תוסף לנמוכה ביותר."
 mod_event_impact_list_map = "השורות מסודרות מההשפעה הנעה הגבוהה ביותר של מוד לנמוכה ביותר."
@@ -3890,6 +3898,7 @@ column_name = "שם"
 column_ops = "פעולות"
 column_share = "חלק"
 more_items = "+{count} נוספים"
+rows_paged = "{from}-{to}/{total}"
 rows_shown = "{shown}/{total}"
 total_cost = "{value} ms/s"
 
@@ -3924,6 +3933,7 @@ iris_fallback = "מרנדר אינטגרציה של Iris עבור {name}."
 iris_generation_pressure_overlay = "שכבת עומס מודעת ל-Iris לפי תור היצירה המקדימה והשהיית זרם הצ'אנקים."
 iris_metrics = "סקירת אינטגרציה של Iris למנועים, עולמות, צ'אנקים, ישויות ויצירה."
 iris_world_chunk_share_pie_map = "תרשים עוגה המציג את חלוקת הצ'אנקים הטעונים בין עולמות המנוהלים על ידי Iris."
+mod_cost_kind_list_map = "עלות המודים מחולקת לאירועים, טיקים של ישויות בלוק, טיקים של ישויות ויצירת עולם."
 player_impact_overlay = "מפת עומס משולבת עם סמנים לכל שחקן המציגים את ההשפעה הסבירה על העולם."
 plugin_event_impact_list_map = "רשימה מדורגת של תוספים לפי ציון השפעת אירועים נע."
 mod_event_impact_list_map = "רשימה מדורגת של מודים לפי ציון השפעת אירועים נע."
@@ -4108,8 +4118,10 @@ fluid = "פעילות עדכוני נוזלים ועלות הסימולציה."
 hopper = "פעילות העברות משפכים ועלות העיבוד."
 iris = "מדד אינטגרציה של Iris שנחשף דרך גשר הדוגמים המרוחק."
 memory = "עומס זיכרון JVM והתנהגות איסוף אשפה."
+mod_cost = "הזמן שהמוד הזה צורך באירועים, בישויות בלוק, בישויות וביצירת עולם, ב-ms לשנייה."
 physics = "פעילות עדכוני פיזיקה ועלות הסימולציה."
 player = "פעילות שחקנים ואיכות ההשהיה ברשת."
+plugin_cost = "זמן תהליכון השרת שצורכים מטפלי האירועים של התוסף הזה, ב-ms לשנייה."
 processor = "עומס CPU ועומס המארח סביב זמן הריצה של השרת."
 react = "עומק תור המתזמן ועומס הביצוע של React."
 redstone = "פעילות מעברי רדסטון ועלות העיבוד."
@@ -4175,6 +4187,12 @@ update_hint = "עדכנו את Animus כדי לפרסם מדדי React"
 [renderer.heatmap]
 no_activity = "אין פעילות בקרבת מקום"
 quiet = "שקט"
+
+[renderer.cost_kind]
+event = "אירועים"
+block_entity = "ישויות בלוק"
+entity = "ישויות"
+worldgen = "יצירת עולם"
 
 [renderer.metric]
 2d_caches = "מטמוני 2D"
@@ -4363,7 +4381,9 @@ iris_world_mantle = "מעטפת עולם של Iris"
 iris_world_overview = "סקירת עולם של Iris"
 iris_world_pregen = "יצירה מקדימה של עולם ב-Iris"
 iris_world_pregen_time = "זמן יצירה מקדימה של עולם ב-Iris"
+mod_cost_kinds = "עלות מודים לפי סוג"
 player_impact = "השפעת שחקנים"
+plugin_cost_kinds = "עלות תוספים לפי סוג"
 plugin_impact = "השפעת תוספים"
 mod_impact = "השפעת מודים"
 plugin_impact_share = "נתח השפעת תוספים"

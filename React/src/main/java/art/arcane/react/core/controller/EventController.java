@@ -49,6 +49,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.entity.EntityPlaceEvent;
 import org.bukkit.plugin.EventExecutor;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredListener;
 
 import java.lang.reflect.Field;
@@ -56,6 +58,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -147,6 +150,25 @@ public class EventController extends TickedObject implements EventMeasurement, I
 
   public OwnerCostModel getCostModel() {
     return costModel;
+  }
+
+  @Override
+  public OwnerCostModel ownerCostModel() {
+    return costModel;
+  }
+
+  @Override
+  public Map<String, String> ownerCatalog() {
+    Map<String, String> owners = new TreeMap<>();
+    PluginManager plugins = Bukkit.getPluginManager();
+    if (plugins != null) {
+      for (Plugin plugin : plugins.getPlugins()) {
+        if (plugin != null && plugin != React.instance && plugin.getName() != null && !plugin.getName().isBlank()) {
+          owners.put(plugin.getName(), plugin.getName());
+        }
+      }
+    }
+    return owners;
   }
 
   public long getLastSamplerActivity() {
@@ -276,7 +298,7 @@ public class EventController extends TickedObject implements EventMeasurement, I
 
     for (Map.Entry<String, long[]> entry : drained.entrySet()) {
       long[] counters = entry.getValue();
-      consumer.accept(entry.getKey(), entry.getKey(), counters[0], counters[1], counters[2]);
+      consumer.accept(entry.getKey(), entry.getKey(), OwnerCostProbe.KIND_EVENT, counters[0], counters[1], counters[2]);
     }
   }
 

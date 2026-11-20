@@ -129,6 +129,7 @@ final class ModMapHubScreenHost implements MapHubScreenHost {
             case GROUP_HIDDENORE -> Items.DIAMOND_ORE;
             case GROUP_BILETOOLS -> vanilla("lime_dye");
             case GROUP_ANIMUS -> Items.ARMOR_STAND;
+            case GROUP_OWNERS -> Items.JUKEBOX;
             case GROUP_TICK -> Items.CLOCK;
             case GROUP_DIMENSIONS -> Items.RECOVERY_COMPASS;
             case GROUP_MEMORY -> Items.EXPERIENCE_BOTTLE;

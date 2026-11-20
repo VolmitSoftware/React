@@ -35,6 +35,7 @@ import art.arcane.react.api.web.resource.IncidentResource;
 import art.arcane.react.api.web.resource.IntegrationResource;
 import art.arcane.react.api.web.resource.LogsResource;
 import art.arcane.react.api.web.resource.MetricsResource;
+import art.arcane.react.api.web.resource.OwnerCostResource;
 import art.arcane.react.api.web.resource.OwnerResource;
 import art.arcane.react.api.web.resource.PairResource;
 import art.arcane.react.api.web.resource.PlayerResource;
@@ -49,8 +50,10 @@ import art.arcane.react.api.web.ws.WsAuthenticationGate;
 import art.arcane.react.api.web.ws.WsMetricsBroadcaster;
 import art.arcane.react.core.incident.IncidentRecord;
 import art.arcane.react.platform.PlatformKind;
+import art.arcane.react.api.sampler.SamplerHosts;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
+import art.arcane.react.platform.RuntimeStatsHost;
 import art.arcane.react.platform.WebHost;
 import art.arcane.react.util.common.scheduling.J;
 import com.google.gson.Gson;
@@ -716,6 +719,18 @@ public class ReactWebServer {
                     javalin.before("/api/v1/owners", auth);
                 }
                 javalin.get("/api/v1/owners", owners::list);
+                OwnerCostResource ownerCosts = new OwnerCostResource(
+                    () -> SamplerHosts.runtime().flatMap(RuntimeStatsHost::eventMeasurement).orElse(null),
+                    () -> {
+                        ReactPlatform platform = ReactPlatforms.getOrNull();
+                        return platform == null ? "plugin" : platform.ownerNoun();
+                    },
+                    (String samplerId) -> SamplerHosts.sampler(samplerId) != null
+                );
+                if (requireTokenForReads) {
+                    javalin.before("/api/v1/owners/cost", auth);
+                }
+                javalin.get("/api/v1/owners/cost", ownerCosts::get);
                 PluginApiPackRoutes pluginApiPacks = localHost.pluginApiPacks(mutationReporter);
                 if (requireTokenForReads) {
                     javalin.before("/api/v1/plugin-api-packs", auth);

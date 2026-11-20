@@ -23,10 +23,12 @@ import art.arcane.react.api.sampler.ReactEventSampler;
 import art.arcane.react.core.controller.EventController;
 import art.arcane.react.platform.EventMeasurement;
 import art.arcane.react.platform.cost.OwnerCostModel;
+import art.arcane.react.platform.cost.OwnerCostSampler;
+import art.arcane.react.React;
 import art.arcane.volmlib.util.format.Form;
 import net.kyori.adventure.text.Component;
 
-public class SamplerPluginCost extends ReactEventSampler {
+public class SamplerPluginCost extends ReactEventSampler implements OwnerCostSampler {
   private final transient String pluginName;
 
   public SamplerPluginCost(String pluginName) {
@@ -54,6 +56,12 @@ public class SamplerPluginCost extends ReactEventSampler {
       return 0D;
     }
     return controller.getCostModel().sampleAverage(pluginName);
+  }
+
+  @Override
+  public double recentCostMsPerSecond() {
+    EventController controller = React.controller(EventController.class);
+    return controller == null ? 0D : controller.getCostModel().recentMsPerSecond(pluginName);
   }
 
   @Override

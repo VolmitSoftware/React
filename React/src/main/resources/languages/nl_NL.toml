@@ -130,6 +130,7 @@
 #   {protocol}  Versie van het integratieprotocol
 #   {radius}  Straal in chunks voor een ontwikkeltestactie
 #   {range}  Toegestaan bereik voor zicht-, simulatie- of verzendafstand in chunks
+#   {rank}  Positie in een gerangschikte lijst, vanaf 1
 #   {rate}  Ingestelde versnellingsfactor voor gewasgroei
 #   {rating}  Opgemaakte benchmarkbeoordeling
 #   {react_errors}  Aantal React-foutregels dat in het serverlogboek is gevonden
@@ -2248,6 +2249,10 @@ description = "Configuratie voor de functie Plugin Event Impact List Map. Deze f
 impact = "Nul laat een hogere kaartenwand elke plugin tonen; een vaste waarde wordt vermenigvuldigd met het aantal verticale tegels, dus een hogere wand toont nog steeds meer plugins."
 summary = "Maximaal aantal rijen per kaarttegel, of 0 om de beschikbare hoogte te vullen."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactlistmap.field.pageseconds]
+summary = "Seconden dat elke pagina van de lijst zichtbaar blijft wanneer meer plugins of mods kosten hebben dan op de kaart passen, of 0 om alleen de duurste pagina te tonen."
+impact = "De lijst gaat met deze tussenpoos naar de volgende pagina, zodat elke gemeten plugin of mod om de beurt verschijnt. Een grotere muur toont meer rijen per pagina."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactpiemap]
 description = "Configuratie voor de functie Plugin Event Impact Pie Map. Deze functie bewaakt voortdurend het servergedrag en past tijdens runtime vangrails toe."
 
@@ -3648,6 +3653,8 @@ controller_unavailable = "&cDe rendercontroller is niet beschikbaar.&r"
 group = "Groep: {group}"
 id = "ID: {id}"
 none_available = "&cEr zijn geen kaartweergavers beschikbaar.&r"
+owner_cost = "Recente kosten: {value}, #{rank} van {total}"
+owner_rank = "Nu: {value}, #{rank} van {total}"
 scope = "Toepassingsgebied: {scope}"
 select = "Klik links: Selecteer deze monitor"
 selected = "&aKaart geselecteerd: &f{renderer}&a &8[{scope}]&r"
@@ -3679,6 +3686,7 @@ iris_biome_chunk_share_pie_map = "Elk segment vertegenwoordigt het percentage ge
 iris_generation_pressure_overlay = "Warmer kleuren geven meer druk aan in de gemeten chunk."
 iris_metrics = "Monitors: beheerde werelden, live engines, geladen chunks, entiteiten, generatiesnelheid en fouten."
 iris_world_chunk_share_pie_map = "Elk segment vertegenwoordigt het percentage geladen chunks per wereld."
+mod_cost_kind_list_map = "De bovenste balk verdeelt alle modkosten per soort; elke rij verdeelt de kosten van één mod op dezelfde manier."
 player_impact_overlay = "Warmer kleuren geven meer druk aan in de gemeten chunk."
 plugin_event_impact_list_map = "Rijen staan gesorteerd van de hoogste naar de laagste voortschrijdende pluginimpact."
 mod_event_impact_list_map = "Rijen staan gesorteerd van de hoogste naar de laagste voortschrijdende modimpact."
@@ -3890,6 +3898,7 @@ column_name = "Naam"
 column_ops = "Ops"
 column_share = "Aandeel"
 more_items = "+{count} meer"
+rows_paged = "{from}-{to}/{total}"
 rows_shown = "{shown}/{total}"
 total_cost = "{value} ms/s"
 
@@ -3924,6 +3933,7 @@ iris_fallback = "Iris-integratierenderer voor {name}."
 iris_generation_pressure_overlay = "Iris-bewuste drukoverlay op basis van de pregen-wachtrij en de latentie van de chunkstream."
 iris_metrics = "Iris-integratieoverzicht voor engines, werelden, chunks, entiteiten en generatie."
 iris_world_chunk_share_pie_map = "Cirkeldiagram met het aandeel geladen chunks over door Iris beheerde werelden."
+mod_cost_kind_list_map = "Modkosten verdeeld over events, block-entity-ticks, entity-ticks en wereldgeneratie."
 player_impact_overlay = "Samengestelde drukkaart met markeringen per speler die de waarschijnlijke impact op de wereld tonen."
 plugin_event_impact_list_map = "Ranglijst van plugins op basis van de voortschrijdende score voor gebeurtenisimpact."
 mod_event_impact_list_map = "Ranglijst van mods op basis van de voortschrijdende score voor gebeurtenisimpact."
@@ -4108,8 +4118,10 @@ fluid = "Activiteit van vloeistofupdates en simulatiekosten."
 hopper = "Trechteroverdrachtsactiviteit en verwerkingskosten."
 iris = "Iris-integratiemetric die via de externe samplerbrug wordt aangeboden."
 memory = "JVM-geheugendruk en gedrag van de garbagecollection."
+mod_cost = "Tijd van deze mod in events, block entities, entities en wereldgeneratie, in ms per seconde."
 physics = "Fysica-updateactiviteit en simulatiekosten."
 player = "Speleractiviteit en kwaliteit van de netwerklatentie."
+plugin_cost = "Serverthreadtijd van de eventhandlers van deze plugin, in ms per seconde."
 processor = "CPU- en hostbelasting rond de serverruntime."
 react = "Wachtrijdiepte van de React-scheduler en uitvoeringsdruk."
 redstone = "Redstone-overgangsactiviteit en verwerkingskosten."
@@ -4175,6 +4187,12 @@ update_hint = "Werk Animus bij om React-statistieken te publiceren"
 [renderer.heatmap]
 no_activity = "Geen activiteit in de buurt"
 quiet = "stil"
+
+[renderer.cost_kind]
+event = "Events"
+block_entity = "Block entities"
+entity = "Entities"
+worldgen = "Wereldgeneratie"
 
 [renderer.metric]
 2d_caches = "2D-caches"
@@ -4363,7 +4381,9 @@ iris_world_mantle = "Iris Wereldmantel"
 iris_world_overview = "Iris Wereldoverzicht"
 iris_world_pregen = "Iris Wereldpregen"
 iris_world_pregen_time = "Iris Wereldpregentijd"
+mod_cost_kinds = "Modkosten per soort"
 player_impact = "Spelerimpact"
+plugin_cost_kinds = "Pluginkosten per soort"
 plugin_impact = "Plugin-impact"
 mod_impact = "Mod-impact"
 plugin_impact_share = "Aandeel pluginimpact"

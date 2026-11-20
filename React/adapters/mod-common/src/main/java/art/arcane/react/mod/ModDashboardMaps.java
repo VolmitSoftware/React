@@ -9,6 +9,7 @@ import art.arcane.react.api.rendering.RendererReactMetrics;
 import art.arcane.react.api.sampler.SamplerHosts;
 import art.arcane.react.api.web.heatmap.ChunkGridExporter;
 import art.arcane.react.api.web.heatmap.HeatmapChunkSampler;
+import art.arcane.react.content.feature.OwnerCostKindRenderer;
 import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.ReactComponents;
 import art.arcane.react.platform.PlatformScheduler;
@@ -36,6 +37,7 @@ public final class ModDashboardMaps {
         ModDashboardMaps maps = new ModDashboardMaps(data);
         maps.renderers.add(new RendererReactMetrics(SamplerHosts::sampler));
         maps.renderers.add(new ModWorldgenPieRenderer(platform.ownerCost()));
+        maps.renderers.add(new OwnerCostKindRenderer(data::eventMeasurement));
         ModIntegrationMetrics integrations = data.integrations();
         if (data.isInstalled("iris")) {
             maps.renderers.addAll(RendererIrisMetrics.dashboards(integrations));

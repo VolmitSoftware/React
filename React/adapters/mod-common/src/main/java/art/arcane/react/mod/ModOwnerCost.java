@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
@@ -153,6 +154,21 @@ final class ModOwnerCost implements EventMeasurement {
     @Override
     public Map<String, String> ownerDisplayNames() {
         return model.displayNames();
+    }
+
+    @Override
+    public OwnerCostModel ownerCostModel() {
+        return model;
+    }
+
+    @Override
+    public Map<String, String> ownerCatalog() {
+        Map<String, String> owners = new TreeMap<>(CostRegistry.costOwners());
+        for (Map.Entry<String, String> owner : model.displayNames().entrySet()) {
+            owners.putIfAbsent(owner.getKey(), owner.getValue());
+        }
+        owners.remove(ReactModRuntime.ID);
+        return owners;
     }
 
     @Override

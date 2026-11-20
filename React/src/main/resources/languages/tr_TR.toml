@@ -130,6 +130,7 @@
 #   {protocol}  Entegrasyon protokol sürümü
 #   {radius}  Geliştirici testi eyleminin chunk cinsinden yarıçapı
 #   {range}  Chunk cinsinden izin verilen görüş, simülasyon veya gönderim mesafesi aralığı
+#   {rank}  Sıralı listedeki konum, 1’den başlayarak
 #   {rate}  Yapılandırılan mahsul büyümesini hızlandırma oranı
 #   {rating}  Biçimlendirilmiş performans testi derecesi
 #   {react_errors}  Sunucu günlüğünde bulunan React hata satırlarının sayısı
@@ -2248,6 +2249,10 @@ description = "Eklenti Olay Etkisi Liste Haritası özelliği için yapılandır
 impact = "Sıfır, daha yüksek bir harita duvarının her eklentiyi listelemesini sağlar; sabit bir değer dikey karo sayısıyla çarpılır, bu nedenle daha yüksek bir duvar yine de daha fazla eklenti listeler."
 summary = "Harita karosu başına azami satır sayısı veya kullanılabilir yüksekliği doldurmak için 0."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactlistmap.field.pageseconds]
+summary = "Maliyeti olan eklenti veya mod sayısı haritaya sığandan fazla olduğunda listenin her sayfasının kaç saniye gösterileceği; yalnızca en pahalı sayfayı göstermek için 0."
+impact = "Liste bu aralıkla sonraki sayfaya geçer, böylece ölçülen her eklenti veya mod sırayla görünür. Daha büyük bir duvar sayfa başına daha çok satır gösterir."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactpiemap]
 description = "Eklenti Olay Etkisi Pasta Haritası özelliği için yapılandırma. Bu özellik sunucu davranışını sürekli izler ve çalışma sırasında korumalar uygular."
 
@@ -3648,6 +3653,8 @@ controller_unavailable = "&cÇizici denetleyicisi kullanılamıyor.&r"
 group = "Grup: {group}"
 id = "ID: {id}"
 none_available = "&cKullanılabilir harita çizicisi yok.&r"
+owner_cost = "Son maliyet: {value}, {total} içinde #{rank}"
+owner_rank = "Şimdi: {value}, {total} içinde #{rank}"
 scope = "Kapsam: {scope}"
 select = "Sol Tık: Bu monitörü seç"
 selected = "&aHarita seçildi: &f{renderer}&a &8[{scope}]&r"
@@ -3679,6 +3686,7 @@ iris_biome_chunk_share_pie_map = "Her dilim, yüklenen chunk'ların biyom başı
 iris_generation_pressure_overlay = "Daha sıcak renkler, ölçülen chunk'ta daha fazla baskı olduğunu gösterir."
 iris_metrics = "Monitörler: yönetilen dünyalar, canlı motorlar, yüklenmiş chunk'lar, varlıklar, jenerasyon hızı ve başarısızlıklar."
 iris_world_chunk_share_pie_map = "Her dilim, dünya başına yüklenen chunk'ların yüzdesini temsil eder."
+mod_cost_kind_list_map = "Üstteki çubuk tüm mod maliyetini türe göre böler; her satır bir modun maliyetini aynı şekilde böler."
 player_impact_overlay = "Daha sıcak renkler, ölçülen chunk'ta daha fazla baskı olduğunu gösterir."
 plugin_event_impact_list_map = "Satırlar, en yüksekten en düşüğe kayan eklenti etkisine göre sıralanır."
 mod_event_impact_list_map = "Satırlar, en yüksekten en düşüğe kayan mod etkisine göre sıralanır."
@@ -3890,6 +3898,7 @@ column_name = "Ad"
 column_ops = "İşlem"
 column_share = "Pay"
 more_items = "+{count} daha"
+rows_paged = "{from}-{to}/{total}"
 rows_shown = "{shown}/{total}"
 total_cost = "{value} ms/s"
 
@@ -3924,6 +3933,7 @@ iris_fallback = "{name} için Iris entegrasyon çizicisi."
 iris_generation_pressure_overlay = "Ön üretim kuyruğu ve chunk akış gecikmesini kullanan Iris duyarlı baskı katmanı."
 iris_metrics = "Motorlar, dünyalar, chunk'lar, varlıklar ve üretim için Iris entegrasyon genel bakışı."
 iris_world_chunk_share_pie_map = "Iris tarafından yönetilen dünyalar arasında yüklü chunk payını gösteren pasta grafiği."
+mod_cost_kind_list_map = "Mod maliyetinin olaylar, blok varlığı tikleri, varlık tikleri ve dünya oluşturma olarak dağılımı."
 player_impact_overlay = "Olası dünya etkisini gösteren oyuncu başına işaretçilerle bileşik baskı haritası."
 plugin_event_impact_list_map = "Kayan olay etkisi puanına göre eklentilerin sıralı listesi."
 mod_event_impact_list_map = "Kayan olay etkisi puanına göre modların sıralı listesi."
@@ -4108,8 +4118,10 @@ fluid = "Akışkan güncelleme etkinliği ve simülasyon maliyeti."
 hopper = "Huni aktarım etkinliği ve işlem maliyeti."
 iris = "Uzak örnekleyici köprüsü üzerinden sunulan Iris entegrasyon ölçümü."
 memory = "JVM bellek baskısı ve çöp toplama davranışı."
+mod_cost = "Bu modun olaylarda, blok varlıklarında, varlıklarda ve dünya oluşturmada kullandığı süre, saniye başına ms."
 physics = "Fizik güncelleme etkinliği ve simülasyon maliyeti."
 player = "Oyuncu etkinliği ve ağ gecikme kalitesi."
+plugin_cost = "Bu eklentinin olay işleyicilerinin kullandığı sunucu iş parçacığı süresi, saniye başına ms."
 processor = "Sunucu çalışma zamanı çevresindeki CPU ve ana makine yük baskısı."
 react = "React zamanlayıcı kuyruk derinliği ve yürütme baskısı."
 redstone = "Redstone geçiş etkinliği ve işleme maliyeti."
@@ -4175,6 +4187,12 @@ update_hint = "React metriklerini yayınlamak için Animus'u güncelleyin"
 [renderer.heatmap]
 no_activity = "Yakınlarda faaliyet yok"
 quiet = "Sessiz"
+
+[renderer.cost_kind]
+event = "Olaylar"
+block_entity = "Blok varlıkları"
+entity = "Varlıklar"
+worldgen = "Dünya oluşturma"
 
 [renderer.metric]
 2d_caches = "2D Önbellek"
@@ -4363,7 +4381,9 @@ iris_world_mantle = "Iris Dünya Mantosu"
 iris_world_overview = "Iris Dünya Genel Bakış"
 iris_world_pregen = "Iris Dünya Ön Üretimi"
 iris_world_pregen_time = "Iris Dünya Ön Üretim Süresi"
+mod_cost_kinds = "Türe Göre Mod Maliyeti"
 player_impact = "Oyuncu Etkisi"
+plugin_cost_kinds = "Türe Göre Eklenti Maliyeti"
 plugin_impact = "Eklenti Etkisi"
 mod_impact = "Mod Etkisi"
 plugin_impact_share = "Eklenti Etki Payı"

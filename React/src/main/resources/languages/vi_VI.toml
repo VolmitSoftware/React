@@ -130,6 +130,7 @@
 #   {protocol}  Phiên bản giao thức tích hợp
 #   {radius}  Bán kính theo vùng khối của hành động kiểm thử dành cho nhà phát triển
 #   {range}  Phạm vi khoảng cách nhìn, mô phỏng hoặc gửi được chấp nhận, tính bằng chunk
+#   {rank}  Vị trí trong danh sách xếp hạng, bắt đầu từ 1
 #   {rate}  Tốc độ tăng nhanh sinh trưởng cây trồng đã cấu hình
 #   {rating}  Mức đánh giá kiểm thử hiệu năng đã định dạng
 #   {react_errors}  Số dòng lỗi React tìm thấy trong nhật ký máy chủ
@@ -2248,6 +2249,10 @@ description = "Cấu hình cho tính năng Bản đồ danh sách tác động s
 impact = "Số không cho phép bức tường bản đồ cao hơn liệt kê mọi plugin; giá trị cố định được nhân với số ô theo chiều dọc, nên bức tường cao hơn vẫn liệt kê nhiều plugin hơn."
 summary = "Số hàng tối đa trên mỗi ô bản đồ, hoặc 0 để lấp đầy chiều cao khả dụng."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactlistmap.field.pageseconds]
+summary = "Số giây hiển thị mỗi trang của danh sách khi có nhiều plugin hoặc mod có chi phí hơn số dòng vừa bản đồ, hoặc 0 để chỉ hiện trang tốn nhất."
+impact = "Danh sách chuyển sang trang kế tiếp theo khoảng này, nên mỗi plugin hoặc mod đã đo sẽ lần lượt xuất hiện. Bức tường lớn hơn hiển thị nhiều hàng hơn mỗi trang."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactpiemap]
 description = "Cấu hình cho tính năng Bản đồ biểu đồ tròn tác động sự kiện plugin. Tính năng này liên tục giám sát hành vi của máy chủ và áp dụng các rào chắn trong thời gian chạy."
 
@@ -3648,6 +3653,8 @@ controller_unavailable = "&cBộ điều khiển bộ kết xuất không khả 
 group = "Nhóm: {group}"
 id = "ID: {id}"
 none_available = "&cKhông có bộ kết xuất bản đồ nào khả dụng.&r"
+owner_cost = "Chi phí gần đây: {value}, hạng {rank}/{total}"
+owner_rank = "Hiện tại: {value}, hạng {rank}/{total}"
 scope = "Phạm vi: {scope}"
 select = "Nhấn trái: Chọn màn hình này"
 selected = "&aĐã chọn bản đồ: &f{renderer}&a &8[{scope}]&r"
@@ -3679,6 +3686,7 @@ iris_biome_chunk_share_pie_map = "Mỗi lát biểu thị tỷ lệ phần trăm
 iris_generation_pressure_overlay = "Màu sắc nóng hơn cho thấy áp lực cao hơn trong chunk được đo."
 iris_metrics = "Giám sát: thế giới được quản lý, engine đang chạy, chunk đã tải, thực thể, tốc độ tạo và lỗi."
 iris_world_chunk_share_pie_map = "Mỗi mảnh đại diện cho tỷ lệ phần trăm các chunk tải trên mỗi thế giới."
+mod_cost_kind_list_map = "Thanh trên cùng chia toàn bộ chi phí mod theo loại; mỗi hàng chia chi phí của một mod theo cùng cách."
 player_impact_overlay = "Màu sắc nóng hơn cho thấy áp lực cao hơn trong chunk được đo."
 plugin_event_impact_list_map = "Các hàng được sắp xếp từ tác động plugin (cửa sổ trượt) cao nhất đến thấp nhất."
 mod_event_impact_list_map = "Các hàng được sắp xếp từ tác động mod (cửa sổ trượt) cao nhất đến thấp nhất."
@@ -3890,6 +3898,7 @@ column_name = "Tên"
 column_ops = "Thao tác"
 column_share = "Tỷ lệ"
 more_items = "+{count} nữa"
+rows_paged = "{from}-{to}/{total}"
 rows_shown = "{shown}/{total}"
 total_cost = "{value} ms/s"
 
@@ -3924,6 +3933,7 @@ iris_fallback = "Bộ kết xuất tích hợp Iris cho {name}."
 iris_generation_pressure_overlay = "Lớp phủ áp lực Iris dùng hàng đợi tạo trước và độ trễ luồng chunk."
 iris_metrics = "Tổng quan tích hợp Iris về engine, thế giới, chunk, thực thể và quá trình tạo."
 iris_world_chunk_share_pie_map = "Biểu đồ tròn tỷ lệ chunk đã tải giữa các thế giới do Iris quản lý."
+mod_cost_kind_list_map = "Chi phí mod chia theo sự kiện, tick thực thể khối, tick thực thể và tạo thế giới."
 player_impact_overlay = "Bản đồ áp lực tổng hợp với dấu theo từng người chơi cho thấy tác động có thể có lên thế giới."
 plugin_event_impact_list_map = "Danh sách xếp hạng plugin theo điểm tác động sự kiện trượt."
 mod_event_impact_list_map = "Danh sách xếp hạng mod theo điểm tác động sự kiện trượt."
@@ -4108,8 +4118,10 @@ fluid = "Hoạt động cập nhật chất lỏng và chi phí mô phỏng."
 hopper = "Các hoạt động chuyển giao phễu và chi phí xử lý."
 iris = "Chỉ số tích hợp Iris được cung cấp qua cầu bộ lấy mẫu từ xa."
 memory = "Áp lực bộ nhớ JVM và hành vi thu gom rác."
+mod_cost = "Thời gian mod này dùng cho sự kiện, thực thể khối, thực thể và tạo thế giới, tính bằng ms mỗi giây."
 physics = "Hoạt động cập nhật vật lý và chi phí mô phỏng."
 player = "Hoạt động người chơi và chất lượng độ trễ mạng."
+plugin_cost = "Thời gian luồng máy chủ mà các trình xử lý sự kiện của plugin này dùng, tính bằng ms mỗi giây."
 processor = "Áp lực tải CPU và máy chủ lưu trữ quanh runtime của máy chủ."
 react = "Độ sâu hàng đợi bộ lập lịch React và áp lực thực thi."
 redstone = "Hoạt động chuyển tiếp redstone và chi phí xử lý."
@@ -4175,6 +4187,12 @@ update_hint = "Hãy cập nhật Animus để xuất bản số liệu React"
 [renderer.heatmap]
 no_activity = "Không có hoạt động gần đây"
 quiet = "yên lặng"
+
+[renderer.cost_kind]
+event = "Sự kiện"
+block_entity = "Thực thể khối"
+entity = "Thực thể"
+worldgen = "Tạo thế giới"
 
 [renderer.metric]
 2d_caches = "Cache 2D"
@@ -4363,7 +4381,9 @@ iris_world_mantle = "Iris Mantle thế giới"
 iris_world_overview = "Iris Toàn cảnh thế giới"
 iris_world_pregen = "Iris Tạo trước thế giới"
 iris_world_pregen_time = "Iris Thời gian tạo trước"
+mod_cost_kinds = "Chi phí mod theo loại"
 player_impact = "Ảnh hưởng của người chơi"
+plugin_cost_kinds = "Chi phí plugin theo loại"
 plugin_impact = "Tác động plugin"
 mod_impact = "Tác động mod"
 plugin_impact_share = "Tỷ trọng tác động plugin"

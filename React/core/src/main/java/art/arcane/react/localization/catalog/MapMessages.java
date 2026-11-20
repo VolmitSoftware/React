@@ -2,6 +2,7 @@ package art.arcane.react.localization.catalog;
 
 import art.arcane.react.core.telemetry.timing.WorldTickSeries;
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.platform.cost.OwnerCostModel;
 import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.localization.MessageCatalog;
@@ -59,11 +60,13 @@ public final class MapMessages {
   );
   private static final Map<String, TextKey> MOD_RENDERER_SUMMARIES = Map.ofEntries(
       modRendererSummaryEntry("plugin-event-impact-pie-map", "Pie chart showing rolling mod event-impact share over time."),
-      modRendererSummaryEntry("plugin-event-impact-list-map", "Ranked list of mods by rolling event-impact score.")
+      modRendererSummaryEntry("plugin-event-impact-list-map", "Ranked list of mods by rolling event-impact score."),
+      modRendererSummaryEntry("plugin-cost-kind-list-map", "Mod cost split into events, block entity ticks, entity ticks and world generation.")
   );
   private static final Map<String, TextKey> MOD_RENDERER_DETAILS = Map.ofEntries(
       modRendererDetail("plugin-event-impact-pie-map", "Each slice represents the rolling share of mod event cost over recent windows."),
-      modRendererDetail("plugin-event-impact-list-map", "Rows are ordered from highest rolling mod impact to lowest.")
+      modRendererDetail("plugin-event-impact-list-map", "Rows are ordered from highest rolling mod impact to lowest."),
+      modRendererDetail("plugin-cost-kind-list-map", "The top bar splits all mod cost by kind; each row splits one mod's cost the same way.")
   );
   private static final Map<String, TextKey> SAMPLER_SUMMARIES = Map.ofEntries(
       samplerSummary("tick-time", "Average server MSPT (milliseconds per tick) across recent samples."),
@@ -418,6 +421,8 @@ public final class MapMessages {
   private static final TextKey SAMPLER_IRIS = keywordSummary("iris", "Iris integration metric exposed through the remote sampler bridge.");
   private static final TextKey SAMPLER_ADAPT = keywordSummary("adapt", "Adapt integration metric exposed through the remote sampler bridge.");
   private static final TextKey SAMPLER_FALLBACK = keywordSummary("fallback", "Live sampler trend for this monitor.");
+  private static final TextKey SAMPLER_PLUGIN_COST = keywordSummary("plugin_cost", "Server-thread time this plugin's event handlers take, in ms per second.");
+  private static final TextKey SAMPLER_MOD_COST = keywordSummary("mod_cost", "Time this mod takes in events, block entities, entities and world generation, in ms per second.");
 
   public static final TextKey COLUMN_NAME = render("column_name", "Name");
   public static final TextKey COLUMN_SHARE = render("column_share", "Share");
@@ -426,6 +431,7 @@ public final class MapMessages {
   public static final TextKey COLUMN_OPS = render("column_ops", "Ops");
   public static final TextKey COLUMN_BANDWIDTH = render("column_bandwidth", "B/s");
   public static final TextKey ROWS_SHOWN = render("rows_shown", "{shown}/{total}");
+  public static final TextKey ROWS_PAGED = render("rows_paged", "{from}-{to}/{total}");
   public static final TextKey TOTAL_COST = render("total_cost", "{value} ms/s");
   public static final TextKey MORE_ITEMS = render("more_items", "+{count} more");
   public static final TextKey MEGAMAP_ZOOMED = megamap("zoomed", "{grid} zoom");
@@ -477,6 +483,8 @@ public final class MapMessages {
     builder.add(SAMPLER_IRIS);
     builder.add(SAMPLER_ADAPT);
     builder.add(SAMPLER_FALLBACK);
+    builder.add(SAMPLER_PLUGIN_COST);
+    builder.add(SAMPLER_MOD_COST);
     builder.add(COLUMN_NAME);
     builder.add(COLUMN_SHARE);
     builder.add(COLUMN_COST);
@@ -484,6 +492,7 @@ public final class MapMessages {
     builder.add(COLUMN_OPS);
     builder.add(COLUMN_BANDWIDTH);
     builder.add(ROWS_SHOWN);
+    builder.add(ROWS_PAGED);
     builder.add(TOTAL_COST);
     builder.add(MORE_ITEMS);
     builder.add(MEGAMAP_ZOOMED);
@@ -539,6 +548,9 @@ public final class MapMessages {
   }
 
   private static TextKey samplerKeyword(String normalizedId) {
+    if (OwnerCostModel.isOwnerCostSamplerId(normalizedId)) {
+      return OwnerNoun.pick(SAMPLER_PLUGIN_COST, SAMPLER_MOD_COST);
+    }
     if (normalizedId.startsWith("worldgen-")) {
       return SAMPLER_WORLDGEN;
     }

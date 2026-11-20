@@ -7,6 +7,7 @@ import art.arcane.react.mod.cost.ModCostProbe;
 import art.arcane.react.mod.cost.WorldgenStep;
 import art.arcane.react.platform.EventMeasurement;
 import art.arcane.react.platform.cost.OwnerCostModel;
+import art.arcane.react.platform.cost.OwnerSampler;
 import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.localization.MessageArgument;
 
@@ -14,7 +15,7 @@ import art.arcane.volmlib.util.localization.MessageArgument;
  * World generation time in ms/s on the generator threads, either one mod's features, structures and carvers
  * ({@code worldgen-mod-<id>}) or one whole chunk step ({@code worldgen-step-<step>}).
  */
-final class ModWorldgenSampler extends ReactEventSampler {
+final class ModWorldgenSampler extends ReactEventSampler implements OwnerSampler {
     static final String PREFIX = "worldgen-";
     private final transient String owner;
     private final transient WorldgenStep step;
@@ -54,6 +55,16 @@ final class ModWorldgenSampler extends ReactEventSampler {
             return MapMessages.localizedSamplerName(getId(), getId());
         }
         return ReactLanguage.plain(MapMessages.SAMPLER_WORLDGEN_OWNER, MessageArgument.untrusted("name", displayName));
+    }
+
+    @Override
+    public int ownerFamily() {
+        return FAMILY_WORLDGEN;
+    }
+
+    @Override
+    public double ownerRankValue() {
+        return step == null ? capture() : Double.NaN;
     }
 
     @Override

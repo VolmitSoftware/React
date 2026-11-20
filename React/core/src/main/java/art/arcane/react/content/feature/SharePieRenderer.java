@@ -169,6 +169,14 @@ public abstract class SharePieRenderer implements ReactRenderer {
     return RendererMessages.PIE_UNIT_CHUNKS;
   }
 
+  /**
+   * Slices smaller than this share of the total join "Other" once the largest few are drawn; 0 keeps every slice that
+   * fits the legend.
+   */
+  protected double minimumSliceShare() {
+    return 0D;
+  }
+
   protected TinyColor headerColor() {
     return HEADER;
   }
@@ -248,18 +256,27 @@ public abstract class SharePieRenderer implements ReactRenderer {
     }
 
     int limit = sliceBudget(maxSlices);
+    double minimumCount = total * Math.max(0D, minimumSliceShare());
     List<Bucket> visible = new ArrayList<>();
-    long other = 0L;
+    List<Bucket> folded = new ArrayList<>();
     for (int i = 0; i < buckets.size(); i++) {
       Bucket bucket = buckets.get(i);
-      if (buckets.size() <= limit || i < (limit - 1)) {
+      boolean fits = buckets.size() <= limit || i < (limit - 1);
+      boolean large = i < MIN_VISIBLE_SLICES || bucket.count() >= minimumCount;
+      if (fits && large) {
         visible.add(bucket);
       } else {
-        other += bucket.count();
+        folded.add(bucket);
       }
     }
 
-    if (other > 0L) {
+    if (folded.size() == 1) {
+      visible.add(folded.get(0));
+    } else if (!folded.isEmpty()) {
+      long other = 0L;
+      for (Bucket bucket : folded) {
+        other += bucket.count();
+      }
       visible.add(new Bucket(ReactLanguage.raw(RendererMessages.PIE_OTHER), other));
     }
 
@@ -399,7 +416,11 @@ public abstract class SharePieRenderer implements ReactRenderer {
           : text.splitColumns(gutter, 68, 32);
 
       textIn(columns[0], 0, baseline, slice.label(), MapTheme.TEXT);
-      textRightIn(columns[1], 0, baseline, Form.f(slice.ratio() * 100D, 1) + "%", MapTheme.TEXT_SOFT);
+      String percent = Form.f(slice.ratio() * 100D, 1) + "%";
+      if (textWidth(percent) > columns[1].width()) {
+        percent = Math.round(slice.ratio() * 100D) + "%";
+      }
+      textRightIn(columns[1], 0, baseline, percent, MapTheme.TEXT_SOFT);
       if (showCount) {
         textRightIn(columns[2], 0, baseline, compact(slice.count()), MapTheme.TEXT_MUTED);
       }

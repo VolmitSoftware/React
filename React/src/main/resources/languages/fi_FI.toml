@@ -130,6 +130,7 @@
 #   {protocol}  Integraatioprotokollan versio
 #   {radius}  Kehitystestitoiminnon chunk-säde
 #   {range}  Sallittu näkyvyys-, simulointi- tai lähetysetäisyyden alue chunkeina
+#   {rank}  Sijoitus järjestetyssä listassa alkaen 1:stä
 #   {rate}  Asetettu kasvien kasvun nopeutuskerroin
 #   {rating}  Muotoiltu suorituskykytestin arvio
 #   {react_errors}  Palvelinlokista löytyneiden React-virherivien määrä
@@ -2248,6 +2249,10 @@ description = "Ominaisuuden Plugin Event Impact List Map asetukset. Tämä omina
 impact = "Nolla antaa korkeamman karttaseinän luetella jokaisen lisäosan; kiinteä arvo kerrotaan pystysuuntaisten laattojen määrällä, joten korkeampi seinä luettelee silti enemmän lisäosia."
 summary = "Karttalaattaa kohden piirrettävien rivien enimmäismäärä, tai 0 täyttää käytettävissä olevan korkeuden."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactlistmap.field.pageseconds]
+summary = "Sekunnit, jotka listan kukin sivu näkyy, kun kustannuksia aiheuttavia plugineja tai modeja on enemmän kuin kartalle mahtuu, tai 0, jolloin näytetään vain kallein sivu."
+impact = "Lista vaihtaa seuraavalle sivulle tällä välillä, joten jokainen mitattu plugin tai modi näkyy vuorollaan. Suurempi seinä näyttää enemmän rivejä sivulla."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactpiemap]
 description = "Ominaisuuden Plugin Event Impact Pie Map asetukset. Tämä ominaisuus seuraa palvelimen toimintaa jatkuvasti ja soveltaa suojarajoituksia ajon aikana."
 
@@ -3648,6 +3653,8 @@ controller_unavailable = "&cRenderöijäohjain ei ole käytettävissä.&r"
 group = "Ryhmä: {group}"
 id = "ID: {id}"
 none_available = "&cKarttarenderöijiä ei ole saatavilla.&r"
+owner_cost = "Viimeaikainen kustannus: {value}, #{rank}/{total}"
+owner_rank = "Nyt: {value}, #{rank}/{total}"
 scope = "Soveltamisala: {scope}"
 select = "Vasen napsautus: Valitse tämä näyttö"
 selected = "&aValittu kartta: &f{renderer}&a &8[{scope}]&r"
@@ -3679,6 +3686,7 @@ iris_biome_chunk_share_pie_map = "Kukin siivu esittää ladattujen chunkien pros
 iris_generation_pressure_overlay = "Kuumemmat värit osoittavat suurempaa painetta mitatussa chunkissa."
 iris_metrics = "Seuraa: hallittuja maailmoja, käynnissä olevia moottoreita, ladattuja chunkeja, entiteettejä, generointinopeutta ja virheitä."
 iris_world_chunk_share_pie_map = "Kukin siivu esittää ladattujen chunkien prosenttiosuuden maailmaa kohden."
+mod_cost_kind_list_map = "Ylempi palkki jakaa kaikkien modien kustannuksen lajeittain; jokainen rivi jakaa yhden modin kustannuksen samalla tavalla."
 player_impact_overlay = "Kuumemmat värit osoittavat suurempaa painetta mitatussa chunkissa."
 plugin_event_impact_list_map = "Rivit on järjestetty lisäosan liukuvan vaikutuksen mukaan suurimmasta pienimpään."
 mod_event_impact_list_map = "Rivit on järjestetty modin liukuvan vaikutuksen mukaan suurimmasta pienimpään."
@@ -3890,6 +3898,7 @@ column_name = "Nimi"
 column_ops = "Ops"
 column_share = "Osuus"
 more_items = "+{count} lisää"
+rows_paged = "{from}-{to}/{total}"
 rows_shown = "{shown}/{total}"
 total_cost = "{value} ms/s"
 
@@ -3924,6 +3933,7 @@ iris_fallback = "Iris-integraation renderöijä: {name}."
 iris_generation_pressure_overlay = "Irisin tilanteen huomioiva painepeitto pregen-jonon ja chunk-virran viiveen perusteella."
 iris_metrics = "Iris-integraation yleiskatsaus moottoreista, maailmoista, chunkeista, entiteeteistä ja generoinnista."
 iris_world_chunk_share_pie_map = "Ympyräkaavio, joka näyttää ladattujen chunkien osuudet Irisin hallitsemissa maailmoissa."
+mod_cost_kind_list_map = "Modien kustannus jaettuna tapahtumiin, lohkoentiteettien tickeihin, entiteettien tickeihin ja maailman generointiin."
 player_impact_overlay = "Yhdistetty painekartta pelaajakohtaisilla merkeillä, jotka osoittavat todennäköisen vaikutuksen maailmaan."
 plugin_event_impact_list_map = "Lisäosien järjestetty luettelo liukuvan tapahtumavaikutuspisteen mukaan."
 mod_event_impact_list_map = "Modien järjestetty luettelo liukuvan tapahtumavaikutuspisteen mukaan."
@@ -4108,8 +4118,10 @@ fluid = "Nesteiden päivitysaktiivisuus ja simulointikustannus."
 hopper = "Suppiloiden siirtoaktiivisuus ja käsittelykustannus."
 iris = "Iris-integraation mittari, joka tarjotaan etämittaajasillan kautta."
 memory = "JVM:n muistipaine ja roskienkeruun käyttäytyminen."
+mod_cost = "Tämän modin aika tapahtumissa, lohkoentiteeteissä, entiteeteissä ja maailman generoinnissa millisekunteina sekunnissa."
 physics = "Fysiikan päivitystoiminta ja simulointikustannukset."
 player = "Pelaajan toiminnan ja verkon latenssilaatu."
+plugin_cost = "Tämän pluginin tapahtumankäsittelijöiden palvelinsäikeen aika millisekunteina sekunnissa."
 processor = "CPU:n ja isännän kuormituspaine palvelimen ajoympäristön ympärillä."
 react = "Reactin ajastinjonon syvyys ja suorituspaine."
 redstone = "Redstone-siirtymien aktiivisuus ja käsittelykustannus."
@@ -4175,6 +4187,12 @@ update_hint = "Päivitä Animus, jotta se julkaisee React-mittarit"
 [renderer.heatmap]
 no_activity = "Ei toimintaa lähistöllä"
 quiet = "hiljaista"
+
+[renderer.cost_kind]
+event = "Tapahtumat"
+block_entity = "Lohkoentiteetit"
+entity = "Entiteetit"
+worldgen = "Maailman generointi"
 
 [renderer.metric]
 2d_caches = "2D-välimuistit"
@@ -4363,7 +4381,9 @@ iris_world_mantle = "Iris-maailman Mantle"
 iris_world_overview = "Iris-maailman yleiskatsaus"
 iris_world_pregen = "Iris-maailman pregen"
 iris_world_pregen_time = "Iris Maailman pregen-aika"
+mod_cost_kinds = "Modien kustannus lajeittain"
 player_impact = "Pelaajan vaikutus"
+plugin_cost_kinds = "Pluginien kustannus lajeittain"
 plugin_impact = "Lisäosan vaikutus"
 mod_impact = "Modin vaikutus"
 plugin_impact_share = "Lisäosan vaikutusosuus"

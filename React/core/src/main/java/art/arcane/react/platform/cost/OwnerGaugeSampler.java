@@ -5,7 +5,7 @@ import art.arcane.react.api.sampler.ReactCachedSampler;
 import java.util.function.ToDoubleFunction;
 
 /** One owner's reading of an {@link OwnerGauge}, read from the latest snapshot its source published. */
-public final class OwnerGaugeSampler extends ReactCachedSampler {
+public final class OwnerGaugeSampler extends ReactCachedSampler implements OwnerSampler {
   private final transient OwnerGauge gauge;
   private final transient String owner;
   private final transient String name;
@@ -27,6 +27,16 @@ public final class OwnerGaugeSampler extends ReactCachedSampler {
   @Override
   public String getIcon() {
     return gauge.icon();
+  }
+
+  @Override
+  public int ownerFamily() {
+    return FAMILY_GAUGES + gauge.ordinal();
+  }
+
+  @Override
+  public double ownerRankValue() {
+    return capture();
   }
 
   @Override

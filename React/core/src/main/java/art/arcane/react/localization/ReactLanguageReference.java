@@ -145,6 +145,7 @@ final class ReactLanguageReference {
                       Map.entry("protocol", "Integration protocol version"),
                       Map.entry("radius", "Chunk radius for a dev-suite action"),
                       Map.entry("range", "Accepted view, simulation, or send distance range in chunks"),
+                      Map.entry("rank", "Position in a ranked list, starting at 1"),
                       Map.entry("rate", "Configured crop fast-forward rate"),
                       Map.entry("rating", "Formatted benchmark rating"),
                       Map.entry("react_errors", "Number of React error lines found in the server log"),

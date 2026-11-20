@@ -110,6 +110,7 @@ public final class BukkitMapHubScreenHost implements MapHubScreenHost {
       case GROUP_HIDDENORE -> Material.DIAMOND_ORE;
       case GROUP_BILETOOLS -> Material.LIME_DYE;
       case GROUP_ANIMUS -> Material.ARMOR_STAND;
+      case GROUP_OWNERS -> Material.JUKEBOX;
       case GROUP_TICK -> Material.CLOCK;
       case GROUP_DIMENSIONS -> Material.RECOVERY_COMPASS;
       case GROUP_MEMORY -> Material.EXPERIENCE_BOTTLE;

@@ -164,6 +164,8 @@ public final class GuiMessages {
   public static final TextKey MAP_GROUP = TextKey.of("gui.map.group", "Group: {group}");
   public static final TextKey MAP_TYPE = TextKey.of("gui.map.type", "Type: {type}");
   public static final TextKey MAP_ID = TextKey.of("gui.map.id", "ID: {id}");
+  public static final TextKey MAP_OWNER_COST = TextKey.of("gui.map.owner_cost", "Recent cost: {value}, #{rank} of {total}");
+  public static final TextKey MAP_OWNER_RANK = TextKey.of("gui.map.owner_rank", "Now: {value}, #{rank} of {total}");
   public static final TextKey MAP_SELECT = TextKey.of("gui.map.select", "Left Click: Select this monitor");
   public static final TextKey MAP_ADD_KEEP_OPEN = TextKey.of("gui.map.add_keep_open", "Shift + Click: Add map and keep menu open");
   public static final TextKey MAP_TYPE_SAMPLER = TextKey.of("gui.map.type.sampler", "Sampler Trend");
@@ -341,6 +343,8 @@ public final class GuiMessages {
     builder.add(MAP_HUB_ALL);
     builder.add(MAP_HUB_ALL_SUMMARY);
     builder.add(MAP_HUB_GROUP_COUNT);
+    builder.add(MAP_OWNER_COST);
+    builder.add(MAP_OWNER_RANK);
     builder.add(MAP_HUB_BACK);
     builder.add(MAP_HUB_OPEN_GROUP);
     builder.add(MAP_UNKNOWN);

@@ -51,14 +51,14 @@ public class IntegrationDashboardsGoldenTest {
       "adapt-metrics", "2a4e8c6d2628a7ae",
       "gloss-metrics", "26f753e31388ee8d",
       "iris-metrics-offline", "f14eb0b1069e9d23",
-      "animus-cost-share-pie-map", "58c52507836c36f5",
+      "animus-cost-share-pie-map", "294281c4e4ee5698",
       "animus-network-list-map", "bdda241553a80fd4",
       "animus-network-list-map-wall", "a4b3edc7110b66ca",
       "animus-network-list-map-undeclared", "d2866a5a67abf1c0",
       "adapt-ability-impact-list-map", "32e402d945db665f",
       "adapt-ability-impact-list-map-wall", "c35b22ebd479c26d",
       "adapt-ability-impact-list-map-guard-only", "2398c29681a4d6a0",
-      "iris-world-chunk-share-pie-map", "b10ff2b350c60e33"
+      "iris-world-chunk-share-pie-map", "d360bbf230400ab4"
   );
 
   private React previous;

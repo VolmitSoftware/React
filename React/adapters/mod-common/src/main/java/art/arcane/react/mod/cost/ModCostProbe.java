@@ -146,7 +146,6 @@ public final class ModCostProbe implements OwnerCostProbe {
 
     @Override
     public void drain(OwnerCostConsumer consumer) {
-        Map<String, long[]> totals = new TreeMap<>();
         Map<String, Long> worldgenNanos = new TreeMap<>();
         long[] stepNanos = new long[WorldgenStep.values().length];
         WorldgenCost.drainSteps(stepNanos);
@@ -160,16 +159,9 @@ public final class ModCostProbe implements OwnerCostProbe {
             if (bucket.kind() == CostKind.WORLDGEN) {
                 worldgenNanos.merge(bucket.ownerId(), nanos, Long::sum);
             }
-            long[] total = totals.computeIfAbsent(bucket.ownerId(), (String key) -> new long[3]);
-            total[0] += nanos;
-            total[1] += sync;
-            total[2] += async;
+            consumer.accept(bucket.ownerId(), owners.displayName(bucket.ownerId()), bucket.kind().id(), nanos, sync, async);
         }
         worldgen = new Worldgen(Map.copyOf(worldgenNanos), stepNanos);
-        for (Map.Entry<String, long[]> entry : totals.entrySet()) {
-            long[] total = entry.getValue();
-            consumer.accept(entry.getKey(), owners.displayName(entry.getKey()), total[0], total[1], total[2]);
-        }
     }
 
     /** World generation in the last drained window. */
@@ -200,7 +192,13 @@ public final class ModCostProbe implements OwnerCostProbe {
         public static final Comparator<OwnerCost> MOST_EXPENSIVE = Comparator.comparingLong(OwnerCost::exclusiveNanos).reversed();
     }
 
+    /** Drains into one entry per owner, every kind summed. */
     public void drainInto(List<OwnerCost> target) {
-        drain((String id, String name, long nanos, long sync, long async) -> target.add(new OwnerCost(id, name, nanos, sync, async)));
+        Map<String, OwnerCost> byOwner = new TreeMap<>();
+        drain((String id, String name, String kind, long nanos, long sync, long async) -> byOwner.merge(id,
+                new OwnerCost(id, name, nanos, sync, async),
+                (OwnerCost a, OwnerCost b) -> new OwnerCost(id, a.displayName(), a.exclusiveNanos() + b.exclusiveNanos(),
+                        a.syncCalls() + b.syncCalls(), a.asyncCalls() + b.asyncCalls())));
+        target.addAll(byOwner.values());
     }
 }

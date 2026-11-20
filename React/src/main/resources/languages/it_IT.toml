@@ -130,6 +130,7 @@
 #   {protocol}  Versione del protocollo di integrazione
 #   {radius}  Raggio in chunk per un'azione dei test di sviluppo
 #   {range}  Intervallo consentito della distanza di visualizzazione, simulazione o invio, in chunk
+#   {rank}  Posizione in un elenco ordinato, a partire da 1
 #   {rate}  Velocità configurata di avanzamento rapido delle colture
 #   {rating}  Valutazione formattata del benchmark
 #   {react_errors}  Numero di righe di errore di React trovate nel registro del server
@@ -2248,6 +2249,10 @@ description = "Configurazione della funzione Plugin Event Impact List Map. Quest
 impact = "Zero permette a una parete di mappe più alta di elencare ogni plugin; un valore fisso si moltiplica per il numero di riquadri verticali, quindi una parete più alta elenca comunque più plugin."
 summary = "Numero massimo di righe disegnate per riquadro della mappa, oppure 0 per riempire l'altezza disponibile."
 
+[config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactlistmap.field.pageseconds]
+summary = "Secondi per cui ogni pagina dell'elenco resta visibile quando più plugin o mod hanno un costo di quanti ne entrano nella mappa, oppure 0 per mostrare solo la pagina più costosa."
+impact = "L'elenco passa alla pagina successiva a questo intervallo, così ogni plugin o mod misurato compare a turno. Un muro più grande mostra più righe per pagina."
+
 [config.documentation.annotation.art.arcane.react.content.feature.featureplugineventimpactpiemap]
 description = "Configurazione della funzione Plugin Event Impact Pie Map. Questa funzione monitora continuamente il comportamento del server e applica limiti di sicurezza durante l'esecuzione."
 
@@ -3648,6 +3653,8 @@ controller_unavailable = "&cIl controller di rendering non è disponibile.&r"
 group = "Gruppo: {group}"
 id = "ID: {id}"
 none_available = "&cNon sono disponibili renderer di mappe.&r"
+owner_cost = "Costo recente: {value}, n. {rank} di {total}"
+owner_rank = "Ora: {value}, n. {rank} di {total}"
 scope = "Ambito: {scope}"
 select = "Clic sinistro: seleziona questo monitor"
 selected = "&aMappa selezionata: &f{renderer}&a &8[{scope}]&r"
@@ -3679,6 +3686,7 @@ iris_biome_chunk_share_pie_map = "Ogni fetta rappresenta la percentuale di chunk
 iris_generation_pressure_overlay = "I colori più caldi indicano una pressione maggiore nel chunk misurato."
 iris_metrics = "Monitor: mondi gestiti, motori attivi, chunk caricati, entità, velocità di generazione e fallimenti."
 iris_world_chunk_share_pie_map = "Ogni fetta rappresenta la percentuale di chunk caricati per mondo."
+mod_cost_kind_list_map = "La barra in alto divide tutto il costo delle mod per tipo; ogni riga divide allo stesso modo il costo di una mod."
 player_impact_overlay = "I colori più caldi indicano una pressione maggiore nel chunk misurato."
 plugin_event_impact_list_map = "Le righe sono ordinate dall'impatto mobile del plugin più alto al più basso."
 mod_event_impact_list_map = "Le righe sono ordinate dall'impatto mobile della mod più alto al più basso."
@@ -3890,6 +3898,7 @@ column_name = "Nome"
 column_ops = "Ops"
 column_share = "Quota"
 more_items = "+{count} altri"
+rows_paged = "{from}-{to}/{total}"
 rows_shown = "{shown}/{total}"
 total_cost = "{value} ms/s"
 
@@ -3924,6 +3933,7 @@ iris_fallback = "Renderer di integrazione Iris per {name}."
 iris_generation_pressure_overlay = "Sovrapposizione di pressione basata su Iris, con coda di pregenerazione e latenza del flusso di chunk."
 iris_metrics = "Vista generale dell'integrazione Iris per motori, mondi, chunk, entità e generazione."
 iris_world_chunk_share_pie_map = "Grafico a torta della quota di chunk caricati tra i mondi gestiti da Iris."
+mod_cost_kind_list_map = "Costo delle mod diviso tra eventi, tick delle entità blocco, tick delle entità e generazione del mondo."
 player_impact_overlay = "Mappa composita della pressione con indicatori per giocatore che mostrano il probabile impatto sul mondo."
 plugin_event_impact_list_map = "Elenco in classifica dei plugin per punteggio mobile di impatto degli eventi."
 mod_event_impact_list_map = "Elenco in classifica delle mod per punteggio mobile di impatto degli eventi."
@@ -4108,8 +4118,10 @@ fluid = "Attività degli aggiornamenti dei fluidi e costo di simulazione."
 hopper = "Attività di trasferimento delle tramogge e costo di elaborazione."
 iris = "Metrica di integrazione di Iris esposta tramite il bridge dei campionatori remoto."
 memory = "Pressione sulla memoria della JVM e comportamento del garbage collection."
+mod_cost = "Tempo usato da questa mod in eventi, entità blocco, entità e generazione del mondo, in ms al secondo."
 physics = "Attività degli aggiornamenti della fisica e costo di simulazione."
 player = "Attività dei giocatori e qualità della latenza di rete."
+plugin_cost = "Tempo del thread del server usato dai gestori di eventi di questo plugin, in ms al secondo."
 processor = "Pressione di carico di CPU e host attorno al runtime del server."
 react = "Profondità della coda dello scheduler di React e pressione di esecuzione."
 redstone = "Attività delle transizioni redstone e costo di elaborazione."
@@ -4175,6 +4187,12 @@ update_hint = "Aggiorna Animus per pubblicare le metriche React"
 [renderer.heatmap]
 no_activity = "Nessuna attività nelle vicinanze"
 quiet = "quiete"
+
+[renderer.cost_kind]
+event = "Eventi"
+block_entity = "Entità blocco"
+entity = "Entità"
+worldgen = "Generazione del mondo"
 
 [renderer.metric]
 2d_caches = "Cache 2D"
@@ -4363,7 +4381,9 @@ iris_world_mantle = "Mantle del mondo Iris"
 iris_world_overview = "Panoramica mondo Iris"
 iris_world_pregen = "Pregen mondo Iris"
 iris_world_pregen_time = "Tempo pregen mondo Iris"
+mod_cost_kinds = "Costo delle mod per tipo"
 player_impact = "Impatto del giocatore"
+plugin_cost_kinds = "Costo dei plugin per tipo"
 plugin_impact = "Impatto dei plugin"
 mod_impact = "Impatto delle mod"
 plugin_impact_share = "Quota di impatto dei plugin"

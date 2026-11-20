@@ -25,12 +25,15 @@ import art.arcane.react.api.rendering.MegamapStatus;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.api.rendering.SamplerRenderer;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.sampler.SamplerHosts;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.GuiMessages;
+import art.arcane.react.platform.EventMeasurement;
 import art.arcane.react.platform.MapHubAction;
 import art.arcane.react.platform.MapHubScreen;
 import art.arcane.react.platform.MapHubScreenHost;
+import art.arcane.react.platform.RuntimeStatsHost;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.localization.MessageArgument;
@@ -126,6 +129,7 @@ public final class ReactMapGUI {
   }
 
   private static List<ReactRenderer> rendererList(Player player, MapController controller) {
+    SamplerHosts.runtime().flatMap(RuntimeStatsHost::eventMeasurement).ifPresent(EventMeasurement::markSamplerActivity);
     List<ReactRenderer> renderers = MODEL.sortedRenderers(controller.getRenderers().values());
     if (renderers.isEmpty()) {
       ReactLanguage.send(player, GuiMessages.MAP_NONE_AVAILABLE);

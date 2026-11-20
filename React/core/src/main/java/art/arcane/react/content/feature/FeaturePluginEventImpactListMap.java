@@ -28,10 +28,13 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
   public static final String ID = OwnerEventImpactListRenderer.ID;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum rows drawn per map tile, or 0 to fill the available height.", impact = "Zero lets a taller map wall list every plugin; a fixed value multiplies by the number of vertical tiles, so a taller wall still lists more plugins.")
   private int maxRowsPerTile = 0;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Seconds each page of the list stays up when more plugins or mods have cost than fit on the map, or 0 to show only the most expensive page.", impact = "The list turns to the next page on this interval, so every measured plugin or mod shows up in turn. A larger wall fits more rows per page.")
+  private int pageSeconds = 6;
   private final transient OwnerEventImpactListRenderer renderer = new OwnerEventImpactListRenderer(
       MapFeatureHosts.anchors(),
       MapFeatureHosts::events,
-      () -> maxRowsPerTile
+      () -> maxRowsPerTile,
+      () -> pageSeconds
   );
 
   public FeaturePluginEventImpactListMap() {

@@ -98,6 +98,20 @@ class ModCostProbeTest {
         assertTrue(!drain().containsKey("test-sum"));
     }
 
+    @Test
+    void drainReportsEachKindWithItsId() {
+        CostFrame.exit(CostFrame.enter(), CostRegistry.bucket("test-kinds", CostKind.BLOCK_ENTITY));
+        CostFrame.exit(CostFrame.enter(), CostRegistry.bucket("test-kinds", CostKind.BLOCK_ENTITY));
+        CostFrame.exit(CostFrame.enter(), CostRegistry.bucket("test-kinds", CostKind.ENTITY));
+        Map<String, Long> calls = new HashMap<>();
+        probe.drain((String owner, String name, String kind, long nanos, long sync, long async) -> {
+            if (owner.equals("test-kinds")) {
+                calls.merge(kind, sync, Long::sum);
+            }
+        });
+        assertEquals(Map.of("block_entity", 2L, "entity", 1L), calls);
+    }
+
     private Map<String, ModCostProbe.OwnerCost> drain() {
         List<ModCostProbe.OwnerCost> costs = new ArrayList<>();
         probe.drainInto(costs);
