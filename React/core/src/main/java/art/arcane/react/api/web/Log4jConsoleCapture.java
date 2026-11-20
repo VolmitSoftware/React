@@ -1,5 +1,6 @@
 package art.arcane.react.api.web;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.Message;
@@ -11,6 +12,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 public final class Log4jConsoleCapture implements AutoCloseable {
+    private static final String BUNDLED_LIBRARIES = "art.arcane.react.internal.";
 
     private static final String APPENDER_CLASS = "org.apache.logging.log4j.core.Appender";
     private static final String LOG_EVENT_CLASS = "org.apache.logging.log4j.core.LogEvent";
@@ -33,6 +35,17 @@ public final class Log4jConsoleCapture implements AutoCloseable {
         this.removeAppender = removeAppender;
         this.invocation = invocation;
         this.closed = false;
+    }
+
+    /**
+     * Matches what a server console shows: INFO and above. The bundled web server is left out because it logs every
+     * websocket frame, and streaming those records would make it log more.
+     */
+    static boolean captured(Object level, String loggerName) {
+        if (loggerName != null && loggerName.startsWith(BUNDLED_LIBRARIES)) {
+            return false;
+        }
+        return !(level instanceof Level recordLevel) || recordLevel.isMoreSpecificThan(Level.INFO);
     }
 
     public static Log4jConsoleCapture attach(RingLogHandler handler) throws ReflectiveOperationException {
@@ -74,6 +87,7 @@ public final class Log4jConsoleCapture implements AutoCloseable {
         private final Method eventGetLevel;
         private final Method eventGetMessage;
         private final Method eventGetThrown;
+        private final Method eventGetLoggerName;
         private final Object initializedState;
         private final Object startedState;
         private final Object stoppedState;
@@ -89,6 +103,7 @@ public final class Log4jConsoleCapture implements AutoCloseable {
             this.eventGetLevel = logEventClass.getMethod("getLevel");
             this.eventGetMessage = logEventClass.getMethod("getMessage");
             this.eventGetThrown = logEventClass.getMethod("getThrown");
+            this.eventGetLoggerName = logEventClass.getMethod("getLoggerName");
             this.initializedState = enumConstant(lifeCycleStateClass, "INITIALIZED");
             this.startedState = enumConstant(lifeCycleStateClass, "STARTED");
             this.stoppedState = enumConstant(lifeCycleStateClass, "STOPPED");
@@ -148,6 +163,9 @@ public final class Log4jConsoleCapture implements AutoCloseable {
             }
             try {
                 Object levelValue = eventGetLevel.invoke(event);
+                if (!captured(levelValue, (String) eventGetLoggerName.invoke(event))) {
+                    return;
+                }
                 Object messageValue = eventGetMessage.invoke(event);
                 Object thrownValue = eventGetThrown.invoke(event);
                 String level = levelValue == null ? "INFO" : levelValue.toString();

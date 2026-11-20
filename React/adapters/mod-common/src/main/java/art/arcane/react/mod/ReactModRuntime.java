@@ -28,6 +28,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
+import org.apache.logging.log4j.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,6 +94,18 @@ public final class ReactModRuntime {
         this.platform = Objects.requireNonNull(platform, "platform");
         this.configDirectory = Objects.requireNonNull(configDirectory, "configDirectory");
         this.costProbe = Objects.requireNonNull(costProbe, "costProbe");
+        quietBundledLibraries();
+    }
+
+    /** Loaders log every logger at DEBUG to debug.log, and the bundled web server logs each websocket frame there. */
+    private static void quietBundledLibraries() {
+        try {
+            Class<?> configurator = Class.forName("org.apache.logging.log4j.core.config.Configurator");
+            configurator.getMethod("setLevel", String.class, Level.class)
+                    .invoke(null, "art.arcane.react.internal", Level.WARN);
+        } catch (ReflectiveOperationException | LinkageError failure) {
+            LOGGER.debug("React could not lower bundled library logging", failure);
+        }
     }
 
     public ModCostProbe costProbe() {

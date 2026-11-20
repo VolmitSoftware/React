@@ -16,15 +16,18 @@ class ReactCachedSamplerLatchTest {
     CountingSampler sampler = new CountingSampler(150L);
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
-      sampler.start();
       long started = System.nanoTime();
+      sampler.start();
       Assertions.assertEquals(1D, sampler.sample());
 
       while (elapsedMs(started) < 60L) {
-        Assertions.assertEquals(1D, sampler.sample());
+        double value = sampler.sample();
+        if (elapsedMs(started) < 150L) {
+          Assertions.assertEquals(1D, value);
+          Assertions.assertEquals(1, sampler.calls.get());
+        }
         Thread.sleep(2L);
       }
-      Assertions.assertEquals(1, sampler.calls.get());
 
       while (sampler.calls.get() < 2 && elapsedMs(started) < 5_000L) {
         sampler.sample();
