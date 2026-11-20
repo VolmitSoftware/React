@@ -185,11 +185,11 @@ public final class SamplerRenderer implements ReactRenderer {
     text(10 * s, footerY + (2 * s), nowLabel, TEXT_BRIGHT);
     String lowLabel = ReactLanguage.raw(
         RendererMessages.SAMPLER_LOW_VALUE,
-        MessageArgument.untrusted("value", sampler.formattedValue(min))
+        MessageArgument.untrusted("value", sampler.format(min))
     );
     String highLabel = ReactLanguage.raw(
         RendererMessages.SAMPLER_HIGH_VALUE,
-        MessageArgument.untrusted("value", sampler.formattedValue(max))
+        MessageArgument.untrusted("value", sampler.format(max))
     );
     int highX = w - (3 * s) - textWidth(highLabel);
     int lowX = highX - (6 * s) - textWidth(lowLabel);

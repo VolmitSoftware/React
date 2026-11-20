@@ -39,11 +39,11 @@ public class RendererReactMetrics implements ReactRenderer {
   public static final String ID = "react-metrics";
 
   private static final List<MetricLine> METRICS = List.of(
-      new MetricLine(SamplerTicksPerSecond.ID, RendererMessages.METRIC_TPS, 1, "", 20D),
-      new MetricLine(SamplerTickTime.ID, RendererMessages.METRIC_TICK, 1, " ms", 80D),
-      new MetricLine(SamplerIncidentScore.ID, RendererMessages.METRIC_INCIDENT, 1, "", 100D),
-      new MetricLine(SamplerReactJobsQueue.ID, RendererMessages.METRIC_JOBS, 0, "", 300D),
-      new MetricLine(SamplerSchedulerBacklog.ID, RendererMessages.METRIC_BACKLOG, 0, "", 300D)
+      new MetricLine(SamplerTicksPerSecond.ID, RendererMessages.METRIC_TPS, 1, "", 20D, true),
+      new MetricLine(SamplerTickTime.ID, RendererMessages.METRIC_TICK, 1, " ms", 80D, false),
+      new MetricLine(SamplerIncidentScore.ID, RendererMessages.METRIC_INCIDENT, 1, "", 100D, false),
+      new MetricLine(SamplerReactJobsQueue.ID, RendererMessages.METRIC_JOBS, 0, "", 300D, false),
+      new MetricLine(SamplerSchedulerBacklog.ID, RendererMessages.METRIC_BACKLOG, 0, "", 300D, false)
   );
 
   private final Function<String, Sampler> samplers;
@@ -122,7 +122,8 @@ public class RendererReactMetrics implements ReactRenderer {
     }
 
     double normalized = Math.max(0D, Math.min(1D, sampled / Math.max(1D, metric.maxValue())));
-    RendererLayout.bar(this, track, normalized, MapTheme.severity(normalized));
+    double pressure = metric.higherIsBetter() ? Math.min(1D, (1D - normalized) * 2D) : normalized;
+    RendererLayout.bar(this, track, normalized, MapTheme.severity(pressure));
   }
 
   private int[] equalWeights(int columns) {
@@ -158,6 +159,6 @@ public class RendererReactMetrics implements ReactRenderer {
   }
 
   private record MetricLine(String samplerId, TextKey labelKey, int decimals,
-                            String unitSuffix, double maxValue) {
+                            String unitSuffix, double maxValue, boolean higherIsBetter) {
   }
 }

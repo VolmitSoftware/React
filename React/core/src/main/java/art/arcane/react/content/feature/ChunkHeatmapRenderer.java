@@ -595,7 +595,7 @@ public abstract class ChunkHeatmapRenderer implements ReactRenderer, ChunkGridEx
     textIn(content, 0, baseline, lowLabel, MapTheme.TEXT_MUTED);
     textRightIn(content, 0, baseline, cellScale, MapTheme.TEXT_MUTED);
     Region highRegion = new Region(
-        content.right() - scaleWidth - gutter - highWidth,
+        content.right() - scaleWidth - (2 * gutter) - highWidth,
         content.y(),
         highWidth,
         content.height()
@@ -604,7 +604,7 @@ public abstract class ChunkHeatmapRenderer implements ReactRenderer, ChunkGridEx
 
     Region ramp = content
         .withoutLeft(lowWidth + gutter)
-        .withoutRight(scaleWidth + highWidth + (3 * gutter))
+        .withoutRight(scaleWidth + highWidth + (4 * gutter))
         .inset(0, 2 * uiScale(), 0, 2 * uiScale());
     if (ramp.width() < LEGEND_RAMP_STEPS || colorRamp.length == 0) {
       return;
