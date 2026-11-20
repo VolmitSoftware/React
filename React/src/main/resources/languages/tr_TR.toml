@@ -3687,6 +3687,7 @@ mod_event_impact_pie_map = "Her dilim, son pencerelerde mod olay maliyetinin kay
 react_metrics = "Monitörler: TPS, tik ms, olay puanı, iş kuyruğu, zamanlayıcı birikimi."
 redstone_activity_heatmap = "Daha sıcak renkler, ölçülen chunk'ta daha fazla baskı olduğunu gösterir."
 tick_spike_origin_replay_map = "Daha sıcak renkler, ölçülen chunk'ta daha fazla baskı olduğunu gösterir."
+worldgen_mod_pie_map = "Her dilim, bir modun özelliklerinin, yapılarının ve oyucularının üretici iş parçacıklarında harcadığı süredir."
 
 [gui.map.hub]
 all = "Tüm Haritalar"
@@ -3870,6 +3871,13 @@ wormholes_view_entities = "Wormholes Görünüm Varlıkları"
 wormholes_view_subscriptions = "Wormholes Görünüm Abonelikleri"
 wormholes_wire_in = "Wormholes Gelen Trafik"
 wormholes_wire_out = "Wormholes Giden Trafik"
+worldgen_owner = "{name} dünya üretimi"
+worldgen_step_structure_starts = "Dünya üretimi: yapı başlangıçları"
+worldgen_step_biomes = "Dünya üretimi: biyomlar"
+worldgen_step_noise = "Dünya üretimi: gürültü"
+worldgen_step_surface = "Dünya üretimi: yüzey"
+worldgen_step_carvers = "Dünya üretimi: oyucular"
+worldgen_step_features = "Dünya üretimi: özellikler"
 
 [gui.map.render]
 column_bandwidth = "B/s"
@@ -3923,6 +3931,7 @@ react_metrics = "TPS, tik gecikmesi, olay baskısı ve kuyruk sağlığı için 
 redstone_activity_heatmap = "Redstone güncelleme baskısı ve saat ağırlıklı devrelerin chunk ısı haritası."
 tick_spike_origin_replay_map = "Yakın zamandaki sıçrama kaynaklarının, yakındaki chunk'larda sönümlenen ısıyla tekrar oynatma haritası."
 unknown = "Belirli bir monitör çözümlenemediğinde gösterilen yedek çizici."
+worldgen_mod_pie_map = "Her modun dünya üretimi süresindeki kayan payını gösteren pasta grafik."
 
 [gui.map.summary.sampler]
 adapt_ability_checks_per_tick = "Telemetri penceresi boyunca tik başına ortalama tüm Adapt yetenek denetimleri."
@@ -4099,6 +4108,7 @@ processor = "Sunucu çalışma zamanı çevresindeki CPU ve ana makine yük bask
 react = "React zamanlayıcı kuyruk derinliği ve yürütme baskısı."
 redstone = "Redstone geçiş etkinliği ve işleme maliyeti."
 tick = "Sunucu tik yolu zamanlaması ve sıçrama davranışı."
+worldgen = "Üretici iş parçacıklarında dünya üretimi süresi; bir mod veya bir chunk adımı için."
 
 [gui.monitor]
 create = "Grup Oluştur"
@@ -4353,6 +4363,7 @@ redstone_activity = "Redstone Etkinliği"
 tick_spike_replay = "Tik Sıçrama Tekrarı"
 world_chunk_share = "Dünya Chunk Payı"
 wormholes_metrics = "Wormholes Ölçümleri"
+mod_worldgen_share = "Moda göre dünya üretimi payı"
 
 [renderer.unknown]
 bound = "eksik bir çiziciye"

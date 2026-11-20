@@ -3687,6 +3687,7 @@ mod_event_impact_pie_map = "Elk segment vertegenwoordigt het voortschrijdende aa
 react_metrics = "Monitors: TPS, tick-ms, incidentscore, taakwachtrij, scheduler-backlog."
 redstone_activity_heatmap = "Warmer kleuren geven meer druk aan in de gemeten chunk."
 tick_spike_origin_replay_map = "Warmer kleuren geven meer druk aan in de gemeten chunk."
+worldgen_mod_pie_map = "Elk segment is de tijd die de features, structuren en carvers van één mod op de generatorthreads kosten."
 
 [gui.map.hub]
 all = "Alle kaarten"
@@ -3870,6 +3871,13 @@ wormholes_view_entities = "Wormholes Weergave-entiteiten"
 wormholes_view_subscriptions = "Wormholes Weergaveabonnementen"
 wormholes_wire_in = "Wormholes Netwerk inkomend"
 wormholes_wire_out = "Wormholes Netwerk uitgaand"
+worldgen_owner = "Wereldgeneratie van {name}"
+worldgen_step_structure_starts = "Generatie: structuurstarts"
+worldgen_step_biomes = "Generatie: biomen"
+worldgen_step_noise = "Generatie: ruis"
+worldgen_step_surface = "Generatie: oppervlak"
+worldgen_step_carvers = "Generatie: carvers"
+worldgen_step_features = "Generatie: features"
 
 [gui.map.render]
 column_bandwidth = "B/s"
@@ -3923,6 +3931,7 @@ react_metrics = "Paneel met lokale React-metrics voor TPS, ticklatentie, inciden
 redstone_activity_heatmap = "Chunk-heatmap van redstone-updatedruk en schakelingen met veel kloksignalen."
 tick_spike_origin_replay_map = "Herhaalkaart van recente spike-oorsprongen met afnemende hitte over nabijgelegen chunks."
 unknown = "Fallback-renderer die wordt getoond wanneer een specifieke monitor niet kan worden bepaald."
+worldgen_mod_pie_map = "Cirkeldiagram met het voortschrijdende aandeel van elke mod in de wereldgeneratietijd."
 
 [gui.map.summary.sampler]
 adapt_ability_checks_per_tick = "Alle Adapt-vaardigheidscontroles, gemiddeld per tick over het telemetrievenster."
@@ -4099,6 +4108,7 @@ processor = "CPU- en hostbelasting rond de serverruntime."
 react = "Wachtrijdiepte van de React-scheduler en uitvoeringsdruk."
 redstone = "Redstone-overgangsactiviteit en verwerkingskosten."
 tick = "Timing van het tickpad van de server en spikegedrag."
+worldgen = "Wereldgeneratietijd op de generatorthreads, voor één mod of één chunkstap."
 
 [gui.monitor]
 create = "Groep aanmaken"
@@ -4353,6 +4363,7 @@ redstone_activity = "Redstone Activiteit"
 tick_spike_replay = "Tick-spikeherhaling"
 world_chunk_share = "Chunkaandeel per wereld"
 wormholes_metrics = "Wormholes-metrics"
+mod_worldgen_share = "Wereldgeneratie-aandeel per mod"
 
 [renderer.unknown]
 bound = "gebonden aan een renderer"

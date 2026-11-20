@@ -3687,6 +3687,7 @@ mod_event_impact_pie_map = "各スライスは、直近のウィンドウにお�
 react_metrics = "監視項目: TPS、ティック ms、インシデントスコア、ジョブキュー、スケジューラーのバックログ。"
 redstone_activity_heatmap = "色が熱いほど、測定されたチャンクの負荷が高いことを示します。"
 tick_spike_origin_replay_map = "色が熱いほど、測定されたチャンクの負荷が高いことを示します。"
+worldgen_mod_pie_map = "各スライスは、1つのModのフィーチャー、構造物、カーバーが生成スレッドで使う時間です。"
 
 [gui.map.hub]
 all = "すべてのマップ"
@@ -3870,6 +3871,13 @@ wormholes_view_entities = "Wormholes ビューエンティティ"
 wormholes_view_subscriptions = "Wormholes ビュー購読"
 wormholes_wire_in = "Wormholes ワイヤー受信"
 wormholes_wire_out = "Wormholes ワイヤー送信"
+worldgen_owner = "{name} のワールド生成"
+worldgen_step_structure_starts = "ワールド生成: 構造物の開始"
+worldgen_step_biomes = "ワールド生成: バイオーム"
+worldgen_step_noise = "ワールド生成: ノイズ"
+worldgen_step_surface = "ワールド生成: 地表"
+worldgen_step_carvers = "ワールド生成: カーバー"
+worldgen_step_features = "ワールド生成: フィーチャー"
 
 [gui.map.render]
 column_bandwidth = "B/s"
@@ -3923,6 +3931,7 @@ react_metrics = "TPS、ティックレイテンシ、インシデント負荷、
 redstone_activity_heatmap = "レッドストーン更新の負荷とクロック処理が重い回路のチャンクヒートマップ。"
 tick_spike_origin_replay_map = "近隣のチャンク上で熱が減衰する、最近のスパイク発生源のリプレイマップ。"
 unknown = "特定のモニターが解決できないときに表示されるフォールバックレンダラー。"
+worldgen_mod_pie_map = "各Modのワールド生成時間の移動シェアを示す円グラフ。"
 
 [gui.map.summary.sampler]
 adapt_ability_checks_per_tick = "テレメトリーウィンドウにわたる、ティックあたり平均のすべてのアビリティチェック数。"
@@ -4099,6 +4108,7 @@ processor = "サーバーランタイム周辺の CPU とホストの負荷。"
 react = "React スケジューラーのキューの深さと実行負荷。"
 redstone = "レッドストーン遷移の活動と処理コスト。"
 tick = "サーバーのティック経路のタイミングとスパイクの挙動。"
+worldgen = "生成スレッド上のワールド生成時間。1つのModまたは1つのチャンク段階ごと。"
 
 [gui.monitor]
 create = "グループの作成"
@@ -4353,6 +4363,7 @@ redstone_activity = "レッドストーン活動"
 tick_spike_replay = "ティックスパイクリプレイ"
 world_chunk_share = "ワールドチャンク割合"
 wormholes_metrics = "Wormholes メトリクス"
+mod_worldgen_share = "Mod別ワールド生成シェア"
 
 [renderer.unknown]
 bound = "レンダラーにバインド"

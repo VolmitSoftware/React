@@ -38,6 +38,8 @@
   "screen.chunks.world_save_event_interval": "Save interval",
   "screen.chunks.residency": "Residency",
   "screen.chunks.loaders": "Chunk loaders",
+  "screen.chunks.worldgen_by_mod": "Worldgen by mod",
+  "screen.chunks.worldgen_steps": "Worldgen steps",
   "screen.chunks.pdc_batcher": "PDC writes",
   "screen.entities.title": "Entities",
   "screen.entities.count": "Entity count",

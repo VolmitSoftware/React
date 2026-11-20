@@ -3687,6 +3687,7 @@ mod_event_impact_pie_map = "Каждый сектор показывает ск�
 react_metrics = "Мониторы: TPS, время тика в мс, оценка инцидента, очередь задач, отставание планировщика."
 redstone_activity_heatmap = "Более тёплые цвета означают большую нагрузку в измеренном чанке."
 tick_spike_origin_replay_map = "Более тёплые цвета означают большую нагрузку в измеренном чанке."
+worldgen_mod_pie_map = "Каждый сектор — время, которое объекты, структуры и карверы одного мода занимают в потоках генератора."
 
 [gui.map.hub]
 all = "Все карты"
@@ -3870,6 +3871,13 @@ wormholes_view_entities = "Wormholes Сущности просмотра"
 wormholes_view_subscriptions = "Wormholes Подписки просмотра"
 wormholes_wire_in = "Wormholes Входящий трафик"
 wormholes_wire_out = "Wormholes Исходящий трафик"
+worldgen_owner = "Генерация мира: {name}"
+worldgen_step_structure_starts = "Генерация: начала структур"
+worldgen_step_biomes = "Генерация: биомы"
+worldgen_step_noise = "Генерация: шум"
+worldgen_step_surface = "Генерация: поверхность"
+worldgen_step_carvers = "Генерация: карверы"
+worldgen_step_features = "Генерация: объекты"
 
 [gui.map.render]
 column_bandwidth = "Б/с"
@@ -3923,6 +3931,7 @@ react_metrics = "Локальная панель метрик React: TPS, зад
 redstone_activity_heatmap = "Тепловая карта чанков по нагрузке от обновлений редстоуна и схем с большим числом часов."
 tick_spike_origin_replay_map = "Карта воспроизведения недавних источников скачков с затухающим нагревом над ближайшими чанками."
 unknown = "Резервное средство отрисовки, показываемое, когда не удаётся определить конкретный монитор."
+worldgen_mod_pie_map = "Круговая диаграмма скользящей доли каждого мода во времени генерации мира."
 
 [gui.map.summary.sampler]
 adapt_ability_checks_per_tick = "Среднее число всех проверок способностей Adapt за тик в окне телеметрии."
@@ -4099,6 +4108,7 @@ processor = "Нагрузка CPU и хоста вокруг среды выпо
 react = "Глубина очереди планировщика React и нагрузка выполнения."
 redstone = "Активность переходов редстоуна и стоимость обработки."
 tick = "Тайминги цикла тиков сервера и поведение скачков."
+worldgen = "Время генерации мира в потоках генератора для одного мода или одного этапа чанка."
 
 [gui.monitor]
 create = "Создать группу"
@@ -4353,6 +4363,7 @@ redstone_activity = "Активность редстоуна"
 tick_spike_replay = "Воспроизведение скачков тиков"
 world_chunk_share = "Доля чанков по мирам"
 wormholes_metrics = "Wormholes Метрики"
+mod_worldgen_share = "Доля модов в генерации мира"
 
 [renderer.unknown]
 bound = "привязана к средству отрисовки"

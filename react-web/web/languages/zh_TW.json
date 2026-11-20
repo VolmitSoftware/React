@@ -524,6 +524,8 @@
   "screen.chunks.world_save_event_interval": "儲存間隔",
   "screen.chunks.residency": "區塊駐留",
   "screen.chunks.loaders": "區塊載入器",
+  "screen.chunks.worldgen_by_mod": "依模組劃分的世界生成",
+  "screen.chunks.worldgen_steps": "世界生成步驟",
   "screen.entities.breakdown": "實體明細",
   "screen.entities.player_activity": "玩家活動",
   "screen.internals.telemetry_pipeline": "遙測管線",

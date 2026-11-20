@@ -3687,6 +3687,7 @@ mod_event_impact_pie_map = "Kiekviena dalis rodo slenkančią modų įvykių są
 react_metrics = "Stebima: TPS, žaidimo ciklo ms, incidento balas, darbų eilė, planuoklio atsilikimas."
 redstone_activity_heatmap = "Karštesnės spalvos rodo didesnę apkrovą išmatuotame pasaulio segmente."
 tick_spike_origin_replay_map = "Karštesnės spalvos rodo didesnę apkrovą išmatuotame pasaulio segmente."
+worldgen_mod_pie_map = "Kiekviena dalis yra laikas, kurį vieno modo elementai, struktūros ir raižytuvai užima generatoriaus gijose."
 
 [gui.map.hub]
 all = "Visi žemėlapiai"
@@ -3870,6 +3871,13 @@ wormholes_view_entities = "Wormholes rodomi objektai"
 wormholes_view_subscriptions = "Wormholes Vaizdo prenumeratos"
 wormholes_wire_in = "Wormholes Gaunami duomenys"
 wormholes_wire_out = "Wormholes Siunčiami duomenys"
+worldgen_owner = "{name} pasaulio generavimas"
+worldgen_step_structure_starts = "Generavimas: struktūrų pradžios"
+worldgen_step_biomes = "Generavimas: biomai"
+worldgen_step_noise = "Generavimas: triukšmas"
+worldgen_step_surface = "Generavimas: paviršius"
+worldgen_step_carvers = "Generavimas: raižytuvai"
+worldgen_step_features = "Generavimas: elementai"
 
 [gui.map.render]
 column_bandwidth = "B/s"
@@ -3923,6 +3931,7 @@ react_metrics = "React vietinių rodiklių skydelis: TPS, ciklo delsa, incidento
 redstone_activity_heatmap = "Pasaulio segmentų šilumos žemėlapis, rodantis redstone atnaujinimų apkrovą ir daug laikrodžių turinčias grandines."
 tick_spike_origin_replay_map = "Pastarųjų šuolių kilmės atkūrimo žemėlapis su blėstančia šiluma netoliese esančiuose pasaulio segmentuose."
 unknown = "Atsarginis piešiklis, rodomas, kai nepavyksta nustatyti konkretaus monitoriaus."
+worldgen_mod_pie_map = "Skritulinė diagrama, rodanti kiekvieno modo slenkančią pasaulio generavimo laiko dalį."
 
 [gui.map.summary.sampler]
 adapt_ability_checks_per_tick = "Adapt visų gebėjimų patikros, vidutiniškai per ciklą telemetrijos lange."
@@ -4099,6 +4108,7 @@ processor = "CPU ir pagrindinio kompiuterio apkrova aplink serverio vykdymą."
 react = "React planuoklio eilės gylis ir vykdymo apkrova."
 redstone = "Redstone perėjimų aktyvumas ir apdorojimo sąnaudos."
 tick = "Serverio ciklo kelio laikas ir šuolių elgsena."
+worldgen = "Pasaulio generavimo laikas generatoriaus gijose vienam modui arba vienam chunk etapui."
 
 [gui.monitor]
 create = "Sukurti grupę"
@@ -4353,6 +4363,7 @@ redstone_activity = "Redstone veikla"
 tick_spike_replay = "Ciklo šuolių atkūrimas"
 world_chunk_share = "Pasaulio segmentų dalys pagal pasaulį"
 wormholes_metrics = "Wormholes rodikliai"
+mod_worldgen_share = "Modų dalis pasaulio generavime"
 
 [renderer.unknown]
 bound = "susietas su piešikliu"

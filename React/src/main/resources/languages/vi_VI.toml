@@ -3687,6 +3687,7 @@ mod_event_impact_pie_map = "Mỗi lát biểu thị tỷ trọng chi phí sự k
 react_metrics = "Giám sát: TPS, tick ms, điểm sự cố, hàng đợi công việc, tồn đọng bộ lập lịch."
 redstone_activity_heatmap = "Màu sắc nóng hơn cho thấy áp lực cao hơn trong chunk được đo."
 tick_spike_origin_replay_map = "Màu sắc nóng hơn cho thấy áp lực cao hơn trong chunk được đo."
+worldgen_mod_pie_map = "Mỗi lát là thời gian mà các feature, công trình và carver của một mod chiếm trên các luồng tạo."
 
 [gui.map.hub]
 all = "Tất cả bản đồ"
@@ -3870,6 +3871,13 @@ wormholes_view_entities = "Wormholes Thực thể xem"
 wormholes_view_subscriptions = "Wormholes Đăng ký xem"
 wormholes_wire_in = "Wormholes Dữ liệu nhận về"
 wormholes_wire_out = "Wormholes Dữ liệu gửi đi"
+worldgen_owner = "Tạo thế giới của {name}"
+worldgen_step_structure_starts = "Tạo thế giới: khởi đầu công trình"
+worldgen_step_biomes = "Tạo thế giới: quần xã"
+worldgen_step_noise = "Tạo thế giới: nhiễu"
+worldgen_step_surface = "Tạo thế giới: bề mặt"
+worldgen_step_carvers = "Tạo thế giới: carver"
+worldgen_step_features = "Tạo thế giới: feature"
 
 [gui.map.render]
 column_bandwidth = "B/s"
@@ -3923,6 +3931,7 @@ react_metrics = "Bảng số liệu cục bộ React cho TPS, độ trễ tick, 
 redstone_activity_heatmap = "Bản đồ nhiệt chunk về áp lực cập nhật redstone và mạch dùng nhiều đồng hồ."
 tick_spike_origin_replay_map = "Bản đồ phát lại nguồn gốc các đợt tăng đột biến gần đây với nhiệt giảm dần trên các chunk lân cận."
 unknown = "Bộ kết xuất dự phòng hiển thị khi không xác định được bộ theo dõi cụ thể."
+worldgen_mod_pie_map = "Biểu đồ tròn cho tỷ phần trượt của mỗi mod trong thời gian tạo thế giới."
 
 [gui.map.summary.sampler]
 adapt_ability_checks_per_tick = "Adapt tất cả kiểm tra khả năng trung bình cho mỗi tick trên cửa sổ đo lường."
@@ -4099,6 +4108,7 @@ processor = "Áp lực tải CPU và máy chủ lưu trữ quanh runtime của m
 react = "Độ sâu hàng đợi bộ lập lịch React và áp lực thực thi."
 redstone = "Hoạt động chuyển tiếp redstone và chi phí xử lý."
 tick = "Thời gian đường đi tick của máy chủ và hành vi đột biến."
+worldgen = "Thời gian tạo thế giới trên các luồng tạo, cho một mod hoặc một bước chunk."
 
 [gui.monitor]
 create = "Tạo nhóm"
@@ -4353,6 +4363,7 @@ redstone_activity = "Redstone Hoạt động"
 tick_spike_replay = "Phát lại đột biến tick"
 world_chunk_share = "Chunk theo thế giới"
 wormholes_metrics = "Wormholes Chỉ số"
+mod_worldgen_share = "Tỷ phần tạo thế giới theo mod"
 
 [renderer.unknown]
 bound = "gắn với một bộ kết xuất"

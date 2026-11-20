@@ -62,6 +62,7 @@ public final class RendererMessages {
   public static final TextKey TITLE_WORLD_CHUNK_SHARE = title("world_chunk_share", "World Chunk Share");
   public static final TextKey TITLE_PLUGIN_IMPACT_SHARE = title("plugin_impact_share", "Plugin Impact Share");
   public static final TextKey TITLE_MOD_IMPACT_SHARE = title("mod_impact_share", "Mod Impact Share");
+  public static final TextKey TITLE_MOD_WORLDGEN_SHARE = title("mod_worldgen_share", "Mod Worldgen Share");
   public static final TextKey TITLE_BIOME_CHUNK_SHARE = title("biome_chunk_share", "Biome Chunk Share");
   public static final TextKey TITLE_CHUNK_COST_HEAT = title("chunk_cost_heat", "Chunk Cost Heat");
   public static final TextKey TITLE_ADAPT_PRESSURE = title("adapt_pressure", "Adapt Pressure");
@@ -228,7 +229,7 @@ public final class RendererMessages {
       TITLE_IRIS_WORLD_MANTLE, TITLE_IRIS_WORLD_GENERATION, TITLE_IRIS_WORLD_FEATURES,
       TITLE_IRIS_WORLD_PREGEN, TITLE_IRIS_WORLD_PREGEN_TIME, TITLE_ADAPT_CALLBACK_COST,
       TITLE_PLUGIN_IMPACT, TITLE_MOD_IMPACT, TITLE_WORLD_CHUNK_SHARE, TITLE_PLUGIN_IMPACT_SHARE,
-      TITLE_MOD_IMPACT_SHARE, TITLE_BIOME_CHUNK_SHARE,
+      TITLE_MOD_IMPACT_SHARE, TITLE_MOD_WORLDGEN_SHARE, TITLE_BIOME_CHUNK_SHARE,
       TITLE_CHUNK_COST_HEAT, TITLE_ADAPT_PRESSURE, TITLE_REDSTONE_ACTIVITY, TITLE_ENTITY_PRESSURE,
       TITLE_PLAYER_IMPACT, TITLE_TICK_SPIKE_REPLAY, TITLE_IRIS_PRESSURE, TITLE_HOPPER_THROUGHPUT,
       TITLE_CHUNK_LOAD_GEN_COST, TITLE_ANIMUS_COST_SHARE, TITLE_ANIMUS_NETWORK, TITLE_ANIMUS_PRESSURE,
@@ -303,6 +304,7 @@ public final class RendererMessages {
       Map.entry("plugin-event-impact-list-map", TITLE_PLUGIN_IMPACT),
       Map.entry("iris-world-chunk-share-pie-map", TITLE_WORLD_CHUNK_SHARE),
       Map.entry("plugin-event-impact-pie-map", TITLE_PLUGIN_IMPACT_SHARE),
+      Map.entry("worldgen-mod-pie-map", TITLE_MOD_WORLDGEN_SHARE),
       Map.entry("iris-biome-chunk-share-pie-map", TITLE_BIOME_CHUNK_SHARE),
       Map.entry("chunk-sampler-map", TITLE_CHUNK_COST_HEAT),
       Map.entry("adapt-runtime-pressure-overlay", TITLE_ADAPT_PRESSURE),

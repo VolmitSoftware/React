@@ -3687,6 +3687,7 @@ mod_event_impact_pie_map = "Kukin siivu esittää modin tapahtumakustannuksen li
 react_metrics = "Seuraa: TPS, tick ms, häiriöpisteet, työjono, ajastimen jono."
 redstone_activity_heatmap = "Kuumemmat värit osoittavat suurempaa painetta mitatussa chunkissa."
 tick_spike_origin_replay_map = "Kuumemmat värit osoittavat suurempaa painetta mitatussa chunkissa."
+worldgen_mod_pie_map = "Jokainen sektori on aika, jonka yhden modin featuret, rakenteet ja carverit vievät generaattorisäikeillä."
 
 [gui.map.hub]
 all = "Kaikki kartat"
@@ -3870,6 +3871,13 @@ wormholes_view_entities = "Wormholes Näkymän entiteetit"
 wormholes_view_subscriptions = "Wormholes Näkymätilaukset"
 wormholes_wire_in = "Wormholes Saapuva liikenne"
 wormholes_wire_out = "Wormholes Lähtevä liikenne"
+worldgen_owner = "{name} maailman generointi"
+worldgen_step_structure_starts = "Generointi: rakenteiden aloitukset"
+worldgen_step_biomes = "Generointi: biomit"
+worldgen_step_noise = "Generointi: kohina"
+worldgen_step_surface = "Generointi: pinta"
+worldgen_step_carvers = "Generointi: carverit"
+worldgen_step_features = "Generointi: featuret"
 
 [gui.map.render]
 column_bandwidth = "B/s"
@@ -3923,6 +3931,7 @@ react_metrics = "Reactin paikallinen mittaripaneeli TPS:lle, tick-viiveelle, hä
 redstone_activity_heatmap = "Chunk-lämpökartta redstone-päivityspaineesta ja kellopainotteisista piireistä."
 tick_spike_origin_replay_map = "Toistokartta viimeaikaisista piikkien lähtökohdista, joiden lämpö vaimenee lähellä oleviin chunkeihin."
 unknown = "Vararenderöijä, joka näytetään, kun tiettyä monitoria ei voida ratkaista."
+worldgen_mod_pie_map = "Piirakkakaavio kunkin modin liukuvasta osuudesta maailman generointiaikaan."
 
 [gui.map.summary.sampler]
 adapt_ability_checks_per_tick = "Adaptin kaikki kykytarkistukset keskiarvoistettuna tickiä kohden telemetria-ikkunassa."
@@ -4099,6 +4108,7 @@ processor = "CPU:n ja isännän kuormituspaine palvelimen ajoympäristön ympär
 react = "Reactin ajastinjonon syvyys ja suorituspaine."
 redstone = "Redstone-siirtymien aktiivisuus ja käsittelykustannus."
 tick = "Palvelimen tick-polun ajoitus ja piikkikäyttäytyminen."
+worldgen = "Maailman generointiaika generaattorisäikeillä yhdelle modille tai yhdelle chunk-vaiheelle."
 
 [gui.monitor]
 create = "Luo ryhmä"
@@ -4353,6 +4363,7 @@ redstone_activity = "Redstone-aktiivisuus"
 tick_spike_replay = "Tick-piikin toisto"
 world_chunk_share = "Maailman chunk-osuus"
 wormholes_metrics = "Wormholes-mittarit"
+mod_worldgen_share = "Modien osuus maailman generoinnista"
 
 [renderer.unknown]
 bound = "sidottu renderöijään"

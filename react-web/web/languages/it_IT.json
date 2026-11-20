@@ -524,6 +524,8 @@
   "screen.chunks.world_save_event_interval": "Intervallo di salvataggio",
   "screen.chunks.residency": "Residenza chunk",
   "screen.chunks.loaders": "Caricatori di chunk",
+  "screen.chunks.worldgen_by_mod": "Generazione del mondo per mod",
+  "screen.chunks.worldgen_steps": "Fasi di generazione del mondo",
   "screen.entities.breakdown": "Dettaglio entità",
   "screen.entities.player_activity": "Attività giocatori",
   "screen.internals.telemetry_pipeline": "Pipeline di telemetria",

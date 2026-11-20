@@ -88,6 +88,8 @@ enum ReactorText {
   ),
   chunksResidency('screen.chunks.residency', 'Residency'),
   chunksLoaders('screen.chunks.loaders', 'Chunk loaders'),
+  chunksWorldgenByMod('screen.chunks.worldgen_by_mod', 'Worldgen by mod'),
+  chunksWorldgenSteps('screen.chunks.worldgen_steps', 'Worldgen steps'),
   chunksPdcBatcher('screen.chunks.pdc_batcher', 'PDC writes'),
   entitiesTitle('screen.entities.title', 'Entities'),
   entitiesCount('screen.entities.count', 'Entity count'),

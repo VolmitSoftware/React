@@ -94,7 +94,7 @@ class ModCostProbeTest {
             CostBucket bucket = CostRegistry.bucket("test-sum", kind);
             CostFrame.exit(CostFrame.enter(), bucket);
         }
-        assertEquals(3L, drain().get("test-sum").syncCalls());
+        assertEquals(CostKind.values().length, drain().get("test-sum").syncCalls());
         assertTrue(!drain().containsKey("test-sum"));
     }
 

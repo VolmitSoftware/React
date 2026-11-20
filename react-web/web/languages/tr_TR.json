@@ -524,6 +524,8 @@
   "screen.chunks.world_save_event_interval": "Kaydetme aralığı",
   "screen.chunks.residency": "Chunk yerleşikliği",
   "screen.chunks.loaders": "Chunk yükleyiciler",
+  "screen.chunks.worldgen_by_mod": "Moda göre dünya üretimi",
+  "screen.chunks.worldgen_steps": "Dünya üretimi adımları",
   "screen.entities.breakdown": "Varlık dökümü",
   "screen.entities.player_activity": "Oyuncu etkinliği",
   "screen.internals.telemetry_pipeline": "Telemetri işlem hattı",

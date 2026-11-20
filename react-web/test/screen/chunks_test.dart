@@ -49,6 +49,82 @@ void main() {
       expect(body, contains('2408.0'));
     });
 
+    testServer('ranks worldgen by mod busiest first and lists the steps', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        onServer(
+          const ChunksScreen(),
+          snapshot: snapshotOf(<SamplerSample>[
+            sample('chunks', 2408),
+            sample(
+              'worldgen-mod-terralith',
+              390,
+              name: 'Terralith Worldgen',
+              suffix: 'ms/s',
+            ),
+            sample(
+              'worldgen-mod-minecraft',
+              1180,
+              name: 'Minecraft Worldgen',
+              suffix: 'ms/s',
+            ),
+            for (int i = 0; i < 9; i++)
+              sample(
+                'worldgen-mod-quiet$i',
+                0,
+                name: 'Quiet$i Worldgen',
+                suffix: 'ms/s',
+              ),
+            sample(
+              'worldgen-step-noise',
+              2560,
+              name: 'Worldgen Noise',
+              suffix: 'ms/s',
+            ),
+            sample(
+              'worldgen-step-features',
+              330,
+              name: 'Worldgen Features',
+              suffix: 'ms/s',
+            ),
+          ]),
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+
+      expect(body, contains(ReactorText.chunksWorldgenByMod.english));
+      expect(body, contains(ReactorText.chunksWorldgenSteps.english));
+      expect(
+        body.indexOf('Minecraft Worldgen'),
+        lessThan(body.indexOf('Terralith Worldgen')),
+      );
+      expect(
+        <int>[
+          for (int i = 0; i < 9; i++)
+            if (body.contains('Quiet$i Worldgen')) i,
+        ].length,
+        6,
+      );
+      expect(body, contains('Worldgen Noise'));
+      expect(body, contains('Worldgen Features'));
+    });
+
+    testServer('leaves worldgen out when the server has none', (
+      ServerTester tester,
+    ) async {
+      tester.pumpComponent(
+        onServer(
+          const ChunksScreen(),
+          snapshot: snapshotOf(<SamplerSample>[sample('chunks', 2408)]),
+        ),
+      );
+      final String body = (await tester.request('/')).body;
+
+      expect(body, isNot(contains(ReactorText.chunksWorldgenByMod.english)));
+      expect(body, isNot(contains(ReactorText.chunksWorldgenSteps.english)));
+    });
+
     testServer('is empty while offline', (ServerTester tester) async {
       tester.pumpComponent(
         onServer(const ChunksScreen(), state: ConnState.offline),

@@ -1,5 +1,6 @@
 /// Activity > Chunks: loading and generation, the time listeners spend on
-/// them, persistence and what keeps chunks resident.
+/// them, persistence, what keeps chunks resident and, on a modded server,
+/// which mods and chunk steps world generation spends its time on.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
@@ -27,6 +28,27 @@ const List<String> kChunkResidencyIds = <String>[
 /// Per-owner forced chunk counts: one sampler per plugin or mod.
 const List<String> kChunkLoaderPrefixes = <String>['chunk-loader-'];
 
+const List<String> kWorldgenStepIds = <String>[
+  'worldgen-step-structure-starts',
+  'worldgen-step-biomes',
+  'worldgen-step-noise',
+  'worldgen-step-surface',
+  'worldgen-step-carvers',
+  'worldgen-step-features',
+];
+
+const String _kWorldgenModPrefix = 'worldgen-mod-';
+const int _kWorldgenTopMods = 8;
+
+/// The mods spending the most world generation time, busiest first.
+List<SamplerSample> topWorldgenMods(ServerSnapshot snapshot) {
+  final List<SamplerSample> mods = <SamplerSample>[
+    for (final SamplerSample sample in snapshot.byId.values)
+      if (sample.id.startsWith(_kWorldgenModPrefix)) sample,
+  ]..sort((SamplerSample a, SamplerSample b) => b.value.compareTo(a.value));
+  return mods.take(_kWorldgenTopMods).toList();
+}
+
 class ChunksScreen extends StatelessWidget {
   const ChunksScreen({super.key});
 
@@ -46,6 +68,11 @@ class ChunksScreen extends StatelessWidget {
     final List<SamplerSample> loaders = samplersWithPrefix(
       snapshot,
       kChunkLoaderPrefixes,
+    );
+    final List<SamplerSample> worldgenMods = topWorldgenMods(snapshot);
+    final List<SamplerSample> worldgenSteps = samplersOf(
+      snapshot,
+      kWorldgenStepIds,
     );
 
     return PageStack(
@@ -108,6 +135,16 @@ class ChunksScreen extends StatelessWidget {
           PageSection(
             title: reactorText(ReactorText.chunksLoaders),
             children: <Widget>[MetricGrid(children: namedTiles(loaders))],
+          ),
+        if (worldgenMods.isNotEmpty)
+          PageSection(
+            title: reactorText(ReactorText.chunksWorldgenByMod),
+            children: <Widget>[MetricGrid(children: namedTiles(worldgenMods))],
+          ),
+        if (worldgenSteps.isNotEmpty)
+          PageSection(
+            title: reactorText(ReactorText.chunksWorldgenSteps),
+            children: <Widget>[MetricGrid(children: namedTiles(worldgenSteps))],
           ),
       ],
     );

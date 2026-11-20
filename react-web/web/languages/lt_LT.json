@@ -524,6 +524,8 @@
   "screen.chunks.world_save_event_interval": "Išsaugojimo intervalas",
   "screen.chunks.residency": "Chunkų rezidavimas",
   "screen.chunks.loaders": "Chunkų įkėlėjai",
+  "screen.chunks.worldgen_by_mod": "Pasaulio generavimas pagal modą",
+  "screen.chunks.worldgen_steps": "Pasaulio generavimo etapai",
   "screen.entities.breakdown": "Subjektų suskirstymas",
   "screen.entities.player_activity": "Žaidėjų aktyvumas",
   "screen.internals.telemetry_pipeline": "Telemetrijos konvejeris",

@@ -524,6 +524,8 @@
   "screen.chunks.world_save_event_interval": "Интервал сохранения",
   "screen.chunks.residency": "Резидентность чанков",
   "screen.chunks.loaders": "Загрузчики чанков",
+  "screen.chunks.worldgen_by_mod": "Генерация мира по модам",
+  "screen.chunks.worldgen_steps": "Этапы генерации мира",
   "screen.entities.breakdown": "Разбивка сущностей",
   "screen.entities.player_activity": "Активность игроков",
   "screen.internals.telemetry_pipeline": "Конвейер телеметрии",

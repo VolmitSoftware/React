@@ -524,6 +524,8 @@
   "screen.chunks.world_save_event_interval": "מרווח שמירה",
   "screen.chunks.residency": "תושבות מקטעים",
   "screen.chunks.loaders": "טועני צ׳אנקים",
+  "screen.chunks.worldgen_by_mod": "יצירת עולם לפי מוד",
+  "screen.chunks.worldgen_steps": "שלבי יצירת העולם",
   "screen.entities.breakdown": "פירוט ישויות",
   "screen.entities.player_activity": "פעילות שחקנים",
   "screen.internals.telemetry_pipeline": "צינור טלמטריה",

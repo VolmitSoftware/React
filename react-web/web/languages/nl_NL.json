@@ -524,6 +524,8 @@
   "screen.chunks.world_save_event_interval": "Opslaginterval",
   "screen.chunks.residency": "Chunkresidentie",
   "screen.chunks.loaders": "Chunkladers",
+  "screen.chunks.worldgen_by_mod": "Wereldgeneratie per mod",
+  "screen.chunks.worldgen_steps": "Stappen van wereldgeneratie",
   "screen.entities.breakdown": "Entiteitsoverzicht",
   "screen.entities.player_activity": "Speleractiviteit",
   "screen.internals.telemetry_pipeline": "Telemetriepijplijn",

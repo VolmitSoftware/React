@@ -2,7 +2,8 @@ package art.arcane.react.mod.cost;
 
 /**
  * Exclusive-time accounting shared by every event wrapper and tick hook. Work nested inside a timed call is charged
- * to the inner owner and subtracted from the outer one. Calls off the server thread are only counted.
+ * to the inner owner and subtracted from the outer one. Calls off the server thread are only counted, except world
+ * generation, which {@link #enterAnyThread()} times on its worker threads too.
  */
 public final class CostFrame {
     public static final long OFF_THREAD = Long.MIN_VALUE;
@@ -21,6 +22,10 @@ public final class CostFrame {
         if (Thread.currentThread() != CostRegistry.serverThread) {
             return OFF_THREAD;
         }
+        return enterAnyThread();
+    }
+
+    public static long enterAnyThread() {
         Frame frame = FRAMES.get();
         if (frame.depth == frame.parentChildNanos.length) {
             frame.parentChildNanos = java.util.Arrays.copyOf(frame.parentChildNanos, frame.depth * 2);

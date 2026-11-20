@@ -35,6 +35,7 @@ public final class ModDashboardMaps {
         ModMapData data = platform.mapData();
         ModDashboardMaps maps = new ModDashboardMaps(data);
         maps.renderers.add(new RendererReactMetrics(SamplerHosts::sampler));
+        maps.renderers.add(new ModWorldgenPieRenderer(platform.ownerCost()));
         ModIntegrationMetrics integrations = data.integrations();
         if (data.isInstalled("iris")) {
             maps.renderers.addAll(RendererIrisMetrics.dashboards(integrations));

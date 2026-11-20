@@ -126,7 +126,12 @@
     "TicketStorageAccess",
     "TrialSpawnerHooks",
     "TurtleEggHooks",
-    "VineSpreadHooks"
+    "VineSpreadHooks",
+    "WorldgenBiomeHooks",
+    "WorldgenChunkGeneratorHooks",
+    "WorldgenNoiseHooks",
+    "WorldgenStructureHooks",
+    "WorldgenStructureStartHooks"
   ],
   "client": [],
   "injectors": {

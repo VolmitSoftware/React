@@ -105,8 +105,12 @@ public final class VanillaApi {
         return dimension.location().toString();
     }
 
-    static String keyPath(ResourceKey<?> key) {
+    public static String keyPath(ResourceKey<?> key) {
         return key.location().getPath();
+    }
+
+    public static String keyNamespace(ResourceKey<?> key) {
+        return key.location().getNamespace();
     }
 
     static String minecraftVersion() {

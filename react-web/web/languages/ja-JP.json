@@ -524,6 +524,8 @@
   "screen.chunks.world_save_event_interval": "保存間隔",
   "screen.chunks.residency": "チャンク常駐",
   "screen.chunks.loaders": "チャンクローダー",
+  "screen.chunks.worldgen_by_mod": "Mod別のワールド生成",
+  "screen.chunks.worldgen_steps": "ワールド生成の段階",
   "screen.entities.breakdown": "エンティティ内訳",
   "screen.entities.player_activity": "プレイヤー活動",
   "screen.internals.telemetry_pipeline": "テレメトリーパイプライン",

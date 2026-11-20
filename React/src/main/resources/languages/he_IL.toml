@@ -3687,6 +3687,7 @@ mod_event_impact_pie_map = "כל פרוסה מייצגת את נתח עלות א
 react_metrics = "ניטור: TPS, אלפיות שנייה לטיק, ציון אירוע, תור משימות, צבר במתזמן."
 redstone_activity_heatmap = "צבעים חמים יותר מצביעים על עומס רב יותר בצ'אנק שנדגם."
 tick_spike_origin_replay_map = "צבעים חמים יותר מצביעים על עומס רב יותר בצ'אנק שנדגם."
+worldgen_mod_pie_map = "כל פרוסה היא הזמן שהפיצ'רים, המבנים והחוצבים של מוד אחד לוקחים בתהליכוני המחולל."
 
 [gui.map.hub]
 all = "כל המפות"
@@ -3870,6 +3871,13 @@ wormholes_view_entities = "ישויות תצוגה של Wormholes"
 wormholes_view_subscriptions = "מנויי תצוגה של Wormholes"
 wormholes_wire_in = "תעבורה נכנסת של Wormholes"
 wormholes_wire_out = "תעבורה יוצאת של Wormholes"
+worldgen_owner = "יצירת עולם של {name}"
+worldgen_step_structure_starts = "יצירת עולם: התחלות מבנים"
+worldgen_step_biomes = "יצירת עולם: ביומות"
+worldgen_step_noise = "יצירת עולם: רעש"
+worldgen_step_surface = "יצירת עולם: פני שטח"
+worldgen_step_carvers = "יצירת עולם: חוצבים"
+worldgen_step_features = "יצירת עולם: פיצ'רים"
 
 [gui.map.render]
 column_bandwidth = "B/s"
@@ -3923,6 +3931,7 @@ react_metrics = "לוח מדדים מקומיים של React ל-TPS, השהיי�
 redstone_activity_heatmap = "מפת חום של צ'אנקים לעומס עדכוני רדסטון ומעגלים עתירי שעונים."
 tick_spike_origin_replay_map = "מפת הנגנה מחדש של מקורות קפיצות אחרונות עם חום דועך בצ'אנקים סמוכים."
 unknown = "מרנדר גיבוי שמוצג כשלא ניתן לפענח ניטור מסוים."
+worldgen_mod_pie_map = "תרשים עוגה של החלק המתגלגל של כל מוד בזמן יצירת העולם."
 
 [gui.map.summary.sampler]
 adapt_ability_checks_per_tick = "כל בדיקות היכולות של Adapt בממוצע לטיק לאורך חלון הטלמטריה."
@@ -4099,6 +4108,7 @@ processor = "עומס CPU ועומס המארח סביב זמן הריצה של 
 react = "עומק תור המתזמן ועומס הביצוע של React."
 redstone = "פעילות מעברי רדסטון ועלות העיבוד."
 tick = "תזמון נתיב הטיק של השרת והתנהגות קפיצות."
+worldgen = "זמן יצירת העולם בתהליכוני המחולל, עבור מוד אחד או שלב צ'אנק אחד."
 
 [gui.monitor]
 create = "יצירת קבוצה"
@@ -4353,6 +4363,7 @@ redstone_activity = "פעילות רדסטון"
 tick_spike_replay = "הנגנה מחדש של קפיצות טיק"
 world_chunk_share = "חלוקת צ'אנקים לפי עולם"
 wormholes_metrics = "מדדי Wormholes"
+mod_worldgen_share = "חלק המודים ביצירת העולם"
 
 [renderer.unknown]
 bound = "קשורה למרנדר"

@@ -3687,6 +3687,7 @@ mod_event_impact_pie_map = "Ogni fetta rappresenta la quota mobile del costo deg
 react_metrics = "Monitor: TPS, ms per tick, punteggio incidente, coda dei lavori, arretrato dello scheduler."
 redstone_activity_heatmap = "I colori più caldi indicano una pressione maggiore nel chunk misurato."
 tick_spike_origin_replay_map = "I colori più caldi indicano una pressione maggiore nel chunk misurato."
+worldgen_mod_pie_map = "Ogni fetta è il tempo che feature, strutture e carver di una mod impiegano sui thread del generatore."
 
 [gui.map.hub]
 all = "Tutte le mappe"
@@ -3870,6 +3871,13 @@ wormholes_view_entities = "Wormholes Entità di vista"
 wormholes_view_subscriptions = "Wormholes Sottoscrizioni di vista"
 wormholes_wire_in = "Wormholes Traffico in entrata"
 wormholes_wire_out = "Wormholes Traffico in uscita"
+worldgen_owner = "Generazione del mondo di {name}"
+worldgen_step_structure_starts = "Generazione: avvii delle strutture"
+worldgen_step_biomes = "Generazione: biomi"
+worldgen_step_noise = "Generazione: rumore"
+worldgen_step_surface = "Generazione: superficie"
+worldgen_step_carvers = "Generazione: carver"
+worldgen_step_features = "Generazione: feature"
 
 [gui.map.render]
 column_bandwidth = "B/s"
@@ -3923,6 +3931,7 @@ react_metrics = "Pannello di metriche locali di React per TPS, latenza dei tick,
 redstone_activity_heatmap = "Heatmap dei chunk per la pressione degli aggiornamenti redstone e i circuiti con molti clock."
 tick_spike_origin_replay_map = "Mappa di replay delle origini recenti dei picchi, con calore decrescente sui chunk vicini."
 unknown = "Renderer di ripiego mostrato quando non è possibile risolvere un monitor specifico."
+worldgen_mod_pie_map = "Grafico a torta della quota mobile di ogni mod nel tempo di generazione del mondo."
 
 [gui.map.summary.sampler]
 adapt_ability_checks_per_tick = "Adapt: tutti i controlli delle abilità, in media per tick nella finestra di telemetria."
@@ -4099,6 +4108,7 @@ processor = "Pressione di carico di CPU e host attorno al runtime del server."
 react = "Profondità della coda dello scheduler di React e pressione di esecuzione."
 redstone = "Attività delle transizioni redstone e costo di elaborazione."
 tick = "Temporizzazione del percorso dei tick del server e comportamento dei picchi."
+worldgen = "Tempo di generazione del mondo sui thread del generatore, per una mod o una fase del chunk."
 
 [gui.monitor]
 create = "Crea gruppo"
@@ -4353,6 +4363,7 @@ redstone_activity = "Attività redstone"
 tick_spike_replay = "Replay picchi tick"
 world_chunk_share = "Quota chunk per mondo"
 wormholes_metrics = "Metriche Wormholes"
+mod_worldgen_share = "Quota di generazione del mondo per mod"
 
 [renderer.unknown]
 bound = "associata a un renderer"

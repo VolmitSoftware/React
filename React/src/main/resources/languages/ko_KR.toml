@@ -3687,6 +3687,7 @@ mod_event_impact_pie_map = "각 조각은 최근 구간 동안 모드 이벤트 
 react_metrics = "모니터: TPS, 틱 ms, 사고 점수, 작업 큐, 스케줄러 적체."
 redstone_activity_heatmap = "더 뜨거운 색상은 측정된 청크에 더 많은 압력을 나타냅니다."
 tick_spike_origin_replay_map = "더 뜨거운 색상은 측정된 청크에 더 많은 압력을 나타냅니다."
+worldgen_mod_pie_map = "각 조각은 한 모드의 지형지물, 구조물, 카버가 생성 스레드에서 쓰는 시간입니다."
 
 [gui.map.hub]
 all = "모든 지도"
@@ -3870,6 +3871,13 @@ wormholes_view_entities = "Wormholes 뷰 엔티티"
 wormholes_view_subscriptions = "Wormholes 뷰 구독"
 wormholes_wire_in = "Wormholes 와이어 수신"
 wormholes_wire_out = "Wormholes 와이어 송신"
+worldgen_owner = "{name} 월드 생성"
+worldgen_step_structure_starts = "월드 생성: 구조물 시작"
+worldgen_step_biomes = "월드 생성: 생물 군계"
+worldgen_step_noise = "월드 생성: 노이즈"
+worldgen_step_surface = "월드 생성: 지표"
+worldgen_step_carvers = "월드 생성: 카버"
+worldgen_step_features = "월드 생성: 지형지물"
 
 [gui.map.render]
 column_bandwidth = "B/s"
@@ -3923,6 +3931,7 @@ react_metrics = "TPS, 틱 지연, 사고 부하, 큐 상태에 대한 React 로�
 redstone_activity_heatmap = "레드스톤 업데이트 부하와 클럭이 많은 회로의 청크 히트맵."
 tick_spike_origin_replay_map = "최근 스파이크 발생 위치를 재생하는 지도로, 근처 청크의 열이 점차 감쇠합니다."
 unknown = "특정 모니터를 확인할 수 없을 때 표시되는 대체 렌더러."
+worldgen_mod_pie_map = "각 모드가 월드 생성 시간에서 차지하는 이동 비중을 보여 주는 원형 차트입니다."
 
 [gui.map.summary.sampler]
 adapt_ability_checks_per_tick = "텔레메트리 구간 동안 틱당 평균 Adapt 전체 능력 검사."
@@ -4099,6 +4108,7 @@ processor = "서버 런타임 주변의 CPU 및 호스트 부하."
 react = "React 스케줄러 큐 깊이와 실행 압력."
 redstone = "레드스톤 전환 활동 및 처리 비용."
 tick = "서버 틱 경로 타이밍과 스파이크 동작."
+worldgen = "생성 스레드에서의 월드 생성 시간으로, 모드 하나 또는 청크 단계 하나 기준입니다."
 
 [gui.monitor]
 create = "그룹 만들기"
@@ -4353,6 +4363,7 @@ redstone_activity = "레드스톤 활동"
 tick_spike_replay = "틱 스파이크 재생"
 world_chunk_share = "월드 청크 점유"
 wormholes_metrics = "Wormholes 지표"
+mod_worldgen_share = "모드별 월드 생성 비중"
 
 [renderer.unknown]
 bound = "연결된 렌더러를"

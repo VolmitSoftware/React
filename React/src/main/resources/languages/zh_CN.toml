@@ -3687,6 +3687,7 @@ mod_event_impact_pie_map = "每个扇区代表近期窗口内模组事件开销�
 react_metrics = "监控: TPS、游戏刻毫秒数、事件分数、任务队列、调度器积压。"
 redstone_activity_heatmap = "颜色越热，表示已采样区块中的压力越大。"
 tick_spike_origin_replay_map = "颜色越热，表示已采样区块中的压力越大。"
+worldgen_mod_pie_map = "每个扇区是一个模组的地物、结构和雕刻器在生成线程上耗费的时间。"
 
 [gui.map.hub]
 all = "所有地图"
@@ -3870,6 +3871,13 @@ wormholes_view_entities = "Wormholes 视图实体"
 wormholes_view_subscriptions = "Wormholes 视图订阅"
 wormholes_wire_in = "Wormholes 入站流量"
 wormholes_wire_out = "Wormholes 出站流量"
+worldgen_owner = "{name} 世界生成"
+worldgen_step_structure_starts = "世界生成：结构起点"
+worldgen_step_biomes = "世界生成：生物群系"
+worldgen_step_noise = "世界生成：噪声"
+worldgen_step_surface = "世界生成：地表"
+worldgen_step_carvers = "世界生成：雕刻器"
+worldgen_step_features = "世界生成：地物"
 
 [gui.map.render]
 column_bandwidth = "B/s"
@@ -3923,6 +3931,7 @@ react_metrics = "React 本地指标面板，显示 TPS、游戏刻延迟、事�
 redstone_activity_heatmap = "红石更新压力和高频时钟电路的区块热力图。"
 tick_spike_origin_replay_map = "近期峰值来源的回放地图，热度在附近区块上逐渐衰减。"
 unknown = "无法解析指定监视器时显示的回退渲染器。"
+worldgen_mod_pie_map = "饼图显示每个模组在世界生成时间中的滚动占比。"
 
 [gui.map.summary.sampler]
 adapt_ability_checks_per_tick = "遥测窗口内每游戏刻平均的所有 Adapt 能力检查数。"
@@ -4099,6 +4108,7 @@ processor = "服务器运行环境周围的 CPU 和主机负载压力。"
 react = "React 调度器队列深度和执行压力。"
 redstone = "红石状态切换活动和处理开销。"
 tick = "服务器游戏刻路径耗时和峰值行为。"
+worldgen = "生成线程上的世界生成时间，按单个模组或单个区块步骤统计。"
 
 [gui.monitor]
 create = "创建组"
@@ -4353,6 +4363,7 @@ redstone_activity = "红石活动"
 tick_spike_replay = "游戏刻峰值回放"
 world_chunk_share = "世界区块分享"
 wormholes_metrics = "Wormholes 指标"
+mod_worldgen_share = "模组世界生成占比"
 
 [renderer.unknown]
 bound = "绑定到某个渲染器"

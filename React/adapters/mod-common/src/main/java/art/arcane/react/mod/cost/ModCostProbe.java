@@ -14,8 +14,9 @@ import java.util.concurrent.Executor;
 
 /**
  * Per-mod cost on a mod server: event listeners through the loader's {@link EventAttribution}, block entity and entity
- * ticks through the shared tick hooks. Event attribution that fails on this loader version is switched off once and
- * tick attribution keeps running.
+ * ticks through the shared tick hooks, and world generation through {@link WorldgenCost}. Event attribution that fails
+ * on this loader version is switched off once and tick attribution keeps running. Each drain folds world generation
+ * into its owner's total and also keeps it apart, with the step breakdown, as the last {@link Worldgen} window.
  */
 public final class ModCostProbe implements OwnerCostProbe {
     private static final Logger LOGGER = LoggerFactory.getLogger("React");
@@ -27,6 +28,7 @@ public final class ModCostProbe implements OwnerCostProbe {
     private volatile boolean active;
     private boolean installed;
     private int ticksUntilReconcile;
+    private volatile Worldgen worldgen = Worldgen.EMPTY;
 
     /** {@code events} is null when this loader's dispatch could not be resolved; {@code reason} then says why. */
     public ModCostProbe(ModOwners owners, EventAttribution events, String reason) {
@@ -41,6 +43,11 @@ public final class ModCostProbe implements OwnerCostProbe {
 
     public void start(MinecraftServer server, Executor serverThread) {
         CostRegistry.serverThread = server.getRunningThread();
+        try {
+            WorldgenCost.index(server.registryAccess(), owners);
+        } catch (RuntimeException | LinkageError failure) {
+            LOGGER.warn("World generation cost is charged to unknown: {}", failure.toString());
+        }
         serverExecutor = Objects.requireNonNull(serverThread, "serverThread");
         if (active) {
             serverThread.execute(this::apply);
@@ -52,6 +59,8 @@ public final class ModCostProbe implements OwnerCostProbe {
         apply();
         serverExecutor = null;
         CostRegistry.serverThread = null;
+        WorldgenCost.clear();
+        worldgen = Worldgen.EMPTY;
     }
 
     /** Called every server tick on the server thread. */
@@ -138,6 +147,9 @@ public final class ModCostProbe implements OwnerCostProbe {
     @Override
     public void drain(OwnerCostConsumer consumer) {
         Map<String, long[]> totals = new TreeMap<>();
+        Map<String, Long> worldgenNanos = new TreeMap<>();
+        long[] stepNanos = new long[WorldgenStep.values().length];
+        WorldgenCost.drainSteps(stepNanos);
         for (CostBucket bucket : CostRegistry.buckets()) {
             long nanos = bucket.nanos.sumThenReset();
             long sync = bucket.syncCalls.sumThenReset();
@@ -145,14 +157,41 @@ public final class ModCostProbe implements OwnerCostProbe {
             if (nanos == 0L && sync == 0L && async == 0L) {
                 continue;
             }
+            if (bucket.kind() == CostKind.WORLDGEN) {
+                worldgenNanos.merge(bucket.ownerId(), nanos, Long::sum);
+            }
             long[] total = totals.computeIfAbsent(bucket.ownerId(), (String key) -> new long[3]);
             total[0] += nanos;
             total[1] += sync;
             total[2] += async;
         }
+        worldgen = new Worldgen(Map.copyOf(worldgenNanos), stepNanos);
         for (Map.Entry<String, long[]> entry : totals.entrySet()) {
             long[] total = entry.getValue();
             consumer.accept(entry.getKey(), owners.displayName(entry.getKey()), total[0], total[1], total[2]);
+        }
+    }
+
+    /** World generation in the last drained window. */
+    public Worldgen worldgen() {
+        return worldgen;
+    }
+
+    public String displayName(String ownerId) {
+        return owners.displayName(ownerId);
+    }
+
+    /** One window of world generation: nanoseconds per owner and per {@link WorldgenStep} ordinal. */
+    public record Worldgen(Map<String, Long> ownerNanos, long[] stepNanos) {
+        static final Worldgen EMPTY = new Worldgen(Map.of(), new long[WorldgenStep.values().length]);
+
+        public long ownerNanos(String owner) {
+            Long nanos = ownerNanos.get(owner);
+            return nanos == null ? 0L : nanos;
+        }
+
+        public long stepNanos(WorldgenStep step) {
+            return stepNanos[step.ordinal()];
         }
     }
 

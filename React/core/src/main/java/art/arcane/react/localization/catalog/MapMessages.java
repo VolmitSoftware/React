@@ -27,6 +27,7 @@ public final class MapMessages {
       rendererSummaryEntry("iris-biome-chunk-share-pie-map", "Pie chart showing chunk-share distribution across biomes in the map world."),
       rendererSummaryEntry("plugin-event-impact-pie-map", "Pie chart showing rolling plugin event-impact share over time."),
       rendererSummaryEntry("plugin-event-impact-list-map", "Ranked list of plugins by rolling event-impact score."),
+      rendererSummaryEntry("worldgen-mod-pie-map", "Pie chart showing each mod's rolling share of world generation time."),
       rendererSummaryEntry("iris-metrics", "Iris integration overview for engines, worlds, chunks, entities, and generation."),
       rendererSummaryEntry("adapt-metrics", "Adapt integration panel for session load, ability ops/min, and world policy latency."),
       rendererSummaryEntry("react-metrics", "React local metrics panel for TPS, tick latency, incident pressure, and queue health."),
@@ -52,6 +53,7 @@ public final class MapMessages {
       rendererDetail("iris-biome-chunk-share-pie-map", "Each slice represents the percent of loaded chunks per biome (Iris custom names when available)."),
       rendererDetail("plugin-event-impact-pie-map", "Each slice represents the rolling share of plugin event cost over recent windows."),
       rendererDetail("plugin-event-impact-list-map", "Rows are ordered from highest rolling plugin impact to lowest."),
+      rendererDetail("worldgen-mod-pie-map", "Each slice is the time one mod's features, structures and carvers take on the generator threads."),
       rendererDetail("adapt-ability-impact-list-map", "Rows rank rolling 60-second measured callback cost; cb/m counts covered callback executions, while directly scheduled background work is outside this map.")
   );
   private static final Map<String, TextKey> MOD_RENDERER_SUMMARIES = Map.ofEntries(
@@ -378,13 +380,21 @@ public final class MapMessages {
       samplerName("wormholes-view-entities", "Wormholes View Entities"),
       samplerName("wormholes-view-subscriptions", "Wormholes View Subscriptions"),
       samplerName("wormholes-wire-in", "Wormholes Wire In"),
-      samplerName("wormholes-wire-out", "Wormholes Wire Out")
+      samplerName("wormholes-wire-out", "Wormholes Wire Out"),
+      samplerName("worldgen-step-structure-starts", "Worldgen Structure Starts"),
+      samplerName("worldgen-step-biomes", "Worldgen Biomes"),
+      samplerName("worldgen-step-noise", "Worldgen Noise"),
+      samplerName("worldgen-step-surface", "Worldgen Surface"),
+      samplerName("worldgen-step-carvers", "Worldgen Carvers"),
+      samplerName("worldgen-step-features", "Worldgen Features")
   );
+  public static final TextKey SAMPLER_WORLDGEN_OWNER = TextKey.of("gui.map.name.sampler.worldgen_owner", "{name} Worldgen");
   private static final TextKey RENDERER_IRIS = TextKey.of("gui.map.summary.renderer.iris_fallback", "Iris integration renderer for {name}.");
   private static final TextKey RENDERER_ADAPT = TextKey.of("gui.map.summary.renderer.adapt_fallback", "Adapt integration renderer for {name}.");
   private static final TextKey RENDERER_REACT = TextKey.of("gui.map.summary.renderer.react_fallback", "React local metrics renderer for {name}.");
   private static final TextKey RENDERER_FALLBACK = TextKey.of("gui.map.summary.renderer.fallback", "Map renderer for {name}.");
   private static final TextKey SAMPLER_DETAIL = TextKey.of("gui.map.detail.sampler", "Live graph with current, minimum, and maximum values.");
+  private static final TextKey SAMPLER_WORLDGEN = keywordSummary("worldgen", "World generation time on the generator threads, for one mod or one chunk step.");
   private static final TextKey SAMPLER_TICK = keywordSummary("tick", "Server tick-path timing and spike behavior.");
   private static final TextKey SAMPLER_MEMORY = keywordSummary("memory", "JVM memory pressure and garbage-collection behavior.");
   private static final TextKey SAMPLER_CHUNK = keywordSummary("chunk", "Chunk activity, latency, and load pressure.");
@@ -441,6 +451,8 @@ public final class MapMessages {
     builder.add(RENDERER_REACT);
     builder.add(RENDERER_FALLBACK);
     builder.add(SAMPLER_DETAIL);
+    builder.add(SAMPLER_WORLDGEN_OWNER);
+    builder.add(SAMPLER_WORLDGEN);
     builder.add(SAMPLER_TICK);
     builder.add(SAMPLER_MEMORY);
     builder.add(SAMPLER_CHUNK);
@@ -518,6 +530,9 @@ public final class MapMessages {
   }
 
   private static TextKey samplerKeyword(String normalizedId) {
+    if (normalizedId.startsWith("worldgen-")) {
+      return SAMPLER_WORLDGEN;
+    }
     if (normalizedId.contains("tick")) {
       return SAMPLER_TICK;
     }
