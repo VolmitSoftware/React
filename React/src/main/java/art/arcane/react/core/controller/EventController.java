@@ -163,7 +163,7 @@ public class EventController extends TickedObject implements EventMeasurement, I
     PluginManager plugins = Bukkit.getPluginManager();
     if (plugins != null) {
       for (Plugin plugin : plugins.getPlugins()) {
-        if (plugin != null && plugin != React.instance && plugin.getName() != null && !plugin.getName().isBlank()) {
+        if (plugin != null && plugin.getName() != null && !plugin.getName().isBlank()) {
           owners.put(plugin.getName(), plugin.getName());
         }
       }
@@ -296,18 +296,10 @@ public class EventController extends TickedObject implements EventMeasurement, I
       pendingDrain.clear();
     }
 
-    String selfName = React.instance == null ? null : React.instance.getName();
     for (Map.Entry<String, long[]> entry : drained.entrySet()) {
-      if (!rankedOwner(entry.getKey(), selfName)) {
-        continue;
-      }
       long[] counters = entry.getValue();
       consumer.accept(entry.getKey(), entry.getKey(), OwnerCostProbe.KIND_EVENT, counters[0], counters[1], counters[2]);
     }
-  }
-
-  static boolean rankedOwner(String owner, String selfName) {
-    return owner != null && !owner.equals(selfName);
   }
 
   public void call(Event event) {

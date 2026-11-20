@@ -1,6 +1,5 @@
 package art.arcane.react.mod.cost;
 
-import art.arcane.react.mod.ReactModRuntime;
 import art.arcane.react.platform.cost.OwnerCostProbe;
 import net.minecraft.server.MinecraftServer;
 import org.slf4j.Logger;
@@ -18,7 +17,7 @@ import java.util.concurrent.Executor;
  * ticks through the shared tick hooks, and world generation through {@link WorldgenCost}. Event attribution that fails
  * on this loader version is switched off once and tick attribution keeps running. Each drain folds world generation
  * into its owner's total and also keeps it apart, with the step breakdown, as the last {@link Worldgen} window.
- * React's own work is left out, as on Bukkit; its frames still keep that time off the owner that called into React.
+ * React's own work is ranked like any other owner, and its frames keep that time off the owner that called into React.
  */
 public final class ModCostProbe implements OwnerCostProbe {
     private static final Logger LOGGER = LoggerFactory.getLogger("React");
@@ -155,7 +154,7 @@ public final class ModCostProbe implements OwnerCostProbe {
             long nanos = bucket.nanos.sumThenReset();
             long sync = bucket.syncCalls.sumThenReset();
             long async = bucket.asyncCalls.sumThenReset();
-            if (nanos == 0L && sync == 0L && async == 0L || bucket.ownerId().equals(ReactModRuntime.ID)) {
+            if (nanos == 0L && sync == 0L && async == 0L) {
                 continue;
             }
             if (bucket.kind() == CostKind.WORLDGEN) {

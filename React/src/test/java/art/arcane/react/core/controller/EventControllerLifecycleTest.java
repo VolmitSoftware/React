@@ -14,7 +14,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.EventExecutor;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredListener;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -36,7 +35,7 @@ class EventControllerLifecycleTest {
     plugin = Mockito.mock(React.class);
     Mockito.when(plugin.getTicker()).thenReturn(Mockito.mock(Ticker.class));
     Mockito.when(plugin.isEnabled()).thenReturn(true);
-    Mockito.when(plugin.getName()).thenReturn("React");
+    Mockito.when(plugin.getName()).thenReturn("MeasuredPlugin");
     React.instance = plugin;
   }
 
@@ -47,7 +46,7 @@ class EventControllerLifecycleTest {
 
   @Test
   void foliaMutationsAreScheduledAndEachWindowIsDrainedOnce() throws EventException {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController controller = new EventController();
       controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
@@ -100,7 +99,7 @@ class EventControllerLifecycleTest {
 
   @Test
   void queuedInstallCannotReinstallAfterStop() {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController controller = new EventController();
       controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
@@ -125,7 +124,7 @@ class EventControllerLifecycleTest {
 
   @Test
   void delayedOldRuntimeCleanupCannotRemoveReloadedRuntimeInstrumentation() {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController oldController = new EventController();
       oldController.setInstrumentation(OwnerCostMode.ON_DEMAND);
@@ -166,7 +165,7 @@ class EventControllerLifecycleTest {
 
   @Test
   void paperMainThreadMutatesInlineWithoutScheduling() {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
       controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
@@ -184,18 +183,11 @@ class EventControllerLifecycleTest {
     }
   }
 
-  private static Plugin measuredPlugin() {
-    Plugin measured = Mockito.mock(Plugin.class);
-    Mockito.when(measured.getName()).thenReturn("MeasuredPlugin");
-    Mockito.when(measured.isEnabled()).thenReturn(true);
-    return measured;
-  }
-
   private static final class HandlerFixture implements AutoCloseable {
     private final HandlerList handlerList;
     private final Listener listener;
 
-    private HandlerFixture(Plugin plugin) {
+    private HandlerFixture(React plugin) {
       handlerList = new HandlerList();
       listener = Mockito.mock(Listener.class);
       EventExecutor executor = (ignored, event) -> {

@@ -113,7 +113,7 @@ class ModCostProbeTest {
     }
 
     @Test
-    void reactsOwnWorkIsLeftOutButStaysExclusiveOfItsCaller() {
+    void reactsOwnWorkIsRankedAndStaysExclusiveOfItsCaller() {
         CostBucket caller = CostRegistry.bucket("test-caller", CostKind.EVENT);
         CostBucket react = CostRegistry.bucket("react", CostKind.EVENT);
         long callerStart = CostFrame.enter();
@@ -123,7 +123,7 @@ class ModCostProbeTest {
         CostFrame.exit(callerStart, caller);
 
         Map<String, ModCostProbe.OwnerCost> costs = drain();
-        assertTrue(!costs.containsKey("react"), "react listed: " + costs.keySet());
+        assertTrue(costs.get("react").exclusiveNanos() >= 10_000_000L, "react " + costs.keySet());
         assertTrue(costs.get("test-caller").exclusiveNanos() < 10_000_000L, "caller " + costs.get("test-caller").exclusiveNanos());
     }
 

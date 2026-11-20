@@ -15,7 +15,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.EventExecutor;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredListener;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -37,7 +36,7 @@ class EventControllerModeTest {
     plugin = Mockito.mock(React.class);
     Mockito.when(plugin.getTicker()).thenReturn(Mockito.mock(Ticker.class));
     Mockito.when(plugin.isEnabled()).thenReturn(true);
-    Mockito.when(plugin.getName()).thenReturn("React");
+    Mockito.when(plugin.getName()).thenReturn("MeasuredPlugin");
     React.instance = plugin;
   }
 
@@ -48,7 +47,7 @@ class EventControllerModeTest {
 
   @Test
   void defaultModeIsOnDemandAndInstallsNothingWithoutDemand() {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
       Assertions.assertEquals(OwnerCostMode.ON_DEMAND, controller.getInstrumentation());
@@ -61,7 +60,7 @@ class EventControllerModeTest {
 
   @Test
   void missingModeFallsBackToOnDemand() {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
       controller.setInstrumentation(null);
@@ -74,7 +73,7 @@ class EventControllerModeTest {
 
   @Test
   void alwaysModeInstallsWithoutDemandAndStaysInstalled() {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
       controller.setInstrumentation(OwnerCostMode.ALWAYS);
@@ -100,7 +99,7 @@ class EventControllerModeTest {
 
   @Test
   void onDemandInstallsOnDemandAndRestoresTheOriginalAfterTheWindow() {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
       controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
@@ -128,7 +127,7 @@ class EventControllerModeTest {
 
   @Test
   void dutyCycleOpensPeriodicWindowsAndPublishesTheFinalDrain() throws EventException {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
       controller.setInstrumentation(OwnerCostMode.DUTY_CYCLE);
@@ -169,7 +168,7 @@ class EventControllerModeTest {
 
   @Test
   void stopUninstallsOnTheCallingThreadEvenWhileAReconciliationIsQueued() {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController controller = new EventController();
       controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
@@ -198,7 +197,7 @@ class EventControllerModeTest {
 
   @Test
   void installedWrapperExposesTheOriginalExecutorWithoutPaperOnlyApi() {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController controller = new EventController();
       controller.setInstrumentation(OwnerCostMode.ALWAYS);
@@ -220,7 +219,7 @@ class EventControllerModeTest {
 
   @Test
   void wrappersFromAnotherClassLoaderAreUnwrappedInsteadOfNested() throws Exception {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       RegisteredListener foreign = fixture.wrapWithAnotherRuntime();
       Assertions.assertFalse(foreign instanceof NaughtyRegisteredListener);
@@ -244,7 +243,7 @@ class EventControllerModeTest {
 
   @Test
   void idleOnDemandTickDoesNotScheduleAHandlerListWalk() {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness scheduler = new SchedulerHarness(plugin, true, false)) {
       EventController controller = new EventController();
       controller.setInstrumentation(OwnerCostMode.ON_DEMAND);
@@ -263,7 +262,7 @@ class EventControllerModeTest {
 
   @Test
   void foreignOwnerWrappersAreUnwrappedInsteadOfNested() {
-    HandlerFixture fixture = new HandlerFixture(measuredPlugin());
+    HandlerFixture fixture = new HandlerFixture(plugin);
     try (SchedulerHarness ignored = new SchedulerHarness(plugin, false, true)) {
       EventController old = new EventController();
       old.setInstrumentation(OwnerCostMode.ALWAYS);
@@ -290,20 +289,13 @@ class EventControllerModeTest {
     }
   }
 
-  private static Plugin measuredPlugin() {
-    Plugin measured = Mockito.mock(Plugin.class);
-    Mockito.when(measured.getName()).thenReturn("MeasuredPlugin");
-    Mockito.when(measured.isEnabled()).thenReturn(true);
-    return measured;
-  }
-
   private static final class HandlerFixture implements AutoCloseable {
     private final HandlerList handlerList;
     private final Listener listener;
     private final EventExecutor executor;
     private final RegisteredListener original;
 
-    private HandlerFixture(Plugin plugin) {
+    private HandlerFixture(React plugin) {
       handlerList = new HandlerList();
       listener = Mockito.mock(Listener.class);
       executor = (ignored, event) -> {

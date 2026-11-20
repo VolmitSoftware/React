@@ -149,16 +149,8 @@ public class PluginCostController implements IController, Listener {
   }
 
   private boolean isExcluded(Plugin plugin) {
-    if (plugin == React.instance) {
-      return true;
-    }
-
     String name = plugin.getName();
     if (name == null || name.isBlank()) {
-      return true;
-    }
-
-    if (name.equalsIgnoreCase("React")) {
       return true;
     }
 

@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ModOwnerCostTest {
     @Test
     void reactAndBlankOwnersGetNoSamplerLikeBukkit() {
-        assertFalse(ModOwnerCost.sampled(ReactModRuntime.ID));
+        assertTrue(ModOwnerCost.sampled(ReactModRuntime.ID));
         assertFalse(ModOwnerCost.sampled(""));
         assertTrue(ModOwnerCost.sampled("minecraft"));
         assertTrue(ModOwnerCost.sampled("forge"));

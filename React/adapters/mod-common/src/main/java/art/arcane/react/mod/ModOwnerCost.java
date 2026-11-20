@@ -105,7 +105,7 @@ final class ModOwnerCost implements EventMeasurement {
     }
 
     static boolean sampled(String owner) {
-        return !owner.isBlank() && !owner.equals(ReactModRuntime.ID);
+        return !owner.isBlank();
     }
 
     private void register(SampleController controller, Map<String, String> owners) {
@@ -167,7 +167,6 @@ final class ModOwnerCost implements EventMeasurement {
         for (Map.Entry<String, String> owner : model.displayNames().entrySet()) {
             owners.putIfAbsent(owner.getKey(), owner.getValue());
         }
-        owners.remove(ReactModRuntime.ID);
         return owners;
     }
 
