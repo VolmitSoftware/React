@@ -489,6 +489,101 @@ summary = "Active ou désactive cette action."
 impact = "Définissez à false pour empêcher cette fonctionnalité de s'activer tout en conservant son fichier de configuration."
 summary = "Active ou désactive cette fonctionnalité."
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "Gère les métadonnées des objets carte React, la réparation des moteurs de rendu et la diffusion en direct des paquets de cartes pour les inventaires et les cadres."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "Des valeurs plus élevées réduisent le volume de paquets inactif lorsque les joueurs sont à proximité mais ne regardent pas la carte."
+summary = "Intervalle d'envoi de paquets pour les observateurs proches qui ne regardent pas activement la carte du cadre (millisecondes)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "Des valeurs plus élevées exigent de viser plus précisément la carte avant l'envoi de mises à jour à haute fréquence."
+summary = "Produit scalaire minimal de la direction de vue requis pour considérer qu'un joueur regarde activement une carte de cadre."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "Des valeurs plus basses rafraîchissent plus vite les visuels de la carte mais augmentent la pression des paquets et du rendu."
+summary = "Intervalle d'envoi de paquets pour les cartes actives de cadres d'objets, en millisecondes."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "Désactiver pour arrêter strictement les paquets de carte hors du rayon ; activer pour que le fait de tenir la carte contourne les vérifications de distance."
+summary = "Autorise les mises à jour des cartes tenues en main en dehors de frameMapPushRadiusBlocks."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "Des valeurs plus élevées couvrent plus d'observateurs mais augmentent la diffusion des paquets."
+summary = "Rayon maximal en blocs autour d'une carte de cadre d'objet dans lequel les joueurs reçoivent des mises à jour poussées."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "Des valeurs plus élevées conservent l'état plus longtemps avec moins de rotation ; des valeurs plus basses élaguent plus agressivement la comptabilité."
+summary = "Durée de conservation de la comptabilité d'envoi des cartes de cadre, en millisecondes."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "Des valeurs plus basses rafraîchissent plus vite les tableaux de bord des cadres ; des valeurs plus élevées regroupent les redessins redondants par observateur sur les murs de cartes chargés."
+summary = "Intervalle minimal entre les redessins du canevas pour les cartes React des cadres d'objets, en millisecondes."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "L'activer supprime les paquets envoyés aux observateurs masqués mais ajoute des vérifications de visibilité légères."
+summary = "Si activé, l'envoi des cartes de cadre exige une ligne de vue pour les observateurs proches (les joueurs qui la tiennent ne sont pas concernés)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "Des valeurs plus basses détectent plus tôt les objets de cadre échangés ; des valeurs plus élevées évitent de relire les métadonnées d'objets à chaque tick de maintenance."
+summary = "Intervalle entre les revalidations complètes des piles d'objets des cartes de cadre suivies, en millisecondes."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "Des valeurs plus basses font pivoter et rafraîchissent les cartes tenues plus fluidement ; des valeurs plus élevées réduisent le travail de rendu lorsque plusieurs joueurs voient la même carte."
+summary = "Intervalle minimal entre les redessins du canevas pour les cartes React tenues en main, en millisecondes."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "Des valeurs plus élevées réduisent le temps de récupération après rechargement; des valeurs plus faibles réduisent le travail à chaque passage."
+summary = "Nombre d'inventaires de joueurs en ligne réparés par passe de maintenance."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "Des valeurs plus basses réparent plus vite les métadonnées de carte et les moteurs de rendu ; des valeurs plus élevées réduisent le travail par tick."
+summary = "Cadence d'analyse des inventaires des joueurs pour la réparation des cartes React, en millisecondes."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "Des valeurs plus élevées accélèrent la récupération de la carte-cadre après rechargement; des valeurs plus faibles réduisent le coût par passage."
+summary = "Nombre de chunks chargés analysés pour les cartes de cadres d'objets par passe de maintenance."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "Des valeurs plus basses réparent plus vite les cartes de cadres d'objets après rechargement ; des valeurs plus élevées réduisent la charge de maintenance."
+summary = "Cadence d'analyse des chunks chargés pour la réparation des cartes de cadres d'objets, en millisecondes."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "Des valeurs plus basses réparent plus tôt les inventaires et cadres d'objets après rechargement ; des valeurs plus élevées réduisent la charge de maintenance."
+summary = "Cadence de maintenance principale de la logique de réparation des cartes, en millisecondes."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "Désactiver pour rendre chaque carte de cadre comme un tableau de bord 128x128 indépendant."
+summary = "Combine les cartes React de cadres d'objets adjacents utilisant le même moteur de rendu en un seul grand affichage mégacarte en mosaïque."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "Les murs dépassant le budget reviennent au rendu zoomé d'un seul tableau de bord."
+summary = "Budget total de tuiles pour un mur de mégamap combiné."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "Désactiver pour que les cartes clonées partagent une seule image et ne se combinent jamais."
+summary = "Les cartes React clonées placées dans des cadres d'objets reçoivent automatiquement de nouveaux identifiants de carte afin que les copies adjacentes forment un mur de mégamap."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "Les valeurs plus élevées priorisent la récupération rapide après rechargement plus longtemps; les valeurs plus faibles reviennent à une cadence normale plus tôt."
+summary = "Durée de la période de préchauffage après le démarrage ou un /reload pendant laquelle la récupération des cartes utilise un traitement par lots de réparation agressif (millisecondes)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "Des valeurs plus élevées permettent de récupérer les inventaires cartographiques plus rapidement après le rechargement au coût d'un travail temporaire supplémentaire."
+summary = "Taille du lot de réparation d'inventaire pendant que le préchauffage du démarrage est actif."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "Des valeurs plus élevées font que les cartes d'images récupèrent plus rapidement après le rechargement au coût de travaux temporaires supplémentaires."
+summary = "Taille du lot de réparation de chunks de cadres d'objets pendant que le préchauffage du démarrage est actif."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "Des valeurs plus basses font apparaître les cartes de cadre plus vite après rechargement ; des valeurs plus élevées réduisent les rafales temporaires de paquets pendant le préchauffage."
+summary = "Intervalle d'envoi de paquets utilisé pendant le préchauffage du démarrage, en millisecondes."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "Nombre maximal de cartes suivies dans des cadres examinées pour l’envoi de paquets par passage de maintenance."
+impact = "Les valeurs élevées actualisent plus vite les très grands murs de cartes ; les valeurs faibles limitent la charge de l’ordonnanceur et des recherches d’entités."
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "Définissez à false pour empêcher cet ajustement de s'activer tout en conservant son fichier de configuration."
 summary = "Active ou désactive cet ajustement."

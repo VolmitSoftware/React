@@ -33,7 +33,7 @@ public class ConfigLocalizationCatalogTest {
   @Test
   public void staticTypeIndexExactlyCoversAnnotationOwners() throws Exception {
     Set<String> catalogOwnerNames = new HashSet<>();
-    for (Class<?> type : ConfigLocalization.catalogTypes()) {
+    for (Class<?> type : ConfigLocalizationTypes.types()) {
       catalogOwnerNames.add(type.getName());
     }
     Assertions.assertEquals(discoverAnnotationOwnerNames(), catalogOwnerNames);
@@ -42,7 +42,7 @@ public class ConfigLocalizationCatalogTest {
   private static Set<Class<?>> discoverAnnotatedTypes() {
     Set<Class<?>> types = new HashSet<>();
     Set<Class<?>> visited = new HashSet<>();
-    for (Class<?> type : ConfigLocalization.catalogTypes()) {
+    for (Class<?> type : ConfigLocalizationTypes.types()) {
       addAnnotatedTypes(type, types, visited);
     }
     return types;

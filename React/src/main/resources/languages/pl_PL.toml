@@ -489,6 +489,101 @@ summary = "Włącza lub wyłącza to działanie."
 impact = "Ustaw na false, aby zatrzymać aktywowanie tej funkcji z zachowaniem jej pliku konfiguracyjnego."
 summary = "Włącza lub wyłącza tę funkcję."
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "Zarządza metadanymi przedmiotów-map React, naprawą modułów renderowania i dostarczaniem pakietów map na żywo dla ekwipunków i ramek na przedmioty."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "Wyższe wartości zmniejszają ruch pakietów w bezczynności, gdy gracze są w pobliżu, ale nie patrzą na mapę."
+summary = "Odstęp między podawaniem pakietów dla pobliskich widzów, którzy nie patrzą aktywnie na mapę ramki (milisekundy)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "Wyższe wartości wymagają dokładniejszego wycelowania w mapę, zanim zostaną wysłane aktualizacje o wysokiej częstotliwości."
+summary = "Minimalny iloczyn skalarny kierunku patrzenia wymagany, aby uznać gracza za aktywnie patrzącego na mapę w ramce."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "Niższe wartości odświeżają obraz mapy szybciej, ale zwiększają obciążenie pakietami i renderowaniem."
+summary = "Odstęp wysyłania pakietów dla aktywnych map w ramkach na przedmioty w milisekundach."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "Wyłącz, aby całkowicie zatrzymać pakiety map poza promieniem; włącz, jeśli trzymanie mapy ma omijać kontrole odległości."
+summary = "Zezwala na aktualizacje trzymanej mapy poza frameMapPushRadiusBlocks."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "Wyższe wartości obejmują więcej widzów, ale zwiększają rozsyłanie pakietów."
+summary = "Maksymalny promień w blokach od mapy w ramce na przedmiot, w którym gracze otrzymują aktualizacje push."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "Wyższe wartości dłużej utrzymują stan przy mniejszej rotacji; niższe agresywniej czyszczą księgowanie."
+summary = "Czas przechowywania księgowania push map w ramkach w milisekundach."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "Niższe wartości szybciej odświeżają pulpity w ramkach; wyższe łączą zbędne przerysowania dla poszczególnych widzów na ruchliwych ścianach map."
+summary = "Minimalny odstęp między przerysowaniami płótna dla map React w ramkach na przedmioty w milisekundach."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "Włączenie eliminuje pakiety dla widzów bez widoczności, ale dodaje lekkie kontrole widoczności."
+summary = "Jeśli włączone, wysyłanie map w ramkach wymaga linii widzenia dla pobliskich widzów (trzymający mapę to pomija)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "Niższe wartości szybciej wykrywają podmienione przedmioty w ramkach; wyższe unikają powtarzanego odczytu metadanych przedmiotów w każdym takcie konserwacji."
+summary = "Odstęp między pełnymi ponownymi walidacjami stosów przedmiotów śledzonych map w ramkach w milisekundach."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "Niższe wartości płynniej obracają i odświeżają trzymane mapy; wyższe zmniejszają pracę renderowania, gdy wielu graczy patrzy na tę samą mapę."
+summary = "Minimalny odstęp między przerysowaniami płótna dla trzymanych map React w milisekundach."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "Wyższe wartości skracają czas odzyskiwania po ponownym załadowaniu; niższe wartości zmniejszają pracę przy każdym przejściu."
+summary = "Liczba ekwipunków graczy online naprawianych w jednym przebiegu konserwacji."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "Niższe wartości szybciej naprawiają metadane map i moduły renderowania; wyższe zmniejszają pracę na takt."
+summary = "Częstotliwość skanowania ekwipunków graczy pod kątem naprawy map React w milisekundach."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "Wyższe wartości przyspieszają odzyskiwanie map w ramkach po przeładowaniu; niższe obniżają koszt pojedynczego przebiegu."
+summary = "Liczba załadowanych chunków skanowanych w poszukiwaniu map w ramkach na przedmioty w jednym przebiegu konserwacji."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "Niższe wartości szybciej naprawiają mapy w ramkach na przedmioty po przeładowaniu; wyższe zmniejszają narzut konserwacji."
+summary = "Częstotliwość skanowania załadowanych chunków pod kątem naprawy map w ramkach na przedmioty w milisekundach."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "Niższe wartości szybciej naprawiają ekwipunki i ramki na przedmioty po przeładowaniu; wyższe zmniejszają narzut konserwacji."
+summary = "Główna częstotliwość konserwacji logiki naprawy map w milisekundach."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "Wyłącz, aby renderować każdą mapę w ramce jako niezależny pulpit 128x128."
+summary = "Łączy sąsiednie mapy React w ramkach na przedmioty z tym samym modułem renderowania w jeden duży kafelkowy wyświetlacz megamap."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "Ściany większe niż budżet wracają do powiększonego renderowania pojedynczego pulpitu."
+summary = "Łączny budżet kafelków dla jednej połączonej ściany megamap."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "Wyłącz, aby sklonowane mapy współdzieliły jeden obraz i nigdy się nie łączyły."
+summary = "Sklonowane mapy React umieszczone w ramkach na przedmioty automatycznie otrzymują nowe identyfikatory map, aby sąsiednie kopie łączyły się w ścianę megamap."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "Wyższe wartości dłużej dają priorytet szybkiemu odzyskiwaniu po przeładowaniu; niższe szybciej wracają do normalnej częstotliwości."
+summary = "Czas rozgrzewki po uruchomieniu lub /reload, w którym odzyskiwanie map używa agresywnego grupowania napraw (milisekundy)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "Wyższe wartości sprawiają, że inwentaryzacja map szybciej się odzyskuje zaraz po ponownym załadowaniu kosztem dodatkowej pracy tymczasowej."
+summary = "Rozmiar partii naprawy ekwipunków, gdy aktywna jest rozgrzewka po uruchomieniu."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "Wyższe wartości sprawiają, że mapy w ramkach odzyskują się szybciej zaraz po przeładowaniu kosztem dodatkowej pracy tymczasowej."
+summary = "Rozmiar partii naprawy chunków z ramkami na przedmioty, gdy aktywna jest rozgrzewka po uruchomieniu."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "Niższe wartości sprawiają, że mapy w ramkach pojawiają się szybciej po przeładowaniu; wyższe zmniejszają tymczasowe serie pakietów podczas rozgrzewki."
+summary = "Odstęp wysyłania pakietów używany podczas rozgrzewki po uruchomieniu w milisekundach."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "Maksymalna liczba śledzonych map w ramkach rozpatrywanych do wysłania pakietów w jednym przebiegu konserwacji."
+impact = "Wyższe wartości szybciej odświeżają bardzo duże ściany map; niższe ograniczają obciążenie harmonogramu i wyszukiwania bytów."
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "Ustaw na false, aby zatrzymać aktywowanie tego usprawnienia z zachowaniem jego pliku konfiguracyjnego."
 summary = "Włącza lub wyłącza to usprawnienie."

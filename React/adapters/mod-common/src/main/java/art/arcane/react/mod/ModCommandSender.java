@@ -10,7 +10,7 @@ import net.minecraft.server.permissions.Permissions;
 import java.util.Objects;
 import java.util.Optional;
 
-/** The console or a player running a React command. React permission nodes map to the gamemaster op level. */
+/** The console or a player running a React command. React permission nodes resolve through {@link ModPermissions}. */
 public record ModCommandSender(CommandSourceStack source) implements ReactCommandSender {
     public ModCommandSender {
         Objects.requireNonNull(source, "source");
@@ -34,7 +34,7 @@ public record ModCommandSender(CommandSourceStack source) implements ReactComman
 
     @Override
     public boolean hasPermission(String node) {
-        return isOp();
+        return ModPermissions.has(source.permissions(), node);
     }
 
     @Override

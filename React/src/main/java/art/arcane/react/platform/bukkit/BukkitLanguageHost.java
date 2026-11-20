@@ -5,6 +5,7 @@ import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.platform.LanguageHost;
 import art.arcane.react.util.project.config.ConfigFileSupport;
 import art.arcane.react.util.project.config.ConfigLocalization;
+import art.arcane.react.util.project.config.ConfigLocalizationTypes;
 import art.arcane.react.util.project.config.TomlCodec;
 import art.arcane.volmlib.util.io.AtomicFileIO;
 import art.arcane.volmlib.util.localization.MessageCatalog;
@@ -65,6 +66,6 @@ public final class BukkitLanguageHost implements LanguageHost {
 
   @Override
   public void addCatalogEntries(MessageCatalog.Builder builder) {
-    ConfigLocalization.addTo(builder);
+    ConfigLocalization.addTo(builder, ConfigLocalizationTypes.types());
   }
 }

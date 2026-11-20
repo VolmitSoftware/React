@@ -489,6 +489,101 @@ summary = "מפעיל או משבית את הפעולה הזו."
 impact = "הגדר ל-false כדי למנוע את הפעלת התכונה הזו תוך שמירה על קובץ התצורה שלה."
 summary = "מפעיל או משבית את התכונה הזו."
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "מנהל את מטא-נתוני פריטי המפה של React, תיקון המרנדרים והעברת חבילות מפה חיות עבור מלאי ומסגרות פריטים."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "ערכים גבוהים יותר מפחיתים את נפח החבילות כששחקנים נמצאים בקרבת מקום אך אינם מביטים במפה."
+summary = "מרווח דחיפת חבילות לצופים סמוכים שאינם מביטים באופן פעיל במפת המסגרת (אלפיות שנייה)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "ערכים גבוהים יותר דורשים מטרה הדוקה יותר במפה לפני שעדכונים גבוהים נשלחים."
+summary = "המכפלה הסקלרית המזערית של כיוון המבט הנדרשת כדי להתייחס לשחקן כמי שמביט באופן פעיל במפת מסגרת."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "ערכים נמוכים יותר מרעננים את תצוגות המפה מהר יותר אך מגדילים את עומס החבילות והרינדור."
+summary = "מרווח דחיפת חבילות למפות פעילות במסגרות פריטים, באלפיות שנייה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "השבת כדי לעצור לחלוטין חבילות מפה מחוץ לרדיוס; הפעל אם החזקה בידיים אמורה לעקוף בדיקות מרחק."
+summary = "מתיר עדכוני מפה מוחזקת מחוץ ל-frameMapPushRadiusBlocks."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "ערכים גבוהים יותר מכסים יותר צופים אך מגדילים את פיזור החבילות."
+summary = "רדיוס הבלוקים המרבי ממפת מסגרת פריט שבו שחקנים מקבלים עדכוני דחיפה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "ערכים גבוהים יותר שומרים מצב זמן רב יותר עם פחות תנודות; ערכים נמוכים יותר מנקים את הרישום באגרסיביות רבה יותר."
+summary = "משך השמירה של רישום דחיפות מפות המסגרת, באלפיות שנייה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "ערכים נמוכים יותר מרעננים לוחות מחוונים במסגרות מהר יותר; ערכים גבוהים יותר מאחדים ציורים חוזרים מיותרים לכל צופה בקירות מפות עמוסים."
+summary = "המרווח המזערי בין ציורים חוזרים של הבד למפות React במסגרות פריטים, באלפיות שנייה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "הפעלה מבטלת חבילות לצופים מוסתרים אך מוסיפה בדיקות נראות קלות."
+summary = "אם מופעל, דחיפות מפת מסגרת דורשות קו ראייה לצופים סמוכים (מחזיקים במפה עוקפים זאת)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "ערכים נמוכים יותר מזהים פריטי מסגרת שהוחלפו מוקדם יותר; ערכים גבוהים יותר נמנעים מקריאות חוזרות של מטא-נתוני פריט בכל טיק תחזוקה."
+summary = "המרווח בין אימותים מלאים חוזרים של ערימות הפריטים במפות המסגרת שנעקבות, באלפיות שנייה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "ערכים נמוכים יותר מסובבים ומרעננים מפות מוחזקות בצורה חלקה יותר; ערכים גבוהים יותר מקצצים עבודת רינדור כשהרבה שחקנים צופים באותה מפה."
+summary = "המרווח המזערי בין ציורים חוזרים של הבד למפות React מוחזקות, באלפיות שנייה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "ערכים גבוהים יותר מקצרים את זמן ההתאוששות לאחר טעינה מחדש; ערכים נמוכים יותר מפחיתים את העבודה בכל מעבר."
+summary = "מספר מלאי השחקנים המחוברים שמתוקנים בכל מעבר תחזוקה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "ערכים נמוכים יותר מתקנים מטא-נתוני מפות ומרנדרים מהר יותר; ערכים גבוהים יותר מפחיתים עבודה בכל טיק."
+summary = "קצב סריקת מלאי השחקנים לצורך תיקון מפות React, באלפיות שנייה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "ערכים גבוהים יותר מאיצים את התאוששות מפות המסגרת לאחר טעינה מחדש; ערכים נמוכים יותר מפחיתים את העלות בכל מעבר."
+summary = "מספר הצ'אנקים הטעונים שנסרקים בחיפוש מפות במסגרות פריטים בכל מעבר תחזוקה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "ערכים נמוכים יותר מתקנים מפות במסגרות פריטים מהר יותר לאחר טעינה מחדש; ערכים גבוהים יותר מפחיתים תקורת תחזוקה."
+summary = "קצב סריקת צ'אנקים טעונים לתיקון מפות במסגרות פריטים, באלפיות שנייה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "ערכים נמוכים יותר מתקנים מלאי ומסגרות פריטים מוקדם יותר לאחר טעינה מחדש; ערכים גבוהים יותר מפחיתים תקורת תחזוקה."
+summary = "קצב התחזוקה הראשי של לוגיקת תיקון המפות, באלפיות שנייה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "השבת כדי לרנדר כל מפת מסגרת כלוח מחוונים עצמאי בגודל 128x128."
+summary = "משלב מפות React סמוכות במסגרות פריטים עם אותו מרנדר לתצוגת מגה-מפה גדולה אחת מרוצפת."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "קירות גדולים מהתקציב חוזרים לתצוגת לוח יחיד מוגדלת."
+summary = "תקציב האריחים הכולל עבור קיר מגה-מפה מאוחד."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "השבת כדי שהמפות המשוכפלות יחלקו תמונה אחת ולעולם לא יתחברו."
+summary = "מפות React משוכפלות המוצבות במסגרות פריטים מקבלות אוטומטית מזהי מפה חדשים כדי שעותקים סמוכים יתחברו לקיר מגה-מפה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "ערכים גבוהים יותר נותנים עדיפות להתאוששות מהירה לאחר טעינה מחדש לזמן רב יותר; ערכים נמוכים יותר חוזרים לקצב הרגיל מוקדם יותר."
+summary = "משך החימום לאחר ההפעלה או /reload שבו התאוששות המפות משתמשת באצוות תיקון אגרסיביות (אלפיות שנייה)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "ערכים גבוהים יותר גורמים למלאי המפות להתאושש מהר יותר מיד לאחר טעינה מחדש, במחיר עבודה זמנית נוספת."
+summary = "גודל אצוות תיקון המלאי בזמן שחימום ההפעלה פעיל."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "ערכים גבוהים יותר גורמים למפות המסגרת להתאושש מהר יותר מיד לאחר טעינה מחדש, במחיר עבודה זמנית נוספת."
+summary = "גודל אצוות תיקון הצ'אנקים של מסגרות הפריטים בזמן שחימום ההפעלה פעיל."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "ערכים נמוכים יותר גורמים למפות המסגרת להופיע מהר יותר לאחר טעינה מחדש; ערכים גבוהים יותר מפחיתים פרצי חבילות זמניים במהלך החימום."
+summary = "מרווח דחיפת החבילות בזמן חימום ההפעלה, באלפיות שנייה."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "המספר המרבי של מפות במִסגרות פריטים הנמצאות במעקב ונבדקות לשליחת חבילות מידע בכל סבב תחזוקה."
+impact = "ערכים גבוהים מרעננים מהר יותר קירות מפות גדולים מאוד; ערכים נמוכים מגבילים עומס על המתזמן ועל חיפוש הישויות."
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "הגדר ל-false כדי למנוע את הפעלת הכוונון הזה תוך שמירה על קובץ התצורה שלו."
 summary = "מפעיל או משבית את הכוונון הזה."

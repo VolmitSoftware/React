@@ -3,7 +3,6 @@ package art.arcane.react.mod;
 import art.arcane.react.platform.ReactPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.Permissions;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -33,7 +32,7 @@ public record ModReactPlayer(ServerPlayer player) implements ReactPlayer {
 
     @Override
     public boolean hasPermission(String node) {
-        return player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
+        return ModPermissions.has(player.permissions(), node);
     }
 
     @Override

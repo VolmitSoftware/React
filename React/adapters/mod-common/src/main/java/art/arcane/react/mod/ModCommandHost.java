@@ -2,6 +2,7 @@ package art.arcane.react.mod;
 
 import art.arcane.react.platform.CommandHost;
 import art.arcane.react.platform.CommandTargets;
+import art.arcane.react.platform.ReactCommandSender;
 import art.arcane.react.platform.ReactPlayer;
 import art.arcane.react.util.plugin.VolmitSender;
 import net.minecraft.server.MinecraftServer;
@@ -16,10 +17,22 @@ import java.util.Optional;
 final class ModCommandHost implements CommandHost {
     private final MinecraftServer server;
     private final ModMaps maps;
+    private final ModLanguageCommand language;
 
-    ModCommandHost(MinecraftServer server, ModMaps maps) {
+    ModCommandHost(MinecraftServer server, ModMaps maps, ModLanguageCommand language) {
         this.server = server;
         this.maps = maps;
+        this.language = language;
+    }
+
+    @Override
+    public boolean language(ReactCommandSender sender, String[] arguments) {
+        return language.execute(sender, arguments);
+    }
+
+    @Override
+    public Optional<List<String>> completeLanguage(ReactCommandSender sender, String[] arguments) {
+        return Optional.of(language.complete(sender, arguments));
     }
 
     @Override

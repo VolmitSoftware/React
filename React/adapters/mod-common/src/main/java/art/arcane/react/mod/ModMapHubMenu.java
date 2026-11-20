@@ -16,7 +16,10 @@ import net.minecraft.world.item.ItemStack;
 import java.util.List;
 import java.util.Map;
 
-/** The map hub chest. Item movement is blocked; a click on a tile hands its action to the handler on the next tick. */
+/**
+ * The map hub chest. Item movement is blocked. As in the Bukkit window, a left click acts on the next tick and two left
+ * clicks inside one tick act on neither, while every other click acts at once.
+ */
 final class ModMapHubMenu extends ChestMenu {
     private static final List<MenuType<ChestMenu>> TYPES = List.of(MenuType.GENERIC_9x1, MenuType.GENERIC_9x2,
             MenuType.GENERIC_9x3, MenuType.GENERIC_9x4, MenuType.GENERIC_9x5, MenuType.GENERIC_9x6);
@@ -27,6 +30,8 @@ final class ModMapHubMenu extends ChestMenu {
     private final String title;
     private Map<Integer, MapHubTile> tiles;
     private MapHubScreenHost.ClickHandler handler;
+    private int clickCheck;
+    private boolean doubleClicked;
 
     ModMapHubMenu(int id, Inventory inventory, ServerPlayer viewer, ModTicks ticks, int rows, String title) {
         super(TYPES.get(rows - 1), id, inventory, new SimpleContainer(rows * 9), rows);
@@ -57,11 +62,40 @@ final class ModMapHubMenu extends ChestMenu {
             return;
         }
         MapHubTile tile = tiles.get(slot);
-        MapHubClick click = click(input, button);
+        if (input == ContainerInput.PICKUP_ALL) {
+            doubleClicked = true;
+        } else if (input == ContainerInput.PICKUP && button == 0) {
+            leftClick(tile);
+        } else {
+            call(tile, click(input, button));
+        }
+        if (viewer.containerMenu != this) {
+            viewer.containerMenu.broadcastFullState();
+        }
+    }
+
+    private void leftClick(MapHubTile tile) {
+        clickCheck++;
+        if (clickCheck == 1) {
+            ticks.later(() -> {
+                if (clickCheck == 1) {
+                    clickCheck = 0;
+                    call(tile, MapHubClick.LEFT);
+                }
+            });
+        } else if (clickCheck == 2) {
+            ticks.later(() -> {
+                doubleClicked = false;
+                clickCheck = 0;
+            });
+        }
+    }
+
+    private void call(MapHubTile tile, MapHubClick click) {
         MapHubAction action = tile == null || click == null ? null : tile.actionFor(click);
         MapHubScreenHost.ClickHandler current = handler;
         if (action != null && current != null) {
-            ticks.later(() -> current.onClick(viewer.getUUID(), tile, click, action));
+            current.onClick(viewer.getUUID(), tile, click, action);
         }
     }
 

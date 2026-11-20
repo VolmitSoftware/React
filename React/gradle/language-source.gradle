@@ -1,0 +1,46 @@
+// The language source manifest React reads to download and select languages. Bukkit and mod jars bundle the same file.
+File languageRoot = project.ext.has('reactRoot') ? (File) project.ext.reactRoot : projectDir
+String languageRepository = providers.gradleProperty('languageSourceRepository').orElse('VolmitSoftware/React').get()
+String languageBranch = providers.gradleProperty('languageSourceBranch').orElse(providers.provider {
+    try {
+        Process process = new ProcessBuilder('git', 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD')
+                .directory(languageRoot)
+                .redirectErrorStream(true)
+                .start()
+        String output = process.inputStream.text.trim()
+        if (process.waitFor() == 0 && output.startsWith('origin/')) {
+            return output.substring('origin/'.length())
+        }
+    } catch (IOException | InterruptedException ignored) {
+    }
+    return 'master'
+}).get()
+if (!(languageRepository ==~ /[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+/)) {
+    throw new GradleException('languageSourceRepository must be a GitHub owner/repository')
+}
+if (!(languageBranch ==~ /[A-Za-z0-9][A-Za-z0-9._\/-]{0,127}/) || languageBranch.contains('..')) {
+    throw new GradleException('languageSourceBranch must be a Git branch name')
+}
+List<File> languageFiles = fileTree(new File(languageRoot, 'src/main/resources/languages')) {
+    include('*.toml')
+}.files.toList().sort { File left, File right -> left.name <=> right.name }
+List<String> languageLocales = languageFiles.collect { File file -> file.name.substring(0, file.name.length() - '.toml'.length()) }
+
+ext.languageSourceRepository = languageRepository
+ext.languageSourceBranch = languageBranch
+ext.languageSourceManifestName = 'react-language-source.properties'
+ext.languageSourcePath = 'React/src/main/resources/languages'
+ext.languageSourceLocales = languageLocales
+
+TaskProvider<WriteProperties> languageManifest = tasks.register('generateLanguageSourceManifest', WriteProperties) {
+    destinationFile.set(layout.buildDirectory.file("generated/language-source/${languageSourceManifestName}"))
+    property('repository', languageRepository)
+    property('branch', languageBranch)
+    property('path', languageSourcePath)
+    property('extension', '.toml')
+    property('locales', languageLocales.join(','))
+}
+tasks.named('processResources').configure {
+    dependsOn(languageManifest)
+    from(languageManifest)
+}

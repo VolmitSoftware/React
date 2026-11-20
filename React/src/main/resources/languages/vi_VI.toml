@@ -489,6 +489,101 @@ summary = "Kích hoạt hay tắt hành động này."
 impact = "Đặt thành false để ngăn tính năng này kích hoạt nhưng vẫn giữ tệp cấu hình của nó."
 summary = "Kích hoạt hay tắt tính năng này."
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "Quản lý siêu dữ liệu vật phẩm bản đồ React, sửa chữa bộ kết xuất và gửi gói bản đồ trực tiếp cho túi đồ và khung vật phẩm."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "Giá trị cao hơn giảm lượng gói khi nhàn rỗi lúc người chơi ở gần nhưng không xem bản đồ."
+summary = "Khoảng thời gian đẩy gói cho người xem ở gần nhưng không chủ động nhìn vào bản đồ khung (mili giây)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "Giá trị cao hơn yêu cầu nhắm chặt hơn vào bản đồ trước khi cập nhật tần số cao được gửi."
+summary = "Tích vô hướng hướng nhìn tối thiểu cần có để coi người chơi là đang chủ động nhìn vào bản đồ khung."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "Giá trị thấp hơn làm mới hình ảnh bản đồ nhanh hơn nhưng tăng áp lực gói tin và kết xuất."
+summary = "Khoảng thời gian đẩy gói cho bản đồ khung vật phẩm đang hoạt động, tính bằng mili giây."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "Tắt để chặn hẳn gói bản đồ bên ngoài bán kính; bật nếu việc cầm bản đồ nên bỏ qua kiểm tra khoảng cách."
+summary = "Cho phép cập nhật bản đồ đang cầm bên ngoài frameMapPushRadiusBlocks."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "Giá trị cao hơn bao phủ nhiều người xem hơn nhưng tăng lượng gói phân phát."
+summary = "Bán kính khối tối đa tính từ bản đồ khung vật phẩm mà người chơi nhận cập nhật đẩy."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "Giá trị cao hơn giữ trạng thái lâu hơn với ít xáo trộn hơn; giá trị thấp hơn dọn sổ sách mạnh tay hơn."
+summary = "Thời gian lưu giữ sổ sách đẩy bản đồ khung, tính bằng mili giây."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "Giá trị thấp hơn làm mới bảng điều khiển khung nhanh hơn; giá trị cao hơn gộp các lần vẽ lại dư thừa theo từng người xem trên các tường bản đồ bận rộn."
+summary = "Khoảng thời gian tối thiểu giữa các lần vẽ lại canvas cho bản đồ React trong khung vật phẩm, tính bằng mili giây."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "Bật sẽ loại bỏ gói gửi cho người xem bị che khuất nhưng thêm các kiểm tra tầm nhìn nhẹ."
+summary = "Nếu bật, việc đẩy bản đồ khung yêu cầu có đường nhìn thẳng cho người xem ở gần (người đang cầm được bỏ qua)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "Giá trị thấp hơn phát hiện các mục khung được trao đổi sớm hơn; giá trị cao hơn tránh lặp lại metadata của mục đọc mọi tick bảo trì."
+summary = "Khoảng thời gian giữa các lần xác thực lại toàn bộ chồng vật phẩm của bản đồ khung được theo dõi, tính bằng mili giây."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "Giá trị thấp hơn xoay và làm tươi giữ bản đồ mịn hơn; giá trị cao hơn cắt giảm công việc khi nhiều người chơi xem cùng một bản đồ."
+summary = "Khoảng thời gian tối thiểu giữa các lần vẽ lại canvas cho bản đồ React đang cầm, tính bằng mili giây."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "Giá trị cao hơn giảm thời gian phục hồi sau khi tải lại; giá trị thấp hơn giảm công việc mỗi lượt."
+summary = "Số túi đồ người chơi trực tuyến được sửa chữa mỗi lượt bảo trì."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "Giá trị thấp hơn sửa chữa siêu dữ liệu bản đồ và trình render nhanh hơn; giá trị cao hơn làm giảm công việc mỗi tick."
+summary = "Nhịp quét túi đồ người chơi để sửa bản đồ React, tính bằng mili giây."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "Giá trị cao hơn tăng tốc phục hồi khung-map sau khi tải lại; giá trị thấp hơn giảm chi phí trên mỗi vượt qua."
+summary = "Số chunk đã tải được quét tìm bản đồ khung vật phẩm mỗi lượt bảo trì."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "Giá trị thấp hơn sửa bản đồ khung vật phẩm nhanh hơn sau khi tải lại; giá trị cao hơn giảm chi phí bảo trì."
+summary = "Nhịp quét các chunk đã tải để sửa bản đồ khung vật phẩm, tính bằng mili giây."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "Giá trị thấp hơn sửa túi đồ và khung vật phẩm sớm hơn sau khi tải lại; giá trị cao hơn giảm chi phí bảo trì."
+summary = "Nhịp bảo trì chính cho logic sửa bản đồ, tính bằng mili giây."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "Tắt để vẽ mỗi bản đồ khung thành bảng điều khiển 128x128 độc lập."
+summary = "Ghép các bản đồ React trong khung vật phẩm liền kề có cùng bộ kết xuất thành một màn hình megamap lát ô lớn."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "Tường lớn hơn ngân sách quay lại kiểu vẽ phóng to một bảng điều khiển."
+summary = "Tổng ngân sách ô cho một bức tường megamap kết hợp."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "Tắt để các bản đồ nhân bản dùng chung một hình và không bao giờ ghép lại."
+summary = "Bản đồ React nhân bản đặt trong khung vật phẩm tự động nhận mã bản đồ mới để các bản sao liền kề ghép thành một bức tường megamap."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "Giá trị cao hơn ưu tiên phục hồi nhanh sau khi tải lại lâu hơn; giá trị thấp hơn trở về nhịp bình thường sớm hơn."
+summary = "Thời gian khởi động sau khi khởi chạy hoặc /reload, trong đó việc phục hồi bản đồ dùng xử lý sửa chữa theo lô mạnh tay (mili giây)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "Giá trị cao hơn giúp túi đồ bản đồ phục hồi nhanh hơn ngay sau khi tải lại, đổi lại tốn thêm công việc tạm thời."
+summary = "Kích thước lô sửa chữa túi đồ trong khi giai đoạn khởi động đang hoạt động."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "Giá trị cao hơn khiến bản đồ được phục hồi nhanh hơn ngay sau khi nạp lại với chi phí làm việc thêm tạm thời."
+summary = "Kích thước lô sửa chữa chunk khung vật phẩm trong khi giai đoạn khởi động đang hoạt động."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "Giá trị thấp hơn làm cho bản đồ khung xuất hiện nhanh hơn sau khi tải lại; giá trị cao hơn giảm các vụ nổ gói tạm thời trong lúc khởi động."
+summary = "Khoảng thời gian đẩy gói dùng trong giai đoạn khởi động, tính bằng mili giây."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "Số bản đồ trong khung vật phẩm được theo dõi tối đa để xét gửi gói tin trong mỗi lượt bảo trì."
+impact = "Giá trị cao cập nhật những bức tường bản đồ rất lớn nhanh hơn; giá trị thấp hạn chế tải lên bộ lập lịch và việc tra cứu thực thể."
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "Đặt thành false để ngăn tinh chỉnh này kích hoạt nhưng vẫn giữ tệp cấu hình của nó."
 summary = "Bật hoặc tắt tinh chỉnh này."

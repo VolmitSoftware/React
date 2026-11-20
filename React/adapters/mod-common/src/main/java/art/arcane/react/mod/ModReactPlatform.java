@@ -66,7 +66,7 @@ public final class ModReactPlatform implements ReactPlatform {
         this.webServer = webServer;
         this.languageHost = languageHost;
         this.costProbe = costProbe;
-        this.commandHost = new ModCommandHost(server, maps);
+        this.commandHost = new ModCommandHost(server, maps, new ModLanguageCommand(ticks::later));
         this.scheduler = new ModPlatformScheduler(server, ticks, async);
         this.samplerHost = new ModSamplerHost(samples);
         this.registryHost = new ModRegistryHost(dataFolder, startupTasks, this::verbose, this::warn);

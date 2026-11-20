@@ -40,6 +40,7 @@ repositories {
 
 apply from: '../../gradle/shadow.gradle'
 apply from: '../../gradle/verify-artifact.gradle'
+apply from: '../../gradle/language-source.gradle'
 
 sourceSets.main.java.srcDir('../mod-common/src/main/java')
 sourceSets.main.resources.srcDir('../mod-common/src/main/resources')

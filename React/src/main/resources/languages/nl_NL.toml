@@ -489,6 +489,101 @@ summary = "Activeert of schakelt deze actie uit."
 impact = "Zet dit op false om te voorkomen dat deze functie wordt geactiveerd; het configuratiebestand blijft behouden."
 summary = "Activeert of schakelt deze functie uit."
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "Beheert React kaartitem metadata, renderer reparatie en levering van live-kaartpakketten voor inventarissen en itemframes."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "Hogere waarden verminderen het stationair pakketvolume wanneer spelers in de buurt zijn, maar niet kijken naar de kaart."
+summary = "Pakketdrukinterval voor nabijgelegen kijkers die niet actief naar de framekaart (milliseconden) kijken."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "Hogere waarden vereisen een strakkere mik op de kaart voordat updates met hoge frequentie worden verzonden."
+summary = "Minimaal inwendig product van de kijkrichting dat nodig is om een speler als actief kijkend naar een framekaart te behandelen."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "Lagere waarden vernieuwen kaartbeelden sneller maar verhogen de pakket- en renderbelasting."
+summary = "Interval voor het pushen van pakketten voor actieve kaarten in voorwerplijsten, in milliseconden."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "Schakel uit om kaartpakketten buiten de straal hard te stoppen; schakel in als vasthouden de afstandscontroles moet omzeilen."
+summary = "Staat updates van vastgehouden kaarten buiten frameMapPushRadiusBlocks toe."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "Hogere waarden bereiken meer kijkers maar verhogen de pakketfanout."
+summary = "Maximale blokstraal rond een kaart in een voorwerplijst waarbinnen spelers push-updates ontvangen."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "Hogere waarden houden de status langer vast met minder churn; lagere waarden ruimen de administratie agressiever op."
+summary = "Bewaarduur voor de push-administratie van framekaarten in milliseconden."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "Lagere waarden vernieuwen frame-dashboards sneller; hogere waarden voegen overbodige hertekeningen per kijker op drukke kaartenwanden samen."
+summary = "Minimaal interval tussen hertekeningen van het canvas voor React-kaarten in voorwerplijsten, in milliseconden."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "Inschakelen voorkomt pakketten naar kijkers die de kaart niet kunnen zien, maar voegt lichte zichtbaarheidscontroles toe."
+summary = "Indien ingeschakeld, vereisen framekaart-pushes zichtlijn voor kijkers in de buurt (vasthouders omzeilen dit)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "Lagere waarden detecteren verwisselde frame-voorwerpen eerder; hogere waarden vermijden bij elke onderhoudstick herhaalde uitlezing van voorwerpmetadata."
+summary = "Interval tussen volledige hervalidaties van voorwerpstapels van gevolgde framekaarten, in milliseconden."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "Lagere waarden roteren en vernieuwen vastgehouden kaarten vloeiender; hogere waarden verminderen het renderwerk wanneer veel spelers dezelfde kaart bekijken."
+summary = "Minimaal interval tussen hertekeningen van het canvas voor vastgehouden React-kaarten, in milliseconden."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "Hogere waarden verkorten de hersteltijd na het herladen; lagere waarden verminderen het werk per ronde."
+summary = "Aantal online spelersinventarissen gerepareerd per onderhoudspas."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "Lagere waarden repareren kaartmetadata en renderers sneller; hogere waarden verminderen het werk per tick."
+summary = "Frequentie waarmee spelersinventarissen worden gescand voor het repareren van React-kaarten, in milliseconden."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "Hogere waarden versnellen het herstel van frame-map na herladen; lagere waarden verminderen de kosten per pas."
+summary = "Aantal geladen chunks dat per onderhoudsronde wordt gescand op kaarten in voorwerplijsten."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "Lagere waarden repareren kaarten in voorwerplijsten sneller na het herladen; hogere waarden verminderen de onderhoudsoverhead."
+summary = "Frequentie waarmee geladen chunks worden gescand voor het repareren van kaarten in voorwerplijsten, in milliseconden."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "Lagere waarden repareren inventarissen en voorwerplijsten eerder na het herladen; hogere waarden verminderen de onderhoudsoverhead."
+summary = "Belangrijkste onderhoudsfrequentie voor de kaartreparatielogica, in milliseconden."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "Schakel uit om elke framekaart als een onafhankelijk 128x128-dashboard te renderen."
+summary = "Combineert aangrenzende React-kaarten in voorwerplijsten met dezelfde renderer tot één grote megamap met tegels."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "Muren groter dan het budget vallen terug op ingezoomde weergave van één dashboard."
+summary = "Totaal tegelbudget voor één gecombineerde megamap-muur."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "Schakel uit zodat gekloonde kaarten één beeld blijven delen en nooit worden gecombineerd."
+summary = "Gekloonde React kaarten in item-frames krijgen automatisch nieuwe kaart-ids zodat aangrenzende kopieën samen een megamap-muur vormen."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "Hogere waarden geven langer voorrang aan snel herstel na het herladen; lagere waarden keren eerder terug naar de normale frequentie."
+summary = "Opwarmduur na opstarten of /reload waarin kaartherstel agressieve reparatiebatches gebruikt (milliseconden)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "Hogere waarden laten kaartinventarissen direct na het herladen sneller herstellen ten koste van extra tijdelijk werk."
+summary = "Batchgrootte voor inventarisreparatie zolang de opstartopwarming actief is."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "Hogere waarden laten framekaarten direct na het herladen sneller herstellen ten koste van extra tijdelijk werk."
+summary = "Batchgrootte voor chunkreparatie van voorwerplijsten zolang de opstartopwarming actief is."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "Lagere waarden maken framekaarten sneller verschijnen na herladen; hogere waarden verminderen tijdelijke pakketuitbarstingen tijdens opwarming."
+summary = "Pakketpushinterval tijdens de opstartopwarming, in milliseconden."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "Maximaal aantal gevolgde kaarten in voorwerplijsten dat per onderhoudsronde voor pakketverzending wordt overwogen."
+impact = "Hogere waarden verversen zeer grote kaartenwanden sneller; lagere waarden beperken de belasting van de scheduler en het opzoeken van entiteiten."
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "Zet dit op false om te voorkomen dat deze tweak wordt geactiveerd; het configuratiebestand blijft behouden."
 summary = "In- of uitschakelen van deze tweak."

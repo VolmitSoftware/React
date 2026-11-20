@@ -489,6 +489,101 @@ summary = "Ottaa tämän toiminnon käyttöön tai poistaa sen käytöstä."
 impact = "Aseta arvoksi false, jos haluat estää tämän ominaisuuden aktivoitumisen säilyttäen sen asetustiedoston."
 summary = "Ottaa tämän ominaisuuden käyttöön tai poistaa sen käytöstä."
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "Hallitsee Reactin karttaesineiden metatietoja, renderöijien korjausta ja live-karttapakettien toimitusta inventaarioihin ja esinekehyksiin."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "Suuremmat arvot vähentävät joutilaiden pakettien määrää, kun pelaajat ovat lähellä mutta eivät katso karttaa."
+summary = "Pakettien työntöväli lähellä oleville katselijoille, jotka eivät aktiivisesti katso kehyskarttaa (millisekuntia)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "Suuremmat arvot vaativat tarkempaa tähtäystä karttaan ennen kuin korkeataajuiset päivitykset lähetetään."
+summary = "Pienin katselusuunnan pistetulo, jolla pelaajan katsotaan aktiivisesti katsovan kehyskarttaa."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "Pienemmät arvot päivittävät kartan visuaalit nopeammin mutta lisäävät paketti- ja renderöintikuormaa."
+summary = "Pakettien työntöväli aktiivisille esinekehyskartoille millisekunteina."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "Poista käytöstä pysäyttääksesi karttapaketit täysin säteen ulkopuolella; ota käyttöön, jos kartan pitelyn pitäisi ohittaa etäisyystarkistukset."
+summary = "Sallii kädessä pidettävän kartan päivitykset frameMapPushRadiusBlocks-säteen ulkopuolella."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "Suuremmat arvot kattavat enemmän katselijoita mutta lisäävät pakettien jakelua."
+summary = "Suurin lohkosäde esinekehyskartasta, jonka sisällä pelaajat saavat työntöpäivityksiä."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "Suuremmat arvot säilyttävät tilan pidempään pienemmällä vaihtuvuudella; pienemmät arvot karsivat kirjanpitoa aggressiivisemmin."
+summary = "Kehyskarttojen työnnön kirjanpidon säilytysaika millisekunteina."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "Pienemmät arvot päivittävät kehysnäytöt nopeammin; suuremmat arvot yhdistävät tarpeettomat katselijakohtaiset uudelleenpiirrot vilkkailla karttaseinillä."
+summary = "Pienin väli piirtoalueen uudelleenpiirroille esinekehysten React-kartoissa millisekunteina."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "Käyttöönotto poistaa paketit katselijoilta, joiden näkyvyys on estetty, mutta lisää kevyitä näkyvyystarkistuksia."
+summary = "Kun käytössä, kehyskarttojen työnnöt vaativat näköyhteyden lähellä oleville katselijoille (kartan pitelijät ohittavat tämän)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "Pienemmät arvot havaitsevat vaihdetut kehysesineet aiemmin; suuremmat arvot välttävät toistuvia esineiden metatietojen lukuja jokaisella huoltotickillä."
+summary = "Seurattujen kehyskarttojen täydellisten esinepinojen uudelleenvahvistusten väli millisekunteina."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "Pienemmät arvot kiertävät ja päivittävät kädessä pidettävät kartat sulavammin; suuremmat arvot vähentävät renderöintityötä, kun monet pelaajat katsovat samaa karttaa."
+summary = "Pienin väli piirtoalueen uudelleenpiirroille kädessä pidettävissä React-kartoissa millisekunteina."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "Suuremmat arvot lyhentävät toipumisaikaa uudelleenlatauksen jälkeen; pienemmät arvot vähentävät työtä kierrosta kohden."
+summary = "Huoltokierrosta kohden korjattavien paikalla olevien pelaajien inventaarioiden määrä."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "Pienemmät arvot korjaavat karttojen metatiedot ja renderöijät nopeammin; suuremmat arvot vähentävät tickikohtaista työtä."
+summary = "Väli, jolla pelaajien inventaarioita skannataan React-karttojen korjausta varten, millisekunteina."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "Suuremmat arvot nopeuttavat kehyskarttojen toipumista uudelleenlatauksen jälkeen; pienemmät arvot vähentävät kierroskohtaista kustannusta."
+summary = "Huoltokierrosta kohden esinekehyskarttojen osalta skannattavien ladattujen chunkien määrä."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "Pienemmät arvot korjaavat esinekehyskartat nopeammin uudelleenlatauksen jälkeen; suuremmat arvot vähentävät huoltokuormaa."
+summary = "Väli, jolla ladattuja chunkeja skannataan esinekehyskarttojen korjausta varten, millisekunteina."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "Pienemmät arvot korjaavat inventaariot ja esinekehykset nopeammin uudelleenlatauksen jälkeen; suuremmat arvot vähentävät huoltokuormaa."
+summary = "Karttojen korjauslogiikan päähuoltoväli millisekunteina."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "Poista käytöstä piirtääksesi jokaisen kehyskartan itsenäisenä 128x128-näyttönä."
+summary = "Yhdistää vierekkäiset samaa renderöijää käyttävät esinekehysten React-kartat yhdeksi suureksi laatoitetuksi megakarttanäytöksi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "Budjettia suuremmat seinät palaavat zoomattuun yhden näytön renderöintiin."
+summary = "Yhden yhdistetyn megakarttaseinän laattabudjetti yhteensä."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "Poista käytöstä, jos haluat kloonattujen karttojen jakavan yhden kuvan eivätkä koskaan yhdistyvän."
+summary = "Esinekehyksiin asetetut kloonatut React-kartat saavat automaattisesti uudet karttatunnisteet, jotta vierekkäiset kopiot voivat yhdistyä megakarttaseinäksi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "Suuremmat arvot priorisoivat nopean toipumisen uudelleenlatauksen jälkeen pidempään; pienemmät arvot palaavat normaaliin tahtiin aiemmin."
+summary = "Käynnistyksen tai /reload-komennon jälkeinen lämpenemisaika, jonka aikana karttojen palautus käyttää aggressiivista korjauserittelyä (millisekuntia)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "Suuremmat arvot palauttavat karttainventaariot nopeammin heti uudelleenlatauksen jälkeen lisäämällä tilapäistä työtä."
+summary = "Inventaarioiden korjauserän koko käynnistyksen lämpenemisen ollessa aktiivinen."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "Suuremmat arvot palauttavat kehyskartat nopeammin heti uudelleenlatauksen jälkeen lisäämällä tilapäistä työtä."
+summary = "Esinekehysten chunk-korjauserän koko käynnistyksen lämpenemisen ollessa aktiivinen."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "Pienemmät arvot saavat kehyskartat näkymään nopeammin uudelleenlatauksen jälkeen; suuremmat arvot vähentävät tilapäisiä pakettipurskeita lämpenemisen aikana."
+summary = "Käynnistyksen lämpenemisen aikana käytettävä pakettien työntöväli millisekunteina."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "Huoltokierrosta kohden pakettityöntöjä varten huomioitavien seurattujen esinekehyskarttojen enimmäismäärä."
+impact = "Suuremmat arvot päivittävät hyvin suuret karttaseinät nopeammin; pienemmät arvot rajoittavat ajastimen ja entiteettihakujen kuormaa."
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "Aseta arvoksi false, jos haluat estää tämän säädön aktivoitumisen säilyttäen sen asetustiedoston."
 summary = "Ottaa tämän säädön käyttöön tai poistaa sen käytöstä."

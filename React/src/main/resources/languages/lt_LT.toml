@@ -489,6 +489,101 @@ summary = "Įjungia arba išjungia šį veiksmą."
 impact = "Nustatykite false, kad ši funkcija nebūtų aktyvuojama, o jos konfigūracijos failas liktų."
 summary = "Įjungia arba išjungia šią funkciją."
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "Valdo React žemėlapio daiktų metaduomenis, piešiklių taisymą ir tiesioginį žemėlapių paketų pristatymą inventoriams ir daiktų rėmeliams."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "Didesnės reikšmės sumažina neaktyvių paketų kiekį, kai žaidėjai yra netoliese, bet nežiūri į žemėlapį."
+summary = "Paketų siuntimo intervalas netoliese esantiems žiūrovams, kurie aktyviai nežiūri į rėmelio žemėlapį (milisekundėmis)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "Didesnės reikšmės reikalauja tikslesnio žvilgsnio į žemėlapį, kad būtų siunčiami dažni atnaujinimai."
+summary = "Mažiausias žvilgsnio krypties skaliarinė sandauga, reikalinga laikyti žaidėją aktyviai žiūrinčiu į rėmelio žemėlapį."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "Mažesnės reikšmės greičiau atnaujina žemėlapių vaizdus, bet padidina paketų ir piešimo apkrovą."
+summary = "Paketų siuntimo intervalas aktyviems daiktų rėmelių žemėlapiams milisekundėmis."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "Išjunkite, kad žemėlapio paketai už spindulio ribų būtų griežtai nutraukti; įjunkite, jei laikymas turi apeiti atstumo patikras."
+summary = "Leidžia rankoje laikomų žemėlapių atnaujinimus už frameMapPushRadiusBlocks ribų."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "Didesnės reikšmės apima daugiau žiūrovų, bet padidina paketų išsklaidymą."
+summary = "Didžiausias bloko spindulys nuo daikto rėmelio žemėlapio, kuriame žaidėjai gauna siunčiamus atnaujinimus."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "Didesnės reikšmės ilgiau išlaiko būseną su mažesniu šurmuliu; mažesnės reikšmės agresyviau valo apskaitos įrašus."
+summary = "Rėmelio žemėlapių siuntimo apskaitos saugojimo trukmė milisekundėmis."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "Mažesnės reikšmės greičiau atnaujina rėmelių skydelius; didesnės reikšmės sutraukia nereikalingus kiekvieno žiūrovo perpiešimus užimtose žemėlapių sienose."
+summary = "Mažiausias intervalas tarp drobės perpiešimų daiktų rėmelių React žemėlapiams milisekundėmis."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "Įjungus nebesiunčiami paketai užstotiems žiūrovams, bet pridedamos lengvos matomumo patikros."
+summary = "Jei įjungta, rėmelio žemėlapių siuntimui reikalingas tiesioginis matomumas netoliese esantiems žiūrovams (laikantys žemėlapį žaidėjai tai apeina)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "Mažesnės reikšmės greičiau aptinka pakeistus rėmelių daiktus; didesnės reikšmės vengia pakartotinio daiktų metaduomenų skaitymo kiekvieną priežiūros žaidimo ciklą."
+summary = "Intervalas tarp pilnų daiktų krūvų pakartotinių patikrų sekamuose rėmelių žemėlapiuose milisekundėmis."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "Mažesnės reikšmės sklandžiau sukioja ir atnaujina rankoje laikomus žemėlapius; didesnės reikšmės sumažina piešimo darbą, kai daug žaidėjų žiūri į tą patį žemėlapį."
+summary = "Mažiausias intervalas tarp drobės perpiešimų rankoje laikomiems React žemėlapiams milisekundėmis."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "Didesnės reikšmės sumažina atsigavimo laiką po perkrovimo; mažesnės reikšmės sumažina darbą kiekvieno praėjimo metu."
+summary = "Prisijungusių žaidėjų inventorių skaičius, sutaisomas per vieną priežiūros praėjimą."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "Mažesnės reikšmės greičiau taiso žemėlapių metaduomenis ir piešiklius; didesnės reikšmės sumažina darbą viename žaidimo cikle."
+summary = "Žaidėjų inventorių nuskaitymo React žemėlapių taisymui periodiškumas milisekundėmis."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "Didesnės reikšmės pagreitina rėmelių žemėlapių atkūrimą po perkrovimo; mažesnės reikšmės sumažina vieno praėjimo sąnaudas."
+summary = "Įkeltų pasaulio segmentų skaičius, nuskaitomas daiktų rėmelių žemėlapiams per vieną priežiūros praėjimą."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "Mažesnės reikšmės greičiau sutaiso daiktų rėmelių žemėlapius po perkrovimo; didesnės reikšmės sumažina priežiūros apkrovą."
+summary = "Įkeltų pasaulio segmentų nuskaitymo daiktų rėmelių žemėlapių taisymui periodiškumas milisekundėmis."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "Mažesnės reikšmės greičiau sutaiso inventorius ir daiktų rėmelius po perkrovimo; didesnės reikšmės sumažina priežiūros apkrovą."
+summary = "Pagrindinis žemėlapių taisymo logikos priežiūros periodiškumas milisekundėmis."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "Išjunkite, kad kiekvienas rėmelio žemėlapis būtų piešiamas kaip atskiras 128x128 skydelis."
+summary = "Sujungia gretimus daiktų rėmelių React žemėlapius su tuo pačiu piešikliu į vieną didelį dalimis sudarytą megažemėlapio vaizdą."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "Sienos, didesnės už biudžetą, grįžta prie padidinto vieno skydelio piešimo."
+summary = "Bendras vienos sujungtos megažemėlapio sienos dalių biudžetas."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "Išjunkite, kad klonuoti žemėlapiai dalytųsi vienu paveikslu ir niekada nesijungtų."
+summary = "Į daiktų rėmelius įdėti klonuoti React žemėlapiai automatiškai gauna naujus žemėlapių ID, kad gretimos kopijos susijungtų į megažemėlapio sieną."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "Didesnės reikšmės ilgiau teikia pirmenybę greitam atsigavimui po perkrovimo; mažesnės reikšmės greičiau grįžta prie įprasto periodiškumo."
+summary = "Sušilimo trukmė po paleidimo ar /reload, kurios metu žemėlapių atkūrimas naudoja agresyvų taisymo grupavimą (milisekundėmis)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "Didesnės reikšmės leidžia žemėlapių inventoriams atsigauti greičiau iš karto po perkrovimo papildomo laikino darbo sąskaita."
+summary = "Inventorių taisymo grupės dydis, kol aktyvus paleidimo sušilimas."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "Didesnės reikšmės leidžia rėmelių žemėlapiams atsigauti greičiau iš karto po perkrovimo papildomo laikino darbo sąskaita."
+summary = "Daiktų rėmelių pasaulio segmentų taisymo grupės dydis, kol aktyvus paleidimo sušilimas."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "Mažesnės reikšmės leidžia rėmelių žemėlapiams pasirodyti greičiau po perkrovimo; didesnės reikšmės sumažina laikinus paketų šuolius sušilimo metu."
+summary = "Paketų siuntimo intervalas paleidimo sušilimo metu milisekundėmis."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "Didžiausias sekamų daiktų rėmelių žemėlapių skaičius, svarstomas paketų siuntimui per vieną priežiūros praėjimą."
+impact = "Didesnės reikšmės greičiau atnaujina labai dideles žemėlapių sienas; mažesnės reikšmės riboja planuoklio ir objektų paieškos apkrovą."
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "Nustatykite false, kad šis koregavimas nebūtų aktyvuojamas, o jo konfigūracijos failas liktų."
 summary = "Įjungia arba išjungia šį koregavimą."

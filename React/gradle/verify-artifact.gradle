@@ -61,7 +61,7 @@ TaskProvider verification = tasks.register('verifyArtifact') {
                 internal + 'javalin/Javalin.class', internal + 'jetty/server/Server.class', internal + 'kotlin/Unit.class',
                 internal + 'jackson/databind/ObjectMapper.class', internal + 'caffeine/cache/Caffeine.class',
                 internal + 'toml/Toml.class', internal + 'kyori/adventure/text/minimessage/MiniMessage.class',
-                internal + 'volmlib/util/director/runtime/DirectorRuntimeEngine.class']
+                internal + 'volmlib/util/director/runtime/DirectorRuntimeEngine.class', 'react-language-source.properties']
             required.each { String path -> require(archive.getEntry(path) != null, "missing ${path}") }
             (metadataPaths.values() + ['plugin.yml', 'paper-plugin.yml', 'velocity-plugin.json']).findAll { String path -> path != metadataPath }.each { String path ->
                 require(archive.getEntry(path) == null, "contains foreign platform metadata ${path}")

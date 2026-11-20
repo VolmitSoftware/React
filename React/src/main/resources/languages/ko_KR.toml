@@ -489,6 +489,101 @@ summary = "이 작업을 활성화하거나 비활성화합니다."
 impact = "false로 설정하면 설정 파일은 유지한 채 이 기능이 활성화되지 않습니다."
 summary = "이 기능을 활성화하거나 비활성화합니다."
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "React 지도 아이템 메타데이터, 렌더러 복구, 인벤토리와 아이템 액자의 실시간 지도 패킷 전송을 관리합니다."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "값이 높을수록 플레이어가 근처에 있지만 지도를 보고 있지 않을 때 유휴 패킷량이 줄어듭니다."
+summary = "프레임 지도를 적극적으로 보고 있지 않은 근처 시청자에게 보내는 패킷 푸시 간격(밀리초)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "값이 높을수록 고빈도 업데이트를 보내기 전에 지도를 더 정확히 조준해야 합니다."
+summary = "플레이어가 프레임 지도를 적극적으로 보고 있다고 판단하는 데 필요한 최소 시선 방향 내적."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "값이 낮을수록 지도 화면이 더 빨리 갱신되지만 패킷과 렌더링 부하가 늘어납니다."
+summary = "활성 아이템 액자 지도의 패킷 푸시 간격(밀리초)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "비활성화하면 반경 밖에서는 지도 패킷을 완전히 중단하고, 활성화하면 손에 든 경우 거리 검사를 우회합니다."
+summary = "손에 든 지도의 업데이트를 frameMapPushRadiusBlocks 밖에서도 허용합니다."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "값이 높을수록 더 많은 시청자를 포함하지만 패킷 전송량이 늘어납니다."
+summary = "플레이어가 푸시 업데이트를 받는 아이템 액자 지도로부터의 최대 블록 반경."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "값이 높을수록 상태를 더 오래 유지해 변동이 줄고, 낮을수록 관리 데이터를 더 적극적으로 정리합니다."
+summary = "프레임 지도 푸시 관리 데이터의 보존 시간(밀리초)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "값이 낮을수록 프레임 대시보드를 더 빨리 갱신하고, 높을수록 바쁜 지도 벽에서 시청자별 중복 다시 그리기를 줄입니다."
+summary = "아이템 액자 React 지도의 캔버스 다시 그리기 최소 간격(밀리초)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "활성화하면 가려진 시청자에게 보내는 패킷을 줄이지만 가벼운 가시성 검사가 추가됩니다."
+summary = "활성화하면 프레임 지도 푸시에 근처 시청자의 시선 확보가 필요합니다(들고 있는 경우는 예외)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "값이 낮을수록 교체된 액자 아이템을 더 빨리 감지하고, 높을수록 유지 관리 틱마다 아이템 메타데이터를 반복해서 읽는 것을 피합니다."
+summary = "추적 중인 프레임 지도의 전체 아이템 스택을 다시 검증하는 간격(밀리초)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "값이 낮을수록 손에 든 지도를 더 부드럽게 회전하고 갱신하며, 높을수록 많은 플레이어가 같은 지도를 볼 때 렌더링 작업이 줄어듭니다."
+summary = "손에 든 React 지도의 캔버스 다시 그리기 최소 간격(밀리초)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "값이 높을수록 리로드 후 복구 시간이 줄고, 낮을수록 패스당 작업량이 줄어듭니다."
+summary = "유지 관리 패스당 복구하는 접속 플레이어 인벤토리 수."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "값이 낮을수록 지도 메타데이터와 렌더러를 더 빨리 복구하고, 높을수록 틱당 작업량이 줄어듭니다."
+summary = "React 지도 복구를 위해 플레이어 인벤토리를 검사하는 주기(밀리초)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "값이 높을수록 리로드 후 프레임 지도 복구가 빨라지고, 낮을수록 패스당 비용이 줄어듭니다."
+summary = "유지 관리 패스당 아이템 액자 지도를 검사하는 로드된 청크 수."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "값이 낮을수록 리로드 후 아이템 액자 지도를 더 빨리 고치고, 높을수록 유지 관리 오버헤드가 줄어듭니다."
+summary = "아이템 액자 지도 복구를 위해 로드된 청크를 검사하는 주기(밀리초)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "값이 낮을수록 리로드 후 인벤토리와 아이템 액자를 더 빨리 복구하고, 높을수록 유지 관리 오버헤드가 줄어듭니다."
+summary = "지도 복구 로직의 주 유지 관리 주기(밀리초)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "비활성화하면 각 프레임 지도를 독립된 128x128 대시보드로 렌더링합니다."
+summary = "같은 렌더러를 사용하는 인접한 아이템 액자 React 지도를 하나의 큰 타일형 메가맵으로 합쳐 표시합니다."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "예산을 넘는 벽은 확대된 단일 대시보드 렌더링으로 되돌아갑니다."
+summary = "결합된 메가맵 벽 하나의 총 타일 예산."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "비활성화하면 복제된 지도가 하나의 그림을 공유하며 결합되지 않습니다."
+summary = "아이템 프레임에 놓인 복제 React 지도에는 새 지도 번호가 자동으로 부여되어 인접한 사본이 메가맵 벽으로 결합됩니다."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "값이 높을수록 리로드 후 빠른 복구를 더 오래 우선하고, 낮을수록 정상 주기로 더 빨리 돌아갑니다."
+summary = "시작 또는 /reload 후 지도 복구가 공격적인 일괄 복구를 사용하는 워밍업 시간(밀리초)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "값이 높을수록 임시 작업량이 늘어나는 대신 리로드 직후 지도 인벤토리가 더 빨리 복구됩니다."
+summary = "시작 워밍업 중 인벤토리 복구 배치 크기."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "값이 높을수록 임시 작업량이 늘어나는 대신 리로드 직후 프레임 지도가 더 빨리 복구됩니다."
+summary = "시작 워밍업 중 아이템 액자 청크 복구 배치 크기."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "값이 낮을수록 리로드 후 프레임 지도가 더 빨리 나타나고, 높을수록 워밍업 중 일시적인 패킷 급증이 줄어듭니다."
+summary = "시작 워밍업 중 사용하는 패킷 푸시 간격(밀리초)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "유지보수 한 번에 패킷 전송 대상으로 검토할, 추적 중인 아이템 액자 지도 수의 최댓값."
+impact = "값이 크면 아주 큰 지도 벽을 더 빨리 갱신하고, 작으면 스케줄러와 엔티티 조회 부하를 제한합니다."
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "false로 설정하면 설정 파일은 유지한 채 이 트윅이 활성화되지 않습니다."
 summary = "이 트윅을 활성화하거나 비활성화합니다."

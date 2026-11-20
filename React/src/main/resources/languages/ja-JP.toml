@@ -489,6 +489,101 @@ summary = "このアクションを有効または無効にします。"
 impact = "false にすると、設定ファイルを保持したままこの機能の有効化を止めます。"
 summary = "この機能を有効または無効にします。"
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "インベントリとアイテムフレーム向けに、React マップアイテムのメタデータ、レンダラーの修復、ライブマップパケット配信を管理します。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "値を大きくすると、プレイヤーが近くにいるもののマップを見ていないときのアイドルパケット量が減ります。"
+summary = "フレームマップを積極的に見ていない近くの閲覧者へのパケット送信間隔（ミリ秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "値を大きくすると、高頻度の更新が送信される前に、マップをより正確に狙う必要があります。"
+summary = "プレイヤーがフレームマップを積極的に見ていると見なすために必要な、視線方向の最小ドット積。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "値を小さくするとマップの表示がより速く更新されますが、パケットと描画の負荷が増えます。"
+summary = "アクティブな額縁マップのパケット送信間隔（ミリ秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "無効にすると半径外へのマップパケットを完全に停止し、有効にすると手に持っている場合は距離チェックをバイパスします。"
+summary = "frameMapPushRadiusBlocks の外側でも、手に持ったマップの更新を許可します。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "値を大きくするとより多くの閲覧者をカバーしますが、パケット配信が増えます。"
+summary = "プレイヤーがプッシュ更新を受け取る、額縁マップからの最大ブロック半径。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "値を大きくすると入れ替わりが減る代わりに状態を長く保持し、小さくすると管理情報をより積極的に整理します。"
+summary = "フレームマップのプッシュ管理情報の保持期間（ミリ秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "値を小さくするとフレームダッシュボードがより速く更新され、大きくすると混雑したマップウォールで閲覧者ごとの冗長な再描画をまとめます。"
+summary = "額縁内の React マップについて、キャンバスの再描画間の最小間隔（ミリ秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "有効にすると遮られた閲覧者へのパケットを省略しますが、軽量な可視性チェックが加わります。"
+summary = "有効にすると、フレームマップのプッシュには近くの閲覧者との見通し線が必要になります (手に持っている場合はバイパス)。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "値を小さくすると入れ替えられた額縁アイテムをより早く検出し、大きくするとメンテナンスのティックごとの繰り返しのアイテムメタデータ読み取りを避けます。"
+summary = "追跡中のフレームマップについて、アイテムスタック全体を再検証する間隔（ミリ秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "値を小さくすると手持ちマップの回転や更新がより滑らかになり、大きくすると多くのプレイヤーが同じマップを見ている際の描画負荷を減らします。"
+summary = "手に持った React マップについて、キャンバスの再描画間の最小間隔（ミリ秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "値を大きくすると再読み込み後の回復時間が短くなり、小さくすると 1 パスあたりの作業量が減ります。"
+summary = "メンテナンスパスごとに修復するオンラインプレイヤーのインベントリ数。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "値を小さくするとマップのメタデータとレンダラーをより早く修復し、大きくするとティックあたりの作業量が減ります。"
+summary = "React マップの修復のために、プレイヤーのインベントリをスキャンする間隔（ミリ秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "値を大きくすると再読み込み後のフレームマップの回復が速くなり、小さくすると 1 パスあたりのコストが減ります。"
+summary = "メンテナンスパスごとに、額縁マップを探してスキャンする読み込み済みチャンクの数。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "値を小さくすると再読み込み後に額縁マップをより早く修復し、大きくするとメンテナンスのオーバーヘッドが減ります。"
+summary = "額縁マップの修復のために、読み込み済みチャンクをスキャンする間隔（ミリ秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "値を小さくすると再読み込み後にインベントリと額縁をより早く修復し、大きくするとメンテナンスのオーバーヘッドが減ります。"
+summary = "マップ修復ロジックの主なメンテナンス間隔（ミリ秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "無効にすると、各フレームマップを独立した 128x128 のダッシュボードとして描画します。"
+summary = "同じレンダラーを持つ隣接した額縁内の React マップを、1 つの大きなタイル状メガマップ表示に結合します。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "予算を超える壁は,拡大した単一ダッシュボード描画に戻ります。"
+summary = "結合されたメガマップウォール 1 面あたりのタイル総予算。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "無効にすると,複製されたマップは 1 つの絵を共有し,結合されません。"
+summary = "アイテムフレームに置かれた複製 React マップには自動的に新しいマップ番号が割り当てられ,隣接する複製がメガマップウォールとして結合できます。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "値を大きくすると再読み込み後の迅速な回復を長く優先し、小さくするとより早く通常の間隔に戻ります。"
+summary = "起動または /reload 後のウォームアップ期間で、この間はマップの回復が積極的な修復バッチ処理を使用します（ミリ秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "値を大きくすると、一時的な追加作業と引き換えに、再読み込み直後にマップのインベントリがより速く回復します。"
+summary = "起動ウォームアップが有効な間の、インベントリ修復のバッチサイズ。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "値を大きくすると、一時的な追加作業と引き換えに、再読み込み直後にフレームマップがより速く回復します。"
+summary = "起動ウォームアップが有効な間の、額縁チャンク修復のバッチサイズ。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "値を小さくすると再読み込み後にフレームマップがより早く表示され、大きくするとウォームアップ中の一時的なパケットバーストが減ります。"
+summary = "起動ウォームアップ中に使用するパケット送信間隔（ミリ秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "保守処理1回でパケット送信対象として確認する、追跡中の額縁地図数の上限。"
+impact = "値を大きくすると巨大な地図の壁を早く更新し、小さくするとスケジューラーとエンティティ検索の負荷を抑えます。"
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "設定ファイルを保持しながら、この調整を停止するために false に設定します。"
 summary = "この調整を有効または無効にします。"

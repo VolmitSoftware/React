@@ -489,6 +489,101 @@ summary = "Abilita o disabilita questa azione."
 impact = "Impostare a false per impedire che questa funzione si attivi mantenendo il file di configurazione."
 summary = "Abilita o disabilita questa funzione."
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "Gestisce i metadati degli oggetti mappa di React, la riparazione dei renderer e l'invio in tempo reale dei pacchetti mappa per inventari e cornici."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "Valori più alti riducono il volume di pacchetti a riposo quando i giocatori sono vicini ma non guardano la mappa."
+summary = "Intervallo di invio dei pacchetti per gli spettatori vicini che non stanno guardando attivamente la mappa nella cornice (millisecondi)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "I valori più elevati richiedono un obiettivo più stretto sulla mappa prima che vengano inviati aggiornamenti ad alta frequenza."
+summary = "Prodotto scalare minimo della direzione dello sguardo necessario per considerare un giocatore intento a guardare una mappa nella cornice."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "Valori più bassi aggiornano più rapidamente la grafica della mappa ma aumentano il carico di pacchetti e rendering."
+summary = "Intervallo di invio dei pacchetti per le mappe attive nelle cornici, in millisecondi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "Disattiva per interrompere del tutto i pacchetti di mappa fuori dal raggio; attiva se tenere la mappa in mano deve ignorare i controlli di distanza."
+summary = "Consente gli aggiornamenti della mappa tenuta in mano al di fuori di frameMapPushRadiusBlocks."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "I valori più elevati coprono più spettatori, ma aumentano il fanout dei pacchetti."
+summary = "Raggio massimo in blocchi da una mappa nella cornice entro cui i giocatori ricevono aggiornamenti push."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "Valori più alti mantengono lo stato più a lungo con meno ricambio; valori più bassi eliminano in modo più aggressivo i dati di gestione."
+summary = "Durata di conservazione dei dati di gestione degli invii delle mappe nelle cornici, in millisecondi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "Valori più bassi aggiornano più rapidamente i pannelli nelle cornici; valori più alti riducono i ridisegni ridondanti per spettatore sulle pareti di mappe affollate."
+summary = "Intervallo minimo tra i ridisegni del canvas per le mappe React nelle cornici, in millisecondi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "Attivandolo si eliminano i pacchetti verso gli spettatori che non vedono la mappa, ma si aggiungono leggeri controlli di visibilità."
+summary = "Se abilitato, gli invii delle mappe nelle cornici richiedono la linea di vista per gli spettatori vicini (chi tiene la mappa in mano è escluso)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "Valori più bassi rilevano prima gli oggetti sostituiti nelle cornici; valori più alti evitano letture ripetute dei metadati degli oggetti a ogni tick di manutenzione."
+summary = "Intervallo tra le riconvalide complete delle pile di oggetti delle mappe nelle cornici tracciate, in millisecondi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "Valori più bassi ruotano e aggiornano le mappe in mano in modo più fluido; valori più alti riducono il lavoro di rendering quando molti giocatori guardano la stessa mappa."
+summary = "Intervallo minimo tra i ridisegni del canvas per le mappe React tenute in mano, in millisecondi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "Valori più alti riducono il tempo di ripristino dopo il ricaricamento; valori più bassi riducono il lavoro di ogni passaggio."
+summary = "Numero di inventari di giocatori online riparati per passaggio di manutenzione."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "I valori inferiori riparano i metadati e i renderer della mappa più velocemente; i valori superiori riducono il lavoro per tick."
+summary = "Cadenza di scansione degli inventari dei giocatori per la riparazione delle mappe React, in millisecondi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "Valori più alti accelerano il ripristino delle mappe nelle cornici dopo il ricaricamento; valori più bassi riducono il costo per passaggio."
+summary = "Numero di chunk caricati analizzati per le mappe nelle cornici per passaggio di manutenzione."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "Valori più bassi sistemano più rapidamente le mappe nelle cornici dopo il ricaricamento; valori più alti riducono il sovraccarico di manutenzione."
+summary = "Cadenza di scansione dei chunk caricati per la riparazione delle mappe nelle cornici, in millisecondi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "Valori più bassi riparano prima inventari e cornici dopo il ricaricamento; valori più alti riducono il sovraccarico di manutenzione."
+summary = "Cadenza principale di manutenzione per la logica di riparazione delle mappe, in millisecondi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "Disattiva per mostrare ogni mappa in cornice come pannello indipendente 128x128."
+summary = "Combina le mappe React adiacenti nelle cornici con lo stesso renderer in un'unica megamappa a riquadri."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "Le pareti più grandi del budget ricadono sul rendering ingrandito a pannello singolo."
+summary = "Budget totale di riquadri per una parete megamappa combinata."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "Disattivare per far condividere alle mappe clonate una sola immagine senza mai unirle."
+summary = "Le mappe React clonate poste nelle cornici ricevono automaticamente nuovi ID di mappa, così le copie adiacenti possono unirsi in una parete megamappa."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "Valori più alti danno priorità più a lungo al ripristino rapido dopo il ricaricamento; valori più bassi tornano prima alla cadenza normale."
+summary = "Durata del riscaldamento dopo l'avvio o un /reload, in cui il ripristino delle mappe usa un batching di riparazione aggressivo (millisecondi)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "Valori più alti fanno recuperare più rapidamente gli inventari di mappe subito dopo il ricaricamento, a costo di lavoro temporaneo aggiuntivo."
+summary = "Dimensione del batch di riparazione degli inventari mentre il riscaldamento di avvio è attivo."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "Valori più alti fanno recuperare più rapidamente le mappe nelle cornici subito dopo il ricaricamento, a costo di lavoro temporaneo aggiuntivo."
+summary = "Dimensione del batch di riparazione dei chunk con cornici mentre il riscaldamento di avvio è attivo."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "Valori più bassi fanno comparire più rapidamente le mappe nelle cornici dopo il ricaricamento; valori più alti riducono le raffiche temporanee di pacchetti durante il riscaldamento."
+summary = "Intervallo di invio dei pacchetti usato durante il riscaldamento di avvio, in millisecondi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "Numero massimo di mappe tracciate nelle cornici considerate per l'invio di pacchetti a ogni passaggio di manutenzione."
+impact = "Valori più alti aggiornano prima le pareti di mappe molto grandi; valori più bassi limitano il carico dello scheduler e della ricerca di entità."
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "Impostare a false per impedire che questo tweak si attivi mantenendo il file di configurazione."
 summary = "Abilita o disabilita questo tweak."

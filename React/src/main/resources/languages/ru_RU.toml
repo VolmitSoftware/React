@@ -489,6 +489,101 @@ summary = "Включает или отключает это действие."
 impact = "Значение false останавливает активацию этой функции, сохраняя её файл настроек."
 summary = "Включает или отключает эту функцию."
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "Управляет метаданными карт React, восстановлением средств отрисовки и доставкой пакетов живых карт для инвентарей и рамок предметов."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "Более высокие значения уменьшают объём пакетов в простое, когда игроки рядом, но не смотрят на карту."
+summary = "Интервал отправки пакетов для ближайших зрителей, которые не смотрят на карту в рамке (миллисекунды)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "Более высокие значения требуют более точного прицеливания на карту перед отправкой высокочастотных обновлений."
+summary = "Минимальное скалярное произведение направления взгляда, при котором игрок считается смотрящим на карту в рамке."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "Более низкие значения быстрее обновляют изображение карты, но увеличивают нагрузку на пакеты и отрисовку."
+summary = "Интервал отправки пакетов для активных карт в рамках предметов, в миллисекундах."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "Отключите, чтобы жёстко прекращать отправку пакетов карт за пределами радиуса; включите, если удержание в руке должно обходить проверки расстояния."
+summary = "Разрешает обновления карты в руке за пределами frameMapPushRadiusBlocks."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "Более высокие значения охватывают больше зрителей, но увеличивают рассылку пакетов."
+summary = "Максимальный радиус в блоках от карты в рамке предмета, в котором игроки получают push-обновления."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "Более высокие значения дольше сохраняют состояние при меньшей текучести; более низкие значения агрессивнее очищают служебные данные."
+summary = "Время хранения служебных данных отправки для карт в рамках, в миллисекундах."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "Более низкие значения быстрее обновляют панели рамок; более высокие значения сворачивают лишние перерисовки для каждого зрителя на загруженных стенах карт."
+summary = "Минимальный интервал между перерисовками холста для карт React в рамках предметов, в миллисекундах."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "Включение исключает пакеты для зрителей, которых не видно, но добавляет лёгкие проверки видимости."
+summary = "Если включено, отправка карт в рамках требует прямой видимости для ближайших зрителей (держащие карту игроки обходят это)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "Более низкие значения раньше обнаруживают подменённые предметы в рамках; более высокие значения избегают повторного чтения метаданных предметов в каждом тике обслуживания."
+summary = "Интервал между полными повторными проверками стеков предметов отслеживаемых карт в рамках, в миллисекундах."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "Более низкие значения плавнее вращают и обновляют карты в руках; более высокие значения сокращают работу отрисовки, когда многие игроки смотрят одну и ту же карту."
+summary = "Минимальный интервал между перерисовками холста для карт React в руках, в миллисекундах."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "Более высокие значения сокращают время восстановления после перезагрузки; более низкие значения уменьшают работу каждого прохода."
+summary = "Число инвентарей игроков в сети, восстанавливаемых за один проход обслуживания."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "Более низкие значения быстрее восстанавливают метаданные карт и средства отрисовки; более высокие значения уменьшают работу за тик."
+summary = "Период сканирования инвентарей игроков для восстановления карт React, в миллисекундах."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "Более высокие значения ускоряют восстановление карт в рамках после перезагрузки; более низкие значения снижают затраты за проход."
+summary = "Число загруженных чанков, сканируемых на карты в рамках предметов за один проход обслуживания."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "Более низкие значения быстрее исправляют карты в рамках предметов после перезагрузки; более высокие значения уменьшают накладные расходы на обслуживание."
+summary = "Период сканирования загруженных чанков для восстановления карт в рамках предметов, в миллисекундах."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "Более низкие значения раньше восстанавливают инвентари и рамки предметов после перезагрузки; более высокие значения уменьшают накладные расходы на обслуживание."
+summary = "Основной период обслуживания логики восстановления карт, в миллисекундах."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "Отключите, чтобы отображать каждую карту в рамке как независимую панель 128x128."
+summary = "Объединяет соседние карты React в рамках предметов с одним и тем же средством отрисовки в один большой мозаичный экран мегакарты."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "Стены больше этого бюджета переходят на увеличенную отрисовку одной панели."
+summary = "Общий бюджет плиток для одной объединённой стены мегакарты."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "Отключите, чтобы клонированные карты делили одну картинку и никогда не объединялись."
+summary = "Клонированные карты React в рамках для предметов автоматически получают новые номера карт, чтобы соседние копии объединялись в стену мегакарты."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "Более высокие значения дольше отдают приоритет быстрому восстановлению после перезагрузки; более низкие значения раньше возвращаются к обычному темпу."
+summary = "Длительность прогрева после запуска или /reload, в течение которого восстановление карт использует агрессивные пакеты восстановления (миллисекунды)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "Более высокие значения ускоряют восстановление инвентарей с картами сразу после перезагрузки ценой дополнительной временной работы."
+summary = "Размер пакета восстановления инвентаря, пока активен прогрев после запуска."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "Более высокие значения ускоряют восстановление карт в рамках сразу после перезагрузки ценой дополнительной временной работы."
+summary = "Размер пакета восстановления чанков с рамками предметов, пока активен прогрев после запуска."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "Более низкие значения быстрее показывают карты в рамках после перезагрузки; более высокие значения уменьшают временные всплески пакетов во время прогрева."
+summary = "Интервал отправки пакетов во время прогрева после запуска, в миллисекундах."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "Максимум отслеживаемых карт в рамках, рассматриваемых для отправки пакетов за проход обслуживания."
+impact = "Большие значения быстрее обновляют очень большие стены карт; меньшие ограничивают нагрузку на планировщик и поиск сущностей."
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "Значение false останавливает активацию этой оптимизации, сохраняя её файл настроек."
 summary = "Включает или отключает эту оптимизацию."

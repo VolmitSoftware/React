@@ -489,6 +489,101 @@ summary = "启用或禁用此操作。"
 impact = "设为 false 可阻止此功能激活，同时保留其配置文件。"
 summary = "启用或禁用此功能。"
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "管理 React 地图物品元数据、渲染器修复，以及向物品栏和物品展示框实时推送地图数据包。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "值越高，玩家在附近但没有看地图时的闲置数据包量越少。"
+summary = "对附近但未主动查看展示框地图的观看者推送数据包的间隔（毫秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "较高值需要在发送高频更新之前更精确地瞄准地图。"
+summary = "将玩家视为正在主动查看展示框地图所需的最小视线方向点积。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "值越低，地图画面刷新越快，但数据包和渲染压力越大。"
+summary = "活动的物品展示框地图的数据包推送间隔（毫秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "禁用则在半径外彻底停止地图数据包；如果手持时应绕过距离检查，则启用。"
+summary = "允许在 frameMapPushRadiusBlocks 之外更新手持地图。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "值越高，覆盖的观看者越多，但数据包扇出增加。"
+summary = "物品展示框地图中，玩家可接收推送更新的最大方块半径。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "值越高，状态保留越久、变动越少；值越低，清理记录越积极。"
+summary = "展示框地图推送记录的保留时长（毫秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "值越低，展示框仪表板刷新越快；值越高，在繁忙的地图墙上会合并每个观看者重复的重绘。"
+summary = "物品展示框 React 地图画布重绘之间的最小间隔（毫秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "启用后，不再向被遮挡的观看者发送数据包，但会增加轻量的可见性检查。"
+summary = "启用后，展示框地图推送需要附近观看者有视线（手持者除外）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "值越低，越早检测到被替换的展示框物品；值越高，避免每个维护游戏刻重复读取物品元数据。"
+summary = "对已跟踪展示框地图的完整物品栈重新验证之间的间隔（毫秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "值越低，手持地图的旋转和刷新越平滑；值越高，多名玩家查看同一地图时渲染工作量越少。"
+summary = "手持 React 地图画布重绘之间的最小间隔（毫秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "值越高，重载后的恢复时间越短；值越低，每轮工作量越少。"
+summary = "每轮维护修复的在线玩家物品栏数量。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "值越低，地图元数据和渲染器修复越快；值越高，每游戏刻工作量越少。"
+summary = "为修复 React 地图而扫描玩家物品栏的节奏（毫秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "值越高，重载后展示框地图恢复越快；值越低，每轮开销越低。"
+summary = "每轮维护为物品展示框地图扫描的已加载区块数。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "值越低，重载后物品展示框地图修复越快；值越高，维护开销越低。"
+summary = "为修复物品展示框地图而扫描已加载区块的节奏（毫秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "值越低，重载后物品栏和物品展示框修复越早；值越高，维护开销越低。"
+summary = "地图修复逻辑的主要维护节奏（毫秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "禁用则将每个展示框地图渲染为独立的 128x128 仪表板。"
+summary = "将使用同一渲染器的相邻物品展示框 React 地图合并为一个大型平铺巨型地图显示。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "超出预算的墙会回退到放大的单块仪表板渲染。"
+summary = "单面合并巨型地图墙的总图块预算。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "禁用后克隆地图共用同一张画面，永不合并。"
+summary = "放入物品展示框的克隆 React 地图会自动获得新的地图编号,使相邻副本能合并成巨型地图墙。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "值越高，重载后快速恢复的优先时间越长；值越低，越早回到正常节奏。"
+summary = "启动或 /reload 后的预热时长，期间地图恢复使用激进的批量修复（毫秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "值越高，重载后地图物品栏恢复越快，但会带来额外的临时工作量。"
+summary = "启动预热期间的物品栏修复批量大小。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "值越高，重载后展示框地图恢复越快，但会带来额外的临时工作量。"
+summary = "启动预热期间的物品展示框区块修复批量大小。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "值越低，重载后展示框地图出现得越快；值越高，预热期间的临时数据包突发越少。"
+summary = "启动预热期间使用的数据包推送间隔（毫秒）。"
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "每轮维护中最多考虑推送数据包的已跟踪物品展示框地图数。"
+impact = "较大值可更快刷新超大地图墙；较小值可限制调度器及实体查询的压力。"
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "设为 false 可阻止此调优项激活，同时保留其配置文件。"
 summary = "启用或禁用此调优项。"

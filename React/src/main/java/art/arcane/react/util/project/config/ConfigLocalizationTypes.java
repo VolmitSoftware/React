@@ -1,9 +1,9 @@
 package art.arcane.react.util.project.config;
 
-import art.arcane.react.core.controller.RuntimeTelemetryController;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.tweak.ReactTweak;
+import art.arcane.react.api.rendering.MapSettings;
 import art.arcane.react.api.web.WebConfiguration;
 import art.arcane.react.content.action.ActionCaptureProfile;
 import art.arcane.react.content.action.ActionCollectGarbage;
@@ -91,92 +91,28 @@ import art.arcane.react.content.tweak.TweakUnknown;
 import art.arcane.react.content.tweak.TweakVehicleIdleBrake;
 import art.arcane.react.core.controller.ConfigInputController;
 import art.arcane.react.core.controller.EventController;
-import art.arcane.react.core.controller.HotloadController;
 import art.arcane.react.core.controller.HistoryController;
+import art.arcane.react.core.controller.HotloadController;
 import art.arcane.react.core.controller.IncidentController;
 import art.arcane.react.core.controller.MapController;
-import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.core.controller.RuntimeTelemetryController;
 import art.arcane.react.model.ReactConfiguration;
-import art.arcane.volmlib.util.localization.MessageCatalog;
-import art.arcane.volmlib.util.localization.TextKey;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 
-public final class ConfigLocalization {
-  private static final String KEY_PREFIX = "config.documentation.annotation.";
-  private static final List<Class<?>> CONFIG_TYPES = createConfigTypes();
+/** The Bukkit config types whose annotated docs React adds to the language catalog. */
+public final class ConfigLocalizationTypes {
+  private static final List<Class<?>> TYPES = createTypes();
 
-  private ConfigLocalization() {
+  private ConfigLocalizationTypes() {
   }
 
-  public static void addTo(MessageCatalog.Builder builder) {
-    Set<Class<?>> visited = new HashSet<>();
-    for (Class<?> type : CONFIG_TYPES) {
-      addType(builder, type, visited);
-    }
+  public static List<Class<?>> types() {
+    return TYPES;
   }
 
-  public static String description(Class<?> type) {
-    Class<?> cursor = type;
-    while (cursor != null && cursor != Object.class) {
-      ConfigDescription annotation = cursor.getDeclaredAnnotation(ConfigDescription.class);
-      if (annotation != null) {
-        String english = annotation.value().strip();
-        return ReactLanguage.raw(descriptionId(cursor), english);
-      }
-      cursor = cursor.getSuperclass();
-    }
-    return "";
-  }
-
-  public static String fieldSummary(Field field) {
-    if (field == null) {
-      return "";
-    }
-    ConfigDoc annotation = field.getAnnotation(ConfigDoc.class);
-    if (annotation == null) {
-      return "";
-    }
-    String english = annotation.value().strip();
-    return ReactLanguage.raw(fieldSummaryId(field), english);
-  }
-
-  public static String fieldImpact(Field field) {
-    if (field == null) {
-      return "";
-    }
-    ConfigDoc annotation = field.getAnnotation(ConfigDoc.class);
-    if (annotation == null || annotation.impact().isBlank()) {
-      return "";
-    }
-    String english = annotation.impact().strip();
-    return ReactLanguage.raw(fieldImpactId(field), english);
-  }
-
-  public static String descriptionId(Class<?> type) {
-    return KEY_PREFIX + typeId(type) + ".description";
-  }
-
-  public static String fieldSummaryId(Field field) {
-    return KEY_PREFIX + typeId(field.getDeclaringClass()) + ".field." + normalize(field.getName()) + ".summary";
-  }
-
-  public static String fieldImpactId(Field field) {
-    return KEY_PREFIX + typeId(field.getDeclaringClass()) + ".field." + normalize(field.getName()) + ".impact";
-  }
-
-  static List<Class<?>> catalogTypes() {
-    return CONFIG_TYPES;
-  }
-
-  private static List<Class<?>> createConfigTypes() {
+  private static List<Class<?>> createTypes() {
     List<Class<?>> types = new ArrayList<>(List.of(
         ReactAction.class,
         ReactFeature.class,
@@ -272,47 +208,10 @@ public final class ConfigLocalization {
         HotloadController.class,
         IncidentController.class,
         MapController.class,
+        MapSettings.class,
         ReactConfiguration.class
     ));
     types.addAll(FeatureConfigLocalizationTypes.types());
     return List.copyOf(types);
-  }
-
-  private static void addType(MessageCatalog.Builder builder, Class<?> type, Set<Class<?>> visited) {
-    if (type == null || !visited.add(type)) {
-      return;
-    }
-
-    ConfigDescription description = type.getDeclaredAnnotation(ConfigDescription.class);
-    if (description != null && !description.value().isBlank()) {
-      builder.add(TextKey.of(descriptionId(type), description.value().strip()));
-    }
-
-    Field[] fields = type.getDeclaredFields();
-    Arrays.sort(fields, Comparator.comparing(Field::getName));
-    for (Field field : fields) {
-      ConfigDoc annotation = field.getAnnotation(ConfigDoc.class);
-      if (annotation == null) {
-        continue;
-      }
-      builder.add(TextKey.of(fieldSummaryId(field), annotation.value().strip()));
-      if (!annotation.impact().isBlank()) {
-        builder.add(TextKey.of(fieldImpactId(field), annotation.impact().strip()));
-      }
-    }
-
-    Class<?>[] nestedTypes = type.getDeclaredClasses();
-    Arrays.sort(nestedTypes, Comparator.comparing(Class::getName));
-    for (Class<?> nestedType : nestedTypes) {
-      addType(builder, nestedType, visited);
-    }
-  }
-
-  private static String typeId(Class<?> type) {
-    return normalize(type == null ? "unknown" : type.getName());
-  }
-
-  private static String normalize(String value) {
-    return value.toLowerCase(Locale.ROOT).replace('$', '_').replaceAll("[^a-z0-9_.-]", "_");
   }
 }

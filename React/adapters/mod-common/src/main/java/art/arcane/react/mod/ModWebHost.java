@@ -28,7 +28,7 @@ final class ModWebHost implements WebHost {
 
     @Override
     public Optional<WebConfiguration> loadConfiguration() throws IOException {
-        return Optional.of(ModConfigFiles.load(new File(dataFolder, "web.toml"), WebConfiguration.class, new WebConfiguration(), false,
+        return Optional.of(ModConfigFiles.load(new File(dataFolder, "web.toml"), WebConfiguration.class, new WebConfiguration(), "web-config", false,
                 message -> info.accept("web.toml: " + message)));
     }
 

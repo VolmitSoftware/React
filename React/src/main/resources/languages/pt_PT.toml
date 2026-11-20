@@ -489,6 +489,101 @@ summary = "Ativa ou desativa esta ação."
 impact = "Defina como false para impedir que esta funcionalidade seja ativada, mantendo o respetivo ficheiro de configuração."
 summary = "Ativa ou desativa esta funcionalidade."
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "Gere os metadados dos itens de mapa do React, a reparação de renderizadores e a entrega de pacotes de mapa em direto para inventários e molduras."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "Valores mais elevados reduzem o volume de pacotes inativos quando os jogadores estão por perto, mas não estão a ver o mapa."
+summary = "Intervalo de envio de pacotes para observadores próximos que não estão a olhar ativamente para o mapa de moldura (milissegundos)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "Valores mais elevados requerem uma mira mais apertada no mapa antes de serem enviadas atualizações de alta frequência."
+summary = "Produto escalar mínimo da direção de visão exigido para tratar um jogador como estando a olhar ativamente para um mapa de moldura."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "Valores mais baixos atualizam o visual do mapa mais depressa, mas aumentam a pressão de pacotes e de renderização."
+summary = "Intervalo de envio de pacotes para mapas ativos de molduras de itens, em milissegundos."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "Desative para interromper por completo os pacotes de mapa fora do raio; ative se segurar o mapa deve ignorar as verificações de distância."
+summary = "Permite atualizações de mapas segurados fora de frameMapPushRadiusBlocks."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "Valores mais elevados cobrem mais espectadores, mas aumentam o leque de pacotes."
+summary = "Raio máximo, em blocos, a partir de um mapa de moldura de item dentro do qual os jogadores recebem atualizações push."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "Valores mais elevados mantêm o estado durante mais tempo com menos rotatividade; valores mais baixos eliminam o registo auxiliar com mais agressividade."
+summary = "Duração da retenção do registo auxiliar de envio do mapa de moldura, em milissegundos."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "Valores mais baixos atualizam mais depressa os painéis de molduras; valores mais altos reduzem os redesenhos redundantes por observador em paredes de mapas movimentadas."
+summary = "Intervalo mínimo entre redesenhos de tela dos mapas React em molduras de itens, em milissegundos."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "Ativar elimina pacotes para visualizadores ocluídos, mas adiciona verificações de visibilidade leves."
+summary = "Se ativado, os envios do mapa de moldura exigem linha de visão para os observadores próximos (quem o segura ignora isto)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "Valores mais baixos detetam mais cedo os itens de moldura trocados; valores mais altos evitam leituras repetidas de metadados dos itens a cada tick de manutenção."
+summary = "Intervalo entre revalidações completas das pilhas de itens dos mapas de moldura acompanhados, em milissegundos."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "Valores mais baixos rodam e atualizam os mapas segurados de forma mais fluida; valores mais altos reduzem o trabalho de renderização quando muitos jogadores veem o mesmo mapa."
+summary = "Intervalo mínimo entre redesenhos de tela dos mapas React segurados, em milissegundos."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "Valores mais elevados reduzem o tempo de recuperação após a recarga; valores mais baixos reduzem o trabalho em cada passagem."
+summary = "Número de inventários de jogadores online reparados por passagem de manutenção."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "Valores inferiores reparam metadados de mapas e renderizadores mais rapidamente; valores superiores reduzem o trabalho por tick."
+summary = "Cadência de análise dos inventários dos jogadores para reparação de mapas React, em milissegundos."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "Valores mais elevados aceleram a recuperação do mapa de molduras após o recarregamento; valores mais baixos reduzem o custo por passagem."
+summary = "Número de chunks carregados analisados por passagem de manutenção em busca de mapas em molduras de itens."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "Valores mais baixos corrigem mais depressa os mapas em molduras de itens após o recarregamento; valores mais altos reduzem a sobrecarga de manutenção."
+summary = "Cadência de análise dos chunks carregados para reparação de mapas em molduras de itens, em milissegundos."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "Valores mais baixos reparam inventários e quadros de itens mais cedo após a recarga; valores mais elevados reduzem a sobrecarga de manutenção."
+summary = "Cadência de manutenção principal da lógica de reparação de mapas, em milissegundos."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "Desative para desenhar cada mapa de moldura como um painel independente de 128x128."
+summary = "Combina mapas React adjacentes em molduras de itens com o mesmo renderizador num único megamapa grande, em mosaico."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "Paredes maiores do que o orçamento voltam à renderização ampliada de um único painel."
+summary = "Orçamento total de mosaicos para uma parede de megamapa combinada."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "Desative para que os mapas clonados partilhem uma imagem e nunca se combinem."
+summary = "Os mapas React clonados colocados em molduras de itens recebem automaticamente novos identificadores de mapa para que as cópias adjacentes se juntem numa parede de megamapa."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "Valores mais elevados priorizam recuperação rápida pós-recarga mais tempo; valores mais baixos retornam à cadência normal mais cedo."
+summary = "Duração do aquecimento após o arranque ou /reload em que a recuperação de mapas usa um agrupamento de reparação agressivo (milissegundos)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "Valores mais elevados fazem com que os inventários de mapas recuperem mais rapidamente logo após a recarga ao custo de trabalho extra temporário."
+summary = "Tamanho do lote de reparação de inventário enquanto o aquecimento inicial está ativo."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "Valores mais elevados fazem com que os mapas de quadros recuperem mais rápido logo após a recarga ao custo de trabalho temporário extra."
+summary = "Tamanho do lote de reparação de chunks de molduras de itens enquanto o aquecimento inicial está ativo."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "Valores mais baixos fazem os mapas de molduras aparecer mais depressa após o recarregamento; valores mais altos reduzem as rajadas temporárias de pacotes durante o aquecimento."
+summary = "Intervalo de envio de pacotes usado durante o aquecimento inicial, em milissegundos."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "Número máximo de mapas monitorizados em molduras considerados para envio de pacotes por passagem de manutenção."
+impact = "Valores mais altos atualizam mais depressa paredes de mapas muito grandes; valores mais baixos limitam a pressão sobre o agendador e a pesquisa de entidades."
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "Defina como false para impedir que este ajuste seja ativado, mantendo o respetivo ficheiro de configuração."
 summary = "Ativa ou desativa este ajuste."

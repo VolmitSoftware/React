@@ -489,6 +489,101 @@ summary = "Bu eylemi etkinleştirir veya devre dışı bırakır."
 impact = "Yapılandırma dosyasını koruyarak bu özelliğin etkinleşmesini durdurmak için false yapın."
 summary = "Bu özelliği etkinleştirir veya devre dışı bırakır."
 
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings]
+description = "React harita eşyası meta verilerini, çizici onarımını ve envanterler ile eşya çerçeveleri için canlı harita paketi iletimini yönetir."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapidlepushintervalms]
+impact = "Yüksek değerler oyuncular yakında olup haritaya bakmadığında boştaki paket hacmini azaltır."
+summary = "Çerçeve haritasına etkin olarak bakmayan yakındaki görüntüleyiciler için paket gönderim aralığı (milisaniye)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaplookdotthreshold]
+impact = "Yüksek değerler yüksek sıklıklı güncellemeler gönderilmeden önce haritaya daha sıkı nişan alınmasını gerektirir."
+summary = "Bir oyuncunun çerçeve haritasına etkin olarak baktığının kabul edilmesi için gereken asgari bakış yönü nokta çarpımı."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushintervalms]
+impact = "Düşük değerler harita görsellerini daha hızlı yeniler ama paket ve çizim baskısını artırır."
+summary = "Etkin eşya çerçevesi haritaları için paket gönderim aralığı (milisaniye)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushoutsiderangewhenholding]
+impact = "Yarıçap dışındaki harita paketlerini kesin olarak durdurmak için kapatın; elde tutmanın mesafe denetimlerini atlamasını istiyorsanız etkinleştirin."
+summary = "frameMapPushRadiusBlocks dışında elde tutulan harita güncellemelerine izin verir."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushradiusblocks]
+impact = "Yüksek değerler daha fazla görüntüleyiciyi kapsar ancak paket dağıtımını artırır."
+summary = "Oyuncuların gönderim güncellemeleri aldığı, eşya çerçevesi haritasından blok cinsinden azami yarıçap."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushstateretentionms]
+impact = "Yüksek değerler durumu daha az yükle daha uzun tutar; düşük değerler kayıt tutmayı daha agresif budar."
+summary = "Çerçeve haritası gönderim kayıtlarının milisaniye cinsinden saklama süresi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapredrawintervalms]
+impact = "Düşük değerler çerçeve panolarını daha hızlı yeniler; yüksek değerler yoğun harita duvarlarında görüntüleyici başına gereksiz yeniden çizimleri birleştirir."
+summary = "Eşya çerçevesi React haritaları için tuval yeniden çizimleri arasındaki asgari aralık (milisaniye)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemaprequirelineofsight]
+impact = "Etkinleştirmek engellenmiş görüntüleyicilere paket gönderimini ortadan kaldırır ancak hafif görünürlük denetimleri ekler."
+summary = "Etkinse çerçeve haritası gönderimleri yakındaki görüntüleyiciler için görüş hattı gerektirir (elinde tutanlar bunu atlar)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemapvalidateintervalms]
+impact = "Düşük değerler değiştirilmiş çerçeve eşyalarını daha erken algılar; yüksek değerler her bakım tikinde tekrarlanan eşya meta verisi okumalarından kaçınır."
+summary = "İzlenen çerçeve haritalarının tam eşya yığını yeniden doğrulamaları arasındaki aralık (milisaniye)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.heldmapredrawintervalms]
+impact = "Düşük değerler elde tutulan haritaları daha akıcı döndürür ve yeniler; yüksek değerler birçok oyuncu aynı haritaya bakarken çizim işini azaltır."
+summary = "Elde tutulan React haritaları için tuval yeniden çizimleri arasındaki asgari aralık (milisaniye)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepairbatchsize]
+impact = "Yüksek değerler yeniden yükleme sonrası kurtarma süresini kısaltır; düşük değerler her geçişteki işi azaltır."
+summary = "Bakım geçişi başına onarılan çevrimiçi oyuncu envanteri sayısı."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.inventoryrepaircadencems]
+impact = "Düşük değerler harita meta verisini ve çizicileri daha hızlı onarır; yüksek değerler tik başına işi azaltır."
+summary = "React harita onarımı için oyuncu envanterlerini taramanın milisaniye cinsinden sıklığı."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframechunkbatchsize]
+impact = "Yüksek değerler yeniden yükleme sonrası çerçeve haritası kurtarmasını hızlandırır; düşük değerler geçiş başına maliyeti azaltır."
+summary = "Bakım geçişi başına eşya çerçevesi haritaları için taranan yüklü chunk sayısı."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.itemframerepaircadencems]
+impact = "Düşük değerler eşya çerçevesi haritalarını yeniden yüklemeden sonra daha hızlı düzeltir; yüksek değerler bakım yükünü azaltır."
+summary = "Eşya çerçevesi haritası onarımı için yüklü chunk'ları taramanın milisaniye cinsinden sıklığı."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.maintenancetickintervalms]
+impact = "Düşük değerler envanterleri ve eşya çerçevelerini yeniden yüklemeden sonra daha erken onarır; yüksek değerler bakım yükünü azaltır."
+summary = "Harita onarım mantığı için milisaniye cinsinden ana bakım sıklığı."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapenabled]
+impact = "Her çerçeve haritasını bağımsız 128x128 pano olarak çizmek için kapatın."
+summary = "Aynı çizicili bitişik eşya çerçevesi React haritalarını tek büyük karolu megaharita ekranında birleştirir."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapmaxtiles]
+impact = "Bütçeyi aşan duvarlar yakınlaştırılmış tek pano çizimine geri döner."
+summary = "Birleştirilmiş tek bir megaharita duvarı için toplam karo bütçesi."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.megamapsplitduplicates]
+impact = "Kopya haritaların tek bir resmi paylaşmasını ve hiç birleşmemesini sağlamak için kapatın."
+summary = "Eşya çerçevelerine yerleştirilen kopya React haritalarına, bitişik kopyaların megaharita duvarında birleşebilmesi için otomatik olarak yeni harita kimlikleri verilir."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostdurationms]
+impact = "Yüksek değerler yeniden yükleme sonrası hızlı kurtarmayı daha uzun öncelikli tutar; düşük değerler normal sıklığa daha erken döner."
+summary = "Başlangıç veya /reload sonrasında harita kurtarmanın agresif onarım toplu işlemi kullandığı ısınma süresi (milisaniye)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostinventorybatchsize]
+impact = "Yüksek değerler ek geçici iş pahasına harita envanterlerinin yeniden yüklemeden hemen sonra daha hızlı kurtarılmasını sağlar."
+summary = "Başlangıç ısınması etkinken envanter onarım toplu işlem boyutu."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupboostitemframechunkbatchsize]
+impact = "Yüksek değerler ek geçici iş pahasına çerçeve haritalarının yeniden yüklemeden hemen sonra daha hızlı kurtarılmasını sağlar."
+summary = "Başlangıç ısınması etkinken eşya çerçevesi chunk onarım toplu işlem boyutu."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.startupframemappushintervalms]
+impact = "Düşük değerler çerçeve haritalarının yeniden yüklemeden sonra daha hızlı görünmesini sağlar; yüksek değerler ısınma sırasında geçici paket ani artışlarını azaltır."
+summary = "Başlangıç ısınması sırasında kullanılan paket gönderim aralığı (milisaniye)."
+
+[config.documentation.annotation.art.arcane.react.api.rendering.mapsettings.field.framemappushbatchsize]
+summary = "Bakım geçişi başına paket gönderimi için değerlendirilen azami izlenen eşya çerçevesi haritası sayısı."
+impact = "Yüksek değerler çok büyük harita duvarlarını daha erken yeniler; düşük değerler zamanlayıcı ve varlık arama baskısını sınırlar."
+
 [config.documentation.annotation.art.arcane.react.api.tweak.reacttweak.field.enabled]
 impact = "Yapılandırma dosyasını koruyarak bu ince ayarın etkinleşmesini durdurmak için false yapın."
 summary = "Bu ince ayarı etkinleştirir veya devre dışı bırakır."

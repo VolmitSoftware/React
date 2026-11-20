@@ -88,7 +88,7 @@ final class ModRegistryHost implements RegistryHost {
     @Override
     public Object loadConfiguration(File file, Class<?> type, Object defaults, boolean overwriteOnReadFailure, String sourceTag,
                                     String createdMessage) throws IOException {
-        return ModConfigFiles.load(file, type, defaults, overwriteOnReadFailure, message -> info.accept(sourceTag + ": " + message));
+        return ModConfigFiles.load(file, type, defaults, sourceTag, overwriteOnReadFailure, message -> info.accept(sourceTag + ": " + message));
     }
 
     @Override

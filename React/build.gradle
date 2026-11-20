@@ -54,45 +54,7 @@ tasks.named('slimJar').get()
 tasks.named('slimJar') {
     doFirst { new File(outputDirectory, 'slimjar-resolutions.dat').delete() }
 }
-String languageSourceRepository = providers.gradleProperty('languageSourceRepository').orElse('VolmitSoftware/React').get()
-String languageSourceBranch = providers.gradleProperty('languageSourceBranch').orElse(providers.provider {
-    try {
-        Process process = new ProcessBuilder('git', 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD')
-                .directory(projectDir)
-                .redirectErrorStream(true)
-                .start()
-        String output = process.inputStream.text.trim()
-        if (process.waitFor() == 0 && output.startsWith('origin/')) {
-            return output.substring('origin/'.length())
-        }
-    } catch (IOException | InterruptedException ignored) {
-    }
-    return 'master'
-}).get()
-if (!(languageSourceRepository ==~ /[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+/)) {
-    throw new GradleException('languageSourceRepository must be a GitHub owner/repository')
-}
-if (!(languageSourceBranch ==~ /[A-Za-z0-9][A-Za-z0-9._\/-]{0,127}/) || languageSourceBranch.contains('..')) {
-    throw new GradleException('languageSourceBranch must be a Git branch name')
-}
-String languageSourceManifestName = 'react-language-source.properties'
-String languageSourcePath = 'React/src/main/resources/languages'
-List<File> languageSourceFiles = fileTree('src/main/resources/languages') {
-    include('*.toml')
-}.files.toList().sort { File left, File right -> left.name <=> right.name }
-List<String> languageSourceLocales = new ArrayList<>(languageSourceFiles.size())
-for (File languageSourceFile : languageSourceFiles) {
-    String locale = languageSourceFile.name.substring(0, languageSourceFile.name.length() - '.toml'.length())
-    languageSourceLocales.add(locale)
-}
-def languageSourceManifestTask = tasks.register('generateLanguageSourceManifest', WriteProperties) {
-    destinationFile.set(layout.buildDirectory.file("generated/language-source/${languageSourceManifestName}"))
-    property('repository', languageSourceRepository)
-    property('branch', languageSourceBranch)
-    property('path', languageSourcePath)
-    property('extension', '.toml')
-    property('locales', languageSourceLocales.join(','))
-}
+apply from: 'gradle/language-source.gradle'
 
 tasks.named('jar', org.gradle.api.tasks.bundling.Jar).configure {
     archiveClassifier.set('thin')
@@ -113,8 +75,6 @@ def pluginYmlProperties = [
 ]
 
 tasks.named('processResources').configure {
-    dependsOn(languageSourceManifestTask)
-    from(languageSourceManifestTask)
     inputs.properties(pluginYmlProperties)
     filesMatching('**/plugin.yml') {
         expand(pluginYmlProperties)

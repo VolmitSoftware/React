@@ -74,23 +74,25 @@ public final class ReactModRuntime {
             LOGGER.error("{} could not create {} and did not start", NAME, dataFolder);
             return;
         }
-        ModLanguageHost languageHost;
-        try {
-            languageHost = new ModLanguageHost(dataFolder);
-        } catch (IOException failure) {
-            LOGGER.error("{} could not read react.toml and did not start", NAME, failure);
-            return;
-        }
+        ModLanguageHost languageHost = new ModLanguageHost(dataFolder);
         ModTicks ticks = new ModTicks(LOGGER::warn);
         ExecutorService async = Executors.newCachedThreadPool(daemonThreads());
         List<Runnable> startupTasks = new ArrayList<>();
         SampleController samples = new SampleController();
         ModWebMetricsSource metrics = new ModWebMetricsSource(() -> samples);
         ReactWebServer[] web = new ReactWebServer[1];
-        ModMaps maps = new ModMaps(server, ticks, () -> samples);
+        ModMaps maps = new ModMaps(server, dataFolder, ticks, () -> samples);
         ModReactPlatform modPlatform = new ModReactPlatform(platform, server, dataFolder, LOGGER, ticks, async, startupTasks,
                 languageHost, costProbe, () -> samples, () -> web[0], maps);
         ReactPlatforms.bind(modPlatform);
+        try {
+            languageHost.load();
+        } catch (IOException failure) {
+            ReactPlatforms.unbind();
+            async.shutdownNow();
+            LOGGER.error("{} could not read react.toml and did not start", NAME, failure);
+            return;
+        }
         web[0] = new ReactWebServer(new ModWebHost(server, dataFolder, platform, metrics, LOGGER::info));
         running = new Running(modPlatform, ticks, async, samples, web[0], maps);
         costProbe.start(server, ticks::later);
