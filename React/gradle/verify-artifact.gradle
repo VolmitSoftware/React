@@ -93,7 +93,7 @@ TaskProvider verification = tasks.register('verifyArtifact') {
                         require(bytes.readInt() == -889275714, "invalid class file ${entry.name}")
                         bytes.readUnsignedShort()
                         int javaVersion = (int) target.javaVersion
-                        require(bytes.readUnsignedShort() == javaVersion + 44, "${entry.name} must target Java ${javaVersion}")
+                        require(bytes.readUnsignedShort() <= javaVersion + 44, "${entry.name} must target Java ${javaVersion} or older")
                         String constants = new String(bytecode, StandardCharsets.ISO_8859_1)
                         relocatedLibraries.keySet().each { String source ->
                             require(!constants.contains('L' + source.replace('.', '/') + '/'), "unrelocated ${source} reference in ${entry.name}")

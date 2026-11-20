@@ -9,7 +9,7 @@
 // --mutate flips one tweak per server every N seconds, as a hotload would;
 // --idle-timeout closes log sockets that saw no frame for N seconds.
 // --proxy makes s1 a Velocity proxy: GET /s1/api/v1/network lists the other
-// servers, each served under /s1/network/<slug> with s1's tokens.
+// servers, each served under /s1/api/v1/network/servers/<slug> with s1's tokens.
 // Pairing links point at --app (default the first origin), as appUrl does
 // in web.toml. GET /__fake/servers lists the servers with a new admin
 // pairing link each; the other /__fake routes, among them new links, revoke,

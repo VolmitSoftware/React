@@ -54,6 +54,17 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
+  /// Whether the open server says "mod", once it answered `/identity`.
+  bool _modded(BuildContext context) {
+    final String? id = serverIdOf(component.currentPath);
+    if (id == null) return false;
+    return FleetScope.of(context)?.fleetManager
+            .sessionFor(id)
+            ?.identity
+            .modded ??
+        false;
+  }
+
   bool _compact = false;
   bool _rail = false;
   bool _navOpen = false;
@@ -203,7 +214,11 @@ class _AppShellState extends State<AppShell> {
             dom.div(classes: 'ui-crumbs', <Widget>[
               ArcaneBreadcrumbs(
                 size: BreadcrumbSize.sm,
-                items: breadcrumbsFor(component.currentPath, servers),
+                items: breadcrumbsFor(
+                  component.currentPath,
+                  servers,
+                  modded: _modded(context),
+                ),
               ),
             ]),
           const dom.span(classes: 'ui-topbar-gap', <Widget>[]),

@@ -102,7 +102,7 @@ class RelayReactClient
     final Exception? error = reactErrorFor(response.status, response.body);
     if (error != null) throw error;
     final String? key = _cred.serverKey;
-    final String? fingerprint = _cred.fingerprint;
+    final String? fingerprint = _cred.relayServerFingerprint;
     _proven =
         key != null &&
         fingerprint != null &&
@@ -140,7 +140,7 @@ class RelayReactClient
       await _prove();
       final RelayResponse response = await _connection.request(
         method: method,
-        path: '/api/v1$path',
+        path: '${_cred.relayPath}/api/v1$path',
         headers: _headers(mutating: mutating),
         body: body == null ? null : jsonEncode(body),
       );

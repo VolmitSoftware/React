@@ -113,7 +113,8 @@ class NetworkServer {
       version: _text(json['version']),
       lastSeenMs: _int(json['lastSeenMs']),
       basePath:
-          _text(json['basePath']) ?? '/network/${Uri.encodeComponent(name)}',
+          _text(json['basePath']) ??
+          '/api/v1/network/servers/${Uri.encodeComponent(name)}',
     );
   }
 }

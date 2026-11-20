@@ -85,19 +85,19 @@ class NetworkRoutesTest {
     assertEquals(1, network.getAsJsonObject("proxy").get("react").getAsInt());
     JsonObject lobby = network.getAsJsonArray("servers").get(0).getAsJsonObject();
     assertTrue(lobby.get("react").getAsBoolean());
-    assertEquals("/network/lobby", lobby.get("basePath").getAsString());
+    assertEquals("/api/v1/network/servers/lobby", lobby.get("basePath").getAsString());
 
-    assertEquals("127.0.0.1:" + GAME_PORT, get("/network/lobby/api/v1/identity", admin, 200).getAsJsonObject("data").get("serverId").getAsString());
-    assertEquals("viewer", get("/network/lobby/api/v1/whoami", viewer, 200).getAsJsonObject("data").get("role").getAsString());
-    get("/network/lobby/api/v1/identity", "", 401);
-    get("/network/nowhere/api/v1/identity", admin, 404);
-    assertEquals(403, post("/network/lobby/api/v1/console/execute", viewer, 1L).statusCode());
-    assertEquals(202, post("/network/lobby/api/v1/console/execute", admin, 5L).statusCode());
-    assertEquals(409, post("/network/lobby/api/v1/console/execute", admin, 5L).statusCode());
+    assertEquals("127.0.0.1:" + GAME_PORT, get("/api/v1/network/servers/lobby/api/v1/identity", admin, 200).getAsJsonObject("data").get("serverId").getAsString());
+    assertEquals("viewer", get("/api/v1/network/servers/lobby/api/v1/whoami", viewer, 200).getAsJsonObject("data").get("role").getAsString());
+    get("/api/v1/network/servers/lobby/api/v1/identity", "", 401);
+    get("/api/v1/network/servers/nowhere/api/v1/identity", admin, 404);
+    assertEquals(403, post("/api/v1/network/servers/lobby/api/v1/console/execute", viewer, 1L).statusCode());
+    assertEquals(202, post("/api/v1/network/servers/lobby/api/v1/console/execute", admin, 5L).statusCode());
+    assertEquals(409, post("/api/v1/network/servers/lobby/api/v1/console/execute", admin, 5L).statusCode());
 
     CompletableFuture<String> frame = new CompletableFuture<>();
     WebSocket socket = http.newWebSocketBuilder()
-        .buildAsync(URI.create("ws://127.0.0.1:" + proxy.getBoundPort() + "/network/lobby/ws/metrics"), new WebSocket.Listener() {
+        .buildAsync(URI.create("ws://127.0.0.1:" + proxy.getBoundPort() + "/api/v1/network/servers/lobby/ws/metrics"), new WebSocket.Listener() {
           @Override
           public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
             frame.complete(data.toString());
@@ -113,7 +113,7 @@ class NetworkRoutesTest {
     ReactWebServer server = new ReactWebServer(host) {
       @Override
       protected void executeAsync(Runnable runnable) {
-        Thread.ofVirtual().start(runnable);
+        new Thread(runnable).start();
       }
     };
     server.setConfig(configuration);

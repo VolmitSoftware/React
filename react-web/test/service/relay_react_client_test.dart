@@ -200,6 +200,40 @@ void main() {
     });
   });
 
+  group('RelayReactClient for a server behind a proxy', () {
+    test('proves the proxy and asks under the server path', () async {
+      final _FakeRelayConnection conn = _FakeRelayConnection(
+        <String, RelayResponse>{
+          '/api/v1/network/servers/lobby/api/v1/identity': RelayResponse(
+            status: 200,
+            body: <String, dynamic>{
+              'data': <String, dynamic>{
+                'serverName': 'Lobby',
+                'folia': false,
+                'serverId': '10.0.0.2:25566',
+              },
+            },
+          ),
+        },
+      );
+      final ServerCredential proxy = cred.copyWith(relayUrl: 'wss://relay');
+      final ServerCredential member = ServerCredential.networkMemberOf(
+        proxy,
+        'lobby',
+        '/api/v1/network/servers/lobby',
+      );
+
+      final IdentityInfo info = await RelayReactClient(conn, member).identity();
+
+      expect(info.serverName, equals('Lobby'));
+      expect(conn.paths.first, equals('/api/v1/ping'));
+      expect(
+        conn.lastPath,
+        equals('/api/v1/network/servers/lobby/api/v1/identity'),
+      );
+    });
+  });
+
   group('RelayReactClient.identity()', () {
     test(
       'returns IdentityInfo from 200 and sends GET with Authorization header',

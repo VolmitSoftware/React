@@ -30,7 +30,7 @@ const NetworkInfo _info = NetworkInfo(
       mspt: 11.24,
       memoryUsedBytes: 1073741824,
       memoryMaxBytes: 4294967296,
-      basePath: '/network/lobby',
+      basePath: '/api/v1/network/servers/lobby',
     ),
     NetworkServer(
       name: 'vanilla',
@@ -38,7 +38,7 @@ const NetworkInfo _info = NetworkInfo(
       status: NetworkServerStatus.offline,
       players: 0,
       react: false,
-      basePath: '/network/vanilla',
+      basePath: '/api/v1/network/servers/vanilla',
     ),
   ],
 );

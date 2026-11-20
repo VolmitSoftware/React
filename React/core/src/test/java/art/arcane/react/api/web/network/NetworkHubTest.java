@@ -93,12 +93,12 @@ class NetworkHubTest {
     assertTrue(lobby.react());
     assertEquals("online", lobby.status());
     assertEquals("Paper", lobby.loader());
-    assertEquals("/network/lobby", lobby.basePath());
+    assertEquals("/api/v1/network/servers/lobby", lobby.basePath());
     NetworkHub.ServerDto legacy = network.servers().get(1);
     assertFalse(legacy.react());
     assertEquals("unknown", legacy.status());
     assertNull(legacy.pingMs());
-    assertEquals("/network/legacy%20mini", legacy.basePath());
+    assertEquals("/api/v1/network/servers/legacy%20mini", legacy.basePath());
   }
 
   @Test

@@ -3,6 +3,7 @@ package art.arcane.react.proxy;
 import art.arcane.react.api.web.HistoryWebMetricsSource;
 import art.arcane.react.api.web.MetricsSerializer;
 import art.arcane.react.api.web.ReactWebServer;
+import art.arcane.react.api.web.WebConfigWatcher;
 import art.arcane.react.api.web.network.NetworkHub;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.telemetry.RuntimeTelemetry;
@@ -36,7 +37,7 @@ public final class ProxyRuntime {
   private volatile Running running;
 
   private record Running(ProxyReactPlatform platform, ScheduledExecutorService main, ExecutorService async, SampleController samples,
-                         RuntimeTelemetry telemetry, NetworkHub network, ReactWebServer web) {
+                         RuntimeTelemetry telemetry, NetworkHub network, ReactWebServer web, WebConfigWatcher webConfig) {
   }
 
   public ProxyRuntime(ProxyHost host) {
@@ -73,8 +74,10 @@ public final class ProxyRuntime {
       host.logger().log(Level.SEVERE, "React could not read react.toml and did not start", failure);
       return;
     }
-    web[0] = new ReactWebServer(new ProxyWebHost(host, metrics, network));
-    running = new Running(platform, main, async, samples, telemetry, network, web[0]);
+    ProxyWebHost webHost = new ProxyWebHost(host, metrics, network);
+    web[0] = new ReactWebServer(webHost);
+    WebConfigWatcher webConfig = new WebConfigWatcher(new File(dataFolder, "web.toml"), webHost, web[0]);
+    running = new Running(platform, main, async, samples, telemetry, network, web[0], webConfig);
     try {
       ReactLanguage.initialize();
       telemetry.startJobs();
@@ -89,6 +92,7 @@ public final class ProxyRuntime {
       platform.proxyScheduler().markReady();
       web[0].start();
       web[0].postStart();
+      webConfig.start();
     } catch (RuntimeException failure) {
       host.logger().log(Level.SEVERE, "React failed to start on " + host.kind(), failure);
       stop();
@@ -105,6 +109,7 @@ public final class ProxyRuntime {
       return;
     }
     active.platform().proxyScheduler().deactivate();
+    active.webConfig().stop();
     try {
       active.web().stop();
     } catch (RuntimeException failure) {

@@ -28,6 +28,7 @@ import java.util.OptionalLong;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
@@ -84,14 +85,13 @@ public final class NetworkHub {
     }
   }
 
-  /** Runs {@code task} every {@code periodMs} on the hub's threads until it stops; false when the hub is stopped. */
-  public boolean every(long periodMs, Runnable task) {
+  /** Runs {@code task} every {@code periodMs} on the hub's threads; empty when the hub is stopped. */
+  public Optional<ScheduledFuture<?>> every(long periodMs, Runnable task) {
     ScheduledExecutorService current = scheduler;
     if (current == null) {
-      return false;
+      return Optional.empty();
     }
-    current.scheduleWithFixedDelay(task, periodMs, periodMs, TimeUnit.MILLISECONDS);
-    return true;
+    return Optional.of(current.scheduleWithFixedDelay(task, periodMs, periodMs, TimeUnit.MILLISECONDS));
   }
 
   /**
@@ -189,7 +189,7 @@ public final class NetworkHub {
           stats == null ? null : stats.memoryUsedBytes, stats == null ? null : stats.memoryMaxBytes,
           registration == null ? null : registration.platform(), registration == null ? null : registration.loader(),
           registration == null ? null : registration.version(), member == null ? null : member.seenAtMs,
-          "/network/" + URLEncoder.encode(server.name(), StandardCharsets.UTF_8).replace("+", "%20")));
+          NetworkProtocol.SERVERS_PATH + "/" + URLEncoder.encode(server.name(), StandardCharsets.UTF_8).replace("+", "%20")));
     }
     ProxyDto proxy = new ProxyDto(proxyName, view.kind(), view.version(), view.onlinePlayers(), servers.size(), online, react);
     return new NetworkDto(proxy, servers);

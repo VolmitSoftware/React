@@ -166,7 +166,7 @@ class FleetManager extends ChangeNotifier {
       return (opened: opened, removed: removed);
     }
     final Map<String, ServerCredential> wanted = <String, ServerCredential>{};
-    if (proxy.hasDirect && proxy.bearer.isNotEmpty) {
+    if ((proxy.hasDirect || proxy.hasRelay) && proxy.bearer.isNotEmpty) {
       for (final NetworkServer server in network) {
         if (!server.react) continue;
         final ServerCredential member = ServerCredential.networkMemberOf(

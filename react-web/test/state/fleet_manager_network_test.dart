@@ -47,7 +47,7 @@ NetworkServer _server(String name, {bool react = true}) => NetworkServer(
   status: NetworkServerStatus.online,
   players: 1,
   react: react,
-  basePath: '/network/${Uri.encodeComponent(name)}',
+  basePath: '/api/v1/network/servers/${Uri.encodeComponent(name)}',
 );
 
 FleetManager _fleet(InMemoryFleetStorage storage) => FleetManager(
@@ -61,15 +61,18 @@ void main() {
       final ServerCredential member = ServerCredential.networkMemberOf(
         _proxy,
         'Lobby One',
-        '/network/Lobby%20One',
+        '/api/v1/network/servers/Lobby%20One',
       );
       expect(member.id, 'proxy~lobby-one');
       expect(member.label, 'Lobby One');
       expect(member.host, _proxy.host);
       expect(member.port, _proxy.port);
       expect(member.bearer, _proxy.bearer);
-      expect(member.basePath, '/edge/network/Lobby%20One');
+      expect(member.basePath, '/edge/api/v1/network/servers/Lobby%20One');
       expect(member.fingerprint, isNull);
+      expect(member.relayPath, '/api/v1/network/servers/Lobby%20One');
+      expect(member.relayServerFingerprint, 'proxy-key');
+      expect(member.relayUrl, _proxy.relayUrl);
       expect(member.linked, isTrue);
       expect(member.remember, isFalse);
       expect(member.role, 'operator');
@@ -78,7 +81,7 @@ void main() {
       expect(member.networkServer, 'Lobby One');
       expect(
         member.directEndpoint('api/v1/metrics').toString(),
-        'http://10.0.0.5:9696/edge/network/Lobby%20One/api/v1/metrics',
+        'http://10.0.0.5:9696/edge/api/v1/network/servers/Lobby%20One/api/v1/metrics',
       );
     });
 
@@ -86,14 +89,14 @@ void main() {
       final ServerCredential member = ServerCredential.networkMemberOf(
         _proxy,
         'lobby',
-        '/network/lobby',
+        '/api/v1/network/servers/lobby',
       );
       final ServerCredential read = ServerCredential.fromJson(
         jsonDecode(jsonEncode(member.toJson())) as Map<String, dynamic>,
       );
       expect(read.networkOf, 'proxy');
       expect(read.networkServer, 'lobby');
-      expect(read.basePath, '/edge/network/lobby');
+      expect(read.basePath, '/edge/api/v1/network/servers/lobby');
       expect(read.linked, isTrue);
       expect(_proxy.networkMember, isFalse);
       expect(read.networkMember, isTrue);
@@ -167,7 +170,7 @@ void main() {
       final ServerCredential member = fleet.membersOf('proxy').single;
       expect(member.bearer, 'tok_b.other');
       expect(member.port, 9797);
-      expect(member.basePath, '/edge/network/lobby');
+      expect(member.basePath, '/edge/api/v1/network/servers/lobby');
     });
 
     test('members are stored and come back on load', () {

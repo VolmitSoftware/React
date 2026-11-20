@@ -45,6 +45,14 @@ class ServerCredential {
   /// This server's name in the proxy's server list.
   final String? networkServer;
 
+  /// Prefix of this server's API on the relay path: a network server is
+  /// reached through its proxy's relay session under this path.
+  final String relayPath;
+
+  /// The fingerprint the relay path proves when it differs from
+  /// [fingerprint]: a network server's relay path is its proxy's.
+  final String? relayFingerprint;
+
   const ServerCredential({
     required this.id,
     required this.label,
@@ -64,6 +72,8 @@ class ServerCredential {
     this.linked = true,
     this.networkOf,
     this.networkServer,
+    this.relayPath = '',
+    this.relayFingerprint,
   });
 
   /// Marks an entry paired from a link in storage.
@@ -95,6 +105,8 @@ class ServerCredential {
       linked: json['pairing'] == pairingVersion,
       networkOf: json['networkOf'] as String?,
       networkServer: json['networkServer'] as String?,
+      relayPath: json['relayPath'] as String? ?? '',
+      relayFingerprint: json['relayFingerprint'] as String?,
     );
   }
 
@@ -130,6 +142,8 @@ class ServerCredential {
     linked: linked,
     networkOf: networkOf,
     networkServer: networkServer,
+    relayPath: relayPath,
+    relayFingerprint: relayFingerprint,
   );
 
   /// The same credential under another entry id (a new pairing of a server
@@ -153,6 +167,8 @@ class ServerCredential {
     linked: linked,
     networkOf: networkOf,
     networkServer: networkServer,
+    relayPath: relayPath,
+    relayFingerprint: relayFingerprint,
   );
 
   /// The entry without its bearer: what is left once the pairing ended here.
@@ -175,6 +191,8 @@ class ServerCredential {
     linked: linked,
     networkOf: networkOf,
     networkServer: networkServer,
+    relayPath: relayPath,
+    relayFingerprint: relayFingerprint,
   );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -196,14 +214,19 @@ class ServerCredential {
     if (linked) 'pairing': pairingVersion,
     'networkOf': ?networkOf,
     'networkServer': ?networkServer,
+    if (relayPath.isNotEmpty) 'relayPath': relayPath,
+    'relayFingerprint': ?relayFingerprint,
   };
+
+  /// The fingerprint the relay path proves and is addressed by.
+  String? get relayServerFingerprint => relayFingerprint ?? fingerprint;
 
   bool get networkMember => networkOf != null;
 
   /// [server] of the network behind [proxy], reached through the proxy with
-  /// its pairing: the same address and bearer under the server's path. No
-  /// fingerprint, so it is never taken for another entry of the same server
-  /// and the proxy's own key is not checked against it.
+  /// its pairing: the same address, relay and bearer under the server's
+  /// path. No fingerprint of its own, so it is never taken for another entry
+  /// of the same server; the relay path proves the proxy's key.
   static ServerCredential networkMemberOf(
     ServerCredential proxy,
     String server,
@@ -224,6 +247,10 @@ class ServerCredential {
       bearer: proxy.bearer,
       secure: proxy.secure,
       basePath: '$base$suffix',
+      relayUrl: proxy.relayUrl,
+      serverKey: proxy.serverKey,
+      relayPath: suffix,
+      relayFingerprint: proxy.fingerprint,
       role: proxy.role,
       pairedTokenId: proxy.tokenId,
       scopes: proxy.scopes,
@@ -250,6 +277,9 @@ class ServerCredential {
       port == other.port &&
       secure == other.secure &&
       basePath == other.basePath &&
+      relayUrl == other.relayUrl &&
+      relayPath == other.relayPath &&
+      relayFingerprint == other.relayFingerprint &&
       bearer == other.bearer &&
       label == other.label &&
       remember == other.remember &&

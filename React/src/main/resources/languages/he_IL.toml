@@ -243,10 +243,10 @@ web = "ניהול אסימוני גישה ל-WebUI של React"
 "web.status" = "הצגת המאזין, הממסר וטביעת האצבע"
 "web.tokens" = "רשימת הדפדפנים המצומדים"
 language = "בחירת השפה שלך או שפת השרת"
-network = "מציג את רשת הפרוקסי ואת מקומו של שרת זה בתוכה"
-"network.join" = "מציג מה שרת backend מגדיר ב-web.toml כדי להצטרף לפרוקסי זה"
-"network.list" = "מציג את כל השרתים שמאחורי הפרוקסי"
-"network.status" = "מציג את סיכום הרשת או את הקישור של שרת זה לפרוקסי שלו"
+network = "הצגת רשת הפרוקסי ומקומו של השרת הזה בה"
+"network.join" = "הצגת ההגדרות ששרת backend מוסיף ל־web.toml כדי להצטרף לפרוקסי הזה"
+"network.list" = "רשימת כל השרתים שמאחורי הפרוקסי"
+"network.status" = "הצגת סיכום הרשת או החיבור של השרת הזה לפרוקסי שלו"
 
 [command.parameter]
 debugdump_upload = "העלאת הדוח אל mclo.gs"
@@ -337,16 +337,16 @@ set = "&aמרחק &b{type}&a של &f{scope} {target}&a הוגדר ל־&f{distanc
 unavailable = "&cשרת זה אינו תומך בהגדרת מרחק &f{scope} {type}&c.&r"
 
 [command.runtime.network]
-join = "&bרשת&r בכל שרת backend הגדר ב-web.toml: networkProxyUrl = \"{url}\" ו-networkSecret = \"{value}\""
-join_console_only = "&7הרץ את &f/react network join&7 מקונסולת הפרוקסי כדי לראות את מפתח הרשת.&r"
+join = "&bרשת&r בכל שרת backend יש להגדיר ב־web.toml: networkProxyUrl = \"{url}\" ו-networkSecret = \"{value}\""
+join_console_only = "&7יש להריץ את &f/react network join&7 בקונסולת הפרוקסי כדי לראות את מפתח הרשת.&r"
 link = "&bרשת&r פרוקסי {url} | {state}"
 link_connecting = "מתחבר"
 link_refused = "נדחה: {reason}"
 link_registered = "רשום בשם {name}"
 link_unreachable = "לא נגיש: {reason}"
-no_secret = "&cלפרוקסי עדיין אין networkSecret; הפעל מחדש את הפרוקסי או הגדר אחד ב-web.toml.&r"
-no_servers = "&7הפרוקסי לא מציג אף שרת.&r"
-not_joined = "&7שרת זה אינו חלק מרשת. הגדר את &fnetworkProxyUrl&7 ואת &fnetworkSecret&7 ב-web.toml כדי להצטרף לפרוקסי.&r"
+no_secret = "&cלפרוקסי עדיין אין networkSecret; יש להפעיל מחדש את הפרוקסי או להגדיר מפתח ב־web.toml.&r"
+no_servers = "&7ברשימת השרתים של הפרוקסי אין שרתים.&r"
+not_joined = "&7השרת הזה אינו חלק מרשת. כדי להצטרף לפרוקסי יש להגדיר את &fnetworkProxyUrl&7 ואת &fnetworkSecret&7 ב־web.toml.&r"
 proxy = "&bרשת&r {server} | {players} שחקנים | {count}/{total} שרתים מחוברים | {registered} עם React"
 proxy_only = "&7רק פרוקסי Velocity או BungeeCord מציג רשת.&r"
 server = "&f{name}&7 {address}&r | {status} | {players} שחקנים | פינג {duration} | {detail}"
@@ -634,15 +634,15 @@ impact = "React פותח כברירת מחדל API הדורש אימות. הער
 summary = "הפעלת מאזין האינטרנט המובנה."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkproxyurl]
-impact = "כאשר networkSecret מוגדר, שרת זה נרשם בפרוקסי כל 15 שניות כדי ש-React Web של הפרוקסי יציג את לוח הבקרה המלא שלו. הפרוקסי חייב להגיע למאזין האינטרנט של שרת זה. ריק משאיר את השרת מחוץ לרשת."
-summary = "בשרת backend: כתובת React Web של פרוקסי ה-Velocity או ה-BungeeCord שלך, כגון http://10.0.0.5:9696."
+impact = "כאשר networkSecret מוגדר, השרת הזה נרשם אצל הפרוקסי כל 15 שניות, כך ש־React Web של הפרוקסי מציג את לוח הבקרה המלא שלו. הפרוקסי צריך להגיע למאזין האינטרנט של השרת הזה. ערך ריק משאיר את השרת מחוץ לרשת."
+summary = "בשרת backend: כתובת React Web של פרוקסי ה־Velocity או ה־BungeeCord שלך, למשל http://10.0.0.5:9696."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networksecret]
-impact = "React בפרוקסי כותב כאן מפתח חדש בהפעלה הראשונה; העתק אותו אל networkSecret בכל שרת backend. הרישומים מוצפנים וחתומים באמצעותו. שנה אותו בפרוקסי ובכל שרת backend כדי לנעול החוצה עותקים ישנים."
-summary = "מפתח הרשת המשותף לפרוקסי ולשרתי ה-backend שלו."
+impact = "בהפעלה הראשונה, React בפרוקסי כותב כאן מפתח חדש; יש להעתיק אותו אל networkSecret בכל שרת backend. הרישומים מוצפנים ונחתמים בו. שינוי המפתח בפרוקסי ובכל שרתי ה־backend חוסם עותקים ישנים שלו."
+summary = "מפתח הרשת המשותף לפרוקסי ולשרתי ה־backend שלו."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkservername]
-impact = "ריק מזהה את השרת לפי פורט המשחק שלו, וזה מספיק אלא אם שני שרתי backend חולקים פורט במארחים שונים."
+impact = "כשהערך ריק, הפרוקסי מזהה את השרת לפי פורט המשחק שלו. זה מספיק, אלא אם לשני שרתי backend במארחים שונים יש אותו פורט."
 summary = "בשרת backend: שמו ברשימת השרתים של הפרוקסי."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.port]

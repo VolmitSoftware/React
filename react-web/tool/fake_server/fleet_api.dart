@@ -733,7 +733,7 @@ Map<String, Object?> _summary(
 }
 
 /// `GET /api/v1/network` on the fake proxy: every other server of the fleet
-/// with its live readings under `/network/<slug>`, and one server without
+/// with its live readings under `/api/v1/network/servers/<slug>`, and one server without
 /// React that is not reachable.
 Map<String, Object?> _network(
   _FakeServer proxy,
@@ -774,7 +774,7 @@ Map<String, Object?> _network(
       'loader': state.profile.brand,
       'version': '${state.profile.brand} 26.3',
       'lastSeenMs': now.millisecondsSinceEpoch,
-      'basePath': '/network/${state.profile.slug}',
+      'basePath': '/api/v1/network/servers/${state.profile.slug}',
     });
   }
   listed.add(<String, Object?>{
@@ -784,7 +784,7 @@ Map<String, Object?> _network(
     'players': 0,
     'pingMs': null,
     'react': false,
-    'basePath': '/network/legacy',
+    'basePath': '/api/v1/network/servers/legacy',
   });
   final int online = listed
       .where((Map<String, Object?> s) => s['status'] == 'online')

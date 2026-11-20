@@ -33,7 +33,7 @@ void main() {
           'loader': 'Paper',
           'version': 'Paper 26.3',
           'lastSeenMs': 1700000000000,
-          'basePath': '/network/lobby',
+          'basePath': '/api/v1/network/servers/lobby',
         },
         <String, dynamic>{
           'name': 'old world',
@@ -60,7 +60,7 @@ void main() {
     expect(old.status, NetworkServerStatus.offline);
     expect(old.pingMs, isNull);
     expect(old.react, isFalse);
-    expect(old.basePath, '/network/old%20world');
+    expect(old.basePath, '/api/v1/network/servers/old%20world');
   });
 
   test('an unknown status reads as unknown', () {

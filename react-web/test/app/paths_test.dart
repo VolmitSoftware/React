@@ -94,6 +94,11 @@ void main() {
       expect(pageTitleAt('/pair'), ReactorText.pairTitle);
       expect(pageTitleAt('/'), ReactorText.pageHomeTitle);
       expect(pageTitleAt('/server/a/console'), ReactorText.pageConsoleTitle);
+      expect(pageTitleAt('/server/a/plugins'), ReactorText.pagePluginsTitle);
+      expect(
+        pageTitleAt('/server/a/plugins', modded: true),
+        ReactorText.pageModsTitle,
+      );
     });
   });
 }

@@ -3,6 +3,7 @@ package art.arcane.react.mod;
 import art.arcane.react.api.web.HistoryWebMetricsSource;
 import art.arcane.react.api.web.MetricsSerializer;
 import art.arcane.react.api.web.ReactWebServer;
+import art.arcane.react.api.web.WebConfigWatcher;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.SampleController;
@@ -56,7 +57,8 @@ public final class ReactModRuntime {
     private volatile Running running;
 
     private record Running(ModReactPlatform platform, ModTicks ticks, ExecutorService async, SampleController samples,
-                           ReactWebServer web, ModMaps maps, RuntimeTelemetry telemetry, Components components) {
+                           ReactWebServer web, ModMaps maps, RuntimeTelemetry telemetry, Components components,
+                           WebConfigWatcher webConfig) {
     }
 
     /** React's optimisation layer: features, tweaks and actions, started after the samplers they read. */
@@ -122,9 +124,11 @@ public final class ReactModRuntime {
             LOGGER.error("{} could not read react.toml and did not start", NAME, failure);
             return;
         }
-        web[0] = new ReactWebServer(new ModWebHost(server, dataFolder, platform, metrics, maps, LOGGER::info));
+        ModWebHost webHost = new ModWebHost(server, dataFolder, platform, metrics, maps, LOGGER::info);
+        web[0] = new ReactWebServer(webHost);
+        WebConfigWatcher webConfig = new WebConfigWatcher(new File(dataFolder, "web.toml"), webHost, web[0]);
         Components components = new Components(new FeatureController(), new TweakController(), new ActionController());
-        running = new Running(modPlatform, ticks, async, samples, web[0], maps, telemetry, components);
+        running = new Running(modPlatform, ticks, async, samples, web[0], maps, telemetry, components, webConfig);
         costProbe.start(server, ticks::later);
         ticks.every(costProbe::tick);
         try {
@@ -146,6 +150,7 @@ public final class ReactModRuntime {
             modPlatform.modScheduler().markReady();
             web[0].start();
             web[0].postStart();
+            webConfig.start();
             int[] untilCapture = {CAPTURE_INTERVAL_TICKS};
             ticks.every(() -> {
                 if (--untilCapture[0] <= 0) {
@@ -195,6 +200,7 @@ public final class ReactModRuntime {
         active.platform().entityKiller().stopAll();
         ModHopperHost.clear();
         active.platform().modScheduler().deactivate();
+        active.webConfig().stop();
         active.platform().ownerCost().stop();
         costProbe.stop();
         try {

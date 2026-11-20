@@ -7,6 +7,11 @@ package art.arcane.react.api.web.network;
  */
 public final class NetworkProtocol {
   public static final String REGISTER_PATH = "/api/v1/network/register";
+  /**
+   * Each backend's API and sockets sit under {@code SERVERS_PATH/<server>/}. The prefix stays under {@code /api/v1/} so the
+   * relay, which carries only API paths, reaches backends too.
+   */
+  public static final String SERVERS_PATH = "/api/v1/network/servers";
   public static final String SCOPES_HEADER = "X-React-Network-Scopes";
   /** The issuer of the backend token made for the proxy; only those tokens honour {@link #SCOPES_HEADER}. */
   public static final String TOKEN_ISSUER = "network";

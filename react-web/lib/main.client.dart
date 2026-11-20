@@ -48,7 +48,7 @@ Future<void> main() async {
         ReactClient(cred, counter: MonotonicCounter(storage)),
     relayClientFactory: (ServerCredential cred) {
       final String? relayUrl = cred.relayUrl;
-      final String? fingerprint = cred.fingerprint;
+      final String? fingerprint = cred.relayServerFingerprint;
       if (relayUrl == null ||
           relayUrl.isEmpty ||
           fingerprint == null ||

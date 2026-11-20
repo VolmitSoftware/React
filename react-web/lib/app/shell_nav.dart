@@ -157,14 +157,19 @@ class ShellNav extends StatelessWidget {
     final ServerIdentity? identity = serverId == null
         ? null
         : FleetScope.of(context)?.fleetManager.sessionFor(serverId)?.identity;
-    if (identity == null) return _nav(context, proxy: false);
+    if (identity == null) return _nav(context, proxy: false, modded: false);
     return ListenableBuilder(
       listenable: identity,
-      builder: (BuildContext context) => _nav(context, proxy: identity.proxy),
+      builder: (BuildContext context) =>
+          _nav(context, proxy: identity.proxy, modded: identity.modded),
     );
   }
 
-  Widget _nav(BuildContext context, {required bool proxy}) {
+  Widget _nav(
+    BuildContext context, {
+    required bool proxy,
+    required bool modded,
+  }) {
     final bool advanced = ModeScope.advanced(context);
     final String? serverId = serverIdOf(currentPath);
     final bool known = servers.any((ServerEntry s) => s.id == serverId);
@@ -202,7 +207,7 @@ class ShellNav extends StatelessWidget {
                       (advanced || !page.advanced) &&
                       (proxy || !page.proxyOnly))
                     ArcaneSidebarItem(
-                      label: reactorText(page.label),
+                      label: reactorText(page.labelFor(modded: modded)),
                       icon: page.icon(size: IconSize.sm),
                       href: page.pathFor(serverId),
                       selected: identical(page, here),
@@ -234,9 +239,13 @@ class ShellNav extends StatelessWidget {
 
 /// The breadcrumbs of [path]: the server (or the server group), then the
 /// page.
-List<BreadcrumbItem> breadcrumbsFor(String path, List<ServerEntry> servers) {
+List<BreadcrumbItem> breadcrumbsFor(
+  String path,
+  List<ServerEntry> servers, {
+  bool modded = false,
+}) {
   final String? serverId = serverIdOf(path);
-  final ReactorText? title = pageTitleAt(path);
+  final ReactorText? title = pageTitleAt(path, modded: modded);
   final List<BreadcrumbItem> items = <BreadcrumbItem>[];
   if (serverId != null) {
     String name = serverId;

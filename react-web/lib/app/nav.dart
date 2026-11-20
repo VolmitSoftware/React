@@ -29,6 +29,7 @@ class ServerPage {
     this.group, {
     this.advanced = false,
     this.proxyOnly = false,
+    this.moddedLabel,
   });
 
   /// The address segment after `/server/<id>`; '' is Overview.
@@ -42,6 +43,12 @@ class ServerPage {
 
   /// Listed for a Velocity or BungeeCord proxy only.
   final bool proxyOnly;
+
+  /// The name on a Fabric, Forge or NeoForge server, where add-ons are mods.
+  final ReactorText? moddedLabel;
+
+  ReactorText labelFor({required bool modded}) =>
+      modded ? moddedLabel ?? label : label;
 
   String pathFor(String serverId) => serverPath(serverId, slug);
 }
@@ -104,6 +111,7 @@ const List<ServerPage> serverPages = <ServerPage>[
     ReactorText.pagePluginsTitle,
     ArcaneIcon.plug,
     NavGroup.configure,
+    moddedLabel: ReactorText.pageModsTitle,
   ),
 ];
 
@@ -134,9 +142,9 @@ const List<FleetPage> fleetPages = <FleetPage>[
 ];
 
 /// The title of the page at [path] for the breadcrumbs.
-ReactorText? pageTitleAt(String path) {
+ReactorText? pageTitleAt(String path, {bool modded = false}) {
   final ServerPage? page = serverPageAt(path);
-  if (page != null) return page.label;
+  if (page != null) return page.labelFor(modded: modded);
   final String bare = Uri.parse(path).path;
   if (bare == kRoutePair) return ReactorText.pairTitle;
   for (final FleetPage fleet in fleetPages) {

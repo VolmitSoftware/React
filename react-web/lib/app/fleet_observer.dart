@@ -237,7 +237,7 @@ class ReactorFleetObserverState extends State<ReactorFleetObserver>
             ReactClient(cred, counter: MonotonicCounter(storage)),
         relayClientFactory: (ServerCredential cred) {
           if (!kIsWeb) return null;
-          final String? fp = cred.fingerprint;
+          final String? fp = cred.relayServerFingerprint;
           if (fp == null) return null;
           final String? ru = cred.relayUrl;
           if (ru == null || ru.isEmpty) return null;

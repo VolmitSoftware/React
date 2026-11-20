@@ -134,7 +134,7 @@ final class _FakeServer {
   Timer? revisionPush;
 
   /// Answers as a Velocity proxy: `/network` lists the other servers, each
-  /// reachable under `/<proxy>/network/<slug>` with the proxy's tokens.
+  /// reachable under `/<proxy>/api/v1/network/servers/<slug>` with the proxy's tokens.
   bool isProxy = false;
 
   /// The proxy this server stands behind; its tokens work here too.
@@ -615,16 +615,21 @@ final class FakeFleet {
     );
   }
 
-  /// `/<proxy>/network/<slug>/...` as `/<slug>/...`: a server behind the
-  /// proxy answers its own routes. Anything else is left as asked.
+  /// `/<proxy>/api/v1/network/servers/<slug>/...` as `/<slug>/...`: a
+  /// server behind the proxy answers its own routes. Anything else is left
+  /// as asked.
   List<String> _throughProxy(List<String> segments) {
-    if (segments.length < 3 || segments[1] != 'network') return segments;
+    const List<String> route = <String>['api', 'v1', 'network', 'servers'];
+    if (segments.length < 6 ||
+        segments.sublist(1, 5).join('/') != route.join('/')) {
+      return segments;
+    }
     final _FakeServer? edge = _servers[segments.first];
-    final _FakeServer? behind = _servers[segments[2]];
+    final _FakeServer? behind = _servers[segments[5]];
     if (edge == null || !edge.isProxy || behind?.proxy != edge) {
       return segments;
     }
-    return <String>[segments[2], ...segments.sublist(3)];
+    return <String>[segments[5], ...segments.sublist(6)];
   }
 
   static FakeToken? _presentedToken(HttpRequest request, _FakeServer state) {

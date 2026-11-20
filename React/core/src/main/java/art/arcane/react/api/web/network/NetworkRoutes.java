@@ -28,12 +28,13 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
  * The proxy's network routes: backend registration, the network list, and every backend's own API and sockets under
- * {@code /network/<server>/}, so one pairing with the proxy reaches the whole network. The browser's token is checked
+ * {@link NetworkProtocol#SERVERS_PATH}{@code /<server>/}, so one pairing with the proxy reaches the whole network. The browser's token is checked
  * here; the backend sees the proxy's backend token narrowed to the browser's scopes.
  */
 public final class NetworkRoutes {
@@ -52,6 +53,7 @@ public final class NetworkRoutes {
   private final Predicate<String> originAllowed;
   private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
   private final Map<String, Bridge> bridges = new ConcurrentHashMap<>();
+  private volatile ScheduledFuture<?> pings;
 
   public NetworkRoutes(NetworkHub hub, WebTokens tokens, WebAuth auth, Supplier<String> secret, Supplier<String> proxyName,
                        boolean requireTokenForReads, Predicate<String> originAllowed) {
@@ -74,11 +76,11 @@ public final class NetworkRoutes {
       ctx.json(new Envelope<>(hub.snapshot(proxyName.get())));
     });
     for (HandlerType method : FORWARDED) {
-      javalin.addHttpHandler(method, "/network/{server}/api/v1/<rest>", this::forward);
+      javalin.addHttpHandler(method, NetworkProtocol.SERVERS_PATH + "/{server}/api/v1/<rest>", this::forward);
     }
     socket(javalin, "metrics", "read");
     socket(javalin, "logs", "console:read");
-    hub.every(SOCKET_PING_MS, () -> bridges.values().forEach(Bridge::ping));
+    pings = hub.every(SOCKET_PING_MS, () -> bridges.values().forEach(Bridge::ping)).orElse(null);
   }
 
   /** Closes the bridged sockets of a token that was revoked or expired. */
@@ -91,6 +93,11 @@ public final class NetworkRoutes {
   }
 
   public void close() {
+    ScheduledFuture<?> current = pings;
+    pings = null;
+    if (current != null) {
+      current.cancel(false);
+    }
     for (Bridge bridge : List.copyOf(bridges.values())) {
       bridge.close(1001, "going_away");
     }
@@ -153,7 +160,7 @@ public final class NetworkRoutes {
   }
 
   private void socket(Javalin javalin, String name, String scope) {
-    javalin.ws("/network/{server}/ws/" + name, ws -> {
+    javalin.ws(NetworkProtocol.SERVERS_PATH + "/{server}/ws/" + name, ws -> {
       ws.onConnect(ctx -> {
         if (!originAllowed.test(ctx.header("Origin"))) {
           ctx.closeSession(WsAuthenticationGate.CLOSE_ORIGIN_NOT_ALLOWED, "origin_not_allowed");
