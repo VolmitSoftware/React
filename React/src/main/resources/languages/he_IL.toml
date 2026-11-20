@@ -256,6 +256,13 @@ tweak = "הצגה, הפעלה והשבתה של כוונוני React"
 "tweak.list" = "הצגת כל הכוונונים והאם הם פועלים"
 "tweak.enable" = "הפעלת כוונון ושמירתו בתצורה שלו"
 "tweak.disable" = "השבתת כוונון ושמירתו בתצורה שלו"
+profiler = "דגימה של מה שהשרת מריץ"
+"profiler.start" = "הפעלת הפרופיילר"
+"profiler.status" = "הצגת מצב הפרופיילר והבעלים הכבדים ביותר"
+"profiler.stop" = "עצירת הפרופיילר"
+snapshot = "שמירה והצגה של תמונות מצב"
+"snapshot.list" = "הצגת תמונות המצב השמורות"
+"snapshot.profile" = "שמירת הפרופיל הנוכחי כתמונת מצב"
 
 [command.parameter]
 debugdump_upload = "העלאת הדוח אל mclo.gs"
@@ -298,6 +305,14 @@ id = "מזהה אסימון, או all"
 label = "תווית קריאה לאדם עבור האסימון הזה"
 role = "תפקיד עבור אסימון זה: viewer, operator או admin"
 scopes = "הרשאות במקום תפקיד, למשל read,op:execute"
+
+[command.parameter.snapshot]
+label = "תווית לתמונת המצב"
+
+[command.parameter.profiler]
+interval = "אלפיות שנייה בין דגימות, מ-1 עד 1000"
+seconds = "שניות עד לעצירה, מ-1 עד 3600"
+threads = "server או all"
 
 [command.runtime]
 chunk_not_sampled = "&cהצ'אנק הזה עדיין לא נדגם. נסה שוב בעוד שנייה.&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | פג {expires} | שימוש אח�
 token_header = "&bאסימונים פעילים ({count}):&r"
 token_not_found = "&cהאסימון לא נמצא: &f{id}&r"
 update_failed = "&cעדכון מאגר האסימונים נכשל: &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7אין תמונות מצב שמורות.&r"
+entry = "&7  {id} | {type} | {label} | לפני {age} | {summary}&r"
+failed = "&cלא ניתן לשמור את תמונת המצב: &f{reason}&r"
+header = "&bתמונות מצב ({count}):&r"
+no_samples = "&cלפרופיילר אין עדיין דגימות. הפעילו אותו עם /react profiler start.&r"
+saved = "&bתמונת מצב&r נשמרה {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "עצור"
+invalid_threads = "&cthreads= מצפה ל-server או all.&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "פועל"
+started = "&bפרופיילר&r הופעל | כל {value} ms | תהליכונים: {mode} | ייעצר בעוד {seconds} שניות"
+status = "&bפרופיילר&r {state} | כל {value} ms | תהליכונים: {mode} | {count} דגימות | {duration}"
+stopped = "&bפרופיילר&r נעצר | {count} דגימות במשך {duration}"
 
 [action]
 completed = "{action} הושלמה תוך {duration}"
@@ -684,6 +716,18 @@ summary = "השם ש־React Web מציג לשרת הזה."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "כל שימוש מתחיל את הזמן מחדש. /react web pair expires= גובר עליו עבור קישור אחד. מ־1 עד 365."
 summary = "מספר הימים שצימוד נמשך ללא שימוש."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "1 עד 1000. תמונת מצב מעבר למגבלה מוחקת את הישנות ביותר."
+summary = "תמונות מצב של פרופיל ומפת חום שנשמרות בתיקייה snapshots."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "1 עד 3600. הפרופיילר לעולם לא פועל יותר משעה."
+summary = "שניות שאחריהן פרופיילר פעיל נעצר מעצמו כשהפעלה לא קובעת מגבלה."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "1 עד 1000. ערכים נמוכים תופסים קריאות קצרות יותר אך מעמיסים יותר על תהליכון השרת."
+summary = "אלפיות שנייה בין דגימות הפרופיילר כשהפעלה לא קובעת ערך."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "תצורה של פעולת איסוף האשפה. מבקשת איסוף אשפה ב-JVM ומדווחת על הערימה שפונתה מיד."

@@ -256,6 +256,13 @@ tweak = "Rodyti, įjungti ir išjungti React koregavimus"
 "tweak.list" = "Rodyti visus koregavimus ir ar jie veikia"
 "tweak.enable" = "Įjungti koregavimą ir išsaugoti jį jo konfigūracijoje"
 "tweak.disable" = "Išjungti koregavimą ir išsaugoti jį jo konfigūracijoje"
+profiler = "Imti mėginius iš to, ką vykdo serveris"
+"profiler.start" = "Paleisti profiliuoklį"
+"profiler.status" = "Rodyti profiliuoklio būseną ir brangiausius savininkus"
+"profiler.stop" = "Sustabdyti profiliuoklį"
+snapshot = "Išsaugoti ir išvardyti momentines kopijas"
+"snapshot.list" = "Išvardyti išsaugotas momentines kopijas"
+"snapshot.profile" = "Išsaugoti dabartinį profilį kaip momentinę kopiją"
 
 [command.parameter]
 debugdump_upload = "Įkelti ataskaitą į mclo.gs"
@@ -298,6 +305,14 @@ id = "Žetono ID arba all"
 label = "Žmogui suprantama šio žetono žyma"
 role = "Šio žetono vaidmuo: viewer, operator arba admin"
 scopes = "Teisės vietoje vaidmens, pvz., read,op:execute"
+
+[command.parameter.snapshot]
+label = "Momentinės kopijos žymė"
+
+[command.parameter.profiler]
+interval = "Milisekundės tarp mėginių, nuo 1 iki 1000"
+seconds = "Sekundės iki sustojimo, nuo 1 iki 3600"
+threads = "server arba all"
 
 [command.runtime]
 chunk_not_sampled = "&cŠis pasaulio segmentas dar neišmatuotas. Pabandykite po sekundės.&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | baigiasi {expires} | paskutinį k
 token_header = "&bAktyvūs žetonai ({count}):&r"
 token_not_found = "&cŽetonas nerastas: &f{id}&r"
 update_failed = "&cNepavyko atnaujinti žetonų saugyklos: &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7Išsaugotų momentinių kopijų nėra.&r"
+entry = "&7  {id} | {type} | {label} | prieš {age} | {summary}&r"
+failed = "&cNepavyko išsaugoti momentinės kopijos: &f{reason}&r"
+header = "&bMomentinės kopijos ({count}):&r"
+no_samples = "&cProfiliuoklis dar neturi mėginių. Paleiskite jį komanda /react profiler start.&r"
+saved = "&bMomentinė kopija&r išsaugota {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "sustabdytas"
+invalid_threads = "&cthreads= tikisi server arba all.&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "veikia"
+started = "&bProfiliuoklis&r paleistas | kas {value} ms | gijos: {mode} | sustos po {seconds} s"
+status = "&bProfiliuoklis&r {state} | kas {value} ms | gijos: {mode} | {count} mėginių | {duration}"
+stopped = "&bProfiliuoklis&r sustabdytas | {count} mėginių per {duration}"
 
 [action]
 completed = "Baigta {action} per {duration}"
@@ -684,6 +716,18 @@ summary = "Pavadinimas, kurį React Web rodo šiam serveriui."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "Kiekvienas naudojimas laiką skaičiuoja iš naujo. /react web pair expires= jį pakeičia vienai nuorodai. Nuo 1 iki 365."
 summary = "Dienos, kurias susiejimas galioja nenaudojamas."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "Nuo 1 iki 1000. Kopija virš ribos ištrina seniausias."
+summary = "Profilio ir šilumos žemėlapio momentinės kopijos, laikomos aplanke snapshots."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "Nuo 1 iki 3600. Profiliuoklis niekada neveikia ilgiau nei valandą."
+summary = "Sekundės, po kurių veikiantis profiliuoklis pats sustoja, kai paleidimas nenurodo ribos."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "Nuo 1 iki 1000. Mažesnės reikšmės pagauna trumpesnius iškvietimus, bet labiau apkrauna serverio giją."
+summary = "Milisekundės tarp profiliuoklio mėginių, kai paleidimas jų nenurodo."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Šiukšlių surinkimo veiksmo konfigūracija. Paprašo JVM surinkti šiukšles ir praneša, kiek kaupo atminties iškart atlaisvinta."

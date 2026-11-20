@@ -42,7 +42,7 @@ public final class WebOrigins implements Handler {
     }
     ctx.header("Access-Control-Allow-Origin", origin);
     ctx.header("Vary", "Origin");
-    ctx.header("Access-Control-Expose-Headers", "Retry-After");
+    ctx.header("Access-Control-Expose-Headers", "Retry-After, Content-Disposition");
     if (ctx.method() == HandlerType.OPTIONS) {
       ctx.header("Access-Control-Allow-Methods", ALLOW_METHODS);
       ctx.header("Access-Control-Allow-Headers", ALLOW_HEADERS);

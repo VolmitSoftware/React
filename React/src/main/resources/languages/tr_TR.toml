@@ -256,6 +256,13 @@ tweak = "React ince ayarlarını listele, etkinleştir ve devre dışı bırak"
 "tweak.list" = "Tüm ince ayarları ve çalışıp çalışmadıklarını listele"
 "tweak.enable" = "Bir ince ayarı etkinleştir ve yapılandırmasına kaydet"
 "tweak.disable" = "Bir ince ayarı devre dışı bırak ve yapılandırmasına kaydet"
+profiler = "Sunucunun çalıştırdıklarından örnek al"
+"profiler.start" = "Profil oluşturucuyu başlat"
+"profiler.status" = "Profil oluşturucunun durumunu ve en maliyetli sahipleri göster"
+"profiler.stop" = "Profil oluşturucuyu durdur"
+snapshot = "Anlık görüntüleri kaydet ve listele"
+"snapshot.list" = "Kayıtlı anlık görüntüleri listele"
+"snapshot.profile" = "Geçerli profili anlık görüntü olarak kaydet"
 
 [command.parameter]
 debugdump_upload = "Raporu mclo.gs üzerine yükle"
@@ -298,6 +305,14 @@ id = "Jeton kimliği veya all"
 label = "Bu belirteç için okunabilir etiket"
 role = "Bu belirtecin rolü: viewer, operator veya admin"
 scopes = "Rol yerine izinler, örneğin read,op:execute"
+
+[command.parameter.snapshot]
+label = "Anlık görüntünün etiketi"
+
+[command.parameter.profiler]
+interval = "Örnekler arası milisaniye, 1 ile 1000 arası"
+seconds = "Durmadan önceki saniye, 1 ile 3600 arası"
+threads = "server veya all"
 
 [command.runtime]
 chunk_not_sampled = "&cBu chunk henüz ölçülmedi; bir saniye sonra tekrar kontrol edin.&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | bitiş {expires} | son kullanım 
 token_header = "&bEtkin belirteçler ({count}):&r"
 token_not_found = "&cBelirteç bulunamadı: &f{id}&r"
 update_failed = "&cBelirteç deposu güncellenemedi: &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7Kayıtlı anlık görüntü yok.&r"
+entry = "&7  {id} | {type} | {label} | {age} önce | {summary}&r"
+failed = "&cAnlık görüntü kaydedilemedi: &f{reason}&r"
+header = "&bAnlık görüntüler ({count}):&r"
+no_samples = "&cProfil oluşturucunun henüz örneği yok. /react profiler start ile başlatın.&r"
+saved = "&bAnlık görüntü&r kaydedildi {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "durdu"
+invalid_threads = "&cthreads= server veya all bekler.&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "çalışıyor"
+started = "&bProfil oluşturucu&r başladı | her {value} ms | iş parçacıkları: {mode} | {seconds}s sonra durur"
+status = "&bProfil oluşturucu&r {state} | her {value} ms | iş parçacıkları: {mode} | {count} örnek | {duration}"
+stopped = "&bProfil oluşturucu&r durdu | {duration} içinde {count} örnek"
 
 [action]
 completed = "{action}, {duration} içinde tamamlandı"
@@ -684,6 +716,18 @@ summary = "React Web'in bu sunucu için gösterdiği ad."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "Her kullanım süreyi yeniden başlatır. /react web pair expires= bunu tek bir bağlantı için değiştirir. 1 ile 365 arası."
 summary = "Bir eşleştirmenin kullanılmadan sürdüğü gün sayısı."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "1 ile 1000 arası. Sınırı aşan bir anlık görüntü en eskileri siler."
+summary = "snapshots klasöründe tutulan profil ve ısı haritası anlık görüntüleri."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "1 ile 3600 arası. Profil oluşturucu asla bir saatten uzun çalışmaz."
+summary = "Başlatma bir sınır seçmediğinde çalışan profil oluşturucunun kendiliğinden durduğu saniye."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "1 ile 1000 arası. Düşük değerler daha kısa çağrıları yakalar ama sunucu iş parçacığına daha pahalıya gelir."
+summary = "Başlatma bir değer seçmediğinde profil oluşturucu örnekleri arasındaki milisaniye."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Çöp Toplama eylemi için yapılandırma. JVM çöp toplamayı ister ve anında geri kazanılan yığın belleği bildirir."

@@ -39,6 +39,10 @@ import art.arcane.react.api.web.resource.OwnerCostResource;
 import art.arcane.react.api.web.resource.OwnerResource;
 import art.arcane.react.api.web.resource.PairResource;
 import art.arcane.react.api.web.resource.PlayerResource;
+import art.arcane.react.api.web.resource.ProfilerResource;
+import art.arcane.react.api.web.resource.SnapshotResource;
+import art.arcane.react.api.web.profiler.SamplingProfiler;
+import art.arcane.react.api.web.profiler.SnapshotStore;
 import art.arcane.react.api.web.resource.SummaryResource;
 import art.arcane.react.api.web.resource.WhoamiResource;
 import art.arcane.react.api.web.resource.WorldResource;
@@ -58,6 +62,7 @@ import art.arcane.react.platform.WebHost;
 import art.arcane.react.util.common.scheduling.J;
 import com.google.gson.Gson;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.javalin.Javalin;
 import io.javalin.http.HttpResponseException;
 import io.javalin.http.NotFoundResponse;
@@ -78,6 +83,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Clock;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -170,6 +176,15 @@ public class ReactWebServer {
     private final transient AtomicLong logSequence = new AtomicLong();
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
+    private final transient SamplingProfiler profiler = new SamplingProfiler(() -> {
+        ReactPlatform platform = ReactPlatforms.getOrNull();
+        return platform == null ? Optional.empty() : platform.profilerHost();
+    });
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient volatile SnapshotStore snapshotStore;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private transient long lifecycleGeneration;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
@@ -181,6 +196,32 @@ public class ReactWebServer {
     /** A server reading everything from {@code host}; subclasses that override {@link #host()} may pass null. */
     public ReactWebServer(WebHost host) {
         this.host = host;
+    }
+
+    /** React's sampling profiler; it runs whether or not the listener is bound. */
+    public SamplingProfiler profiler() {
+        return profiler;
+    }
+
+    /** Saved profile and heatmap snapshots under the data folder's {@code snapshots/}. */
+    public SnapshotStore snapshots() {
+        SnapshotStore current = snapshotStore;
+        if (current != null) {
+            return current;
+        }
+        synchronized (profiler) {
+            if (snapshotStore == null) {
+                SnapshotStore created = new SnapshotStore(new File(resolveDataFolder(), "snapshots"), JsonMapper.builder().build(),
+                    () -> config.getSnapshotRetention(), System::currentTimeMillis, ZoneId.systemDefault());
+                try {
+                    created.prune();
+                } catch (IOException failure) {
+                    WebLog.warn("Could not trim old snapshots: " + failure.getMessage());
+                }
+                snapshotStore = created;
+            }
+            return snapshotStore;
+        }
     }
 
     /** Where this server reads the platform's data. */
@@ -360,6 +401,9 @@ public class ReactWebServer {
         snapshot.setNetworkProxyUrl(source.getNetworkProxyUrl() == null ? "" : source.getNetworkProxyUrl().trim());
         snapshot.setNetworkSecret(source.getNetworkSecret() == null ? "" : source.getNetworkSecret().trim());
         snapshot.setNetworkServerName(source.getNetworkServerName() == null ? "" : source.getNetworkServerName().trim());
+        snapshot.setProfilerIntervalMs(SamplingProfiler.clampInterval(source.getProfilerIntervalMs()));
+        snapshot.setProfilerMaxSeconds(SamplingProfiler.clampSeconds(source.getProfilerMaxSeconds()));
+        snapshot.setSnapshotRetention(SnapshotStore.clampRetention(source.getSnapshotRetention()));
         if (snapshot.getListenAddress().isBlank()) {
             throw new IllegalArgumentException("listenAddress must not be blank");
         }
@@ -703,6 +747,29 @@ public class ReactWebServer {
                 }
                 javalin.get("/api/v1/heatmaps", heatmaps::list);
                 javalin.get("/api/v1/heatmaps/{id}", heatmaps::detail);
+                ProfilerResource profilerResource = new ProfilerResource(profiler, mutationReporter,
+                    () -> config.getProfilerIntervalMs(), () -> config.getProfilerMaxSeconds());
+                SnapshotResource snapshotResource = new SnapshotResource(this::snapshots, profiler, provider, this::serverName, mutationReporter);
+                for (String path : List.of("/api/v1/profiler", "/api/v1/profiler/owners", "/api/v1/profiler/hot",
+                    "/api/v1/profiler/tree", "/api/v1/profiler/threads", "/api/v1/snapshots", "/api/v1/snapshots/{id}",
+                    "/api/v1/snapshots/{id}/export")) {
+                    javalin.before(path, ctx -> {
+                        if (requireTokenForReads || !"GET".equals(ctx.method().name())) {
+                            auth.handle(ctx);
+                        }
+                    });
+                }
+                javalin.get("/api/v1/profiler", profilerResource::state);
+                javalin.post("/api/v1/profiler", profilerResource::control);
+                javalin.get("/api/v1/profiler/owners", profilerResource::owners);
+                javalin.get("/api/v1/profiler/hot", profilerResource::hot);
+                javalin.get("/api/v1/profiler/tree", profilerResource::tree);
+                javalin.get("/api/v1/profiler/threads", profilerResource::threads);
+                javalin.post("/api/v1/snapshots", snapshotResource::create);
+                javalin.get("/api/v1/snapshots", snapshotResource::list);
+                javalin.get("/api/v1/snapshots/{id}", snapshotResource::get);
+                javalin.get("/api/v1/snapshots/{id}/export", snapshotResource::export);
+                javalin.delete("/api/v1/snapshots/{id}", snapshotResource::delete);
                 IntegrationResource integrations = new IntegrationResource(
                     localHost::integrations,
                     localHost::integrationTimeline
@@ -1527,6 +1594,7 @@ public class ReactWebServer {
     }
 
     public void stop() {
+        profiler.stop();
         WebRuntime runtime;
         CountDownLatch cancelledLatch;
         synchronized (this) {

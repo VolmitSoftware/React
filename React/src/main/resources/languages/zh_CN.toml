@@ -256,6 +256,13 @@ tweak = "列出、启用和禁用 React 调优项"
 "tweak.list" = "列出所有调优项及其是否正在运行"
 "tweak.enable" = "启用一个调优项并保存到其配置"
 "tweak.disable" = "禁用一个调优项并保存到其配置"
+profiler = "采样服务器正在运行的内容"
+"profiler.start" = "启动分析器"
+"profiler.status" = "显示分析器状态和开销最大的所有者"
+"profiler.stop" = "停止分析器"
+snapshot = "保存并列出快照"
+"snapshot.list" = "列出已保存的快照"
+"snapshot.profile" = "将当前分析保存为快照"
 
 [command.parameter]
 debugdump_upload = "将报告上传到 mclo.gs"
@@ -298,6 +305,14 @@ id = "令牌 ID，或 all"
 label = "此令牌的可读标签"
 role = "此令牌的角色：viewer、operator 或 admin"
 scopes = "代替角色的权限，例如 read,op:execute"
+
+[command.parameter.snapshot]
+label = "快照标签"
+
+[command.parameter.profiler]
+interval = "采样间隔毫秒数，1 到 1000"
+seconds = "自动停止前的秒数，1 到 3600"
+threads = "server 或 all"
 
 [command.runtime]
 chunk_not_sampled = "&c此区块尚未采样。请稍后一秒再查看。&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | 到期 {expires} | 上次使用 {
 token_header = "&b活动令牌 ({count})：&r"
 token_not_found = "&c找不到令牌：&f{id}&r"
 update_failed = "&c更新令牌存储失败 : &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7没有已保存的快照。&r"
+entry = "&7  {id} | {type} | {label} | {age}前 | {summary}&r"
+failed = "&c无法保存快照：&f{reason}&r"
+header = "&b快照（{count}）：&r"
+no_samples = "&c分析器还没有样本。用 /react profiler start 启动它。&r"
+saved = "&b快照&r 已保存 {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "已停止"
+invalid_threads = "&cthreads= 需要 server 或 all。&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "运行中"
+started = "&b分析器&r 已启动 | 每 {value} 毫秒 | 线程：{mode} | {seconds} 秒后停止"
+status = "&b分析器&r {state} | 每 {value} 毫秒 | 线程：{mode} | {count} 个样本 | {duration}"
+stopped = "&b分析器&r 已停止 | {duration} 内 {count} 个样本"
 
 [action]
 completed = "已在 {duration} 内完成 {action}"
@@ -684,6 +716,18 @@ summary = "React Web 为此服务器显示的名称。"
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "每次使用都会重新计时。/react web pair expires= 可为单个链接覆盖此值。范围 1 到 365。"
 summary = "配对在未使用时持续的天数。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "1 到 1000。超过上限时保存快照会删除最旧的快照。"
+summary = "在 snapshots 文件夹中保留的分析和热力图快照数量。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "1 到 3600。分析器运行时间绝不超过一小时。"
+summary = "启动时未指定上限时，运行中的分析器自动停止前的秒数。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "1 到 1000。值越小越能捕捉短调用，但服务器线程开销越大。"
+summary = "启动时未指定时使用的分析器采样间隔毫秒数。"
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "垃圾回收操作的配置。请求 JVM 垃圾回收并报告立即回收的堆内存。"

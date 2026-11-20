@@ -256,6 +256,13 @@ tweak = "Liệt kê, bật và tắt các tinh chỉnh của React"
 "tweak.list" = "Liệt kê mọi tinh chỉnh và cho biết chúng có đang chạy không"
 "tweak.enable" = "Bật một tinh chỉnh và lưu vào cấu hình của nó"
 "tweak.disable" = "Tắt một tinh chỉnh và lưu vào cấu hình của nó"
+profiler = "Lấy mẫu những gì máy chủ đang chạy"
+"profiler.start" = "Bắt đầu trình phân tích hiệu năng"
+"profiler.status" = "Hiện trạng thái trình phân tích và các chủ sở hữu tốn nhiều nhất"
+"profiler.stop" = "Dừng trình phân tích hiệu năng"
+snapshot = "Lưu và liệt kê ảnh chụp"
+"snapshot.list" = "Liệt kê các ảnh chụp đã lưu"
+"snapshot.profile" = "Lưu hồ sơ hiện tại thành ảnh chụp"
 
 [command.parameter]
 debugdump_upload = "Tải báo cáo lên mclo.gs"
@@ -298,6 +305,14 @@ id = "ID token, hoặc all"
 label = "Nhãn dễ đọc cho mã truy cập này"
 role = "Vai trò của mã truy cập này: viewer, operator hoặc admin"
 scopes = "Quyền thay cho vai trò, ví dụ read,op:execute"
+
+[command.parameter.snapshot]
+label = "Nhãn cho ảnh chụp"
+
+[command.parameter.profiler]
+interval = "Số mili giây giữa các mẫu, từ 1 đến 1000"
+seconds = "Số giây trước khi tự dừng, từ 1 đến 3600"
+threads = "server hoặc all"
 
 [command.runtime]
 chunk_not_sampled = "&cChunk này chưa được lấy mẫu. Hãy kiểm tra lại sau một giây.&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | hết hạn {expires} | dùng l�
 token_header = "&bMã truy cập đang hoạt động ({count}):&r"
 token_not_found = "&cKhông tìm thấy mã truy cập: &f{id}&r"
 update_failed = "&cKhông thể cập nhật kho mã truy cập: &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7Chưa lưu ảnh chụp nào.&r"
+entry = "&7  {id} | {type} | {label} | {age} trước | {summary}&r"
+failed = "&cKhông thể lưu ảnh chụp: &f{reason}&r"
+header = "&bẢnh chụp ({count}):&r"
+no_samples = "&cTrình phân tích chưa có mẫu nào. Hãy bắt đầu bằng /react profiler start.&r"
+saved = "&bẢnh chụp&r đã lưu {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "đã dừng"
+invalid_threads = "&cthreads= cần server hoặc all.&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "đang chạy"
+started = "&bTrình phân tích&r đã bắt đầu | mỗi {value} ms | luồng: {mode} | dừng sau {seconds}s"
+status = "&bTrình phân tích&r {state} | mỗi {value} ms | luồng: {mode} | {count} mẫu | {duration}"
+stopped = "&bTrình phân tích&r đã dừng | {count} mẫu trong {duration}"
 
 [action]
 completed = "Hoàn tất {action} trong {duration}"
@@ -684,6 +716,18 @@ summary = "Tên mà React Web hiển thị cho máy chủ này."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "Mỗi lần dùng sẽ tính lại thời gian. /react web pair expires= thay giá trị này cho một liên kết. Từ 1 đến 365."
 summary = "Số ngày một ghép nối kéo dài khi không dùng."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "Từ 1 đến 1000. Chụp vượt giới hạn sẽ xóa các ảnh cũ nhất."
+summary = "Ảnh chụp hồ sơ và bản đồ nhiệt được giữ trong thư mục snapshots."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "Từ 1 đến 3600. Trình phân tích không bao giờ chạy quá một giờ."
+summary = "Số giây sau đó trình phân tích đang chạy tự dừng khi lệnh bắt đầu không chọn giới hạn."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "Từ 1 đến 1000. Giá trị nhỏ bắt được lệnh gọi ngắn hơn nhưng tốn luồng máy chủ hơn."
+summary = "Số mili giây giữa các mẫu của trình phân tích khi lệnh bắt đầu không chọn giá trị."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Cấu hình cho hành động Thu gom rác. Yêu cầu JVM thu gom rác và báo cáo ngay lượng heap được thu hồi."

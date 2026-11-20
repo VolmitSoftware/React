@@ -256,6 +256,13 @@ tweak = "React の調整を一覧表示、有効化、無効化する"
 "tweak.list" = "すべての調整と実行中かどうかを一覧表示する"
 "tweak.enable" = "調整を有効化して設定に保存する"
 "tweak.disable" = "調整を無効化して設定に保存する"
+profiler = "サーバーが実行している処理をサンプリング"
+"profiler.start" = "プロファイラーを開始"
+"profiler.status" = "プロファイラーの状態と負荷の大きい所有者を表示"
+"profiler.stop" = "プロファイラーを停止"
+snapshot = "スナップショットを保存・一覧表示"
+"snapshot.list" = "保存済みスナップショットを一覧表示"
+"snapshot.profile" = "現在のプロファイルをスナップショットとして保存"
 
 [command.parameter]
 debugdump_upload = "レポートを mclo.gs にアップロードする"
@@ -298,6 +305,14 @@ id = "トークン ID、または all"
 label = "このトークンの分かりやすいラベル"
 role = "このトークンのロール: viewer、operator、admin"
 scopes = "ロールの代わりの権限 (例: read,op:execute)"
+
+[command.parameter.snapshot]
+label = "スナップショットのラベル"
+
+[command.parameter.profiler]
+interval = "サンプル間隔のミリ秒、1から1000"
+seconds = "停止までの秒数、1から3600"
+threads = "server または all"
 
 [command.runtime]
 chunk_not_sampled = "&cこのチャンクはまだ測定されていません。しばらくしてからもう一度確認してください。&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | 期限 {expires} | 最終使用 {
 token_header = "&b有効なトークン ({count}):&r"
 token_not_found = "&cトークンが見つかりません: &f{id}&r"
 update_failed = "&cトークンストアを更新できませんでした: &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7保存済みのスナップショットはありません。&r"
+entry = "&7  {id} | {type} | {label} | {age}前 | {summary}&r"
+failed = "&cスナップショットを保存できませんでした: &f{reason}&r"
+header = "&bスナップショット ({count}):&r"
+no_samples = "&cプロファイラーにまだサンプルがありません。/react profiler start で開始してください。&r"
+saved = "&bスナップショット&r 保存 {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "停止中"
+invalid_threads = "&cthreads= には server または all を指定してください。&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "実行中"
+started = "&bプロファイラー&r 開始 | {value} ms ごと | スレッド: {mode} | {seconds}秒後に停止"
+status = "&bプロファイラー&r {state} | {value} ms ごと | スレッド: {mode} | {count} サンプル | {duration}"
+stopped = "&bプロファイラー&r 停止 | {duration} で {count} サンプル"
 
 [action]
 completed = "{action} を {duration} で完了しました"
@@ -684,6 +716,18 @@ summary = "React Web がこのサーバーに表示する名前。"
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "使うたびに期間が最初から数え直されます。/react web pair expires= で 1 つのリンクだけ上書きできます。1 から 365。"
 summary = "使われない状態でペアリングが続く日数。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "1から1000。上限を超えてスナップショットを取ると、最も古いものから削除されます。"
+summary = "snapshots フォルダーに保持するプロファイルとヒートマップのスナップショット数。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "1から3600。プロファイラーが1時間を超えて動くことはありません。"
+summary = "開始時に上限の指定がない場合、実行中のプロファイラーが自動停止するまでの秒数。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "1から1000。小さい値ほど短い呼び出しを捉えますが、サーバースレッドの負荷が増えます。"
+summary = "開始時に指定がない場合のプロファイラーのサンプル間隔（ミリ秒）。"
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "ガベージコレクション実行アクションの設定。JVM のガベージコレクションを要求し、即時に回収されたヒープ量を報告します。"

@@ -148,6 +148,7 @@ public final class NetworkRoutes {
     }
     ctx.status(response.statusCode());
     response.headers().firstValue("Content-Type").ifPresent(ctx::contentType);
+    response.headers().firstValue("Content-Disposition").ifPresent((String value) -> ctx.header("Content-Disposition", value));
     ctx.result(response.body());
   }
 

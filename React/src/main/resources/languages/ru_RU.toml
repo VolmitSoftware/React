@@ -256,6 +256,13 @@ tweak = "Показать, включить и отключить оптимиз
 "tweak.list" = "Показать все оптимизации и работают ли они"
 "tweak.enable" = "Включить оптимизацию и сохранить её в конфигурации"
 "tweak.disable" = "Отключить оптимизацию и сохранить её в конфигурации"
+profiler = "Снимать выборки того, что выполняет сервер"
+"profiler.start" = "Запустить профилировщик"
+"profiler.status" = "Показать состояние профилировщика и самых затратных владельцев"
+"profiler.stop" = "Остановить профилировщик"
+snapshot = "Сохранять и показывать снимки"
+"snapshot.list" = "Показать сохранённые снимки"
+"snapshot.profile" = "Сохранить текущий профиль как снимок"
 
 [command.parameter]
 debugdump_upload = "Загрузить отчёт на mclo.gs"
@@ -298,6 +305,14 @@ id = "ID токена или all"
 label = "Понятная человеку метка для этого токена"
 role = "Роль для этого токена: viewer, operator или admin"
 scopes = "Права вместо роли, например read,op:execute"
+
+[command.parameter.snapshot]
+label = "Метка снимка"
+
+[command.parameter.profiler]
+interval = "Миллисекунды между выборками, от 1 до 1000"
+seconds = "Секунды до остановки, от 1 до 3600"
+threads = "server или all"
 
 [command.runtime]
 chunk_not_sampled = "&cЭтот чанк ещё не измерен. Повторите через секунду.&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | истекает {expires} | по
 token_header = "&bАктивные токены ({count}):&r"
 token_not_found = "&cТокен не найден: &f{id}&r"
 update_failed = "&cНе удалось обновить хранилище токенов: &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7Сохранённых снимков нет.&r"
+entry = "&7  {id} | {type} | {label} | {age} назад | {summary}&r"
+failed = "&cНе удалось сохранить снимок: &f{reason}&r"
+header = "&bСнимки ({count}):&r"
+no_samples = "&cУ профилировщика ещё нет выборок. Запустите его командой /react profiler start.&r"
+saved = "&bСнимок&r сохранён {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "остановлен"
+invalid_threads = "&cthreads= ожидает server или all.&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "работает"
+started = "&bПрофилировщик&r запущен | каждые {value} мс | потоки: {mode} | остановится через {seconds} с"
+status = "&bПрофилировщик&r {state} | каждые {value} мс | потоки: {mode} | {count} выборок | {duration}"
+stopped = "&bПрофилировщик&r остановлен | {count} выборок за {duration}"
 
 [action]
 completed = "{action} завершено за {duration}"
@@ -684,6 +716,18 @@ summary = "Имя, которое React Web показывает для этог
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "Каждое использование начинает отсчёт заново. /react web pair expires= заменяет значение для одной ссылки. От 1 до 365."
 summary = "Дни, которые сопряжение действует без использования."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "От 1 до 1000. Снимок сверх предела удаляет самые старые."
+summary = "Снимки профиля и тепловой карты, хранящиеся в папке snapshots."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "От 1 до 3600. Профилировщик никогда не работает дольше часа."
+summary = "Секунды, после которых работающий профилировщик сам останавливается, если запуск не задаёт предел."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "От 1 до 1000. Меньшие значения ловят более короткие вызовы, но сильнее нагружают поток сервера."
+summary = "Миллисекунды между выборками профилировщика, если запуск их не задаёт."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Конфигурация действия «Сбор мусора». Запрашивает сборку мусора JVM и сообщает о сразу освобождённой памяти кучи."

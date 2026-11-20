@@ -256,6 +256,13 @@ tweak = "React 트윅을 나열, 활성화, 비활성화"
 "tweak.list" = "모든 트윅과 실행 여부를 나열"
 "tweak.enable" = "트윅을 활성화하고 설정에 저장"
 "tweak.disable" = "트윅을 비활성화하고 설정에 저장"
+profiler = "서버가 실행 중인 작업을 샘플링"
+"profiler.start" = "프로파일러 시작"
+"profiler.status" = "프로파일러 상태와 부하가 큰 소유자 표시"
+"profiler.stop" = "프로파일러 중지"
+snapshot = "스냅샷 저장 및 목록"
+"snapshot.list" = "저장된 스냅샷 목록"
+"snapshot.profile" = "현재 프로필을 스냅샷으로 저장"
 
 [command.parameter]
 debugdump_upload = "보고서를 mclo.gs에 업로드"
@@ -298,6 +305,14 @@ id = "토큰 ID 또는 all"
 label = "이 토큰을 식별하기 위한 읽기 쉬운 레이블"
 role = "이 토큰의 역할: viewer, operator 또는 admin"
 scopes = "역할 대신 쓸 권한, 예: read,op:execute"
+
+[command.parameter.snapshot]
+label = "스냅샷 라벨"
+
+[command.parameter.profiler]
+interval = "샘플 간격(밀리초), 1~1000"
+seconds = "자동 중지까지의 초, 1~3600"
+threads = "server 또는 all"
 
 [command.runtime]
 chunk_not_sampled = "&c이 청크는 아직 측정되지 않았습니다. 1초 후 다시 확인하세요.&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | 만료 {expires} | 마지막 사�
 token_header = "&b활성 토큰 ({count}):&r"
 token_not_found = "&c토큰을 찾을 수 없습니다: &f{id}&r"
 update_failed = "&c토큰 저장소 업데이트에 실패했습니다: &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7저장된 스냅샷이 없습니다.&r"
+entry = "&7  {id} | {type} | {label} | {age} 전 | {summary}&r"
+failed = "&c스냅샷을 저장하지 못했습니다: &f{reason}&r"
+header = "&b스냅샷 ({count}):&r"
+no_samples = "&c프로파일러에 아직 샘플이 없습니다. /react profiler start로 시작하세요.&r"
+saved = "&b스냅샷&r 저장됨 {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "중지됨"
+invalid_threads = "&cthreads=에는 server 또는 all이 필요합니다.&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "실행 중"
+started = "&b프로파일러&r 시작 | {value} ms마다 | 스레드: {mode} | {seconds}초 후 중지"
+status = "&b프로파일러&r {state} | {value} ms마다 | 스레드: {mode} | 샘플 {count}개 | {duration}"
+stopped = "&b프로파일러&r 중지 | {duration} 동안 샘플 {count}개"
 
 [action]
 completed = "{duration} 만에 {action} 완료"
@@ -684,6 +716,18 @@ summary = "React Web이 이 서버에 표시하는 이름."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "사용할 때마다 기간이 다시 시작됩니다. /react web pair expires=로 링크 하나만 바꿀 수 있습니다. 1부터 365까지."
 summary = "사용하지 않을 때 페어링이 유지되는 일수."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "1~1000. 제한을 넘는 스냅샷을 찍으면 가장 오래된 것부터 삭제됩니다."
+summary = "snapshots 폴더에 보관하는 프로필 및 히트맵 스냅샷 수."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "1~3600. 프로파일러는 1시간 넘게 실행되지 않습니다."
+summary = "시작할 때 제한을 지정하지 않으면 실행 중인 프로파일러가 스스로 멈추기까지의 초."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "1~1000. 값이 작을수록 짧은 호출을 잡지만 서버 스레드 부담이 커집니다."
+summary = "시작할 때 지정하지 않으면 사용하는 프로파일러 샘플 간격(밀리초)."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "가비지 컬렉션 수집 작업 설정. JVM 가비지 컬렉션을 요청하고 즉시 회수된 힙을 보고합니다."

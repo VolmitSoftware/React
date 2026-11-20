@@ -205,6 +205,31 @@ public final class CommandMessages {
   public static final TextKey LOAD_SUMMARY_PASS = TextKey.of("command.runtime.test.load_summary_pass", "&bLoad test:&r &aPASS&r");
   public static final TextKey LOAD_SUMMARY_FAIL = TextKey.of("command.runtime.test.load_summary_fail", "&bLoad test:&r &cFAIL&r");
 
+  public static final TextKey PROFILER_DESCRIPTION = TextKey.of("command.description.profiler", "Sample what the server is running");
+  public static final TextKey PROFILER_START_DESCRIPTION = TextKey.of("command.description.profiler.start", "Start the profiler");
+  public static final TextKey PROFILER_STOP_DESCRIPTION = TextKey.of("command.description.profiler.stop", "Stop the profiler");
+  public static final TextKey PROFILER_STATUS_DESCRIPTION = TextKey.of("command.description.profiler.status", "Show the profiler state and the busiest owners");
+  public static final TextKey PROFILER_INTERVAL_PARAM = TextKey.of("command.parameter.profiler.interval", "Milliseconds between samples, from 1 to 1000");
+  public static final TextKey PROFILER_THREADS_PARAM = TextKey.of("command.parameter.profiler.threads", "server or all");
+  public static final TextKey PROFILER_SECONDS_PARAM = TextKey.of("command.parameter.profiler.seconds", "Seconds before it stops, from 1 to 3600");
+  public static final TextKey SNAPSHOT_DESCRIPTION = TextKey.of("command.description.snapshot", "Save and list snapshots");
+  public static final TextKey SNAPSHOT_PROFILE_DESCRIPTION = TextKey.of("command.description.snapshot.profile", "Save the current profile as a snapshot");
+  public static final TextKey SNAPSHOT_LIST_DESCRIPTION = TextKey.of("command.description.snapshot.list", "List saved snapshots");
+  public static final TextKey SNAPSHOT_LABEL_PARAM = TextKey.of("command.parameter.snapshot.label", "Label for the snapshot");
+  public static final TextKey PROFILER_STARTED = TextKey.of("command.runtime.profiler.started", "&bProfiler&r started | every {value} ms | {mode} threads | stops in {seconds}s");
+  public static final TextKey PROFILER_STOPPED = TextKey.of("command.runtime.profiler.stopped", "&bProfiler&r stopped | {count} samples over {duration}");
+  public static final TextKey PROFILER_STATUS = TextKey.of("command.runtime.profiler.status", "&bProfiler&r {state} | every {value} ms | {mode} threads | {count} samples | {duration}");
+  public static final TextKey PROFILER_RUNNING = TextKey.of("command.runtime.profiler.running", "running");
+  public static final TextKey PROFILER_IDLE = TextKey.of("command.runtime.profiler.idle", "stopped");
+  public static final TextKey PROFILER_OWNER = TextKey.of("command.runtime.profiler.owner", "&7  {rank}. &f{name}&7 {percent}%&r");
+  public static final TextKey PROFILER_INVALID_THREADS = TextKey.of("command.runtime.profiler.invalid_threads", "&cthreads= expects server or all.&r");
+  public static final TextKey SNAPSHOT_SAVED = TextKey.of("command.runtime.snapshot.saved", "&bSnapshot&r saved {id} | {label} | {summary}");
+  public static final TextKey SNAPSHOT_NO_SAMPLES = TextKey.of("command.runtime.snapshot.no_samples", "&cThe profiler has no samples yet. Start it with /react profiler start.&r");
+  public static final TextKey SNAPSHOT_FAILED = TextKey.of("command.runtime.snapshot.failed", "&cCould not save the snapshot: &f{reason}&r");
+  public static final TextKey SNAPSHOT_EMPTY = TextKey.of("command.runtime.snapshot.empty", "&7No snapshots saved.&r");
+  public static final TextKey SNAPSHOT_HEADER = TextKey.of("command.runtime.snapshot.header", "&bSnapshots ({count}):&r");
+  public static final TextKey SNAPSHOT_ENTRY = TextKey.of("command.runtime.snapshot.entry", "&7  {id} | {type} | {label} | {age} ago | {summary}&r");
+
   private CommandMessages() {
   }
 
@@ -356,6 +381,30 @@ public final class CommandMessages {
     builder.add(WEB_STATUS_FINGERPRINT);
     builder.add(WEB_FINGERPRINT_COPY_HOVER);
     builder.add(WEB_STATE_READY);
+    builder.add(PROFILER_DESCRIPTION);
+    builder.add(PROFILER_START_DESCRIPTION);
+    builder.add(PROFILER_STOP_DESCRIPTION);
+    builder.add(PROFILER_STATUS_DESCRIPTION);
+    builder.add(PROFILER_INTERVAL_PARAM);
+    builder.add(PROFILER_THREADS_PARAM);
+    builder.add(PROFILER_SECONDS_PARAM);
+    builder.add(SNAPSHOT_DESCRIPTION);
+    builder.add(SNAPSHOT_PROFILE_DESCRIPTION);
+    builder.add(SNAPSHOT_LIST_DESCRIPTION);
+    builder.add(SNAPSHOT_LABEL_PARAM);
+    builder.add(PROFILER_STARTED);
+    builder.add(PROFILER_STOPPED);
+    builder.add(PROFILER_STATUS);
+    builder.add(PROFILER_RUNNING);
+    builder.add(PROFILER_IDLE);
+    builder.add(PROFILER_OWNER);
+    builder.add(PROFILER_INVALID_THREADS);
+    builder.add(SNAPSHOT_SAVED);
+    builder.add(SNAPSHOT_NO_SAMPLES);
+    builder.add(SNAPSHOT_FAILED);
+    builder.add(SNAPSHOT_EMPTY);
+    builder.add(SNAPSHOT_HEADER);
+    builder.add(SNAPSHOT_ENTRY);
     builder.add(NETWORK_DESCRIPTION);
     builder.add(NETWORK_STATUS_DESCRIPTION);
     builder.add(NETWORK_LIST_DESCRIPTION);

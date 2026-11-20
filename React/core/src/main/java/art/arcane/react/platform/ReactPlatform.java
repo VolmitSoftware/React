@@ -254,4 +254,9 @@ public interface ReactPlatform {
   default Optional<OwnerCostProbe> ownerCostProbe() {
     return Optional.empty();
   }
+
+  // Profiler
+  default Optional<ProfilerHost> profilerHost() {
+    return Optional.empty();
+  }
 }

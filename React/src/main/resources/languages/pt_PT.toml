@@ -256,6 +256,13 @@ tweak = "Listar, ativar e desativar ajustes do React"
 "tweak.list" = "Listar todos os ajustes e indicar se estão em execução"
 "tweak.enable" = "Ativar um ajuste e guardá-lo na sua configuração"
 "tweak.disable" = "Desativar um ajuste e guardá-lo na sua configuração"
+profiler = "Amostrar o que o servidor está a executar"
+"profiler.start" = "Iniciar o perfilador"
+"profiler.status" = "Mostrar o estado do perfilador e os proprietários mais pesados"
+"profiler.stop" = "Parar o perfilador"
+snapshot = "Guardar e listar instantâneos"
+"snapshot.list" = "Listar os instantâneos guardados"
+"snapshot.profile" = "Guardar o perfil atual como instantâneo"
 
 [command.parameter]
 debugdump_upload = "Carregar o relatório para mclo.gs"
@@ -298,6 +305,14 @@ id = "ID do token, ou all"
 label = "Rótulo legível para este token"
 role = "Função deste token: viewer, operator ou admin"
 scopes = "Permissões em vez de uma função, como read,op:execute"
+
+[command.parameter.snapshot]
+label = "Etiqueta do instantâneo"
+
+[command.parameter.profiler]
+interval = "Milissegundos entre amostras, de 1 a 1000"
+seconds = "Segundos até parar, de 1 a 3600"
+threads = "server ou all"
 
 [command.runtime]
 chunk_not_sampled = "&cEste chunk ainda não foi amostrado; verifique novamente dentro de um segundo.&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | expira {expires} | último uso {u
 token_header = "&bTokens ativos ({count}):&r"
 token_not_found = "&cToken não encontrado: &f{id}&r"
 update_failed = "&cFalha ao atualizar o armazenamento de tokens: &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7Nenhum instantâneo guardado.&r"
+entry = "&7  {id} | {type} | {label} | há {age} | {summary}&r"
+failed = "&cNão foi possível guardar o instantâneo: &f{reason}&r"
+header = "&bInstantâneos ({count}):&r"
+no_samples = "&cO perfilador ainda não tem amostras. Inicie-o com /react profiler start.&r"
+saved = "&bInstantâneo&r guardado {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "parado"
+invalid_threads = "&cthreads= espera server ou all.&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "em execução"
+started = "&bPerfilador&r iniciado | a cada {value} ms | threads: {mode} | para dentro de {seconds}s"
+status = "&bPerfilador&r {state} | a cada {value} ms | threads: {mode} | {count} amostras | {duration}"
+stopped = "&bPerfilador&r parado | {count} amostras em {duration}"
 
 [action]
 completed = "Concluído {action} em {duration}"
@@ -684,6 +716,18 @@ summary = "Nome que o React Web mostra para este servidor."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "Cada uso recomeça a contagem. /react web pair expires= substitui o valor para uma ligação. De 1 a 365."
 summary = "Dias que um emparelhamento dura sem uso."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "De 1 a 1000. Um instantâneo acima do limite apaga os mais antigos."
+summary = "Instantâneos de perfil e de mapa de calor guardados na pasta snapshots."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "De 1 a 3600. O perfilador nunca corre mais de uma hora."
+summary = "Segundos após os quais um perfilador em execução para sozinho quando um início não indica limite."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "De 1 a 1000. Valores mais baixos apanham chamadas mais curtas, mas custam mais à thread do servidor."
+summary = "Milissegundos entre amostras do perfilador quando um início não indica nenhum."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Configuração da ação Recolher lixo. Pede a recolha de lixo da JVM e indica o heap recuperado de imediato."

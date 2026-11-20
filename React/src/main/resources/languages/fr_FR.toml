@@ -256,6 +256,13 @@ tweak = "Lister, activer et désactiver les ajustements de React"
 "tweak.list" = "Lister tous les ajustements et indiquer s'ils tournent"
 "tweak.enable" = "Activer un ajustement et l'enregistrer dans sa configuration"
 "tweak.disable" = "Désactiver un ajustement et l'enregistrer dans sa configuration"
+profiler = "Échantillonner ce que le serveur exécute"
+"profiler.start" = "Démarrer le profileur"
+"profiler.status" = "Afficher l'état du profileur et les propriétaires les plus coûteux"
+"profiler.stop" = "Arrêter le profileur"
+snapshot = "Enregistrer et lister les instantanés"
+"snapshot.list" = "Lister les instantanés enregistrés"
+"snapshot.profile" = "Enregistrer le profil actuel comme instantané"
 
 [command.parameter]
 debugdump_upload = "Publier le rapport sur mclo.gs"
@@ -298,6 +305,14 @@ id = "ID du jeton, ou all"
 label = "Libellé lisible pour ce jeton"
 role = "Rôle de ce jeton : viewer, operator ou admin"
 scopes = "Permissions à la place d'un rôle, par exemple read,op:execute"
+
+[command.parameter.snapshot]
+label = "Libellé de l'instantané"
+
+[command.parameter.profiler]
+interval = "Millisecondes entre les échantillons, de 1 à 1000"
+seconds = "Secondes avant l'arrêt, de 1 à 3600"
+threads = "server ou all"
 
 [command.runtime]
 chunk_not_sampled = "&cCe chunk n'a pas encore été mesuré; vérifiez à nouveau dans une seconde.&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | expire {expires} | dernière util
 token_header = "&bJetons actifs ({count}):&r"
 token_not_found = "&cJeton non trouvé: &f{id}&r"
 update_failed = "&cImpossible de mettre à jour le magasin de jetons : &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7Aucun instantané enregistré.&r"
+entry = "&7  {id} | {type} | {label} | il y a {age} | {summary}&r"
+failed = "&cImpossible d'enregistrer l'instantané : &f{reason}&r"
+header = "&bInstantanés ({count}) :&r"
+no_samples = "&cLe profileur n'a encore aucun échantillon. Démarrez-le avec /react profiler start.&r"
+saved = "&bInstantané&r enregistré {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "arrêté"
+invalid_threads = "&cthreads= attend server ou all.&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "en cours"
+started = "&bProfileur&r démarré | toutes les {value} ms | threads : {mode} | s'arrête dans {seconds}s"
+status = "&bProfileur&r {state} | toutes les {value} ms | threads : {mode} | {count} échantillons | {duration}"
+stopped = "&bProfileur&r arrêté | {count} échantillons en {duration}"
 
 [action]
 completed = "{action} terminé en {duration}"
@@ -684,6 +716,18 @@ summary = "Nom que React Web affiche pour ce serveur."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "Chaque utilisation relance le délai. /react web pair expires= le remplace pour un lien. De 1 à 365."
 summary = "Jours pendant lesquels un appairage dure sans utilisation."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "De 1 à 1000. Un instantané au-delà de la limite supprime les plus anciens."
+summary = "Instantanés de profil et de carte thermique conservés dans le dossier snapshots."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "De 1 à 3600. Le profileur ne tourne jamais plus d'une heure."
+summary = "Secondes après lesquelles un profileur en cours s'arrête seul quand un démarrage ne précise pas de limite."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "De 1 à 1000. Les petites valeurs captent des appels plus courts mais coûtent davantage au thread du serveur."
+summary = "Millisecondes entre les échantillons du profileur quand un démarrage n'en précise pas."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Configuration de l'action Ramasse-miettes. Demande un ramasse-miettes JVM et signale la mémoire du tas immédiatement récupérée."

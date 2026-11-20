@@ -256,6 +256,13 @@ tweak = "React-tweaks tonen, inschakelen en uitschakelen"
 "tweak.list" = "Alle tweaks tonen en of ze actief zijn"
 "tweak.enable" = "Een tweak inschakelen en in de configuratie opslaan"
 "tweak.disable" = "Een tweak uitschakelen en in de configuratie opslaan"
+profiler = "Bemonsteren wat de server uitvoert"
+"profiler.start" = "De profiler starten"
+"profiler.status" = "Status van de profiler en de duurste eigenaren tonen"
+"profiler.stop" = "De profiler stoppen"
+snapshot = "Snapshots opslaan en tonen"
+"snapshot.list" = "Opgeslagen snapshots tonen"
+"snapshot.profile" = "Het huidige profiel als snapshot opslaan"
 
 [command.parameter]
 debugdump_upload = "Upload het rapport naar mclo.gs"
@@ -298,6 +305,14 @@ id = "Token-ID, of all"
 label = "Menselijk leesbaar label voor dit token"
 role = "Rol voor dit token: viewer, operator of admin"
 scopes = "Rechten in plaats van een rol, zoals read,op:execute"
+
+[command.parameter.snapshot]
+label = "Label voor de snapshot"
+
+[command.parameter.profiler]
+interval = "Milliseconden tussen samples, van 1 tot 1000"
+seconds = "Seconden tot hij stopt, van 1 tot 3600"
+threads = "server of all"
 
 [command.runtime]
 chunk_not_sampled = "&cDeze chunk is nog niet gemeten; controleer over een seconde opnieuw.&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | verloopt {expires} | laatst gebru
 token_header = "&bActieve tokens ({count}):&r"
 token_not_found = "&cToken niet gevonden: &f{id}&r"
 update_failed = "&cBijwerken van de tokenopslag is mislukt: &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7Geen snapshots opgeslagen.&r"
+entry = "&7  {id} | {type} | {label} | {age} geleden | {summary}&r"
+failed = "&cKon de snapshot niet opslaan: &f{reason}&r"
+header = "&bSnapshots ({count}):&r"
+no_samples = "&cDe profiler heeft nog geen samples. Start hem met /react profiler start.&r"
+saved = "&bSnapshot&r opgeslagen {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "gestopt"
+invalid_threads = "&cthreads= verwacht server of all.&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "actief"
+started = "&bProfiler&r gestart | elke {value} ms | threads: {mode} | stopt over {seconds}s"
+status = "&bProfiler&r {state} | elke {value} ms | threads: {mode} | {count} samples | {duration}"
+stopped = "&bProfiler&r gestopt | {count} samples in {duration}"
 
 [action]
 completed = "{action} voltooid in {duration}"
@@ -684,6 +716,18 @@ summary = "Naam die React Web voor deze server toont."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "Elk gebruik start de tijd opnieuw. /react web pair expires= overschrijft dit voor één link. 1 tot 365."
 summary = "Dagen dat een koppeling zonder gebruik geldt."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "1 tot 1000. Een snapshot boven de limiet verwijdert de oudste."
+summary = "Profiel- en heatmap-snapshots die in de map snapshots bewaard blijven."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "1 tot 3600. De profiler draait nooit langer dan een uur."
+summary = "Seconden waarna een actieve profiler zelf stopt als een start geen limiet kiest."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "1 tot 1000. Lagere waarden vangen kortere aanroepen, maar kosten de serverthread meer."
+summary = "Milliseconden tussen profiler-samples als een start er geen kiest."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Configuratie voor de actie Collect Garbage. Vraagt JVM-garbagecollection aan en meldt het direct vrijgemaakte heapgeheugen."

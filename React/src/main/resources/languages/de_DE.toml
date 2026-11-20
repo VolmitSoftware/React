@@ -256,6 +256,13 @@ tweak = "React-Tweaks auflisten, aktivieren und deaktivieren"
 "tweak.list" = "Alle Tweaks auflisten und anzeigen, ob sie laufen"
 "tweak.enable" = "Einen Tweak aktivieren und in seiner Konfiguration speichern"
 "tweak.disable" = "Einen Tweak deaktivieren und in seiner Konfiguration speichern"
+profiler = "Abtasten, was der Server ausführt"
+"profiler.start" = "Den Profiler starten"
+"profiler.status" = "Profiler-Status und die aufwendigsten Besitzer anzeigen"
+"profiler.stop" = "Den Profiler stoppen"
+snapshot = "Snapshots speichern und auflisten"
+"snapshot.list" = "Gespeicherte Snapshots auflisten"
+"snapshot.profile" = "Das aktuelle Profil als Snapshot speichern"
 
 [command.parameter]
 debugdump_upload = "Den Bericht zu mclo.gs hochladen"
@@ -298,6 +305,14 @@ id = "Token-ID oder all"
 label = "Menschenlesbare Bezeichnung für dieses Token"
 role = "Rolle für dieses Token: viewer, operator oder admin"
 scopes = "Berechtigungen statt einer Rolle, etwa read,op:execute"
+
+[command.parameter.snapshot]
+label = "Bezeichnung des Snapshots"
+
+[command.parameter.profiler]
+interval = "Millisekunden zwischen Abtastungen, von 1 bis 1000"
+seconds = "Sekunden bis zum automatischen Stopp, von 1 bis 3600"
+threads = "server oder all"
 
 [command.runtime]
 chunk_not_sampled = "&cDieser Chunk wurde noch nicht gemessen. Bitte in einer Sekunde erneut prüfen.&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | läuft ab {expires} | zuletzt gen
 token_header = "&bAktive Token ({count}):&r"
 token_not_found = "&cToken nicht gefunden: &f{id}&r"
 update_failed = "&cToken-Speicher konnte nicht aktualisiert werden: &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7Keine Snapshots gespeichert.&r"
+entry = "&7  {id} | {type} | {label} | vor {age} | {summary}&r"
+failed = "&cSnapshot konnte nicht gespeichert werden: &f{reason}&r"
+header = "&bSnapshots ({count}):&r"
+no_samples = "&cDer Profiler hat noch keine Abtastungen. Starte ihn mit /react profiler start.&r"
+saved = "&bSnapshot&r gespeichert {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "gestoppt"
+invalid_threads = "&cthreads= erwartet server oder all.&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "läuft"
+started = "&bProfiler&r gestartet | alle {value} ms | Threads: {mode} | stoppt in {seconds}s"
+status = "&bProfiler&r {state} | alle {value} ms | Threads: {mode} | {count} Abtastungen | {duration}"
+stopped = "&bProfiler&r gestoppt | {count} Abtastungen in {duration}"
 
 [action]
 completed = "{action} abgeschlossen in {duration}"
@@ -684,6 +716,18 @@ summary = "Name, den React Web für diesen Server anzeigt."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "Jede Nutzung startet die Zeit neu. /react web pair expires= überschreibt den Wert für einen Link. 1 bis 365."
 summary = "Tage, die eine Kopplung ohne Nutzung besteht."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "1 bis 1000. Ein Snapshot über dem Limit löscht die ältesten."
+summary = "Profil- und Heatmap-Snapshots, die im Ordner snapshots behalten werden."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "1 bis 3600. Der Profiler läuft nie länger als eine Stunde."
+summary = "Sekunden, nach denen ein laufender Profiler von selbst stoppt, wenn ein Start kein Limit angibt."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "1 bis 1000. Kleinere Werte erfassen kürzere Aufrufe, kosten den Server-Thread aber mehr."
+summary = "Millisekunden zwischen Profiler-Abtastungen, wenn ein Start keinen Wert angibt."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Konfiguration der Aktion Collect Garbage. Fordert die JVM-Speicherbereinigung an und meldet den sofort freigegebenen Heap."

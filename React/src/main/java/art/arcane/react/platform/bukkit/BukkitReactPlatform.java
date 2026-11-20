@@ -41,6 +41,7 @@ import art.arcane.react.platform.PlatformCapability;
 import art.arcane.react.platform.PlatformKind;
 import art.arcane.react.content.sampler.BukkitWorldStatsHost;
 import art.arcane.react.platform.PlatformScheduler;
+import art.arcane.react.platform.ProfilerHost;
 import art.arcane.react.platform.PlayerStatsHost;
 import art.arcane.react.platform.RegistryHost;
 import art.arcane.react.platform.RuntimeStatsHost;
@@ -96,6 +97,7 @@ public final class BukkitReactPlatform implements ReactPlatform {
   private final DropHost dropHost = new BukkitDropHost();
   private final ShorthandHost shorthandHost = new BukkitShorthandHost();
   private final MapDataHost mapDataHost = new BukkitMapDataHost();
+  private volatile ProfilerHost profilerHost;
 
   private final BlockHost blockHost = new BukkitBlockHost();
   private final GrowthHost growthHost = new BukkitGrowthHost();
@@ -275,6 +277,16 @@ public final class BukkitReactPlatform implements ReactPlatform {
   public Optional<OwnerCostProbe> ownerCostProbe() {
     EventController controller = React.instance == null ? null : React.controller(EventController.class);
     return Optional.ofNullable(controller);
+  }
+
+  @Override
+  public Optional<ProfilerHost> profilerHost() {
+    ProfilerHost current = profilerHost;
+    if (current == null) {
+      current = new BukkitProfilerHost();
+      profilerHost = current;
+    }
+    return Optional.of(current);
   }
 
   @Override

@@ -51,6 +51,8 @@ public class CommandReact implements DirectorExecutor {
   private CommandTest test;
   private CommandWeb web;
   private CommandNetwork network;
+  private CommandProfiler profiler;
+  private CommandSnapshot snapshot;
 
   @Director(
       name = "language",

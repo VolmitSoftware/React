@@ -256,6 +256,13 @@ tweak = "Luettele, ota käyttöön ja poista käytöstä Reactin säätöjä"
 "tweak.list" = "Luettele kaikki säädöt ja näytä, ovatko ne käynnissä"
 "tweak.enable" = "Ota säätö käyttöön ja tallenna se sen asetuksiin"
 "tweak.disable" = "Poista säätö käytöstä ja tallenna se sen asetuksiin"
+profiler = "Näytteistä, mitä palvelin suorittaa"
+"profiler.start" = "Käynnistä profiloija"
+"profiler.status" = "Näytä profiloijan tila ja raskaimmat omistajat"
+"profiler.stop" = "Pysäytä profiloija"
+snapshot = "Tallenna ja listaa tilannekuvat"
+"snapshot.list" = "Listaa tallennetut tilannekuvat"
+"snapshot.profile" = "Tallenna nykyinen profiili tilannekuvaksi"
 
 [command.parameter]
 debugdump_upload = "Lähetä raportti mclo.gs-palveluun"
@@ -298,6 +305,14 @@ id = "Tunnuksen ID tai all"
 label = "Tokenin ihmisen luettava nimiö"
 role = "Tämän tokenin rooli: viewer, operator tai admin"
 scopes = "Oikeudet roolin sijaan, esimerkiksi read,op:execute"
+
+[command.parameter.snapshot]
+label = "Tilannekuvan nimi"
+
+[command.parameter.profiler]
+interval = "Millisekunnit näytteiden välillä, 1–1000"
+seconds = "Sekunnit ennen pysähtymistä, 1–3600"
+threads = "server tai all"
 
 [command.runtime]
 chunk_not_sampled = "&cTätä chunkia ei ole vielä mitattu. Tarkista hetken kuluttua uudelleen.&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | päättyy {expires} | viimeksi k�
 token_header = "&bAktiiviset tokenit ({count}):&r"
 token_not_found = "&cTokenia ei löytynyt: &f{id}&r"
 update_failed = "&cToken-tallennuksen päivitys epäonnistui: &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7Ei tallennettuja tilannekuvia.&r"
+entry = "&7  {id} | {type} | {label} | {age} sitten | {summary}&r"
+failed = "&cTilannekuvaa ei voitu tallentaa: &f{reason}&r"
+header = "&bTilannekuvat ({count}):&r"
+no_samples = "&cProfiloijalla ei ole vielä näytteitä. Käynnistä se komennolla /react profiler start.&r"
+saved = "&bTilannekuva&r tallennettu {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "pysäytetty"
+invalid_threads = "&cthreads= odottaa arvoa server tai all.&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "käynnissä"
+started = "&bProfiloija&r käynnissä | {value} ms välein | säikeet: {mode} | pysähtyy {seconds} s kuluttua"
+status = "&bProfiloija&r {state} | {value} ms välein | säikeet: {mode} | {count} näytettä | {duration}"
+stopped = "&bProfiloija&r pysäytetty | {count} näytettä, kesto {duration}"
 
 [action]
 completed = "{action} valmis ajassa {duration}"
@@ -684,6 +716,18 @@ summary = "Nimi, jonka React Web näyttää tälle palvelimelle."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "Jokainen käyttö aloittaa ajan alusta. /react web pair expires= korvaa sen yhdelle linkille. 1–365."
 summary = "Päivät, jotka paritus kestää käyttämättä."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "1–1000. Rajan ylittävä tilannekuva poistaa vanhimmat."
+summary = "Profiili- ja lämpökarttatilannekuvat, jotka säilytetään snapshots-kansiossa."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "1–3600. Profiloija ei koskaan toimi yli tuntia."
+summary = "Sekunnit, joiden jälkeen käynnissä oleva profiloija pysähtyy itse, kun käynnistys ei anna rajaa."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "1–1000. Pienemmät arvot tavoittavat lyhyempiä kutsuja, mutta kuormittavat palvelinsäiettä enemmän."
+summary = "Millisekunnit profiloijan näytteiden välillä, kun käynnistys ei anna arvoa."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Roskienkeruutoiminnon asetukset. Pyytää JVM:n roskienkeruuta ja raportoi heti vapautuneen kekomuistin."

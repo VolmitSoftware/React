@@ -256,6 +256,13 @@ tweak = "Wypisz, włącz i wyłącz usprawnienia React"
 "tweak.list" = "Wypisz wszystkie usprawnienia i pokaż, czy działają"
 "tweak.enable" = "Włącz usprawnienie i zapisz je w jego konfiguracji"
 "tweak.disable" = "Wyłącz usprawnienie i zapisz je w jego konfiguracji"
+profiler = "Próbkować to, co wykonuje serwer"
+"profiler.start" = "Uruchomić profiler"
+"profiler.status" = "Pokazać stan profilera i najbardziej kosztownych właścicieli"
+"profiler.stop" = "Zatrzymać profiler"
+snapshot = "Zapisywać i wyświetlać migawki"
+"snapshot.list" = "Wyświetlić zapisane migawki"
+"snapshot.profile" = "Zapisać bieżący profil jako migawkę"
 
 [command.parameter]
 debugdump_upload = "Prześlij raport do mclo.gs"
@@ -298,6 +305,14 @@ id = "ID tokenu albo all"
 label = "Czytelna dla człowieka etykieta tokenu"
 role = "Rola tego tokenu: viewer, operator lub admin"
 scopes = "Uprawnienia zamiast roli, na przykład read,op:execute"
+
+[command.parameter.snapshot]
+label = "Etykieta migawki"
+
+[command.parameter.profiler]
+interval = "Milisekundy między próbkami, od 1 do 1000"
+seconds = "Sekundy do zatrzymania, od 1 do 3600"
+threads = "server lub all"
 
 [command.runtime]
 chunk_not_sampled = "&cTen chunk nie został jeszcze spróbkowany; sprawdź ponownie za chwilę.&r"
@@ -433,6 +448,23 @@ token_entry = "&7  {id} | {label} | {access} | wygasa {expires} | ostatnio użyt
 token_header = "&bAktywne tokeny ({count}):&r"
 token_not_found = "&cNie znaleziono tokenu: &f{id}&r"
 update_failed = "&cNie udało się zaktualizować magazynu tokenów: &f{reason}&r"
+
+[command.runtime.snapshot]
+empty = "&7Brak zapisanych migawek.&r"
+entry = "&7  {id} | {type} | {label} | {age} temu | {summary}&r"
+failed = "&cNie udało się zapisać migawki: &f{reason}&r"
+header = "&bMigawki ({count}):&r"
+no_samples = "&cProfiler nie ma jeszcze próbek. Uruchom go poleceniem /react profiler start.&r"
+saved = "&bMigawka&r zapisana {id} | {label} | {summary}"
+
+[command.runtime.profiler]
+idle = "zatrzymany"
+invalid_threads = "&cthreads= oczekuje server lub all.&r"
+owner = "&7  {rank}. &f{name}&7 {percent}%&r"
+running = "działa"
+started = "&bProfiler&r uruchomiony | co {value} ms | wątki: {mode} | zatrzyma się za {seconds}s"
+status = "&bProfiler&r {state} | co {value} ms | wątki: {mode} | {count} próbek | {duration}"
+stopped = "&bProfiler&r zatrzymany | {count} próbek w {duration}"
 
 [action]
 completed = "Zakończono {action} w {duration}"
@@ -684,6 +716,18 @@ summary = "Nazwa, którą React Web pokazuje dla tego serwera."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.tokendays]
 impact = "Każde użycie liczy czas od nowa. /react web pair expires= zastępuje tę wartość dla jednego linku. Od 1 do 365."
 summary = "Dni, przez które parowanie trwa bez użycia."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.snapshotretention]
+impact = "Od 1 do 1000. Migawka ponad limit usuwa najstarsze."
+summary = "Migawki profilu i mapy cieplnej przechowywane w folderze snapshots."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilermaxseconds]
+impact = "Od 1 do 3600. Profiler nigdy nie działa dłużej niż godzinę."
+summary = "Sekundy, po których działający profiler sam się zatrzymuje, gdy uruchomienie nie podaje limitu."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.profilerintervalms]
+impact = "Od 1 do 1000. Mniejsze wartości łapią krótsze wywołania, ale bardziej obciążają wątek serwera."
+summary = "Milisekundy między próbkami profilera, gdy uruchomienie ich nie podaje."
 
 [config.documentation.annotation.art.arcane.react.content.action.actioncollectgarbage]
 description = "Konfiguracja działania Collect Garbage. Żąda odśmiecania pamięci JVM i zgłasza natychmiast odzyskaną ilość sterty."

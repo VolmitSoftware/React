@@ -23,6 +23,7 @@ import art.arcane.react.platform.LanguageHost;
 import art.arcane.react.platform.PlatformCapability;
 import art.arcane.react.platform.PlatformKind;
 import art.arcane.react.platform.PlatformScheduler;
+import art.arcane.react.platform.ProfilerHost;
 import art.arcane.react.platform.PlayerStatsHost;
 import art.arcane.react.platform.ReactCommandSender;
 import art.arcane.react.platform.ReactPlatform;
@@ -111,6 +112,7 @@ public final class ModReactPlatform implements ReactPlatform {
     private final SpawnHost spawnHost;
     private final ExplosionHost explosionHost = new ModExplosionHost(this::server);
     private final FurnaceHost furnaceHost;
+    private final ProfilerHost profilerHost;
 
     ModReactPlatform(String loader, MinecraftServer server, File dataFolder, Logger logger, ModTicks ticks, ExecutorService async,
                      List<Runnable> startupTasks, LanguageHost languageHost, ModCostProbe costProbe, Supplier<SampleController> samples,
@@ -159,6 +161,7 @@ public final class ModReactPlatform implements ReactPlatform {
         this.blockHost = new ModBlockHost(server);
         this.growthHost = new ModGrowthHost(server);
         this.hopperHost = new ModHopperHost(server, modSamplerHost.chunks());
+        this.profilerHost = new ModProfilerHost(server);
     }
 
     ModComponentHost components() {
@@ -454,6 +457,11 @@ public final class ModReactPlatform implements ReactPlatform {
     @Override
     public Optional<OwnerCostProbe> ownerCostProbe() {
         return Optional.of(costProbe);
+    }
+
+    @Override
+    public Optional<ProfilerHost> profilerHost() {
+        return Optional.of(profilerHost);
     }
 
     // React Web

@@ -78,4 +78,13 @@ public class WebConfiguration {
 
   @ConfigDoc(value = "On a backend server: its name in the proxy's server list.", impact = "Empty matches this server by its game port, which is enough unless two backends share a port on different hosts.")
   private String networkServerName = "";
+
+  @ConfigDoc(value = "Milliseconds between profiler samples when a start does not choose one.", impact = "1 to 1000. Lower values catch shorter calls but cost the server thread more.")
+  private int profilerIntervalMs = 10;
+
+  @ConfigDoc(value = "Seconds before a running profiler stops itself when a start does not choose a limit.", impact = "1 to 3600. The profiler never runs longer than an hour.")
+  private int profilerMaxSeconds = 600;
+
+  @ConfigDoc(value = "Profile and heatmap snapshots kept in the snapshots folder.", impact = "1 to 1000. Taking a snapshot past the limit deletes the oldest ones.")
+  private int snapshotRetention = 50;
 }
