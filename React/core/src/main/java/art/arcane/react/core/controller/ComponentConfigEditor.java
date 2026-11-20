@@ -93,7 +93,7 @@ public final class ComponentConfigEditor {
     }
   }
 
-  static boolean reload(Registered target) {
+  public static boolean reload(Registered target) {
     if (target instanceof Feature feature) {
       FeatureController controller = ReactComponents.features();
       if (controller == null || controller.getActiveFeatures() == null) {

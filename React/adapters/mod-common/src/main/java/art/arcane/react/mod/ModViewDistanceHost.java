@@ -71,6 +71,17 @@ final class ModViewDistanceHost implements ViewDistanceHost {
         }
     }
 
+    /** Sets every level and the distance new players are sent, dropping per-level overrides. */
+    void setServerViewDistance(int distance) {
+        server.getPlayerList().setViewDistance(distance);
+        viewDistances.clear();
+    }
+
+    void setServerSimulationDistance(int distance) {
+        server.getPlayerList().setSimulationDistance(distance);
+        simulationDistances.clear();
+    }
+
     private static void remember(Map<UUID, Integer> distances, UUID worldId, int distance, int serverDistance) {
         if (distance == serverDistance) {
             distances.remove(worldId);

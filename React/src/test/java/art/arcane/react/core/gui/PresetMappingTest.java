@@ -98,11 +98,11 @@ class PresetMappingTest {
 
   private static String[] readManagedIds() {
     try {
-      Field field = ReactConfigGUI.class.getDeclaredField("PRESET_MANAGED_IDS");
+      Field field = ReactSettingsMenu.class.getDeclaredField("PRESET_MANAGED_IDS");
       field.setAccessible(true);
       return (String[]) field.get(null);
     } catch (ReflectiveOperationException e) {
-      throw new AssertionError("PRESET_MANAGED_IDS not accessible on ReactConfigGUI", e);
+      throw new AssertionError("PRESET_MANAGED_IDS not accessible on ReactSettingsMenu", e);
     }
   }
 }

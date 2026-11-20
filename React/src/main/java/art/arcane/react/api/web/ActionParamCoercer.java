@@ -2,7 +2,7 @@ package art.arcane.react.api.web;
 
 import art.arcane.react.api.action.Action;
 import art.arcane.react.api.action.ActionParams;
-import art.arcane.react.core.gui.ReactConfigGUI;
+import art.arcane.react.core.gui.ReactSettingsMenu;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -23,7 +23,7 @@ public class ActionParamCoercer {
             if (field == null) {
                 continue;
             }
-            ReactConfigGUI.ParseResult result = ReactConfigGUI.parseInputValue(
+            ReactSettingsMenu.ParseResult result = ReactSettingsMenu.parseInputValue(
                 field.getType(),
                 String.valueOf(rawValue)
             );

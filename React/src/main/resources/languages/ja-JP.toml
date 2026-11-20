@@ -247,9 +247,19 @@ network = "プロキシネットワークと、その中でのこのサーバー
 "network.join" = "バックエンドがこのプロキシに参加するために web.toml に設定する内容を表示します"
 "network.list" = "プロキシの背後にあるすべてのサーバーを一覧表示します"
 "network.status" = "ネットワークの概要、またはこのサーバーとプロキシの接続を表示します"
+feature = "React の機能を一覧表示、有効化、無効化する"
+"feature.list" = "すべての機能と実行中かどうかを一覧表示する"
+"feature.enable" = "機能を有効化して設定に保存する"
+"feature.disable" = "機能を無効化して設定に保存する"
+tweak = "React の調整を一覧表示、有効化、無効化する"
+"tweak.list" = "すべての調整と実行中かどうかを一覧表示する"
+"tweak.enable" = "調整を有効化して設定に保存する"
+"tweak.disable" = "調整を無効化して設定に保存する"
 
 [command.parameter]
 debugdump_upload = "レポートを mclo.gs にアップロードする"
+feature = "変更する機能"
+tweak = "変更する調整"
 
 [command.parameter.action]
 profile_seconds = "記録時間（秒）、1～300"
@@ -293,7 +303,7 @@ chunk_not_sampled = "&cこのチャンクはまだ測定されていません。
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&c設定エディタを開く権限がありません。&r"
 no_chunks_sampled = "&cまだ測定されたチャンクがありません。しばらくしてからもう一度確認してください。&r"
-unavailable = "&f{command}&c is not available on &f{platform}&c.&r"
+unavailable = "&f{command}&c は &f{platform}&c では利用できません。&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

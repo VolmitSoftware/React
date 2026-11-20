@@ -58,7 +58,7 @@ public final class ReactModRuntime {
 
     private record Running(ModReactPlatform platform, ModTicks ticks, ExecutorService async, SampleController samples,
                            ReactWebServer web, ModMaps maps, RuntimeTelemetry telemetry, Components components,
-                           WebConfigWatcher webConfig) {
+                           WebConfigWatcher webConfig, ModSettings settings, ModConfigHotload hotload) {
     }
 
     /** React's optimisation layer: features, tweaks and actions, started after the samplers they read. */
@@ -128,7 +128,9 @@ public final class ReactModRuntime {
         web[0] = new ReactWebServer(webHost);
         WebConfigWatcher webConfig = new WebConfigWatcher(new File(dataFolder, "web.toml"), webHost, web[0]);
         Components components = new Components(new FeatureController(), new TweakController(), new ActionController());
-        running = new Running(modPlatform, ticks, async, samples, web[0], maps, telemetry, components, webConfig);
+        ModSettings settings = new ModSettings(server, dataFolder, languageHost, maps, () -> samples, ticks);
+        ModConfigHotload hotload = new ModConfigHotload(server, dataFolder, languageHost, maps, () -> samples, modPlatform, ticks);
+        running = new Running(modPlatform, ticks, async, samples, web[0], maps, telemetry, components, webConfig, settings, hotload);
         costProbe.start(server, ticks::later);
         ticks.every(costProbe::tick);
         try {
@@ -146,6 +148,9 @@ public final class ReactModRuntime {
             telemetry.start(samples);
             maps.start(modPlatform);
             ticks.every(maps::tick);
+            ModSettings.bind(settings);
+            hotload.start();
+            ticks.every(hotload::tick);
             modPlatform.ownerCost().start();
             modPlatform.modScheduler().markReady();
             web[0].start();
@@ -191,6 +196,8 @@ public final class ReactModRuntime {
         if (active == null) {
             return;
         }
+        active.hotload().stop();
+        ModSettings.unbind(active.settings());
         active.platform().components().disable();
         try {
             active.components().stop();

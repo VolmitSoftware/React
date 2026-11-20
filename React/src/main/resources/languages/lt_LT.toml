@@ -247,9 +247,19 @@ network = "Rodyti tarpinio serverio tinklą ir šio serverio vietą jame"
 "network.join" = "Rodyti, ką backend serveris turi įrašyti į web.toml, kad prisijungtų prie šio tarpinio serverio"
 "network.list" = "Išvardyti visus už tarpinio serverio esančius serverius"
 "network.status" = "Rodyti tinklo santrauką arba šio serverio ryšį su tarpiniu serveriu"
+feature = "Rodyti, įjungti ir išjungti React funkcijas"
+"feature.list" = "Rodyti visas funkcijas ir ar jos veikia"
+"feature.enable" = "Įjungti funkciją ir išsaugoti ją jos konfigūracijoje"
+"feature.disable" = "Išjungti funkciją ir išsaugoti ją jos konfigūracijoje"
+tweak = "Rodyti, įjungti ir išjungti React koregavimus"
+"tweak.list" = "Rodyti visus koregavimus ir ar jie veikia"
+"tweak.enable" = "Įjungti koregavimą ir išsaugoti jį jo konfigūracijoje"
+"tweak.disable" = "Išjungti koregavimą ir išsaugoti jį jo konfigūracijoje"
 
 [command.parameter]
 debugdump_upload = "Įkelti ataskaitą į mclo.gs"
+feature = "Keičiama funkcija"
+tweak = "Keičiamas koregavimas"
 
 [command.parameter.action]
 profile_seconds = "Įrašymo trukmė sekundėmis, nuo 1 iki 300"
@@ -293,7 +303,7 @@ chunk_not_sampled = "&cŠis pasaulio segmentas dar neišmatuotas. Pabandykite po
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&cJūs neturite leidimo atverti konfigūravimo redaktoriaus.&r"
 no_chunks_sampled = "&cDar neišmatuotas nė vienas pasaulio segmentas. Pabandykite po sekundės.&r"
-unavailable = "&f{command}&c is not available on &f{platform}&c.&r"
+unavailable = "&f{command}&c nepasiekiama platformoje &f{platform}&c.&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

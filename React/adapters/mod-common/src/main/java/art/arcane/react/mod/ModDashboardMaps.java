@@ -56,6 +56,7 @@ public final class ModDashboardMaps {
         Predicate<UUID> viewerOnline = (UUID viewerId) -> server.getPlayerList().getPlayer(viewerId) != null;
         List<ModIntegrationMetrics.Source> sources = ModIntegrationSources.installed();
         ModIntegrationMetrics integrations = new ModIntegrationMetrics(server, sources);
+        platform.integrations(integrations);
         for (ModIntegrationMetrics.Source source : sources) {
             switch (source.id()) {
                 case "iris" -> {

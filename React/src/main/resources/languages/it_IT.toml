@@ -247,9 +247,19 @@ network = "Mostra la rete del proxy e il posto di questo server al suo interno"
 "network.join" = "Mostra cosa inserisce un backend in web.toml per unirsi a questo proxy"
 "network.list" = "Elenca tutti i server dietro il proxy"
 "network.status" = "Mostra il riepilogo della rete o il collegamento di questo server al suo proxy"
+feature = "Elenca, attiva e disattiva le funzioni di React"
+"feature.list" = "Elenca tutte le funzioni e indica se sono in esecuzione"
+"feature.enable" = "Attiva una funzione e salvala nella sua configurazione"
+"feature.disable" = "Disattiva una funzione e salvala nella sua configurazione"
+tweak = "Elenca, attiva e disattiva i tweak di React"
+"tweak.list" = "Elenca tutti i tweak e indica se sono in esecuzione"
+"tweak.enable" = "Attiva un tweak e salvalo nella sua configurazione"
+"tweak.disable" = "Disattiva un tweak e salvalo nella sua configurazione"
 
 [command.parameter]
 debugdump_upload = "Carica il rapporto su mclo.gs"
+feature = "La funzione da modificare"
+tweak = "Il tweak da modificare"
 
 [command.parameter.action]
 profile_seconds = "Durata della registrazione in secondi, da 1 a 300"
@@ -293,7 +303,7 @@ chunk_not_sampled = "&cQuesto chunk non è stato ancora misurato; controlla di n
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&cNon hai il permesso di aprire l'editor di configurazione.&r"
 no_chunks_sampled = "&cNon è stato ancora misurato alcun chunk; controlla di nuovo in un secondo.&r"
-unavailable = "&f{command}&c is not available on &f{platform}&c.&r"
+unavailable = "&f{command}&c non è disponibile su &f{platform}&c.&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

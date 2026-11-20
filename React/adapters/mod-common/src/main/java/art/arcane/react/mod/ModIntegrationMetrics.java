@@ -31,6 +31,7 @@ final class ModIntegrationMetrics implements IntegrationMetricsHost {
     private final MinecraftServer server;
     private final List<Source> sources;
     private volatile Map<String, Published> published = Map.of();
+    private volatile long refreshedAtMs;
 
     /** One mod's metrics. {@link #read} runs on the server thread. */
     interface Source {
@@ -59,6 +60,19 @@ final class ModIntegrationMetrics implements IntegrationMetricsHost {
 
     boolean any() {
         return !sources.isEmpty();
+    }
+
+    List<String> ids() {
+        List<String> ids = new ArrayList<>();
+        for (Source source : sources) {
+            ids.add(source.id());
+        }
+        return ids;
+    }
+
+    /** When the installed mods were last read, or zero before the first read. */
+    long refreshedAtMs() {
+        return refreshedAtMs;
     }
 
     void schedule(PlatformScheduler scheduler) {
@@ -95,6 +109,7 @@ final class ModIntegrationMetrics implements IntegrationMetricsHost {
             }
         }
         published = Map.copyOf(next);
+        refreshedAtMs = now;
     }
 
     private static Map<String, IntegrationMetricSample> samples(Set<String> keys, Map<String, Double> values, long now, String missingReason) {

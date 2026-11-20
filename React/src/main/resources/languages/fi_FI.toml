@@ -247,9 +247,19 @@ network = "Näyttää proxy-verkon ja tämän palvelimen paikan siinä"
 "network.join" = "Näyttää, mitä backend asettaa web.toml-tiedostoon liittyäkseen tähän proxyyn"
 "network.list" = "Listaa kaikki proxyn takana olevat palvelimet"
 "network.status" = "Näyttää verkon yhteenvedon tai tämän palvelimen yhteyden proxyynsä"
+feature = "Luettele, ota käyttöön ja poista käytöstä Reactin ominaisuuksia"
+"feature.list" = "Luettele kaikki ominaisuudet ja näytä, ovatko ne käynnissä"
+"feature.enable" = "Ota ominaisuus käyttöön ja tallenna se sen asetuksiin"
+"feature.disable" = "Poista ominaisuus käytöstä ja tallenna se sen asetuksiin"
+tweak = "Luettele, ota käyttöön ja poista käytöstä Reactin säätöjä"
+"tweak.list" = "Luettele kaikki säädöt ja näytä, ovatko ne käynnissä"
+"tweak.enable" = "Ota säätö käyttöön ja tallenna se sen asetuksiin"
+"tweak.disable" = "Poista säätö käytöstä ja tallenna se sen asetuksiin"
 
 [command.parameter]
 debugdump_upload = "Lähetä raportti mclo.gs-palveluun"
+feature = "Muutettava ominaisuus"
+tweak = "Muutettava säätö"
 
 [command.parameter.action]
 profile_seconds = "Tallennuksen kesto sekunteina, 1–300"
@@ -293,7 +303,7 @@ chunk_not_sampled = "&cTätä chunkia ei ole vielä mitattu. Tarkista hetken kul
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&cSinulla ei ole lupaa avata konfigurointieditoria.&r"
 no_chunks_sampled = "&cYhtään chunkia ei ole vielä mitattu. Tarkista hetken kuluttua uudelleen.&r"
-unavailable = "&f{command}&c is not available on &f{platform}&c.&r"
+unavailable = "&f{command}&c ei ole käytettävissä alustalla &f{platform}&c.&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

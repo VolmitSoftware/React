@@ -247,9 +247,19 @@ network = "Показывает сеть прокси и место этого �
 "network.join" = "Показывает, что бэкенд указывает в web.toml, чтобы присоединиться к этому прокси"
 "network.list" = "Перечисляет все серверы за прокси"
 "network.status" = "Показывает сводку сети или связь этого сервера с его прокси"
+feature = "Показать, включить и отключить функции React"
+"feature.list" = "Показать все функции и работают ли они"
+"feature.enable" = "Включить функцию и сохранить её в конфигурации"
+"feature.disable" = "Отключить функцию и сохранить её в конфигурации"
+tweak = "Показать, включить и отключить оптимизации React"
+"tweak.list" = "Показать все оптимизации и работают ли они"
+"tweak.enable" = "Включить оптимизацию и сохранить её в конфигурации"
+"tweak.disable" = "Отключить оптимизацию и сохранить её в конфигурации"
 
 [command.parameter]
 debugdump_upload = "Загрузить отчёт на mclo.gs"
+feature = "Изменяемая функция"
+tweak = "Изменяемая оптимизация"
 
 [command.parameter.action]
 profile_seconds = "Длительность записи в секундах, от 1 до 300"
@@ -293,7 +303,7 @@ chunk_not_sampled = "&cЭтот чанк ещё не измерен. Повто�
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&cУ вас нет разрешения на открытие редактора конфигураций.&r"
 no_chunks_sampled = "&cНи один чанк ещё не измерен. Повторите через секунду.&r"
-unavailable = "&f{command}&c is not available on &f{platform}&c.&r"
+unavailable = "&f{command}&c недоступна на &f{platform}&c.&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

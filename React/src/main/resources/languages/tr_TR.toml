@@ -247,9 +247,19 @@ network = "Proxy ağını ve bu sunucunun içindeki yerini gösterir"
 "network.join" = "Bir backend'in bu proxy'ye katılmak için web.toml dosyasına ne yazması gerektiğini gösterir"
 "network.list" = "Proxy arkasındaki tüm sunucuları listeler"
 "network.status" = "Ağ özetini veya bu sunucunun proxy bağlantısını gösterir"
+feature = "React özelliklerini listele, etkinleştir ve devre dışı bırak"
+"feature.list" = "Tüm özellikleri ve çalışıp çalışmadıklarını listele"
+"feature.enable" = "Bir özelliği etkinleştir ve yapılandırmasına kaydet"
+"feature.disable" = "Bir özelliği devre dışı bırak ve yapılandırmasına kaydet"
+tweak = "React ince ayarlarını listele, etkinleştir ve devre dışı bırak"
+"tweak.list" = "Tüm ince ayarları ve çalışıp çalışmadıklarını listele"
+"tweak.enable" = "Bir ince ayarı etkinleştir ve yapılandırmasına kaydet"
+"tweak.disable" = "Bir ince ayarı devre dışı bırak ve yapılandırmasına kaydet"
 
 [command.parameter]
 debugdump_upload = "Raporu mclo.gs üzerine yükle"
+feature = "Değiştirilecek özellik"
+tweak = "Değiştirilecek ince ayar"
 
 [command.parameter.action]
 profile_seconds = "Saniye cinsinden kayıt süresi, 1 ile 300 arası"
@@ -293,7 +303,7 @@ chunk_not_sampled = "&cBu chunk henüz ölçülmedi; bir saniye sonra tekrar kon
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&cYapılandırma düzenleyicisini açma izniniz yok.&r"
 no_chunks_sampled = "&cHenüz hiçbir chunk ölçülmedi; bir saniye sonra tekrar kontrol edin.&r"
-unavailable = "&f{command}&c is not available on &f{platform}&c.&r"
+unavailable = "&f{command}&c, &f{platform}&c üzerinde kullanılamıyor.&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

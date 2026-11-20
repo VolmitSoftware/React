@@ -20,10 +20,9 @@
 package art.arcane.react.api.benchmark;
 
 import art.arcane.react.React;
+import art.arcane.react.content.directorcommand.EnvironmentCommands;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.EnvironmentMessages;
-import art.arcane.react.util.reflect.Platform;
-import art.arcane.volmlib.util.format.Form;
 import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.plugin.ComponentMessenger;
 import art.arcane.volmlib.util.plugin.ComponentText;
@@ -58,7 +57,7 @@ public final class EnvironmentReport {
 
   private void publish(UploadRequest request) {
     try {
-      URI url = uploader.publish(create(request.version(), request.serverVersion()),
+      URI url = uploader.publish(EnvironmentCommands.summary(request.version(), request.serverVersion()),
           "VolmitSoftware - React - v" + request.version(),
           "VolmitSoftware/React/" + request.version());
       reply(request, () -> sendLink(request.sender(), url));
@@ -93,28 +92,6 @@ public final class EnvironmentReport {
     Component message = ReactLanguage.component(EnvironmentMessages.UPLOAD_LINK)
         .clickEvent(ClickEvent.openUrl(url.toString()));
     ComponentMessenger.send(sender, ComponentText.component(message));
-  }
-
-  private String create(String version, String serverVersion) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(" -- == React Info == -- \n");
-    sb.append("React Version: ").append(version).append("\n");
-    sb.append("Server Type: ").append(serverVersion).append("\n");
-    sb.append(" -- == Platform Overview == -- \n");
-    sb.append("Version: ").append(Platform.getVersion()).append(" - Platform: ").append(Platform.getName()).append("\n");
-    sb.append("Java Vendor: ").append(Platform.ENVIRONMENT.getJavaVendor()).append(" - Java Version: ").append(Platform.ENVIRONMENT.getJavaVersion()).append("\n");
-    sb.append(" -- == Storage Information == -- \n");
-    sb.append("Total Space: ").append(Form.memSize(Platform.STORAGE.getTotalSpace())).append("\n");
-    sb.append("Free Space: ").append(Form.memSize(Platform.STORAGE.getFreeSpace())).append("\n");
-    sb.append("Used Space: ").append(Form.memSize(Platform.STORAGE.getUsedSpace())).append("\n");
-    sb.append(" -- == Memory Information == -- \n");
-    sb.append("Physical Memory - Total: ").append(Form.memSize(Platform.MEMORY.PHYSICAL.getTotalMemory())).append(" Free: ").append(Form.memSize(Platform.MEMORY.PHYSICAL.getFreeMemory())).append(" Used: ").append(Form.memSize(Platform.MEMORY.PHYSICAL.getUsedMemory())).append("\n");
-    sb.append("Virtual Memory - Total: ").append(Form.memSize(Platform.MEMORY.VIRTUAL.getTotalMemory())).append(" Free: ").append(Form.memSize(Platform.MEMORY.VIRTUAL.getFreeMemory())).append(" Used: ").append(Form.memSize(Platform.MEMORY.VIRTUAL.getUsedMemory())).append("\n");
-    sb.append(" -- == CPU Overview == -- \n");
-    sb.append("CPU Architecture: ").append(Platform.CPU.getArchitecture()).append(" Available Processors: ").append(Platform.CPU.getAvailableProcessors()).append("\n");
-    sb.append("CPU Load: ").append(Form.pc(Platform.CPU.getCPULoad())).append(" CPU Live Process Load: ").append(Form.pc(Platform.CPU.getLiveProcessCPULoad())).append("\n");
-
-    return sb.toString();
   }
 
   private record UploadRequest(React plugin, CommandSender sender, String version, String serverVersion) {

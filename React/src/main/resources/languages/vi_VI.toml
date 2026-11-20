@@ -247,9 +247,19 @@ network = "Hiện mạng proxy và vị trí của máy chủ này trong mạng"
 "network.join" = "Hiện những gì máy chủ backend cần đặt trong web.toml để tham gia proxy này"
 "network.list" = "Liệt kê mọi máy chủ phía sau proxy"
 "network.status" = "Hiện tóm tắt mạng hoặc kết nối của máy chủ này với proxy"
+feature = "Liệt kê, bật và tắt các tính năng của React"
+"feature.list" = "Liệt kê mọi tính năng và cho biết chúng có đang chạy không"
+"feature.enable" = "Bật một tính năng và lưu vào cấu hình của nó"
+"feature.disable" = "Tắt một tính năng và lưu vào cấu hình của nó"
+tweak = "Liệt kê, bật và tắt các tinh chỉnh của React"
+"tweak.list" = "Liệt kê mọi tinh chỉnh và cho biết chúng có đang chạy không"
+"tweak.enable" = "Bật một tinh chỉnh và lưu vào cấu hình của nó"
+"tweak.disable" = "Tắt một tinh chỉnh và lưu vào cấu hình của nó"
 
 [command.parameter]
 debugdump_upload = "Tải báo cáo lên mclo.gs"
+feature = "Tính năng cần thay đổi"
+tweak = "Tinh chỉnh cần thay đổi"
 
 [command.parameter.action]
 profile_seconds = "Thời gian ghi tính bằng giây, từ 1 đến 300"
@@ -293,7 +303,7 @@ chunk_not_sampled = "&cChunk này chưa được lấy mẫu. Hãy kiểm tra l�
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&cBạn không có quyền mở trình soạn thảo cấu hình.&r"
 no_chunks_sampled = "&cChưa có chunk nào được lấy mẫu. Hãy kiểm tra lại sau một giây.&r"
-unavailable = "&f{command}&c is not available on &f{platform}&c.&r"
+unavailable = "&f{command}&c không khả dụng trên &f{platform}&c.&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

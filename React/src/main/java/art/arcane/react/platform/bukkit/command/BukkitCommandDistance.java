@@ -1,11 +1,10 @@
 package art.arcane.react.platform.bukkit.command;
 
 import art.arcane.react.React;
+import art.arcane.react.content.directorcommand.DistanceCommands;
 import art.arcane.react.localization.ReactLanguage;
-import art.arcane.react.localization.catalog.CommandMessages;
+import art.arcane.react.platform.CommandHost.DistanceKind;
 import art.arcane.react.util.common.scheduling.J;
-import art.arcane.react.platform.bukkit.BukkitCommandSender;
-import art.arcane.react.util.plugin.VolmitSender;
 import art.arcane.react.util.project.world.DistanceSupport;
 import art.arcane.react.util.project.world.DistanceSupport.DistanceType;
 import art.arcane.volmlib.util.localization.MessageArgument;
@@ -18,137 +17,100 @@ import org.bukkit.entity.Player;
 
 public final class BukkitCommandDistance {
 
-  static void setServer(CommandSender sender, DistanceType type, int distance) {
-    if (!DistanceSupport.isValidWorldDistance(type, distance)) {
-      sendInvalid(sender, false);
+  static void setServer(CommandSender sender, DistanceKind kind, int distance) {
+    DistanceCommands.Reply reply = reply(sender);
+    if (!DistanceCommands.isValidWorldDistance(kind, distance)) {
+      DistanceCommands.invalid(reply, false);
       return;
     }
+    DistanceType type = DistanceType.of(kind);
     if (!DistanceSupport.supportsWorld(type)) {
-      sendUnavailable(sender, "server", type);
+      DistanceCommands.unavailable(reply, "server", kind);
       return;
     }
 
-    Runnable operation = () -> applyServer(sender, type, distance);
+    Runnable operation = () -> applyServer(reply, type, distance);
     if (!FoliaScheduler.runGlobal(React.instance, operation)) {
-      respond(sender, CommandMessages.DISTANCE_SCHEDULE_FAILED);
+      DistanceCommands.scheduleFailed(reply);
     }
   }
 
-  static void setWorld(CommandSender sender, World world, DistanceType type, int distance) {
-    if (!DistanceSupport.isValidWorldDistance(type, distance)) {
-      sendInvalid(sender, false);
+  static void setWorld(CommandSender sender, World world, DistanceKind kind, int distance) {
+    DistanceCommands.Reply reply = reply(sender);
+    if (!DistanceCommands.isValidWorldDistance(kind, distance)) {
+      DistanceCommands.invalid(reply, false);
       return;
     }
+    DistanceType type = DistanceType.of(kind);
     if (!DistanceSupport.supportsWorld(type)) {
-      sendUnavailable(sender, "world", type);
+      DistanceCommands.unavailable(reply, "world", kind);
       return;
     }
 
-    Runnable operation = () -> applyWorld(sender, world, type, distance);
+    Runnable operation = () -> applyWorld(reply, world, type, distance);
     if (!FoliaScheduler.runGlobal(React.instance, operation)) {
-      respond(sender, CommandMessages.DISTANCE_SCHEDULE_FAILED);
+      DistanceCommands.scheduleFailed(reply);
     }
   }
 
-  static void setPlayer(CommandSender sender, Player player, DistanceType type, int distance) {
-    if (!DistanceSupport.isValidPlayerDistance(distance)) {
-      sendInvalid(sender, true);
+  static void setPlayer(CommandSender sender, Player player, DistanceKind kind, int distance) {
+    DistanceCommands.Reply reply = reply(sender);
+    if (!DistanceCommands.isValidPlayerDistance(distance)) {
+      DistanceCommands.invalid(reply, true);
       return;
     }
+    DistanceType type = DistanceType.of(kind);
     if (!DistanceSupport.supportsPlayer(type)) {
-      sendUnavailable(sender, "player", type);
+      DistanceCommands.unavailable(reply, "player", kind);
       return;
     }
 
-    Runnable operation = () -> applyPlayer(sender, player, type, distance);
-    J.runEntity(player, operation, 0, () -> respond(sender, CommandMessages.DISTANCE_SCHEDULE_FAILED));
+    Runnable operation = () -> applyPlayer(reply, player, type, distance);
+    J.runEntity(player, operation, 0, () -> DistanceCommands.scheduleFailed(reply));
   }
 
-  private static void applyServer(CommandSender sender, DistanceType type, int distance) {
+  private static void applyServer(DistanceCommands.Reply reply, DistanceType type, int distance) {
     try {
       for (World world : Bukkit.getWorlds()) {
         DistanceSupport.set(world, type, distance);
       }
-      sendSuccess(sender, "server", "all loaded worlds", type, distance);
+      DistanceCommands.set(reply, "server", DistanceCommands.SERVER_TARGET, type.kind(), distance);
     } catch (Throwable failure) {
-      reportFailure(sender, "server", "all loaded worlds", type, failure);
+      reportFailure(reply, "server", DistanceCommands.SERVER_TARGET, type, failure);
     }
   }
 
-  private static void applyWorld(CommandSender sender, World world, DistanceType type, int distance) {
+  private static void applyWorld(DistanceCommands.Reply reply, World world, DistanceType type, int distance) {
     try {
       DistanceSupport.set(world, type, distance);
-      sendSuccess(sender, "world", world.getName(), type, distance);
+      DistanceCommands.set(reply, "world", world.getName(), type.kind(), distance);
     } catch (Throwable failure) {
-      reportFailure(sender, "world", world.getName(), type, failure);
+      reportFailure(reply, "world", world.getName(), type, failure);
     }
   }
 
-  private static void applyPlayer(CommandSender sender, Player player, DistanceType type, int distance) {
+  private static void applyPlayer(DistanceCommands.Reply reply, Player player, DistanceType type, int distance) {
     try {
       DistanceSupport.set(player, type, distance);
-      sendSuccess(sender, "player", player.getName(), type, distance);
+      DistanceCommands.set(reply, "player", player.getName(), type.kind(), distance);
     } catch (Throwable failure) {
-      reportFailure(sender, "player", player.getName(), type, failure);
+      reportFailure(reply, "player", player.getName(), type, failure);
     }
-  }
-
-  private static void sendSuccess(
-      CommandSender sender,
-      String scope,
-      String target,
-      DistanceType type,
-      int distance
-  ) {
-    String value = distance == DistanceSupport.INHERIT_DISTANCE ? "inherit" : Integer.toString(distance);
-    respond(
-        sender,
-        CommandMessages.DISTANCE_SET,
-        MessageArgument.untrusted("scope", scope),
-        MessageArgument.untrusted("target", target),
-        MessageArgument.untrusted("type", type.displayName()),
-        MessageArgument.untrusted("distance", value)
-    );
-  }
-
-  private static void sendInvalid(CommandSender sender, boolean inheritanceSupported) {
-    String range = inheritanceSupported
-        ? "between 2 and 32 chunks, or -1 to inherit"
-        : "between 2 and 32 chunks";
-    respond(
-        sender,
-        CommandMessages.DISTANCE_INVALID,
-        MessageArgument.untrusted("range", range)
-    );
-  }
-
-  private static void sendUnavailable(CommandSender sender, String scope, DistanceType type) {
-    respond(
-        sender,
-        CommandMessages.DISTANCE_UNAVAILABLE,
-        MessageArgument.untrusted("scope", scope),
-        MessageArgument.untrusted("type", type.displayName())
-    );
   }
 
   private static void reportFailure(
-      CommandSender sender,
+      DistanceCommands.Reply reply,
       String scope,
       String target,
       DistanceType type,
       Throwable failure
   ) {
-    React.reportError(
-        "Failed to set " + scope + " " + type.displayName() + " distance for " + target,
-        failure
-    );
-    respond(
-        sender,
-        CommandMessages.DISTANCE_FAILED,
-        MessageArgument.untrusted("scope", scope),
-        MessageArgument.untrusted("target", target),
-        MessageArgument.untrusted("type", type.displayName())
-    );
+    React.reportError(DistanceCommands.failureContext(scope, target, type.kind()), failure);
+    DistanceCommands.failed(reply, scope, target, type.kind());
+  }
+
+  private static DistanceCommands.Reply reply(CommandSender sender) {
+    return (MessageKey key, MessageArgument... arguments) -> respond(sender, key, arguments);
   }
 
   private static void respond(CommandSender sender, MessageKey key, MessageArgument... arguments) {

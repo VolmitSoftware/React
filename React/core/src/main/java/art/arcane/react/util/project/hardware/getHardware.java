@@ -1,6 +1,7 @@
 package art.arcane.react.util.project.hardware;
 
-import art.arcane.react.React;
+import art.arcane.react.platform.ReactPlatform;
+import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.core.telemetry.WindowsSensorWmiQueryHandler;
 import art.arcane.volmlib.util.collection.KList;
 import art.arcane.volmlib.util.format.Form;
@@ -58,7 +59,7 @@ public class getHardware {
       String cpuModel = processor.getProcessorIdentifier().getName();
       return cpuModel.isEmpty() ? "Unknown CPU Model" : cpuModel;
     } catch (Exception e) {
-      React.verbose("Hardware CPU model query failed", e);
+      verbose("Hardware CPU model query failed", e);
       return "Unknown CPU Model";
     }
   }
@@ -80,7 +81,7 @@ public class getHardware {
       sensors.add("CPU voltage: " + (voltage > 0.0 ? Form.f(voltage, 2) + " V" : "Unavailable"));
       sensors.add("Fan speeds: " + (fanSpeeds.length == 0 ? "Unavailable" : Arrays.toString(fanSpeeds)));
     } catch (Exception e) {
-      React.verbose("Hardware sensor query failed", e);
+      verbose("Hardware sensor query failed", e);
     }
     if (sensors.isEmpty()) {
       sensors.add("No sensors reported.");
@@ -98,7 +99,7 @@ public class getHardware {
         gpus.add("- Video memory: " + (gpu.getVRam() > 0L ? Form.memSize(gpu.getVRam()) : "Unavailable"));
       }
     } catch (Exception e) {
-      React.verbose("Graphics-card query failed", e);
+      verbose("Graphics-card query failed", e);
     }
     if (gpus.isEmpty()) {
       gpus.add("No graphics cards reported.");
@@ -135,7 +136,7 @@ public class getHardware {
         systemDisks.add("- Free space: " + Form.memSize(store.getFreeSpace()));
       }
     } catch (Exception e) {
-      React.verbose("Disk query failed", e);
+      verbose("Disk query failed", e);
     }
     if (systemDisks.isEmpty()) {
       systemDisks.add("No disks reported.");
@@ -157,7 +158,7 @@ public class getHardware {
         systemPowerSources.add("- Cycle count: " + powersource.getCycleCount());
       }
     } catch (Exception e) {
-      React.verbose("Power-source query failed", e);
+      verbose("Power-source query failed", e);
     }
     if (systemPowerSources.isEmpty()) {
       systemPowerSources.add("No power sources reported.");
@@ -181,7 +182,7 @@ public class getHardware {
         }
       }
     } catch (Exception e) {
-      React.verbose("Display query failed", e);
+      verbose("Display query failed", e);
     }
     if (systemEDID.isEmpty()) {
       systemEDID.add("No displays reported.");
@@ -206,11 +207,18 @@ public class getHardware {
         }
       }
     } catch (Exception e) {
-      React.verbose("Network-interface query failed", e);
+      verbose("Network-interface query failed", e);
     }
     if (interfaces.isEmpty()) {
       interfaces.add("No network interfaces reported.");
     }
     return interfaces;
+  }
+
+  private static void verbose(String message, Exception failure) {
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    if (platform != null) {
+      platform.verbose(() -> message + ": " + failure);
+    }
   }
 }

@@ -247,9 +247,19 @@ network = "הצגת רשת הפרוקסי ומקומו של השרת הזה בה
 "network.join" = "הצגת ההגדרות ששרת backend מוסיף ל־web.toml כדי להצטרף לפרוקסי הזה"
 "network.list" = "רשימת כל השרתים שמאחורי הפרוקסי"
 "network.status" = "הצגת סיכום הרשת או החיבור של השרת הזה לפרוקסי שלו"
+feature = "הצגה, הפעלה והשבתה של תכונות React"
+"feature.list" = "הצגת כל התכונות והאם הן פועלות"
+"feature.enable" = "הפעלת תכונה ושמירתה בתצורה שלה"
+"feature.disable" = "השבתת תכונה ושמירתה בתצורה שלה"
+tweak = "הצגה, הפעלה והשבתה של כוונוני React"
+"tweak.list" = "הצגת כל הכוונונים והאם הם פועלים"
+"tweak.enable" = "הפעלת כוונון ושמירתו בתצורה שלו"
+"tweak.disable" = "השבתת כוונון ושמירתו בתצורה שלו"
 
 [command.parameter]
 debugdump_upload = "העלאת הדוח אל mclo.gs"
+feature = "התכונה לשינוי"
+tweak = "הכוונון לשינוי"
 
 [command.parameter.action]
 profile_seconds = "משך ההקלטה בשניות, בין 1 ל־300"
@@ -293,7 +303,7 @@ chunk_not_sampled = "&cהצ'אנק הזה עדיין לא נדגם. נסה שו�
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&cאין לך הרשאה לפתוח את עורך התצורה.&r"
 no_chunks_sampled = "&cעדיין לא נדגמו צ'אנקים. נסה שוב בעוד שנייה.&r"
-unavailable = "&f{command}&c is not available on &f{platform}&c.&r"
+unavailable = "&f{command}&c אינו זמין ב-&f{platform}&c.&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

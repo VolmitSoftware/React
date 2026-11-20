@@ -14,7 +14,6 @@ import art.arcane.react.platform.bukkit.BukkitLanguage;
 import art.arcane.react.platform.bukkit.BukkitReactPlayer;
 import art.arcane.react.platform.bukkit.BukkitReactWorld;
 import art.arcane.react.util.plugin.VolmitSender;
-import art.arcane.react.util.project.world.DistanceSupport.DistanceType;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.localization.BukkitLanguageSwitcher;
 import org.bukkit.Bukkit;
@@ -198,17 +197,17 @@ public final class BukkitCommandHost implements CommandHost {
 
   @Override
   public void serverDistance(VolmitSender sender, DistanceKind kind, int distance) {
-    BukkitCommandDistance.setServer(BukkitCommandSender.bukkit(sender), type(kind), distance);
+    BukkitCommandDistance.setServer(BukkitCommandSender.bukkit(sender), kind, distance);
   }
 
   @Override
   public void worldDistance(VolmitSender sender, CommandTargets.World world, DistanceKind kind, int distance) {
-    BukkitCommandDistance.setWorld(BukkitCommandSender.bukkit(sender), (World) world.world().handle(), type(kind), distance);
+    BukkitCommandDistance.setWorld(BukkitCommandSender.bukkit(sender), (World) world.world().handle(), kind, distance);
   }
 
   @Override
   public void playerDistance(VolmitSender sender, CommandTargets.Player player, DistanceKind kind, int distance) {
-    BukkitCommandDistance.setPlayer(BukkitCommandSender.bukkit(sender), (Player) player.player().handle(), type(kind), distance);
+    BukkitCommandDistance.setPlayer(BukkitCommandSender.bukkit(sender), (Player) player.player().handle(), kind, distance);
   }
 
   @Override
@@ -239,13 +238,5 @@ public final class BukkitCommandHost implements CommandHost {
   @Override
   public void testLoad(VolmitSender sender, boolean confirm, int players, int durationSeconds) {
     test.loadtest(sender, confirm, players, durationSeconds);
-  }
-
-  private static DistanceType type(DistanceKind kind) {
-    return switch (kind) {
-      case VIEW -> DistanceType.VIEW;
-      case SIMULATION -> DistanceType.SIMULATION;
-      case SEND -> DistanceType.SEND;
-    };
   }
 }

@@ -19,7 +19,7 @@
 
 package art.arcane.react.api.benchmark;
 
-import art.arcane.react.React;
+import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.BenchmarkMessages;
 import art.arcane.react.util.common.scheduling.J;
@@ -144,7 +144,7 @@ public final class BenchmarkRunner {
     try {
       BenchmarkReport.send(sender, measure(target));
     } catch (Throwable failure) {
-      React.reportError("Benchmark " + target.name() + " failed", failure);
+      ReactPlatforms.get().reportError("Benchmark " + target.name() + " failed", failure);
       ReactLanguage.send(
           sender,
           BenchmarkMessages.FAILED,
@@ -163,7 +163,7 @@ public final class BenchmarkRunner {
   }
 
   private static Path driveDirectory() {
-    return React.instance.getDataFolder().toPath().resolve("benchmark");
+    return ReactPlatforms.get().dataFolder().toPath().resolve("benchmark");
   }
 
   private static String sample(BenchmarkProfile profile) {

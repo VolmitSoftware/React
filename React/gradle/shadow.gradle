@@ -67,7 +67,8 @@ tasks.named('shadowJar').configure {
         'art/arcane/volmlib/util/math/', 'art/arcane/volmlib/util/scheduling/', 'art/arcane/volmlib/util/function/',
         'art/arcane/volmlib/util/collection/', 'art/arcane/volmlib/util/json/', 'art/arcane/volmlib/util/data/',
         'art/arcane/volmlib/integration/', 'art/arcane/volmlib/util/cache/', 'art/arcane/volmlib/util/VolmLog',
-        'art/arcane/volmlib/util/plugin/CancellableTask', 'art/arcane/volmlib/util/diagnostics/BukkitDebugMessages']
+        'art/arcane/volmlib/util/plugin/CancellableTask', 'art/arcane/volmlib/util/diagnostics/BukkitDebugMessages',
+        'art/arcane/volmlib/util/hotload/']
     inputs.property('volmLibKept', volmLibKept)
     exclude { FileTreeElement entry ->
         String path = entry.relativePath.pathString

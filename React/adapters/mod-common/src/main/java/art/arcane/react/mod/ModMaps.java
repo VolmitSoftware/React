@@ -30,7 +30,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 /**
@@ -43,13 +42,9 @@ final class ModMaps implements MapRuntimeConfig {
             (ReactRenderer renderer) -> SamplerRenderer.samplerOf(renderer) instanceof Sampler sampler ? sampler.getName() : null);
 
     private static final String SETTINGS_SOURCE_TAG = "core:map";
-    private static final int SETTINGS_POLL_TICKS = 10;
     private final MinecraftServer server;
     private final File settingsFile;
-    private final AtomicBoolean settingsReloading = new AtomicBoolean();
     private volatile MapSettings settings = new MapSettings();
-    private long settingsStamp;
-    private int untilSettingsPoll = SETTINGS_POLL_TICKS;
     private volatile ModReactPlatform activePlatform;
     private final ModTicks ticks;
     private final ModMapHost host;
@@ -74,7 +69,6 @@ final class ModMaps implements MapRuntimeConfig {
         } catch (IOException failure) {
             platform.warn("Failed to load config for Map: " + failure.getMessage(), failure);
         }
-        settingsStamp = stamp(settingsFile);
         activePlatform = platform;
         MapRendererRegistry created = new MapRendererRegistry();
         created.catalog(this::samplerRenderers);
@@ -107,39 +101,31 @@ final class ModMaps implements MapRuntimeConfig {
         if (active != null) {
             active.onTick(System.currentTimeMillis());
         }
-        if (--untilSettingsPoll <= 0) {
-            untilSettingsPoll = SETTINGS_POLL_TICKS;
-            pollSettings();
-        }
     }
 
-    private void pollSettings() {
-        long current = stamp(settingsFile);
+    MapSettings settings() {
+        return settings;
+    }
+
+    File settingsFile() {
+        return settingsFile;
+    }
+
+    /**
+     * Re-reads {@code core/map.toml} on the server thread; a file that does not parse keeps the current settings.
+     */
+    boolean reloadSettings() {
         ModReactPlatform platform = activePlatform;
-        if (current == settingsStamp || platform == null || !settingsReloading.compareAndSet(false, true)) {
-            return;
-        }
-        MapSettings previous = settings;
-        platform.asyncExecutor().execute(() -> {
-            MapSettings loaded = previous;
-            try {
-                loaded = TomlFiles.load(settingsFile, MapSettings.class, previous, SETTINGS_SOURCE_TAG, false, platform::info);
-                platform.info("Applied map settings from core/map.toml.");
-            } catch (IOException | RuntimeException failure) {
+        try {
+            settings = TomlFiles.load(settingsFile, MapSettings.class, settings, SETTINGS_SOURCE_TAG, false,
+                    platform == null ? (String message) -> { } : platform::info);
+            return true;
+        } catch (IOException | RuntimeException failure) {
+            if (platform != null) {
                 platform.warn("Kept the current map settings; core/map.toml could not be read: " + failure.getMessage());
             }
-            MapSettings applied = loaded;
-            long stamp = stamp(settingsFile);
-            ticks.later(() -> {
-                settings = applied;
-                settingsStamp = stamp;
-                settingsReloading.set(false);
-            });
-        });
-    }
-
-    private static long stamp(File file) {
-        return file.lastModified() * 31L + file.length();
+            return false;
+        }
     }
 
     void stop() {

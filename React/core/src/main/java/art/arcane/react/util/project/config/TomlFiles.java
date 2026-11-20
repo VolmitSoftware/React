@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -14,7 +15,16 @@ import java.util.function.Consumer;
  * documentation comments. Loading rewrites a file into its canonical form, which fills in missing keys from the defaults.
  */
 public final class TomlFiles {
+    private static volatile BiConsumer<File, String> selfWriteListener;
+
     private TomlFiles() {
+    }
+
+    /**
+     * Told about every file written here, so a platform's hotload can tell React's own writes from operator edits.
+     */
+    public static void setSelfWriteListener(BiConsumer<File, String> listener) {
+        selfWriteListener = listener;
     }
 
     public static <T> T load(File file, Class<T> type, Object defaults, String sourceTag, boolean overwriteOnReadFailure,
@@ -63,7 +73,7 @@ public final class TomlFiles {
         return text.replace("\r\n", "\n").stripTrailing();
     }
 
-    private static void write(File file, String text) throws IOException {
+    public static void write(File file, String text) throws IOException {
         File parent = file.getParentFile();
         if (parent != null) {
             Files.createDirectories(parent.toPath());
@@ -71,5 +81,9 @@ public final class TomlFiles {
         Path temporary = file.toPath().resolveSibling(file.getName() + ".tmp");
         Files.writeString(temporary, text, StandardCharsets.UTF_8);
         Files.move(temporary, file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        BiConsumer<File, String> listener = selfWriteListener;
+        if (listener != null) {
+            listener.accept(file, text);
+        }
     }
 }

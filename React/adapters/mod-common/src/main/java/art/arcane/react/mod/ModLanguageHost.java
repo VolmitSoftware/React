@@ -13,6 +13,7 @@ import art.arcane.volmlib.util.localization.MessageCatalog;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.logging.Logger;
 
 /**
@@ -25,6 +26,7 @@ final class ModLanguageHost implements LanguageHost {
     private static final List<Class<?>> DOCUMENTED_TYPES = List.of(MapSettings.class, WebConfiguration.class);
     private final File settingsFile;
     private volatile Settings settings = new Settings();
+    private volatile BiConsumer<File, String> selfWrites;
 
     @ConfigDescription("Global React configuration. Controls default monitoring layout, value model tuning, and diagnostics behavior.")
     static final class Settings {
@@ -38,6 +40,27 @@ final class ModLanguageHost implements LanguageHost {
 
     void load() throws IOException {
         settings = TomlFiles.load(settingsFile, Settings.class, new Settings(), SOURCE_TAG, true, LOGGER::info);
+    }
+
+    /**
+     * Re-reads {@code react.toml} after an edit; a file that does not parse keeps the current settings.
+     */
+    boolean reload() {
+        try {
+            settings = TomlFiles.load(settingsFile, Settings.class, settings, SOURCE_TAG, false, LOGGER::info);
+            return true;
+        } catch (IOException | RuntimeException failure) {
+            LOGGER.warning("Kept the current React settings; react.toml could not be read: " + failure.getMessage());
+            return false;
+        }
+    }
+
+    Settings settings() {
+        return settings;
+    }
+
+    File settingsFile() {
+        return settingsFile;
     }
 
     @Override
@@ -66,6 +89,15 @@ final class ModLanguageHost implements LanguageHost {
 
     @Override
     public void noteSelfWrite(File file, String content) {
+        BiConsumer<File, String> listener = selfWrites;
+        if (listener != null) {
+            listener.accept(file, content);
+        }
+    }
+
+    /** Where language files React installs itself are reported, so the hotload does not announce them as edits. */
+    void selfWrites(BiConsumer<File, String> listener) {
+        selfWrites = listener;
     }
 
     @Override

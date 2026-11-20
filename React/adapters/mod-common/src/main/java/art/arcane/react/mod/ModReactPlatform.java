@@ -63,7 +63,8 @@ public final class ModReactPlatform implements ReactPlatform {
     private final WorldHost worldHost;
     private final EntityHost entityHost;
     private final HopperHost hopperHost = new ModHopperHost();
-    private final ViewDistanceHost viewDistanceHost;
+    private final ModViewDistanceHost viewDistanceHost;
+    private volatile ModIntegrationMetrics integrations;
 
     ModReactPlatform(String loader, MinecraftServer server, File dataFolder, Logger logger, ModTicks ticks, ExecutorService async,
                      List<Runnable> startupTasks, LanguageHost languageHost, OwnerCostProbe costProbe, Supplier<SampleController> samples,
@@ -99,6 +100,18 @@ public final class ModReactPlatform implements ReactPlatform {
 
     ModEntityKiller entityKiller() {
         return entityKiller;
+    }
+
+    Optional<ModIntegrationMetrics> integrations() {
+        return Optional.ofNullable(integrations);
+    }
+
+    void integrations(ModIntegrationMetrics integrations) {
+        this.integrations = integrations;
+    }
+
+    ModViewDistanceHost viewDistances() {
+        return viewDistanceHost;
     }
 
     ModChunkSamples chunkSamples() {

@@ -106,7 +106,8 @@ Map<String, String> metadata = react + [
 ]
 tasks.named('processResources').configure {
     inputs.properties(metadata)
-    filesMatching(['fabric.mod.json', 'META-INF/mods.toml', 'META-INF/neoforge.mods.toml', 'pack.mcmeta', 'react.mixins.json']) { expand(metadata) }
+    filesMatching(['fabric.mod.json', 'META-INF/mods.toml', 'META-INF/neoforge.mods.toml', 'pack.mcmeta', 'react.mixins.json',
+            'art/arcane/react/mod/react-mod.properties']) { expand(metadata) }
 }
 tasks.named('shadowJar').configure {
     String platform = [fabric: 'Fabric', forge: 'Forge', neoforge: 'NeoForge'][loader]

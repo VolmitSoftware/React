@@ -247,9 +247,19 @@ network = "顯示代理網路以及此伺服器在其中的位置"
 "network.join" = "顯示後端要在 web.toml 中填寫什麼才能加入此代理"
 "network.list" = "列出代理後面的所有伺服器"
 "network.status" = "顯示網路概覽或此伺服器與其代理的連線"
+feature = "列出、啟用與停用 React 特性"
+"feature.list" = "列出所有特性及其是否正在執行"
+"feature.enable" = "啟用一項特性並儲存至其設定"
+"feature.disable" = "停用一項特性並儲存至其設定"
+tweak = "列出、啟用與停用 React 微調"
+"tweak.list" = "列出所有微調及其是否正在執行"
+"tweak.enable" = "啟用一項微調並儲存至其設定"
+"tweak.disable" = "停用一項微調並儲存至其設定"
 
 [command.parameter]
 debugdump_upload = "將報告上傳至 mclo.gs"
+feature = "要變更的特性"
+tweak = "要變更的微調"
 
 [command.parameter.action]
 profile_seconds = "記錄時間（秒），範圍為 1 到 300"
@@ -293,7 +303,7 @@ chunk_not_sampled = "&c此區塊尚未取樣，請稍後一秒再檢查。&r"
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&c您沒有開啟設定編輯器的權限。&r"
 no_chunks_sampled = "&c尚未取樣任何區塊，請稍後一秒再檢查。&r"
-unavailable = "&f{command}&c is not available on &f{platform}&c.&r"
+unavailable = "&f{command}&c 在 &f{platform}&c 上無法使用。&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"

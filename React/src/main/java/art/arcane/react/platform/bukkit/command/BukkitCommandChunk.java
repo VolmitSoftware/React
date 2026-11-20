@@ -1,7 +1,7 @@
 package art.arcane.react.platform.bukkit.command;
 
 import art.arcane.react.React;
-import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.content.directorcommand.ChunkCommands;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.CommandMessages;
@@ -9,7 +9,6 @@ import art.arcane.react.model.SampledChunk;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.platform.bukkit.BukkitCommandSender;
 import art.arcane.react.util.plugin.VolmitSender;
-import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.scheduling.EntityTeleports;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -22,15 +21,7 @@ public final class BukkitCommandChunk {
     SampledChunk c = React.controller(ObserverController.class).getSampled().getChunk(BukkitCommandSender.player(sender).getLocation().getChunk());
 
     if (c != null) {
-      for (String i : c.getValues().keySet()) {
-        Sampler s = React.sampler(i);
-        ReactLanguage.send(
-            sender,
-            CommandMessages.CHUNK_SAMPLE,
-            MessageArgument.untrusted("sampler", s.getName()),
-            MessageArgument.untrusted("value", s.format(c.getValues().get(i).get()))
-        );
-      }
+      ChunkCommands.sendSamples(sender, c);
     } else {
       ReactLanguage.sendPrefixed(sender, CommandMessages.CHUNK_NOT_SAMPLED);
     }
@@ -62,15 +53,7 @@ public final class BukkitCommandChunk {
         React.reportError(new IllegalStateException("Failed to schedule worst sampled chunk destination lookup"));
       }
 
-      for (String i : c.getValues().keySet()) {
-        Sampler s = React.sampler(i);
-        ReactLanguage.send(
-            sender,
-            CommandMessages.CHUNK_SAMPLE,
-            MessageArgument.untrusted("sampler", s.getName()),
-            MessageArgument.untrusted("value", s.format(c.getValues().get(i).get()))
-        );
-      }
+      ChunkCommands.sendSamples(sender, c);
     } else {
       ReactLanguage.sendPrefixed(sender, CommandMessages.NO_CHUNKS_SAMPLED);
     }

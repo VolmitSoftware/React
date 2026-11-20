@@ -247,9 +247,19 @@ network = "프록시 네트워크와 그 안에서 이 서버의 위치를 표�
 "network.join" = "백엔드가 이 프록시에 참여하기 위해 web.toml에 넣어야 할 내용을 표시합니다"
 "network.list" = "프록시 뒤에 있는 모든 서버를 나열합니다"
 "network.status" = "네트워크 요약 또는 이 서버와 프록시의 연결을 표시합니다"
+feature = "React 기능을 나열, 활성화, 비활성화"
+"feature.list" = "모든 기능과 실행 여부를 나열"
+"feature.enable" = "기능을 활성화하고 설정에 저장"
+"feature.disable" = "기능을 비활성화하고 설정에 저장"
+tweak = "React 트윅을 나열, 활성화, 비활성화"
+"tweak.list" = "모든 트윅과 실행 여부를 나열"
+"tweak.enable" = "트윅을 활성화하고 설정에 저장"
+"tweak.disable" = "트윅을 비활성화하고 설정에 저장"
 
 [command.parameter]
 debugdump_upload = "보고서를 mclo.gs에 업로드"
+feature = "변경할 기능"
+tweak = "변경할 트윅"
 
 [command.parameter.action]
 profile_seconds = "기록 시간(초), 1~300"
@@ -293,7 +303,7 @@ chunk_not_sampled = "&c이 청크는 아직 측정되지 않았습니다. 1초 �
 chunk_sample = "&b{sampler}&r: {value}"
 config_permission = "&c구성 편집기를 열 권한이 없습니다.&r"
 no_chunks_sampled = "&c아직 측정된 청크가 없습니다. 1초 후 다시 확인하세요.&r"
-unavailable = "&f{command}&c is not available on &f{platform}&c.&r"
+unavailable = "&f{command}&c 명령은 &f{platform}&c에서 사용할 수 없습니다.&r"
 
 [command.runtime.action]
 audit_entry = "&7- &f{id}&7 [{state}] {summary}&r"
