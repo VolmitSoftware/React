@@ -31,6 +31,7 @@ import '../ui/kit/data_list.dart';
 import '../ui/kit/metric_tile.dart';
 import '../ui/kit/mode.dart';
 import '../ui/kit/page.dart';
+import '../ui/kit/section.dart';
 import '../ui/kit/states.dart';
 import '../ui/error_text.dart';
 import 'monitor_parts.dart';
@@ -43,6 +44,10 @@ const List<String> kHostEverydayIds = <String>[
 ];
 
 /// Host samplers shown when they are above zero, or always in Advanced.
+/// Bytes each mod's channels send and receive, from the per-owner network
+/// gauges.
+const List<String> kModTrafficPrefixes = <String>['network-out-', 'network-in-'];
+
 const List<String> kHostProblemIds = <String>[
   'network-receive-drops',
   'network-receive-errors',
@@ -175,11 +180,20 @@ class EnvironmentView extends StatelessWidget {
         if (!mount.isSystem) _mountTile(mount),
     ];
 
+    final List<SamplerSample> modTraffic = snap == null
+        ? const <SamplerSample>[]
+        : samplersWithPrefix(snap, kModTrafficPrefixes);
+
     return PageStack(
       children: <Widget>[
         if (tiles.isNotEmpty) MetricGrid(children: tiles),
         if (info.disks.isNotEmpty || info.mounts.isNotEmpty) _diskChart(),
         if (info.network.isNotEmpty) _networkChart(),
+        if (modTraffic.isNotEmpty)
+          PageSection(
+            title: reactorText(ReactorText.environmentModTraffic),
+            children: <Widget>[MetricGrid(children: namedTiles(modTraffic))],
+          ),
         ModeGate(
           child: PageStack(
             children: <Widget>[

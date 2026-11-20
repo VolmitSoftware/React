@@ -3,6 +3,7 @@ package art.arcane.react.core.gui;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.TaxonomyMessages;
 import art.arcane.react.platform.cost.OwnerCostModel;
+import art.arcane.react.platform.cost.OwnerGauge;
 import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.react.util.format.C;
 import art.arcane.volmlib.util.localization.TextKey;
@@ -18,6 +19,12 @@ public final class ReactGuiTaxonomy {
   public static Category categoryForId(String id) {
     String normalizedId = normalizeId(id);
 
+    OwnerGauge gauge = OwnerGauge.forId(normalizedId);
+    if (gauge != null) {
+      return gauge.network()
+          ? category(60, "performance", "minecraft:clock", TaxonomyMessages.CATEGORY_PERFORMANCE, TaxonomyMessages.CATEGORY_PERFORMANCE_DESCRIPTION)
+          : category(50, "world", "minecraft:grass_block", TaxonomyMessages.CATEGORY_WORLD, TaxonomyMessages.CATEGORY_WORLD_DESCRIPTION);
+    }
     if (OwnerCostModel.isOwnerScopedId(normalizedId)) {
       TextKey owners = OwnerNoun.pick(TaxonomyMessages.GROUP_PLUGINS, TaxonomyMessages.GROUP_MODS);
       return category(70, "plugins", "minecraft:note_block", owners, owners);
@@ -57,6 +64,12 @@ public final class ReactGuiTaxonomy {
 
   public static EntryGroup groupForId(String id) {
     String normalizedId = normalizeId(id);
+    OwnerGauge gauge = OwnerGauge.forId(normalizedId);
+    if (gauge != null) {
+      return gauge.network()
+          ? group(12, TaxonomyMessages.GROUP_PLAYERS, "minecraft:player_head")
+          : group(14, TaxonomyMessages.GROUP_CHUNKS, "minecraft:map");
+    }
 
     if (normalizedId.startsWith("adapt-")) {
       return group(0, TaxonomyMessages.GROUP_ADAPT, "minecraft:bookshelf");

@@ -19,10 +19,14 @@
     "excludedSources": [
       "art/arcane/react/mod/mixin/ChunkMapViewHooks.java",
       "art/arcane/react/mod/mixin/MinecraftServerHooks.java",
-      "art/arcane/react/mod/mixin/TrialSpawnerHooks.java"
+      "art/arcane/react/mod/mixin/TrialSpawnerHooks.java",
+      "art/arcane/react/mod/mixin/TicketStorageAccess.java"
     ],
     "addedMixins": [
-      "ServerPlayerHooks"
+      "ServerPlayerHooks",
+      "DistanceManagerAccess",
+      "TicketAccess",
+      "TicketTypeHooks"
     ]
   },
   "1.21.1": {
@@ -41,7 +45,16 @@
     "forgeRuntimeMappings": "official",
     "forgeLoaderRange": "[52,53)",
     "forgeMixinExtras": "0.5.4",
-    "neoforge": "21.1.262"
+    "neoforge": "21.1.262",
+    "excludedSources": [
+      "art/arcane/react/mod/mixin/TicketStorageAccess.java",
+      "art/arcane/react/neoforge/cost/NeoForgeChunkTickets.java"
+    ],
+    "addedMixins": [
+      "DistanceManagerAccess",
+      "TicketAccess",
+      "TicketTypeHooks"
+    ]
   },
   "26.1.2": {
     "javaVersion": 25,

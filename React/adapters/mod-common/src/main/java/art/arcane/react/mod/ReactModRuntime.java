@@ -211,6 +211,7 @@ public final class ReactModRuntime {
             hotload.start();
             ticks.every(hotload::tick);
             modPlatform.ownerCost().start();
+            modPlatform.ownerGauges().start();
             modPlatform.modScheduler().markReady();
             web[0].start();
             web[0].postStart();
@@ -221,6 +222,7 @@ public final class ReactModRuntime {
                 if (--untilCapture[0] <= 0) {
                     untilCapture[0] = CAPTURE_INTERVAL_TICKS;
                     modPlatform.ownerCost().publish();
+                    modPlatform.ownerGauges().publish();
                     modPlatform.chunkSamples().decayIfDue(System.currentTimeMillis());
                 }
             });
@@ -270,6 +272,7 @@ public final class ReactModRuntime {
             quietly("React scheduler", active.platform().modScheduler()::deactivate);
             quietly("React Web configuration", active.webConfig()::stop);
             quietly("React owner costs", active.platform().ownerCost()::stop);
+            quietly("React owner gauges", active.platform().ownerGauges()::stop);
             quietly("React cost probe", costProbe::stop);
             quietly("React maps", active.maps()::stop);
             quietly("React Web", active.web()::stop);

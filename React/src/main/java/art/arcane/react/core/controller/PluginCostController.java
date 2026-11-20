@@ -23,8 +23,13 @@ import art.arcane.react.React;
 import art.arcane.react.api.web.WebRevisions;
 import art.arcane.react.core.integration.IntegrationCapabilitySupport;
 import art.arcane.react.core.plugincost.SamplerPluginCost;
+import art.arcane.react.platform.cost.OwnerGauge;
+import art.arcane.react.platform.cost.OwnerGaugeSampler;
+import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.plugin.IController;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
+import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginDisableEvent;
@@ -32,9 +37,16 @@ import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class PluginCostController implements IController, Listener {
+  private static final int CHUNK_LOADER_INTERVAL_TICKS = 100;
+  private volatile Map<String, Integer> chunkLoaders = Map.of();
+  private int chunkLoaderTask = -1;
+
   @Override
   public String getName() {
     return "Plugin Cost";
@@ -51,6 +63,11 @@ public class PluginCostController implements IController, Listener {
 
   @Override
   public void stop() {
+    if (chunkLoaderTask != -1) {
+      J.csr(chunkLoaderTask);
+      chunkLoaderTask = -1;
+    }
+    chunkLoaders = Map.of();
   }
 
   @Override
@@ -62,6 +79,29 @@ public class PluginCostController implements IController, Listener {
 
     for (Plugin plugin : pluginManager.getPlugins()) {
       registerFor(plugin);
+    }
+    if (!J.isFoliaThreading()) {
+      chunkLoaderTask = J.sr(this::countChunkLoaders, CHUNK_LOADER_INTERVAL_TICKS);
+    }
+  }
+
+  private void countChunkLoaders() {
+    Map<String, Integer> counts = new HashMap<>();
+    for (World world : Bukkit.getWorlds()) {
+      for (Map.Entry<Plugin, Collection<Chunk>> tickets : world.getPluginChunkTickets().entrySet()) {
+        counts.merge(tickets.getKey().getName(), tickets.getValue().size(), Integer::sum);
+      }
+    }
+    chunkLoaders = counts;
+    SampleController sampleController = React.controller(SampleController.class);
+    if (sampleController == null) {
+      return;
+    }
+    for (String plugin : counts.keySet()) {
+      if (sampleController.getSampler(OwnerGauge.CHUNK_LOADERS.samplerId(plugin)) == null) {
+        sampleController.registerSampler(new OwnerGaugeSampler(OwnerGauge.CHUNK_LOADERS, plugin, plugin,
+            (String owner) -> chunkLoaders.getOrDefault(owner, 0)));
+      }
     }
   }
 
@@ -101,6 +141,7 @@ public class PluginCostController implements IController, Listener {
     }
 
     sampleController.unregisterSampler(SamplerPluginCost.idFor(plugin.getName()));
+    sampleController.unregisterSampler(OwnerGauge.CHUNK_LOADERS.samplerId(plugin.getName()));
     EventController events = React.controller(EventController.class);
     if (events != null) {
       events.getCostModel().forgetOwner(plugin.getName());

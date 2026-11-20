@@ -85,6 +85,25 @@ MetricTile memoryTile(
 List<SamplerSample> samplersOf(ServerSnapshot snapshot, List<String> ids) =>
     <SamplerSample>[for (final String id in ids) ?snapshot.sampler(id)];
 
+/// The available samplers whose id starts with one of [prefixes], largest
+/// reading first: per-owner gauges such as `chunk-loader-<owner>`.
+List<SamplerSample> samplersWithPrefix(
+  ServerSnapshot snapshot,
+  List<String> prefixes,
+) {
+  final List<SamplerSample> found = <SamplerSample>[
+    for (final SamplerSample sample in snapshot.byId.values)
+      if (sample.available &&
+          prefixes.any((String prefix) => sample.id.startsWith(prefix)))
+        sample,
+  ];
+  found.sort(
+    (SamplerSample left, SamplerSample right) =>
+        right.value.compareTo(left.value),
+  );
+  return found;
+}
+
 /// A tile per sampler, named as the server names it (without a trailing
 /// unit word the value already shows).
 List<Widget> namedTiles(List<SamplerSample> samples) => <Widget>[

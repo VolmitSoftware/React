@@ -78,6 +78,8 @@
     "MobHooks",
     "MobSpawnReasonHooks",
     "MobTargetHooks",
+    "PacketDecoderHooks",
+    "PacketEncoderHooks",
     "PathFinderHooks",
     "PathNavigationAccess",
     "PistonMoveHooks",
@@ -121,6 +123,7 @@
     "SnowMeltHooks",
     "SpawnerHooks",
     "TamableAnimalHooks",
+    "TicketStorageAccess",
     "TrialSpawnerHooks",
     "TurtleEggHooks",
     "VineSpreadHooks"

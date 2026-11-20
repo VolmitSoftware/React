@@ -30,11 +30,13 @@ final class ModWorldStatsHost implements WorldStatsHost {
     private static final EntityTracking UNTRACKED = () -> {
     };
     private final MinecraftServer server;
+    private final ModOwnerGauges ownerGauges;
     private final AtomicInteger censusUsers = new AtomicInteger();
     private volatile Map<EntityCategory, Integer> census = new EnumMap<>(EntityCategory.class);
 
-    ModWorldStatsHost(MinecraftServer server) {
+    ModWorldStatsHost(MinecraftServer server, ModOwnerGauges ownerGauges) {
         this.server = server;
+        this.ownerGauges = ownerGauges;
     }
 
     @Override
@@ -98,7 +100,7 @@ final class ModWorldStatsHost implements WorldStatsHost {
 
     @Override
     public OptionalLong pluginChunkTicketCount() {
-        return OptionalLong.empty();
+        return ownerGauges.chunkTicketTotal();
     }
 
     @Override

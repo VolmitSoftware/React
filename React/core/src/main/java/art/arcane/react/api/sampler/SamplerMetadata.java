@@ -1,11 +1,17 @@
 package art.arcane.react.api.sampler;
 
+import art.arcane.react.platform.cost.OwnerGauge;
+
 public final class SamplerMetadata {
   private SamplerMetadata() {
   }
 
   public static Sampler.Metadata forId(String id, long intervalMs) {
     String key = id == null ? "" : id;
+    OwnerGauge gauge = OwnerGauge.forId(key);
+    if (gauge != null) {
+      return new Sampler.Metadata(intervalMs, 0L, Sampler.Quality.MEASURED, gauge.unit());
+    }
     if (key.startsWith("react-nearby-") || key.startsWith("react-heatmap-")
         || key.startsWith("react-map-") || key.startsWith("react-entity-scan-")) {
       return new Sampler.Metadata(intervalMs, 1_000L, Sampler.Quality.MEASURED,

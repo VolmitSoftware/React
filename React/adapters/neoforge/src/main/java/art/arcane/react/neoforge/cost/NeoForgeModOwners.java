@@ -1,5 +1,6 @@
 package art.arcane.react.neoforge.cost;
 
+import art.arcane.react.mod.cost.LoaderChunkTickets;
 import art.arcane.react.mod.cost.ModOwners;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
@@ -7,6 +8,8 @@ import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -14,6 +17,21 @@ import java.util.List;
 import java.util.Optional;
 
 public final class NeoForgeModOwners implements ModOwners {
+    private static final Logger LOGGER = LoggerFactory.getLogger("React");
+    private LoaderChunkTickets chunkTickets;
+
+    @Override
+    public LoaderChunkTickets loaderChunkTickets() {
+        if (chunkTickets == null) {
+            try {
+                chunkTickets = new NeoForgeChunkTickets();
+            } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
+                LOGGER.warn("NeoForge forced chunks are attributed to NeoForge, not to the mods holding them: {}", failure.toString());
+                chunkTickets = LoaderChunkTickets.NONE;
+            }
+        }
+        return chunkTickets;
+    }
     @Override
     public String ownerOf(Class<?> type) {
         IModFile file = FMLLoader.getCurrent().getModFileByClass(type);

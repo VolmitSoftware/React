@@ -34,6 +34,11 @@ public interface ModOwners {
         return Objects.requireNonNullElse(ownerOfNamespace(modId), modId);
     }
 
+    /** The loader's own forced-chunk manager, when it keeps the mod id outside the ticket. */
+    default LoaderChunkTickets loaderChunkTickets() {
+        return LoaderChunkTickets.NONE;
+    }
+
     record LoadedMod(String id, String name, String version) {
     }
 

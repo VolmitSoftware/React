@@ -13,6 +13,7 @@ import java.util.Optional;
 
 public final class FabricModOwners implements ModOwners {
     private static final String FABRIC_API = "fabric-api";
+    private static final String FABRIC_NAMESPACE = "fabric";
     private static final String JAVA_RUNTIME = "java";
 
     @Override
@@ -43,7 +44,10 @@ public final class FabricModOwners implements ModOwners {
     @Override
     public String ownerOfNamespace(String namespace) {
         Optional<ModContainer> container = FabricLoader.getInstance().getModContainer(namespace);
-        return container.isPresent() ? rollUp(container.get()) : null;
+        if (container.isPresent()) {
+            return rollUp(container.get());
+        }
+        return namespace.equals(FABRIC_NAMESPACE) ? FABRIC_API : null;
     }
 
     @Override

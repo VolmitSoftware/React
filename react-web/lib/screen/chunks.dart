@@ -24,6 +24,9 @@ const List<String> kChunkResidencyIds = <String>[
   'worlds',
 ];
 
+/// Per-owner forced chunk counts: one sampler per plugin or mod.
+const List<String> kChunkLoaderPrefixes = <String>['chunk-loader-'];
+
 class ChunksScreen extends StatelessWidget {
   const ChunksScreen({super.key});
 
@@ -39,6 +42,10 @@ class ChunksScreen extends StatelessWidget {
     final List<SamplerSample> residency = samplersOf(
       snapshot,
       kChunkResidencyIds,
+    );
+    final List<SamplerSample> loaders = samplersWithPrefix(
+      snapshot,
+      kChunkLoaderPrefixes,
     );
 
     return PageStack(
@@ -96,6 +103,11 @@ class ChunksScreen extends StatelessWidget {
           PageSection(
             title: reactorText(ReactorText.chunksResidency),
             children: <Widget>[MetricGrid(children: namedTiles(residency))],
+          ),
+        if (loaders.isNotEmpty)
+          PageSection(
+            title: reactorText(ReactorText.chunksLoaders),
+            children: <Widget>[MetricGrid(children: namedTiles(loaders))],
           ),
       ],
     );

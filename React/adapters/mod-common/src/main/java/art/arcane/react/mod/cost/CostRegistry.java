@@ -17,12 +17,36 @@ public final class CostRegistry {
     private static volatile ModOwners owners;
     private static final ConcurrentHashMap<String, CostBucket> BUCKETS = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Class<?>, String> CLASS_OWNERS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, String> NAMESPACE_OWNERS = new ConcurrentHashMap<>();
 
     private CostRegistry() {
     }
 
     static void owners(ModOwners resolver) {
         owners = Objects.requireNonNull(resolver, "resolver");
+        NAMESPACE_OWNERS.clear();
+    }
+
+    static ModOwners owners() {
+        return owners;
+    }
+
+    /** The mod that owns a namespace, or the namespace itself when no loaded mod uses it. */
+    public static String ownerOfNamespace(String namespace) {
+        String cached = NAMESPACE_OWNERS.get(namespace);
+        if (cached != null) {
+            return cached;
+        }
+        ModOwners resolver = owners;
+        String owner = resolver == null ? null : resolver.ownerOfNamespace(namespace);
+        String resolved = owner == null ? namespace : owner;
+        NAMESPACE_OWNERS.put(namespace, resolved);
+        return resolved;
+    }
+
+    public static String displayName(String ownerId) {
+        ModOwners resolver = owners;
+        return resolver == null ? ownerId : resolver.displayName(ownerId);
     }
 
     public static List<ModOwners.LoadedMod> loadedMods() {
