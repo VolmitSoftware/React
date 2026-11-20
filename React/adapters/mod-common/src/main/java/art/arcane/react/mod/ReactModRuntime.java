@@ -129,7 +129,8 @@ public final class ReactModRuntime {
             LOGGER.error("{} could not read react.toml and did not start", NAME, failure);
             return;
         }
-        ModWebHost webHost = new ModWebHost(server, dataFolder, platform, metrics, maps, LOGGER::info);
+        ModWebHost webHost = new ModWebHost(server, dataFolder, platform, metrics, maps, LOGGER::info, () -> samples, telemetry.host(),
+                languageHost::settings);
         web[0] = new ReactWebServer(webHost);
         WebConfigWatcher webConfig = new WebConfigWatcher(new File(dataFolder, "web.toml"), webHost, web[0]);
         Components components = new Components(new FeatureController(), new TweakController(), new ActionController());

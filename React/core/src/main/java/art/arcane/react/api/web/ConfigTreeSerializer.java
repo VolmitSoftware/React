@@ -1,9 +1,9 @@
 package art.arcane.react.api.web;
 
-import art.arcane.react.React;
 import art.arcane.react.api.web.dto.ConfigNodeDto;
 import art.arcane.react.api.web.dto.ConfigSectionDto;
-import art.arcane.react.model.ReactConfiguration;
+import art.arcane.react.platform.ReactPlatform;
+import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.react.util.project.config.ConfigLocalization;
 import art.arcane.volmlib.util.localization.VolmitLocales;
@@ -14,8 +14,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+/** The {@code main.*} config tree React Web's Config tab edits: scalar fields under general, nested React types as sections. */
 public class ConfigTreeSerializer {
-    public ConfigSectionDto[] serialize(ReactConfiguration config) {
+    public ConfigSectionDto[] serialize(Object config) {
         List<ConfigSectionDto> sections = new ArrayList<>();
         List<ConfigNodeDto> generalNodes = new ArrayList<>();
 
@@ -130,8 +131,11 @@ public class ConfigTreeSerializer {
             field.setAccessible(true);
             return field.get(target);
         } catch (Throwable t) {
-            React.verbose("Config tree serialization could not read "
-                    + field.getDeclaringClass().getSimpleName() + "." + field.getName(), t);
+            ReactPlatform platform = ReactPlatforms.getOrNull();
+            if (platform != null) {
+                platform.verbose("Config tree serialization could not read "
+                        + field.getDeclaringClass().getSimpleName() + "." + field.getName() + ": " + t);
+            }
             return null;
         }
     }

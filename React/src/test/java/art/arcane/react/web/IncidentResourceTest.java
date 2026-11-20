@@ -2,7 +2,7 @@ package art.arcane.react.web;
 
 import art.arcane.react.api.web.dto.Envelope;
 import art.arcane.react.api.web.dto.IncidentDto;
-import art.arcane.react.api.web.BukkitWebHost;
+import art.arcane.react.platform.WebHost;
 import art.arcane.react.api.web.resource.IncidentResource;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.core.incident.IncidentEvidence;
@@ -61,7 +61,7 @@ public class IncidentResourceTest {
         Map.of()
     );
     IncidentResource resource = new IncidentResource(
-        () -> BukkitWebHost.incidentScore(snapshot),
+        () -> WebHost.IncidentScore.of(snapshot),
         () -> "ACTIVE",
         limit -> List.of(record)
     );
@@ -89,7 +89,7 @@ public class IncidentResourceTest {
   @Test
   void throwsBadRequestForNonNumericLimit() {
     IncidentResource resource = new IncidentResource(
-        () -> BukkitWebHost.incidentScore(SamplerIncidentScore.IncidentScoreSnapshot.empty()),
+        () -> WebHost.IncidentScore.of(SamplerIncidentScore.IncidentScoreSnapshot.empty()),
         () -> "NORMAL",
         limit -> List.of()
     );

@@ -1,5 +1,6 @@
 package art.arcane.react.platform;
 
+import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.web.ActionBackend;
 import art.arcane.react.api.web.ActionDispatcher;
 import art.arcane.react.api.web.ActionTicketRegistry;
@@ -23,6 +24,8 @@ import art.arcane.react.api.web.heatmap.ChunkGridExporter;
 import art.arcane.react.api.web.heatmap.HeatmapChunkSampler;
 import art.arcane.react.api.web.network.NetworkHub;
 import art.arcane.react.api.web.pairing.PairingNotices;
+import art.arcane.react.content.sampler.SamplerIncidentScore;
+import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.incident.IncidentEvidence;
 import art.arcane.react.core.incident.IncidentRecord;
 import art.arcane.react.core.telemetry.runtime.RegionalHealth;
@@ -219,6 +222,21 @@ public interface WebHost {
 
     public IncidentScore {
       evidence = List.copyOf(evidence);
+    }
+
+    public static IncidentScore of(SamplerIncidentScore.IncidentScoreSnapshot snapshot) {
+      return snapshot == null ? EMPTY
+          : new IncidentScore(snapshot.sampledAtMs(), snapshot.score(), snapshot.available(), snapshot.evidence());
+    }
+
+    /** Samples the incident-score sampler registered with {@code samples}; empty when it is not registered. */
+    public static IncidentScore sample(SampleController samples) {
+      Sampler sampler = samples == null ? null : samples.getSampler(SamplerIncidentScore.ID);
+      if (!(sampler instanceof SamplerIncidentScore incident)) {
+        return EMPTY;
+      }
+      incident.sample();
+      return of(incident.snapshot());
     }
   }
 

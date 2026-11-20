@@ -261,21 +261,14 @@ public final class BukkitWebHost implements WebHost {
   public IncidentScore incidentScore() {
     Supplier<SamplerIncidentScore.IncidentScoreSnapshot> override = controller.getIncidentSnapshotSupplier();
     if (override != null) {
-      return incidentScore(override.get());
+      return IncidentScore.of(override.get());
     }
     SamplerIncidentScore sampler = React.instance != null ? React.sampler(SamplerIncidentScore.class) : null;
     if (sampler == null) {
       return IncidentScore.EMPTY;
     }
     sampler.sample();
-    return incidentScore(sampler.snapshot());
-  }
-
-  public static IncidentScore incidentScore(SamplerIncidentScore.IncidentScoreSnapshot snapshot) {
-    if (snapshot == null) {
-      return IncidentScore.EMPTY;
-    }
-    return new IncidentScore(snapshot.sampledAtMs(), snapshot.score(), snapshot.available(), snapshot.evidence());
+    return IncidentScore.of(sampler.snapshot());
   }
 
   @Override

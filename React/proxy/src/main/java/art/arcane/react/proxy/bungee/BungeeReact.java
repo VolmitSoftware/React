@@ -9,8 +9,12 @@ import net.md_5.bungee.api.ServerPing;
 import net.md_5.bungee.api.config.ListenerInfo;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.event.ChatEvent;
 import net.md_5.bungee.api.plugin.Command;
+import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.TabExecutor;
+import net.md_5.bungee.event.EventHandler;
+import net.md_5.bungee.event.EventPriority;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -41,9 +45,11 @@ final class BungeeReact implements ProxyHost {
   void start() {
     runtime.start();
     proxy.getPluginManager().registerCommand(plugin, new ReactCommand());
+    proxy.getPluginManager().registerListener(plugin, new Passthrough());
   }
 
   void stop() {
+    proxy.getPluginManager().unregisterListeners(plugin);
     proxy.getPluginManager().unregisterCommands(plugin);
     runtime.stop();
   }
@@ -62,6 +68,25 @@ final class BungeeReact implements ProxyHost {
     @Override
     public Iterable<String> onTabComplete(CommandSender sender, String[] arguments) {
       return runtime.complete(new BungeeSender(sender), getName(), arguments.length == 0 ? new String[]{""} : arguments);
+    }
+  }
+
+  public static final class Passthrough implements Listener {
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onChat(ChatEvent event) {
+      if (event.isCancelled() || !(event.getSender() instanceof ProxiedPlayer player)) {
+        return;
+      }
+      String message = event.getMessage();
+      switch (BackendPassthrough.route(message, player.hasPermission(ProxyRuntime.PERMISSION), player.getPendingConnection().getVersion())) {
+        case FORWARD_PACKET -> event.setMessage(message.substring(1));
+        case RESEND -> {
+          event.setCancelled(true);
+          player.chat(message);
+        }
+        case PROXY -> {
+        }
+      }
     }
   }
 

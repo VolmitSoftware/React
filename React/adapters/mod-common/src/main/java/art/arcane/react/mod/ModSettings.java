@@ -73,6 +73,10 @@ public final class ModSettings implements SettingsSource {
         menu.open(player.getUUID());
     }
 
+    ReactSettingsMenu menu() {
+        return menu;
+    }
+
     MonitorConfigMenu monitorMenu() {
         return monitor;
     }
