@@ -122,6 +122,15 @@ class DashboardRenderersParityTest {
     Assertions.assertEquals(List.of("Create", "Applied Energistics 2"), owners);
   }
 
+  @Test
+  void modDisplayNamesKeepTheirOwnCasing() throws Exception {
+    resetImpactSeries();
+    FixedEvents mods = new FixedEvents(Map.of("neoforge", 9D, "ae2", 5D, "some_mod", 2D), Map.of(),
+        Map.of("neoforge", "NeoForge", "ae2", "AE2"));
+    List<String> owners = PluginEventImpactSeries.snapshot(mods).entries().stream().map(PluginEventImpactSeries.Entry::plugin).toList();
+    Assertions.assertEquals(List.of("NeoForge", "AE2", "Some Mod"), owners);
+  }
+
   private static String hash(ReactRenderer renderer, MapRenderTarget target, MegamapGrid.MegamapTile tile) throws Exception {
     MapRendererRegistry registry = new MapRendererRegistry();
     registry.register(renderer);

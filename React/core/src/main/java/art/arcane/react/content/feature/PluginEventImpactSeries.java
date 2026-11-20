@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.UnaryOperator;
 
 /**
  * Rolling per-owner event cost, shared by the plugin or mod impact maps. Owners are plugins on Bukkit and mods on
@@ -55,7 +56,7 @@ public final class PluginEventImpactSeries {
     Map<String, String> names = events.ownerDisplayNames();
     Map<String, Double> timeByPlugin = byDisplayName(events.snapshotPluginEventTimeMS(), names);
     Map<String, Integer> callsByPlugin = byDisplayName(events.snapshotPluginEventCalls(), names);
-    Map<String, Entry> current = mergeCurrent(timeByPlugin, callsByPlugin);
+    Map<String, Entry> current = mergeCurrent(timeByPlugin, callsByPlugin, UnaryOperator.identity());
 
     for (Entry entry : current.values()) {
       if (entry.impact() <= 0D) {
@@ -84,10 +85,18 @@ public final class PluginEventImpactSeries {
   }
 
   static Map<String, Entry> mergeCurrent(Map<String, Double> timeByPlugin, Map<String, Integer> callsByPlugin) {
+    return mergeCurrent(timeByPlugin, callsByPlugin, PluginEventImpactSeries::normalizePlugin);
+  }
+
+  private static Map<String, Entry> mergeCurrent(
+      Map<String, Double> timeByPlugin,
+      Map<String, Integer> callsByPlugin,
+      UnaryOperator<String> keyOf
+  ) {
     Map<String, Entry> merged = new HashMap<>();
     if (timeByPlugin != null) {
       for (Map.Entry<String, Double> entry : timeByPlugin.entrySet()) {
-        String plugin = normalizePlugin(entry.getKey());
+        String plugin = keyOf.apply(entry.getKey());
         double currentMS = Math.max(0D, entry.getValue() == null ? 0D : entry.getValue());
         merged.put(plugin, new Entry(plugin, currentMS, currentMS, 0));
       }
@@ -95,7 +104,7 @@ public final class PluginEventImpactSeries {
 
     if (callsByPlugin != null) {
       for (Map.Entry<String, Integer> entry : callsByPlugin.entrySet()) {
-        String plugin = normalizePlugin(entry.getKey());
+        String plugin = keyOf.apply(entry.getKey());
         int calls = Math.max(0, entry.getValue() == null ? 0 : entry.getValue());
         Entry existing = merged.get(plugin);
         double currentMS = existing == null ? 0D : existing.currentMS();
@@ -106,14 +115,15 @@ public final class PluginEventImpactSeries {
     return merged;
   }
 
+  // Owners with a resolved display name (mods) keep its casing; bare ids are title-cased.
   private static <T> Map<String, T> byDisplayName(Map<String, T> byOwner, Map<String, String> names) {
-    if (byOwner == null || names == null || names.isEmpty()) {
-      return byOwner;
+    if (byOwner == null) {
+      return null;
     }
     Map<String, T> renamed = new HashMap<>(byOwner.size());
     for (Map.Entry<String, T> entry : byOwner.entrySet()) {
-      String name = names.get(entry.getKey());
-      renamed.put(name == null || name.isBlank() ? entry.getKey() : name, entry.getValue());
+      String name = names == null ? null : names.get(entry.getKey());
+      renamed.put(name == null || name.isBlank() ? normalizePlugin(entry.getKey()) : name.trim(), entry.getValue());
     }
     return renamed;
   }
