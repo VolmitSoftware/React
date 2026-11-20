@@ -183,7 +183,15 @@ public final class RelayClient {
         if (ownsScheduler) {
             scheduler.shutdownNow();
         }
-        http.shutdownNow();
+        shutdown(http);
+    }
+
+    // HttpClient only gained shutdownNow in Java 21; on Java 17 its selector thread ends once the client is collected.
+    private static void shutdown(HttpClient client) {
+        try {
+            HttpClient.class.getMethod("shutdownNow").invoke(client);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        }
     }
 
     public boolean isRegistered() {

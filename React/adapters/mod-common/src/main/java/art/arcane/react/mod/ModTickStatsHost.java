@@ -40,7 +40,7 @@ final class ModTickStatsHost implements TickStatsHost {
 
         @Override
         public long[] read() {
-            return capture(server.getTickTimesNanos(), server.getTickCount());
+            return capture(VanillaForms.tickTimesNanos(server), server.getTickCount());
         }
 
         @Override

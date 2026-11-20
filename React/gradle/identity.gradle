@@ -23,7 +23,7 @@ targets.each { String target, Map<String, Object> properties ->
     if (!(properties.forge instanceof String) || properties.forge.isBlank() || !properties.forgeLoaderRange) {
         throw new GradleException("Minecraft ${target} must declare Forge support")
     }
-    if (!(properties.javaVersion in [21, 25])) {
+    if (!(properties.javaVersion in [17, 21, 25])) {
         throw new GradleException("Minecraft ${target} must declare its Java runtime version")
     }
     if (!(properties.obfuscated instanceof Boolean)) {

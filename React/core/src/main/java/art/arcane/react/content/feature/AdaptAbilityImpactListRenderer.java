@@ -83,7 +83,7 @@ public class AdaptAbilityImpactListRenderer implements ReactRenderer {
     }
 
     int limit = Math.min(entries.size(), capacity);
-    double maxTiming = Math.max(0D, entries.getFirst().executionTimingMs());
+    double maxTiming = Math.max(0D, entries.get(0).executionTimingMs());
     double totalTiming = 0D;
     for (AdaptAbilityImpact.Entry entry : entries) {
       totalTiming += entry.executionTimingMs();
@@ -186,7 +186,7 @@ public class AdaptAbilityImpactListRenderer implements ReactRenderer {
     if (!snapshot.aggregateAvailable() && snapshot.entries().isEmpty()) {
       return ReactLanguage.raw(RendererMessages.STATUS_WAITING);
     }
-    double topTiming = snapshot.entries().isEmpty() ? 0D : snapshot.entries().getFirst().executionTimingMs();
+    double topTiming = snapshot.entries().isEmpty() ? 0D : snapshot.entries().get(0).executionTimingMs();
     return ReactLanguage.raw(
         RendererMessages.ADAPT_TOP_VALUE,
         MessageArgument.untrusted("timing", RendererLayout.compact(topTiming))

@@ -38,8 +38,7 @@ import java.util.function.Supplier;
  * {@code core/map.toml} as on Bukkit, and an edit to that file is applied while the server runs, as Bukkit's hotload does.
  */
 final class ModMaps implements MapRuntimeConfig {
-    private static final MapHubModel MODEL = new MapHubModel(
-            (ReactRenderer renderer) -> SamplerRenderer.samplerOf(renderer) instanceof Sampler sampler ? sampler.getName() : null);
+    private static final MapHubModel MODEL = new MapHubModel(ModMaps::samplerName);
 
     private static final String SETTINGS_SOURCE_TAG = "core:map";
     private final MinecraftServer server;
@@ -246,29 +245,33 @@ final class ModMaps implements MapRuntimeConfig {
             return;
         }
         MapRuntime<ItemStack> active = runtime;
-        switch (action) {
-            case MapHubAction.OpenHub ignored -> openHub(player);
-            case MapHubAction.OpenGroup group -> openGroup(player, group.groupOrder(), group.page());
-            case MapHubAction.SelectMap select -> {
-                ReactRenderer renderer = renderers.get(select.rendererId());
-                if (renderer != null && active != null) {
-                    active.giveMap(player.getUUID(), renderer);
-                }
-                ReactLanguage.send(player, GuiMessages.MAP_SELECTED,
-                        MessageArgument.untrusted("renderer", select.rendererName()),
-                        MessageArgument.untrusted("scope", select.scopeTag()));
-                hub.close(player.getUUID());
+        if (action instanceof MapHubAction.OpenHub) {
+            openHub(player);
+        } else if (action instanceof MapHubAction.OpenGroup group) {
+            openGroup(player, group.groupOrder(), group.page());
+        } else if (action instanceof MapHubAction.SelectMap select) {
+            ReactRenderer renderer = renderers.get(select.rendererId());
+            if (renderer != null && active != null) {
+                active.giveMap(player.getUUID(), renderer);
             }
-            case MapHubAction.AddMap add -> {
-                ReactRenderer renderer = renderers.get(add.rendererId());
-                if (renderer != null && active != null) {
-                    active.giveMapToInventory(player.getUUID(), renderer);
-                }
-                ReactLanguage.send(player, GuiMessages.MAP_ADDED,
-                        MessageArgument.untrusted("renderer", add.rendererName()),
-                        MessageArgument.untrusted("scope", add.scopeTag()));
+            ReactLanguage.send(player, GuiMessages.MAP_SELECTED,
+                    MessageArgument.untrusted("renderer", select.rendererName()),
+                    MessageArgument.untrusted("scope", select.scopeTag()));
+            hub.close(player.getUUID());
+        } else if (action instanceof MapHubAction.AddMap add) {
+            ReactRenderer renderer = renderers.get(add.rendererId());
+            if (renderer != null && active != null) {
+                active.giveMapToInventory(player.getUUID(), renderer);
             }
+            ReactLanguage.send(player, GuiMessages.MAP_ADDED,
+                    MessageArgument.untrusted("renderer", add.rendererName()),
+                    MessageArgument.untrusted("scope", add.scopeTag()));
         }
+    }
+
+    private static String samplerName(ReactRenderer renderer) {
+        Sampler sampler = SamplerRenderer.samplerOf(renderer);
+        return sampler == null ? null : sampler.getName();
     }
 
     @Override

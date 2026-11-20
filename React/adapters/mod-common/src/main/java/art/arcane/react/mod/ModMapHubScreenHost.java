@@ -4,7 +4,6 @@ import art.arcane.react.platform.MapHubIcon;
 import art.arcane.react.platform.MapHubScreen;
 import art.arcane.react.platform.MapHubScreenHost;
 import art.arcane.react.platform.MapHubTile;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
@@ -18,7 +17,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.ItemLore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,14 +70,14 @@ final class ModMapHubScreenHost implements MapHubScreenHost {
     private static ItemStack stack(MapHubTile tile) {
         ItemStack stack = new ItemStack(item(tile.icon()));
         if (tile.name() != null) {
-            stack.set(DataComponents.CUSTOM_NAME, ModLegacyText.component(tile.name()));
+            VanillaItems.name(stack, ModLegacyText.component(tile.name()));
         }
         if (!tile.lore().isEmpty()) {
             List<Component> lines = new ArrayList<>(tile.lore().size());
             for (String line : tile.lore()) {
                 lines.add(ModLegacyText.component(line));
             }
-            stack.set(DataComponents.LORE, new ItemLore(lines));
+            VanillaItems.lore(stack, lines);
         }
         return stack;
     }

@@ -84,15 +84,19 @@ class NaughtyRegisteredListenerTest {
     Event nested = Mockito.mock(Event.class);
     NaughtyRegisteredListener outer = listener((ignored, event) -> inner.callEvent(nested));
 
-    outer.callEvent(Mockito.mock(Event.class));
+    Event event = Mockito.mock(Event.class);
+    long before = System.nanoTime();
+    outer.callEvent(event);
+    long elapsed = System.nanoTime() - before;
     NaughtyRegisteredListener.CounterSnapshot outerSnapshot = outer.drainCounters();
     NaughtyRegisteredListener.CounterSnapshot innerSnapshot = inner.drainCounters();
 
     Assertions.assertEquals(1L, outerSnapshot.calls());
     Assertions.assertEquals(1L, innerSnapshot.calls());
     Assertions.assertTrue(innerSnapshot.timeNanos() >= innerParkNanos);
-    Assertions.assertTrue(outerSnapshot.timeNanos() < innerParkNanos / 2L,
-        "outer exclusive time " + outerSnapshot.timeNanos() + " must exclude the nested " + innerSnapshot.timeNanos());
+    // Checked against the measured span rather than a fixed bound, so a slow first call cannot fail it.
+    Assertions.assertTrue(outerSnapshot.timeNanos() + innerSnapshot.timeNanos() <= elapsed,
+        "outer exclusive time " + outerSnapshot.timeNanos() + " must exclude the nested " + innerSnapshot.timeNanos() + " of " + elapsed);
   }
 
   @Test

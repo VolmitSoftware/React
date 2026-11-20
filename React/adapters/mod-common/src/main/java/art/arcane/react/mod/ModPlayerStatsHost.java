@@ -27,7 +27,7 @@ final class ModPlayerStatsHost implements PlayerStatsHost {
         Map<UUID, Integer> pings = new LinkedHashMap<>();
         for (ServerPlayer player : players) {
             if (player.connection != null) {
-                pings.put(player.getUUID(), player.connection.latency());
+                pings.put(player.getUUID(), VanillaForms.latency(player));
             }
         }
         return pings;

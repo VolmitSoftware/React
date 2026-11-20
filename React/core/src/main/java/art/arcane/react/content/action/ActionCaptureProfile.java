@@ -11,12 +11,15 @@ import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import jdk.jfr.Configuration;
 import jdk.jfr.Recording;
+import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordingFile;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -32,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 @ConfigDescription("Captures an on-demand local JDK Flight Recorder profile with execution, allocation, and GC events. Retains three captures; never uploads recordings.")
@@ -58,7 +62,7 @@ public class ActionCaptureProfile extends ReactAction<ActionCaptureProfile.Param
       }
       Params params = ticket.getParams();
       if (params.capture == null) {
-        Capture capture = new Capture(Math.clamp(params.getSeconds(), 1, 300));
+        Capture capture = new Capture(Math.max(1, Math.min(params.getSeconds(), 300)));
         if (!ACTIVE.compareAndSet(null, capture)) {
           ticket.fail(new IllegalStateException("A React profile capture is already active"));
           return;
@@ -127,6 +131,29 @@ public class ActionCaptureProfile extends ReactAction<ActionCaptureProfile.Param
     return recording;
   }
 
+  // RecordingFile.write arrived in Java 19. On Java 17 the excluded events are already disabled in the recording, so
+  // the capture is copied unchanged.
+  private static void filter(Path source, Path destination) throws IOException {
+    Method write;
+    try {
+      write = RecordingFile.class.getMethod("write", Path.class, Predicate.class);
+    } catch (NoSuchMethodException unavailable) {
+      Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
+      return;
+    }
+    Predicate<RecordedEvent> kept = event -> !EXCLUDED_EVENTS.contains(event.getEventType().getName());
+    try (RecordingFile recording = new RecordingFile(source)) {
+      write.invoke(recording, destination, kept);
+    } catch (InvocationTargetException failure) {
+      if (failure.getCause() instanceof IOException io) {
+        throw io;
+      }
+      throw new IOException(failure.getCause());
+    } catch (IllegalAccessException failure) {
+      throw new IOException(failure);
+    }
+  }
+
   private void record(Capture capture) {
     if (!capture.claimed.compareAndSet(false, true)) {
       return;
@@ -161,9 +188,7 @@ public class ActionCaptureProfile extends ReactAction<ActionCaptureProfile.Param
       }
       Path directory = temporary.getParent();
       filtered = Files.createTempFile(directory, ".filtered-", ".tmp");
-      try (RecordingFile source = new RecordingFile(temporary)) {
-        source.write(filtered, event -> !EXCLUDED_EVENTS.contains(event.getEventType().getName()));
-      }
+      filter(temporary, filtered);
       if (Files.size(filtered) > MAX_RECORDING_BYTES) {
         throw new IOException("Filtered profile exceeds the 64 MiB file limit");
       }

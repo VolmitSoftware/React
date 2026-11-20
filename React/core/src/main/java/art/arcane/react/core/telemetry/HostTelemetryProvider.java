@@ -301,11 +301,20 @@ public final class HostTelemetryProvider {
       return;
     }
     long open = process.getOpenFiles();
-    long limit = process.getSoftOpenFileLimit();
+    long limit = softOpenFileLimit(process);
     publish(HostMetric.OPEN_FILES, open, nowMs);
     publish(HostMetric.FILE_LIMIT, limit > 0L ? limit : Double.NaN, nowMs);
     publish(HostMetric.FILE_HEADROOM, open >= 0L && limit > 0L ? Math.max(0L, limit - open) : Double.NaN, nowMs);
     publish(HostMetric.FILE_UTILIZATION, open >= 0L && limit > 0L ? open * 100D / limit : Double.NaN, nowMs);
+  }
+
+  // Minecraft 1.20.1 ships OSHI 6.2.2, which predates the file limit query; open files still report there.
+  private static long softOpenFileLimit(OSProcess process) {
+    try {
+      return process.getSoftOpenFileLimit();
+    } catch (NoSuchMethodError olderOshi) {
+      return -1L;
+    }
   }
 
   private void captureThreads(long nowMs) {

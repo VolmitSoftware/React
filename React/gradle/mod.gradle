@@ -26,9 +26,12 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(25)
 }
 tasks.withType(JavaCompile).configureEach {
-    options.release.set((int) targetProperties.javaVersion)
     options.encoding = 'UTF-8'
     options.compilerArgs.add('-parameters')
+}
+// The shipped classes target the server's Java; tests run on the build JDK.
+tasks.named('compileJava', JavaCompile).configure {
+    options.release.set((int) targetProperties.javaVersion)
 }
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
@@ -97,6 +100,16 @@ for (String kind : ['java', 'resources']) {
     }
 }
 
+// Sources a target's Minecraft lacks, such as mixins for blocks added later; their mixins leave the configs too.
+List<String> excludedSources = (List<String>) (targetProperties.excludedSources ?: [])
+sourceSets.main.java.exclude { FileTreeElement entry -> excludedSources.contains(entry.relativePath.pathString) }
+List<String> excludedMixins = excludedSources.findAll { String path -> path.contains('/mixin/') }
+    .collect { String path -> path.substring(path.lastIndexOf('/') + 1, path.length() - '.java'.length()) }
+// Mixins only a target's Minecraft needs, such as accessors for fields later versions expose.
+List<String> addedMixins = (List<String>) (targetProperties.addedMixins ?: [])
+String mixinLevel = (int) targetProperties.javaVersion >= 21 ? 'JAVA_21' : 'JAVA_17'
+ext.mixinRefmap = null
+
 Map<String, String> metadata = react + [
     fabricLoaderVersion: targetProperties.fabricLoader,
     forgeLoaderRange: targetProperties.forgeLoaderRange,
@@ -108,6 +121,27 @@ tasks.named('processResources').configure {
     inputs.properties(metadata)
     filesMatching(['fabric.mod.json', 'META-INF/mods.toml', 'META-INF/neoforge.mods.toml', 'pack.mcmeta', 'react.mixins.json',
             'art/arcane/react/mod/react-mod.properties']) { expand(metadata) }
+    inputs.property('excludedMixins', excludedMixins)
+    inputs.property('addedMixins', addedMixins)
+    inputs.property('mixinLevel', mixinLevel)
+    doLast {
+        fileTree(destinationDir) { include('*.mixins.json') }.each { File config ->
+            Map<String, Object> mixins = (Map<String, Object>) new groovy.json.JsonSlurper().parse(config)
+            mixins.compatibilityLevel = mixinLevel
+            for (String side : ['mixins', 'client', 'server']) {
+                if (mixins[side] instanceof List) {
+                    mixins[side] = ((List<String>) mixins[side]).findAll { String name -> !excludedMixins.contains(name) }
+                }
+            }
+            if (mixins.package == react.projectGroup + '.mod.mixin') {
+                mixins.mixins = ((List<String>) mixins.mixins) + addedMixins
+                if (project.ext.mixinRefmap != null) {
+                    mixins.refmap = project.ext.mixinRefmap
+                }
+            }
+            config.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(mixins)) + '\n'
+        }
+    }
 }
 tasks.named('shadowJar').configure {
     String platform = [fabric: 'Fabric', forge: 'Forge', neoforge: 'NeoForge'][loader]

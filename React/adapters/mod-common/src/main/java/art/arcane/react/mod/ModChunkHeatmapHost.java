@@ -65,7 +65,7 @@ final class ModChunkHeatmapHost implements ChunkHeatmapHost, HeatmapChunkSampler
         for (ServerLevel level : server.getAllLevels()) {
             Set<Long> loaded = new HashSet<>();
             for (ChunkHolder holder : ((ChunkMapAccess) level.getChunkSource().chunkMap).react$visibleChunkMap().values()) {
-                if (holder.getFullChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK).orElse(null) != null) {
+                if (VanillaForms.fullChunk(holder) != null) {
                     loaded.add(VanillaApi.pack(holder.getPos()));
                 }
             }

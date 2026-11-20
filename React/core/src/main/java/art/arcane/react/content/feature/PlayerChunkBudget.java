@@ -49,7 +49,7 @@ final class PlayerChunkBudget {
     Coverage coverage = new Coverage(Arrays.copyOf(zCoordinates, coordinateCount));
     edges.sort(Comparator.comparingLong(Edge::x));
     long area = 0L;
-    long previousX = edges.getFirst().x();
+    long previousX = edges.get(0).x();
     for (Edge edge : edges) {
       area += (edge.x() - previousX) * coverage.length();
       coverage.update(edge.lowerZ(), edge.upperZ(), edge.delta());

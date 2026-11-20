@@ -69,7 +69,7 @@ final class ModWorldStatsHost implements WorldStatsHost {
         long total = 0L;
         for (ServerLevel level : server.getAllLevels()) {
             for (ChunkHolder holder : ((ChunkMapAccess) level.getChunkSource().chunkMap).react$visibleChunkMap().values()) {
-                LevelChunk chunk = holder.getFullChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK).orElse(null);
+                LevelChunk chunk = VanillaForms.fullChunk(holder);
                 if (chunk != null) {
                     total += chunk.getBlockEntities().size();
                 }

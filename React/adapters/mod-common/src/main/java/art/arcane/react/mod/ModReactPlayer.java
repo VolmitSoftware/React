@@ -26,7 +26,7 @@ public record ModReactPlayer(ServerPlayer player) implements ReactPlayer {
 
     @Override
     public Locale locale() {
-        String language = player.clientInformation().language();
+        String language = VanillaForms.language(player);
         return language == null || language.isBlank() ? Locale.ENGLISH : Locale.forLanguageTag(language.replace('_', '-'));
     }
 

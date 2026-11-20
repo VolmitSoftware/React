@@ -3,7 +3,6 @@ package art.arcane.react.mod;
 import art.arcane.react.platform.SettingsScreen;
 import art.arcane.react.platform.SettingsScreenHost;
 import art.arcane.react.platform.SettingsTile;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
@@ -17,7 +16,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.ItemLore;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,7 +49,7 @@ final class ModSettingsScreenHost implements SettingsScreenHost {
             }
         }
         ItemStack background = new ItemStack(item(screen.background(), "black_stained_glass_pane"));
-        background.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
+        VanillaItems.name(background, Component.literal(" "));
         List<ItemStack> items = new ArrayList<>(rows * WIDTH);
         for (int slot = 0; slot < rows * WIDTH; slot++) {
             SettingsTile tile = tiles.get(slot);
@@ -71,17 +69,17 @@ final class ModSettingsScreenHost implements SettingsScreenHost {
     private static ItemStack stack(SettingsTile tile) {
         ItemStack stack = new ItemStack(item(tile.icon(), tile.fallbackIcon()));
         if (tile.name() != null) {
-            stack.set(DataComponents.CUSTOM_NAME, ModLegacyText.component(tile.name()));
+            VanillaItems.name(stack, ModLegacyText.component(tile.name()));
         }
         if (!tile.lore().isEmpty()) {
             List<Component> lines = new ArrayList<>(tile.lore().size());
             for (String line : tile.lore()) {
                 lines.add(ModLegacyText.component(line));
             }
-            stack.set(DataComponents.LORE, new ItemLore(lines));
+            VanillaItems.lore(stack, lines);
         }
         if (tile.enchanted()) {
-            stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+            VanillaItems.glint(stack);
         }
         return stack;
     }

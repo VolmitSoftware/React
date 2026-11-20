@@ -97,7 +97,7 @@ final class ModWebHost implements WebHost {
 
     @Override
     public File serverFolder() {
-        return server.getServerDirectory().toFile();
+        return VanillaForms.serverDirectory(server);
     }
 
     @Override

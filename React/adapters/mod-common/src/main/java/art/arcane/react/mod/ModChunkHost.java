@@ -11,16 +11,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkLevel;
-import net.minecraft.server.level.ChunkResult;
 import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
@@ -115,12 +112,7 @@ final class ModChunkHost implements ChunkHost {
         if (!generate && !isGenerated(world, chunkX, chunkZ)) {
             return CompletableFuture.completedFuture(null);
         }
-        CompletableFuture<ChunkResult<ChunkAccess>> loading = level.getChunkSource()
-                .getChunkFuture(chunkX, chunkZ, ChunkStatus.FULL, true);
-        return loading.thenApply((ChunkResult<ChunkAccess> result) -> {
-            ChunkAccess chunk = result.orElse(null);
-            return chunk instanceof LevelChunk full ? full : null;
-        });
+        return VanillaForms.loadFullChunk(level, chunkX, chunkZ).thenApply((LevelChunk chunk) -> chunk);
     }
 
     @Override
@@ -236,7 +228,7 @@ final class ModChunkHost implements ChunkHost {
     private static List<Long> loadedNow(ServerLevel level) {
         List<Long> loaded = new ArrayList<>();
         for (ChunkHolder holder : holders(level).values()) {
-            if (holder.getFullChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK).orElse(null) != null) {
+            if (VanillaForms.fullChunk(holder) != null) {
                 loaded.add(VanillaApi.pack(holder.getPos()));
             }
         }

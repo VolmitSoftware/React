@@ -31,7 +31,7 @@ public final class ForgeModOwners implements ModOwners {
                 }
             }
         }
-        return mods.getFirst().getModId();
+        return mods.get(0).getModId();
     }
 
     private Map<String, List<IModInfo>> modules() {

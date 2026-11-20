@@ -46,18 +46,21 @@ class ModCostProbeTest {
     void nestedWorkIsChargedToTheInnerOwnerOnly() {
         CostBucket outer = CostRegistry.bucket("test-outer", CostKind.ENTITY);
         CostBucket inner = CostRegistry.bucket("test-inner", CostKind.EVENT);
+        long before = System.nanoTime();
         long outerStart = CostFrame.enter();
         spin(2_000_000L);
         long innerStart = CostFrame.enter();
         spin(20_000_000L);
         CostFrame.exit(innerStart, inner);
         CostFrame.exit(outerStart, outer);
+        long elapsed = System.nanoTime() - before;
 
         Map<String, ModCostProbe.OwnerCost> costs = drain();
         long outerNanos = costs.get("test-outer").exclusiveNanos();
         long innerNanos = costs.get("test-inner").exclusiveNanos();
         assertTrue(innerNanos >= 20_000_000L, "inner " + innerNanos);
-        assertTrue(outerNanos >= 2_000_000L && outerNanos < 20_000_000L, "outer " + outerNanos);
+        // Checked against the measured span rather than a fixed bound, so a descheduled spin cannot fail it.
+        assertTrue(outerNanos >= 2_000_000L && outerNanos + innerNanos <= elapsed, "outer " + outerNanos + " inner " + innerNanos + " of " + elapsed);
         assertEquals(1L, costs.get("test-outer").syncCalls());
         assertEquals("TEST-INNER", costs.get("test-inner").displayName());
     }

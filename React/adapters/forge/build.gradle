@@ -63,14 +63,32 @@ if (targetProperties.forgeMixinExtras != null) {
 
 if (targetProperties.forgeRuntimeMappings == 'srg') {
     apply plugin: 'net.minecraftforge.renamer'
+    // SRG-named servers resolve mixin targets through a refmap that the Mixin processor writes at compile time.
+    project.ext.mixinRefmap = 'react.refmap.json'
+    dependencies {
+        annotationProcessor('org.spongepowered:mixin:0.8.5:processor')
+        // Lets the processor see MixinExtras injectors such as @WrapOperation, so their targets reach the refmap.
+        if (targetProperties.forgeMixinExtras != null) {
+            annotationProcessor("io.github.llamalad7:mixinextras-common:${targetProperties.forgeMixinExtras}")
+        }
+    }
+    renamer.mappings(minecraft.dependency.toSrgFile)
+    renamer.enableMixinRefmaps { mixin ->
+        mixin.config('react.mixins.json')
+        mixin.source(sourceSets.main) { source -> source.refMap.set(project.ext.mixinRefmap) }
+        mixin.jar(tasks.named('shadowJar', Jar))
+    }
     TaskProvider<Jar> developmentJar = tasks.named('shadowJar', Jar)
     developmentJar.configure {
         destinationDirectory.set(layout.buildDirectory.dir('devlibs'))
     }
     TaskProvider<RenameJar> productionJar = renamer.classes('reobfShadowJar', developmentJar) {
-        map.from(minecraft.dependency.toSrgFile)
+        // The Mixin processor adds the SRG names of @Shadow members to the merged map.
+        map.setFrom(renamer.mixin.generatedMappings.flatMap { task -> task.output })
         output.set(layout.buildDirectory.file(developmentJar.flatMap { Jar task -> task.archiveFileName }
             .map { String filename -> "libs/${filename}" }))
     }
+    productionJar.configure { doLast { compactJar(output.get().asFile) } }
+    ext.compactShadowJar = false
     ext.distributionJar = productionJar.flatMap { RenameJar task -> task.output }
 }

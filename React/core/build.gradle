@@ -77,7 +77,11 @@ java {
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs.add('-parameters')
     options.encoding = 'UTF-8'
-    options.release.set(21)
+}
+
+// Minecraft 1.20.1 mod servers run Java 17; tests run on the build JDK.
+tasks.named('compileJava', JavaCompile).configure {
+    options.release.set(17)
 }
 
 tasks.named('test', Test).configure {

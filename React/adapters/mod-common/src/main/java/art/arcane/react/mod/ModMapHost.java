@@ -13,10 +13,9 @@ import art.arcane.react.platform.ViewerSnapshot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket;
+import net.minecraft.network.protocol.Packet;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
@@ -26,10 +25,7 @@ import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.component.CustomData;
-import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -38,7 +34,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -79,18 +74,14 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
         if (level == null) {
             return -1;
         }
-        ServerLevel storage = server.overworld();
-        MapId id = storage.getFreeMapId();
-        storage.setMapData(id, freshData(level));
-        return id.id();
+        return VanillaItems.allocateMap(server.overworld(), freshData(level));
     }
 
     @Override
     public void ensureMapData(int mapId, UUID worldId) {
         ServerLevel level = level(worldId);
-        MapId id = new MapId(mapId);
-        if (level != null && mapId >= 0 && server.overworld().getMapData(id) == null) {
-            server.overworld().setMapData(id, freshData(level));
+        if (level != null && mapId >= 0 && VanillaItems.map(server.overworld(), mapId) == null) {
+            VanillaItems.map(server.overworld(), mapId, freshData(level));
         }
     }
 
@@ -110,14 +101,14 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
     }
 
     private MapItemSavedData data(int mapId) {
-        return mapId < 0 ? null : server.overworld().getMapData(new MapId(mapId));
+        return mapId < 0 ? null : VanillaItems.map(server.overworld(), mapId);
     }
 
     @Override
     public void claim(int mapId) {
         MapItemSavedData data = data(mapId);
         if (data != null && !data.locked) {
-            server.overworld().setMapData(new MapId(mapId), data.locked());
+            VanillaItems.map(server.overworld(), mapId, data.locked());
         }
         ModMapHooks.claim(mapId);
     }
@@ -164,7 +155,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
         player.connection.send(packet(mapId, source, rect));
     }
 
-    static ClientboundMapItemDataPacket packet(int mapId, byte[] surface, DirtyRect rect) {
+    static Packet<?> packet(int mapId, byte[] surface, DirtyRect rect) {
         int width = rect.width();
         int height = rect.height();
         byte[] patch = new byte[width * height];
@@ -175,8 +166,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
                 patch[to + column] = painted(surface[from + column]);
             }
         }
-        return new ClientboundMapItemDataPacket(new MapId(mapId), (byte) 0, true, Optional.empty(),
-                Optional.of(new MapItemSavedData.MapPatch(rect.x0(), rect.y0(), width, height, patch)));
+        return VanillaItems.mapPatch(mapId, rect.x0(), rect.y0(), width, height, patch);
     }
 
     private static byte painted(byte value) {
@@ -195,20 +185,16 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
         if (item == null || !item.is(Items.FILLED_MAP)) {
             return null;
         }
-        MapId id = item.get(DataComponents.MAP_ID);
-        CompoundTag values = VanillaApi.compound(item.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag(), BUKKIT_VALUES);
+        CompoundTag values = VanillaApi.compound(VanillaItems.customData(item), BUKKIT_VALUES);
         MapItemTags tags = new MapItemTags(
                 VanillaApi.byteOr(values, KEY_REACT, (byte) 0) == 1,
                 VanillaApi.stringOr(values, KEY_RENDERER, null),
                 VanillaApi.stringOr(values, KEY_TOKEN, null));
-        ItemLore lore = item.get(DataComponents.LORE);
         List<String> lines = new ArrayList<>();
-        if (lore != null) {
-            for (Component line : lore.lines()) {
-                lines.add(line.getString());
-            }
+        for (Component line : VanillaItems.lore(item)) {
+            lines.add(line.getString());
         }
-        return new MapItemView(id == null ? -1 : id.id(), tags, lines, item.has(DataComponents.CUSTOM_NAME));
+        return new MapItemView(VanillaItems.mapId(item), tags, lines, VanillaItems.hasName(item));
     }
 
     @Override
@@ -217,15 +203,15 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
             return item;
         }
         if (mapId >= 0) {
-            item.set(DataComponents.MAP_ID, new MapId(mapId));
+            VanillaItems.mapId(item, mapId);
         }
-        item.remove(DataComponents.CUSTOM_NAME);
+        VanillaItems.clearName(item);
         List<Component> lines = new ArrayList<>(lore.size());
         for (String line : lore) {
             lines.add(Component.literal(line));
         }
-        item.set(DataComponents.LORE, new ItemLore(lines));
-        CustomData.update(DataComponents.CUSTOM_DATA, item, (CompoundTag tag) -> {
+        VanillaItems.lore(item, lines);
+        VanillaItems.updateCustomData(item, (CompoundTag tag) -> {
             CompoundTag values = VanillaApi.compound(tag, BUKKIT_VALUES);
             if (tags.reactFlag()) {
                 values.putByte(KEY_REACT, (byte) 1);
@@ -449,7 +435,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
         for (ServerLevel level : server.getAllLevels()) {
             UUID worldId = ModReactWorld.idOf(level);
             for (ChunkHolder holder : ((ChunkMapAccess) level.getChunkSource().chunkMap).react$visibleChunkMap().values()) {
-                LevelChunk chunk = holder.getFullChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK).orElse(null);
+                LevelChunk chunk = VanillaForms.fullChunk(holder);
                 if (chunk != null) {
                     sink.accept(new ChunkRef(worldId, VanillaApi.chunkX(chunk.getPos()), VanillaApi.chunkZ(chunk.getPos())));
                 }
@@ -494,8 +480,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
         if (!item.is(Items.FILLED_MAP)) {
             return -1;
         }
-        MapId id = item.get(DataComponents.MAP_ID);
-        return id == null ? -1 : id.id();
+        return VanillaItems.mapId(item);
     }
 
     @Override

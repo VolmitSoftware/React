@@ -482,7 +482,7 @@ public interface ReactRenderer {
   }
 
   private static int clipX1Of(ReactRenderContext context) {
-    return Math.min(context.getWidth(), Math.ceilDiv(context.getOffsetX() + CANVAS_SIZE, context.getScaleX()));
+    return Math.min(context.getWidth(), -Math.floorDiv(-(context.getOffsetX() + CANVAS_SIZE), context.getScaleX()));
   }
 
   private static int clipY0Of(ReactRenderContext context) {
@@ -490,7 +490,7 @@ public interface ReactRenderer {
   }
 
   private static int clipY1Of(ReactRenderContext context) {
-    return Math.min(context.getHeight(), Math.ceilDiv(context.getOffsetY() + CANVAS_SIZE, context.getScaleY()));
+    return Math.min(context.getHeight(), -Math.floorDiv(-(context.getOffsetY() + CANVAS_SIZE), context.getScaleY()));
   }
 
   private static boolean visibleIn(ReactRenderContext context, Region region) {

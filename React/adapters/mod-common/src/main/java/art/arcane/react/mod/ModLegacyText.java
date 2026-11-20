@@ -40,7 +40,7 @@ final class ModLegacyText {
             } else if (hex != null) {
                 hex.append(code);
                 if (hex.length() == 7) {
-                    TextColor color = TextColor.parseColor(hex.toString()).result().orElse(null);
+                    TextColor color = VanillaForms.color(hex.toString());
                     style = RESET.withColor(color);
                     hex = null;
                 }

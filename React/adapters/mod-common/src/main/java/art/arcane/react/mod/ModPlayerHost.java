@@ -1,6 +1,5 @@
 package art.arcane.react.mod;
 
-import art.arcane.react.mod.mixin.ChunkMapViewAccess;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.PlayerHost;
 import art.arcane.react.platform.ReactPlayer;
@@ -130,7 +129,7 @@ public final class ModPlayerHost implements PlayerHost {
 
     @Override
     public boolean supportsSendViewDistance() {
-        return server.overworld().getChunkSource().chunkMap instanceof ChunkMapViewAccess;
+        return SendViewDistance.supported(server.overworld().getChunkSource().chunkMap);
     }
 
     @Override
@@ -153,7 +152,7 @@ public final class ModPlayerHost implements PlayerHost {
         } else {
             SEND_DISTANCE_CAPS.put(handle.getUUID(), Math.max(2, distance));
         }
-        ((ChunkMapViewAccess) VanillaApi.level(handle).getChunkSource().chunkMap).react$updateChunkTracking(handle);
+        SendViewDistance.refresh(VanillaApi.level(handle).getChunkSource().chunkMap, handle);
     }
 
     @Override
@@ -191,7 +190,7 @@ public final class ModPlayerHost implements PlayerHost {
         ChunkMap chunkMap = VanillaApi.level(player).getChunkSource().chunkMap;
         readingNaturalDistance = true;
         try {
-            return ((ChunkMapViewAccess) chunkMap).react$playerViewDistance(player);
+            return SendViewDistance.natural(chunkMap, player);
         } finally {
             readingNaturalDistance = false;
         }

@@ -71,7 +71,7 @@ public class AnimusNetworkListRenderer implements ReactRenderer {
 
     int rowHeight = RendererLayout.listRowHeight(this);
     int limit = Math.min(entries.size(), Math.max(1, list.rowCapacity(rowHeight)));
-    double maxRate = entries.getFirst().value();
+    double maxRate = entries.get(0).value();
     double kindTotal = 0D;
     for (AnimusMetrics.Entry entry : entries) {
       kindTotal += entry.value();

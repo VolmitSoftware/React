@@ -27,7 +27,7 @@ public final class RegionalHealth {
       return new Snapshot(nowMs, 0D, 0, 0, 0, 0);
     }
     Map<Position, Double> positions = new HashMap<>();
-    int count = Math.min(players.size(), Math.clamp(limit, 1, 512));
+    int count = Math.min(players.size(), Math.max(1, Math.min(limit, 512)));
     int start = Math.floorMod(cursor, players.size());
     for (int offset = 0; offset < count; offset++) {
       Anchor player = players.get((start + offset) % players.size());

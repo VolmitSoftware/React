@@ -246,7 +246,7 @@ public final class CircuitWorld {
     }
     components.sort(Comparator.comparingInt(LongOpenHashSet::size).reversed());
     circuit.positions().clear();
-    LongIterator kept = components.getFirst().iterator();
+    LongIterator kept = components.get(0).iterator();
     while (kept.hasNext()) {
       long position = kept.nextLong();
       circuit.add(position);
