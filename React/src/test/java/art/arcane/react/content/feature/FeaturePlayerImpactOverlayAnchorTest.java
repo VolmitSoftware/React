@@ -113,7 +113,7 @@ class FeaturePlayerImpactOverlayAnchorTest {
 
   @Test
   void projectionThreadLocalDoesNotRetainBukkitWorldHandles() throws ReflectiveOperationException {
-    Field projectionField = FeatureChunkHeatmapBase.class.getDeclaredField("PROJECTION");
+    Field projectionField = ChunkHeatmapRenderer.class.getDeclaredField("PROJECTION");
     projectionField.setAccessible(true);
     ThreadLocal<?> projectionState = (ThreadLocal<?>) projectionField.get(null);
     Object projection = projectionState.get();

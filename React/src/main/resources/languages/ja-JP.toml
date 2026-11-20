@@ -1025,14 +1025,6 @@ summary = "チャンクヒートマップベースで使用するマップのチ
 impact = "この値を下回る場合、測定ノイズをフルスケールの色に増幅せず、マップに明示的な静穏状態を表示します。"
 summary = "ヒートマップが活動を描画する前に必要な、最小のピークチャンクスコア。"
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "これは内部状態のデータであり、通常手動で変更されるべきではありません。"
-summary = "チャンクヒートマップベースの内部追跡で使用する X 軸座標。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "これは内部状態のデータであり、通常手動で変更されるべきではありません。"
-summary = "チャンクヒートマップベースの内部追跡で使用する Y 軸座標。"
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "チャンク読み込み・生成コストマップ機能の設定。この機能はサーバーの動作を継続的に監視し、実行中にガードレールを適用します。"
 

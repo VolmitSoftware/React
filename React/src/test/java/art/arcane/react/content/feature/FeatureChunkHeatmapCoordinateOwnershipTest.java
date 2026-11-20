@@ -8,7 +8,7 @@ import org.bukkit.Bukkit;
 import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.ObserverController;
-import art.arcane.react.core.controller.ObserverController.LoadedChunkCoordinate;
+import art.arcane.react.core.controller.LoadedChunkCoordinate;
 import art.arcane.react.util.common.scheduling.Ticker;
 import org.bukkit.Location;
 import org.bukkit.World;

@@ -76,6 +76,21 @@ final class ModOwnerCost implements EventMeasurement {
     }
 
     @Override
+    public Map<String, Double> snapshotPluginEventTimeMS() {
+        return model.snapshotMs();
+    }
+
+    @Override
+    public Map<String, Integer> snapshotPluginEventCalls() {
+        return model.snapshotCalls();
+    }
+
+    @Override
+    public Map<String, String> ownerDisplayNames() {
+        return model.displayNames();
+    }
+
+    @Override
     public int getListenerCount() {
         return 0;
     }

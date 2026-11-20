@@ -1025,14 +1025,6 @@ summary = "Радиус карты для «Базовая тепловая ка
 impact = "Ниже этого значения карта показывает явное спокойное состояние вместо усиления шума измерений до полноцветных оттенков."
 summary = "Минимальный пиковый показатель чанка, при котором тепловая карта отображает активность."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "Это данные о внутреннем состоянии, которые обычно не должны изменяться вручную."
-summary = "Координата по оси X, используемая «Базовая тепловая карта чанков» для внутреннего отслеживания."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "Это данные о внутреннем состоянии, которые обычно не должны изменяться вручную."
-summary = "Координата по оси Y, используемая «Базовая тепловая карта чанков» для внутреннего отслеживания."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "Конфигурация функции «Карта стоимости загрузки и генерации чанков». Эта функция постоянно отслеживает поведение сервера и применяет ограничения во время работы."
 

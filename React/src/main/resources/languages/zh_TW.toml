@@ -1025,14 +1025,6 @@ summary = "區塊熱圖基礎使用的地圖區塊半徑（區塊）。"
 impact = "低於此值時，地圖會顯示明確的靜止狀態，而不是將量測雜訊放大成滿刻度的顏色。"
 summary = "熱圖繪製活動前所需的最低區塊峰值分數。"
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "這是內部狀態資料，通常不應手動變更。"
-summary = "區塊熱圖基礎內部追蹤使用的 X 軸座標。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "這是內部狀態資料，通常不應手動變更。"
-summary = "區塊熱圖基礎內部追蹤使用的 Y 軸座標。"
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "區塊載入／生成成本地圖功能的設定。此功能會持續監控伺服器行為，並在執行時套用防護機制。"
 

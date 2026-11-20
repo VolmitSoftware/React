@@ -1025,14 +1025,6 @@ summary = "chunk heatmap base: kartan chunk-säde (chunkia)."
 impact = "Tämän alapuolella kartta näyttää selkeän hiljaisen tilan sen sijaan, että mittauskohina vahvistettaisiin täysiksi väreiksi."
 summary = "Pienin huippupistemäärä chunkille, ennen kuin lämpökartta piirtää aktiivisuutta."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "Tämä on sisäistä tilatietoa, eikä sitä yleensä pidä muuttaa käsin."
-summary = "chunk heatmap base: X-akselin koordinaatti sisäisessä seurannassa."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "Tämä on sisäistä tilatietoa, eikä sitä yleensä pidä muuttaa käsin."
-summary = "chunk heatmap base: Y-akselin koordinaatti sisäisessä seurannassa."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "Ominaisuuden Chunk Load Gen Cost Map asetukset. Tämä ominaisuus seuraa palvelimen toimintaa jatkuvasti ja soveltaa suojarajoituksia ajon aikana."
 

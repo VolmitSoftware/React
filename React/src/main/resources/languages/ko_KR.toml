@@ -1025,14 +1025,6 @@ summary = "청크 히트맵 기반이 사용하는 지도 청크 반경(청크).
 impact = "이 값보다 낮으면 측정 노이즈를 전체 색상으로 증폭하는 대신 지도가 명확한 조용한 상태를 표시합니다."
 summary = "히트맵이 활동을 렌더링하기 전에 필요한 최소 최고 청크 점수."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "내부 상태 데이터이므로 일반적으로 수동으로 변경하지 않아야 합니다."
-summary = "청크 히트맵 기반 내부 추적에 사용하는 X축 좌표."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "내부 상태 데이터이므로 일반적으로 수동으로 변경하지 않아야 합니다."
-summary = "청크 히트맵 기반 내부 추적에 사용하는 Y축 좌표."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "청크 로드·생성 비용 지도 기능 설정. 이 기능은 서버 동작을 지속적으로 모니터링하고 실행 중에 보호 장치를 적용합니다."
 

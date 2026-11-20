@@ -1025,14 +1025,6 @@ summary = "区块热力图基础使用的地图区块半径（区块）。"
 impact = "低于此值时，地图显示明确的安静状态，而不是把测量噪声放大成满刻度颜色。"
 summary = "热力图显示活动之前所需的最低区块峰值分数。"
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "这是内部状态数据，通常不应手动修改。"
-summary = "区块热力图基础内部跟踪使用的 X 轴坐标。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "这是内部状态数据，通常不应手动修改。"
-summary = "区块热力图基础内部跟踪使用的 Y 轴坐标。"
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "区块加载生成开销地图功能的配置。此功能会持续监控服务器行为，并在运行时应用保护限制。"
 

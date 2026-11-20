@@ -1025,14 +1025,6 @@ summary = "רדיוס המפה בצ'אנקים שבו משתמש בסיס מפת
 impact = "מתחת לערך הזה המפה מציגה מצב שקט מפורש במקום להגביר רעש מדידה לצבעים בקנה מידה מלא."
 summary = "ציון שיא הצ'אנק המזערי הנדרש לפני שמפת החום מציירת פעילות."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "אלה נתוני מצב פנימיים, ובדרך כלל אין לשנות אותם ידנית."
-summary = "קואורדינטת ציר X שבה משתמש המעקב הפנימי של בסיס מפת החום של צ'אנקים."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "אלה נתוני מצב פנימיים, ובדרך כלל אין לשנות אותם ידנית."
-summary = "קואורדינטת ציר Y שבה משתמש המעקב הפנימי של בסיס מפת החום של צ'אנקים."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "תצורה של תכונת מפת עלות טעינה ויצירה של צ'אנקים. התכונה הזו עוקבת ברציפות אחר התנהגות השרת ומחילה אמצעי הגנה בזמן ריצה."
 

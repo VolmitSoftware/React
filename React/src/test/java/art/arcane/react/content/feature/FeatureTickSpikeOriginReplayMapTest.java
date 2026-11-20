@@ -1,5 +1,6 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.core.controller.LoadedChunkCoordinate;
 import art.arcane.react.React;
 import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.core.controller.ObserverController;
@@ -46,9 +47,9 @@ class FeatureTickSpikeOriginReplayMapTest {
     Mockito.when(worst.getChunkZ()).thenReturn(-20);
     Mockito.when(observer.absoluteWorst()).thenReturn(worst);
     Mockito.when(observer.loadedChunkCoordinatesInRadius(worldId, 40, -20, 3)).thenReturn(List.of(
-        new ObserverController.LoadedChunkCoordinate(40, -20),
-        new ObserverController.LoadedChunkCoordinate(41, -20),
-        new ObserverController.LoadedChunkCoordinate(40, -18)
+        new LoadedChunkCoordinate(40, -20),
+        new LoadedChunkCoordinate(41, -20),
+        new LoadedChunkCoordinate(40, -18)
     ));
     Mockito.when(observer.sampledChunk(Mockito.eq("minecraft:test"), Mockito.anyInt(), Mockito.anyInt()))
         .thenReturn(Optional.empty());

@@ -19,8 +19,8 @@
 
 package art.arcane.react.api.rendering;
 
-import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.sampler.SamplerHosts;
 import art.arcane.react.content.sampler.SamplerIncidentScore;
 import art.arcane.react.content.sampler.SamplerReactJobsQueue;
 import art.arcane.react.content.sampler.SamplerSchedulerBacklog;
@@ -33,6 +33,7 @@ import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.localization.TextKey;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class RendererReactMetrics implements ReactRenderer {
   public static final String ID = "react-metrics";
@@ -44,6 +45,16 @@ public class RendererReactMetrics implements ReactRenderer {
       new MetricLine(SamplerReactJobsQueue.ID, RendererMessages.METRIC_JOBS, 0, "", 300D),
       new MetricLine(SamplerSchedulerBacklog.ID, RendererMessages.METRIC_BACKLOG, 0, "", 300D)
   );
+
+  private final Function<String, Sampler> samplers;
+
+  public RendererReactMetrics() {
+    this(SamplerHosts::sampler);
+  }
+
+  public RendererReactMetrics(Function<String, Sampler> samplers) {
+    this.samplers = samplers;
+  }
 
   @Override
   public String getId() {
@@ -130,7 +141,7 @@ public class RendererReactMetrics implements ReactRenderer {
   }
 
   private Double sample(String samplerId) {
-    Sampler sampler = React.sampler(samplerId);
+    Sampler sampler = samplers.apply(samplerId);
     if (sampler == null) {
       return null;
     }

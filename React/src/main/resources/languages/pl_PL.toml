@@ -1025,14 +1025,6 @@ summary = "Promień mapy w chunkach używany przez chunk heatmap base (chunków)
 impact = "Poniżej tej wartości mapa pokazuje wyraźny stan ciszy zamiast wzmacniać szum pomiarowy do kolorów pełnej skali."
 summary = "Minimalny szczytowy wynik chunku wymagany, zanim mapa cieplna zacznie pokazywać aktywność."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "To wewnętrzne dane stanu i zwykle nie należy ich zmieniać ręcznie."
-summary = "Współrzędna osi X używana przez wewnętrzne śledzenie chunk heatmap base."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "To wewnętrzne dane stanu i zwykle nie należy ich zmieniać ręcznie."
-summary = "Współrzędna osi Y używana przez wewnętrzne śledzenie chunk heatmap base."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "Konfiguracja funkcji Chunk Load Gen Cost Map. Ta funkcja stale monitoruje zachowanie serwera i stosuje zabezpieczenia w czasie działania."
 

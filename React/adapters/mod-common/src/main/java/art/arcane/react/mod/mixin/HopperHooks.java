@@ -1,8 +1,10 @@
 package art.arcane.react.mod.mixin;
 
+import art.arcane.react.mod.ModBlockRef;
 import art.arcane.react.platform.SamplerEventCounters;
 import art.arcane.react.platform.SamplerEventCounters.Counter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.HopperBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -19,7 +21,10 @@ public abstract class HopperHooks {
     private static void react$moved(Level level, BlockPos pos, BlockState state, HopperBlockEntity hopper, BooleanSupplier action,
                                     CallbackInfoReturnable<Boolean> callback) {
         if (callback.getReturnValueZ()) {
-            SamplerEventCounters.get().count(Counter.HOPPER_MOVE, pos);
+            SamplerEventCounters counters = SamplerEventCounters.get();
+            if (counters.isActive(Counter.HOPPER_MOVE)) {
+                counters.count(Counter.HOPPER_MOVE, level instanceof ServerLevel serverLevel ? new ModBlockRef(serverLevel, pos) : pos);
+            }
         }
     }
 }

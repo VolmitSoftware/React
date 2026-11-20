@@ -1025,14 +1025,6 @@ summary = "Chunk ısı haritası tabanının kullandığı harita chunk yarıça
 impact = "Bunun altında harita, ölçüm gürültüsünü tam ölçekli renklere büyütmek yerine açık bir sessiz durum gösterir."
 summary = "Isı haritasının etkinliği çizmesi için gereken asgari tepe chunk puanı."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "Bu, dahili durum verisidir ve normalde elle değiştirilmemelidir."
-summary = "Chunk ısı haritası tabanının dahili izlemesinde kullanılan X ekseni koordinatı."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "Bu, dahili durum verisidir ve normalde elle değiştirilmemelidir."
-summary = "Chunk ısı haritası tabanının dahili izlemesinde kullanılan Y ekseni koordinatı."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "Chunk Yükleme/Üretim Maliyeti Haritası özelliği için yapılandırma. Bu özellik sunucu davranışını sürekli izler ve çalışma sırasında korumalar uygular."
 

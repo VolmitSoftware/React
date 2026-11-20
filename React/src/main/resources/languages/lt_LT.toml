@@ -1025,14 +1025,6 @@ summary = "Žemėlapio spindulys pasaulio segmentais, naudojamas pasaulio segmen
 impact = "Žemiau šios ribos žemėlapis rodo aiškią ramią būseną, užuot matavimo triukšmą išdidinęs iki pilno masto spalvų."
 summary = "Mažiausias didžiausias pasaulio segmento balas, reikalingas prieš šilumos žemėlapiui rodant veiklą."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "Tai vidinės būsenos duomenys; paprastai jų nereikėtų keisti rankiniu būdu."
-summary = "X ašies koordinatė, naudojama pasaulio segmentų šilumos žemėlapio pagrindo vidiniam sekimui."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "Tai vidinės būsenos duomenys; paprastai jų nereikėtų keisti rankiniu būdu."
-summary = "Y ašies koordinatė, naudojama pasaulio segmentų šilumos žemėlapio pagrindo vidiniam sekimui."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "Pasaulio segmentų įkėlimo ir generavimo sąnaudų žemėlapio funkcijos konfigūracija. Ši funkcija nuolat stebi serverio elgseną ir vykdymo metu taiko apsaugas."
 

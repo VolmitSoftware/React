@@ -688,9 +688,6 @@ public class ObserverController extends TickedObject implements IController {
     }
   }
 
-  public record LoadedChunkCoordinate(int chunkX, int chunkZ) {
-  }
-
   public record LoadedChunkTarget(UUID worldId, int chunkX, int chunkZ) {
   }
 

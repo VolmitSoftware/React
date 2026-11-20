@@ -1,5 +1,7 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.React;
+import art.arcane.react.core.controller.EventController;
 import art.arcane.react.localization.catalog.RendererMessages;
 import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.react.util.data.TinyColor;
@@ -29,7 +31,7 @@ public class FeaturePluginEventImpactPieMap extends FeatureIrisChunkSharePieBase
   @Override
   protected Map<String, Long> collectBuckets(Player viewer) {
     Map<String, Long> counts = newCounterMap();
-    PluginEventImpactSeries.Snapshot snapshot = PluginEventImpactSeries.snapshot();
+    PluginEventImpactSeries.Snapshot snapshot = PluginEventImpactSeries.snapshot(React.controller(EventController.class));
     if (snapshot.entries().isEmpty()) {
       return counts;
     }

@@ -1025,14 +1025,6 @@ summary = "Raggio dei chunk mappati usato da «chunk heatmap base» (chunk)."
 impact = "Sotto questa soglia la mappa mostra uno stato di quiete esplicito invece di amplificare il rumore di misura in colori a fondo scala."
 summary = "Punteggio massimo minimo dei chunk richiesto prima che la heatmap mostri l'attività."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "Questi dati sono interni e non devono essere modificati manualmente."
-summary = "Coordinata dell'asse X usata dal tracciamento interno di «chunk heatmap base»."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "Questi dati sono interni e non devono essere modificati manualmente."
-summary = "Coordinata dell'asse Y usata dal tracciamento interno di «chunk heatmap base»."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "Configurazione della funzione Chunk Load Gen Cost Map. Questa funzione monitora continuamente il comportamento del server e applica limiti di sicurezza durante l'esecuzione."
 

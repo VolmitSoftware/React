@@ -1,8 +1,10 @@
 package art.arcane.react.mod.mixin;
 
+import art.arcane.react.mod.ModBlockRef;
 import art.arcane.react.platform.SamplerEventCounters;
 import art.arcane.react.platform.SamplerEventCounters.Counter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -19,8 +21,9 @@ public abstract class BlockStateHooks {
     @Inject(method = "handleNeighborChanged", at = @At("HEAD"), require = 0)
     private void react$neighborChanged(Level level, BlockPos pos, Block block, @Nullable Orientation orientation, boolean movedByPiston,
                                        CallbackInfo callback) {
-        if (!level.isClientSide()) {
-            SamplerEventCounters.get().count(Counter.BLOCK_PHYSICS, pos);
+        SamplerEventCounters counters = SamplerEventCounters.get();
+        if (level instanceof ServerLevel serverLevel && counters.isActive(Counter.BLOCK_PHYSICS)) {
+            counters.count(Counter.BLOCK_PHYSICS, new ModBlockRef(serverLevel, pos));
         }
     }
 }

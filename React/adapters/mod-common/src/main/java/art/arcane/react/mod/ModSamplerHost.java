@@ -8,9 +8,10 @@ import com.google.common.util.concurrent.AtomicDouble;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-/** Samplers count through mixins, and no maps, monitors or chunk attribution run on mod servers yet. */
+/** Samplers count through mixins and attribute block and chunk counts to chunks; no monitors run on mod servers yet. */
 final class ModSamplerHost implements SamplerHost {
     private final Supplier<SampleController> controller;
+    private final ModChunkSamples chunks = new ModChunkSamples();
 
     ModSamplerHost(Supplier<SampleController> controller) {
         this.controller = controller;
@@ -41,13 +42,17 @@ final class ModSamplerHost implements SamplerHost {
     public void refreshMonitors() {
     }
 
+    ModChunkSamples chunks() {
+        return chunks;
+    }
+
     @Override
     public AtomicDouble chunkCounter(Object chunkOrBlock, Sampler sampler) {
-        return new AtomicDouble();
+        return chunks.counter(chunkOrBlock, sampler);
     }
 
     @Override
     public Optional<Double> sampleChunk(Object chunk, Sampler sampler) {
-        return Optional.empty();
+        return chunks.sample(chunk, sampler);
     }
 }

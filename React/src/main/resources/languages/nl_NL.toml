@@ -1025,14 +1025,6 @@ summary = "Kaartchunkstraal die door chunk heatmap base wordt gebruikt (chunks).
 impact = "Daaronder toont de kaart een expliciete rustige toestand in plaats van meetruis te versterken tot kleuren op volle schaal."
 summary = "Minimale piekscore van een chunk die vereist is voordat de heatmap activiteit rendert."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "Dit zijn interne statusgegevens en die moeten normaal gesproken niet handmatig worden gewijzigd."
-summary = "X-coördinaat die chunk heatmap base intern voor tracking gebruikt."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "Dit zijn interne statusgegevens en die moeten normaal gesproken niet handmatig worden gewijzigd."
-summary = "Y-coördinaat die chunk heatmap base intern voor tracking gebruikt."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "Configuratie voor de functie Chunk Load Gen Cost Map. Deze functie bewaakt voortdurend het servergedrag en past tijdens runtime vangrails toe."
 

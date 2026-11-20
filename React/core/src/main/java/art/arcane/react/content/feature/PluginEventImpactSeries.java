@@ -19,8 +19,7 @@
 
 package art.arcane.react.content.feature;
 
-import art.arcane.react.React;
-import art.arcane.react.core.controller.EventController;
+import art.arcane.react.platform.EventMeasurement;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -30,7 +29,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-final class PluginEventImpactSeries {
+/**
+ * Rolling per-owner event cost, shared by the plugin or mod impact maps. Owners are plugins on Bukkit and mods on
+ * mod loaders.
+ */
+public final class PluginEventImpactSeries {
   private static final double ROLLING_DECAY_PER_SECOND = 0.96D;
   private static final long STALE_PLUGIN_MS = 600_000L;
   private static final Map<String, Double> rollingScore = new ConcurrentHashMap<>();
@@ -40,8 +43,7 @@ final class PluginEventImpactSeries {
   private PluginEventImpactSeries() {
   }
 
-  static synchronized Snapshot snapshot() {
-    EventController events = React.controller(EventController.class);
+  public static synchronized Snapshot snapshot(EventMeasurement events) {
     if (events == null) {
       return new Snapshot(List.of(), 0D);
     }
@@ -50,8 +52,9 @@ final class PluginEventImpactSeries {
     long now = System.currentTimeMillis();
     decayRolling(now);
 
-    Map<String, Double> timeByPlugin = events.snapshotPluginEventTimeMS();
-    Map<String, Integer> callsByPlugin = events.snapshotPluginEventCalls();
+    Map<String, String> names = events.ownerDisplayNames();
+    Map<String, Double> timeByPlugin = byDisplayName(events.snapshotPluginEventTimeMS(), names);
+    Map<String, Integer> callsByPlugin = byDisplayName(events.snapshotPluginEventCalls(), names);
     Map<String, Entry> current = mergeCurrent(timeByPlugin, callsByPlugin);
 
     for (Entry entry : current.values()) {
@@ -101,6 +104,18 @@ final class PluginEventImpactSeries {
     }
 
     return merged;
+  }
+
+  private static <T> Map<String, T> byDisplayName(Map<String, T> byOwner, Map<String, String> names) {
+    if (byOwner == null || names == null || names.isEmpty()) {
+      return byOwner;
+    }
+    Map<String, T> renamed = new HashMap<>(byOwner.size());
+    for (Map.Entry<String, T> entry : byOwner.entrySet()) {
+      String name = names.get(entry.getKey());
+      renamed.put(name == null || name.isBlank() ? entry.getKey() : name, entry.getValue());
+    }
+    return renamed;
   }
 
   private static void decayRolling(long now) {
@@ -172,7 +187,7 @@ final class PluginEventImpactSeries {
     return value;
   }
 
-  record Entry(
+  public record Entry(
       String plugin,
       double impact,
       double currentMS,
@@ -180,7 +195,7 @@ final class PluginEventImpactSeries {
   ) {
   }
 
-  record Snapshot(
+  public record Snapshot(
       List<Entry> entries,
       double totalImpact
   ) {

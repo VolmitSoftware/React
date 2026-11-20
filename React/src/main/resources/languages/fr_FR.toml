@@ -1025,14 +1025,6 @@ summary = "Rayon de la carte, en chunks, utilisé par la base de carte thermique
 impact = "En dessous de cette valeur, la carte affiche un état calme explicite au lieu d'amplifier le bruit de mesure en couleurs pleine échelle."
 summary = "Score de pic de chunk minimal requis avant que la carte thermique n'affiche une activité."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "Ce sont des données d'état internes qui ne doivent normalement pas être modifiées manuellement."
-summary = "Coordonnée X utilisée par le suivi interne de la base de carte thermique des chunks."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "Ce sont des données d'état internes qui ne doivent normalement pas être modifiées manuellement."
-summary = "Coordonnée Y utilisée par le suivi interne de la base de carte thermique des chunks."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "Configuration de la fonctionnalité Carte des coûts de chargement et de génération de chunks. Cette fonctionnalité surveille en permanence le comportement du serveur et applique des garde-fous pendant l'exécution."
 

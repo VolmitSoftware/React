@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 class FeaturePathfinderBudgetLifecycleTest {
   private static final Object NAVIGATION = new Object();
   private static React previous;
+  private final List<Mob> indexedMobs = new ArrayList<>();
 
   @BeforeAll
   static void setUpPlugin() {
@@ -675,6 +676,8 @@ class FeaturePathfinderBudgetLifecycleTest {
   }
 
   private void indexMob(FeaturePathfinderBudget feature, Mob mob) throws Exception {
+    // The feature indexes mobs through weak references, so the test keeps them alive until it ends.
+    indexedMobs.add(mob);
     Method method = FeaturePathfinderBudget.class.getDeclaredMethod("indexMob", Entity.class);
     method.setAccessible(true);
     method.invoke(feature, mob);

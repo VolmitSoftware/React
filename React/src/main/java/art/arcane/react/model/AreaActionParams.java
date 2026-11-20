@@ -21,7 +21,7 @@ package art.arcane.react.model;
 
 import art.arcane.react.React;
 import art.arcane.react.core.controller.ObserverController;
-import art.arcane.react.core.controller.ObserverController.LoadedChunkCoordinate;
+import art.arcane.react.core.controller.LoadedChunkCoordinate;
 import art.arcane.react.core.controller.ObserverController.LoadedChunkCursor;
 import art.arcane.react.core.controller.ObserverController.LoadedChunkTarget;
 import art.arcane.volmlib.util.bukkit.WorldIdentity;

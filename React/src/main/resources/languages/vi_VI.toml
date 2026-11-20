@@ -1025,14 +1025,6 @@ summary = "Bán kính chunk của bản đồ mà nền bản đồ nhiệt chun
 impact = "Dưới mức này, bản đồ hiển thị trạng thái yên tĩnh rõ ràng thay vì khuếch đại nhiễu đo thành màu toàn dải."
 summary = "Điểm chunk đỉnh tối thiểu cần có trước khi bản đồ nhiệt hiển thị hoạt động."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "Đây là dữ liệu nội bộ và không nên thường xuyên được thay đổi bằng tay."
-summary = "Tọa độ trục X mà nền bản đồ nhiệt chunk dùng để theo dõi nội bộ."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "Đây là dữ liệu nội bộ và không nên thường xuyên được thay đổi bằng tay."
-summary = "Tọa độ trục Y mà nền bản đồ nhiệt chunk dùng để theo dõi nội bộ."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "Cấu hình cho tính năng Bản đồ chi phí tải và tạo chunk. Tính năng này liên tục giám sát hành vi của máy chủ và áp dụng các rào chắn trong thời gian chạy."
 

@@ -1025,14 +1025,6 @@ summary = "Von Chunk Heatmap Base verwendeter Kartenradius in Chunks (Chunks)."
 impact = "Darunter zeigt die Karte einen expliziten Ruhezustand, anstatt das Messrauschen in Farben im vollen Maßstab zu verstärken."
 summary = "Mindest-Spitzenwert des Chunk-Scores, der erforderlich ist, bevor die Heatmap Aktivität darstellt."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "Dies sind interne Zustandsdaten und sollten normalerweise nicht manuell geändert werden."
-summary = "X-Achsen-Koordinate, die Chunk Heatmap Base für die interne Verfolgung verwendet."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "Dies sind interne Zustandsdaten und sollten normalerweise nicht manuell geändert werden."
-summary = "Y-Achsen-Koordinate, die Chunk Heatmap Base für die interne Verfolgung verwendet."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "Konfiguration der Funktion Chunk Load Gen Cost Map. Diese Funktion überwacht kontinuierlich das Verhalten des Servers und wendet während der Laufzeit Leitplanken an."
 

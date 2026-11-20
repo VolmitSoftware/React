@@ -1,5 +1,6 @@
 package art.arcane.react.api.web.heatmap;
 
+import art.arcane.react.core.controller.LoadedChunkCoordinate;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.ObserverController;
 import java.util.ArrayList;
@@ -42,7 +43,7 @@ public class BukkitHeatmapChunkSampler implements HeatmapChunkSampler {
             radius
         );
         long capturedAtMs = System.currentTimeMillis();
-        List<ObserverController.LoadedChunkCoordinate> loaded = observer.loadedChunkCoordinatesInBounds(
+        List<LoadedChunkCoordinate> loaded = observer.loadedChunkCoordinatesInBounds(
             world.worldId(),
             viewport.scanMinimumChunkX(),
             viewport.scanMaximumChunkX(),
@@ -50,7 +51,7 @@ public class BukkitHeatmapChunkSampler implements HeatmapChunkSampler {
             viewport.scanMaximumChunkZ()
         );
         Map<BucketCoordinate, BucketAccumulator> buckets = new HashMap<>();
-        for (ObserverController.LoadedChunkCoordinate coordinate : loaded) {
+        for (LoadedChunkCoordinate coordinate : loaded) {
             double score = exporter.scoreChunk(world, coordinate.chunkX(), coordinate.chunkZ());
             double finiteScore = Double.isFinite(score) && score > 0D ? score : 0D;
             int bucketX = alignedBucketOrigin(coordinate.chunkX(), viewport.cellSizeChunks());

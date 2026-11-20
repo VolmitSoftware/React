@@ -1,5 +1,6 @@
 package art.arcane.react.web;
 
+import art.arcane.react.core.controller.LoadedChunkCoordinate;
 import art.arcane.react.api.web.heatmap.BukkitHeatmapChunkSampler;
 import art.arcane.react.api.web.heatmap.ChunkGridExporter;
 import art.arcane.react.api.web.heatmap.HeatmapScan;
@@ -48,9 +49,9 @@ public class BukkitHeatmapChunkSamplerTest {
         ObserverController observer = mock(ObserverController.class);
         when(observer.heatmapWorld("react-test:world")).thenReturn(Optional.of(world));
         when(observer.loadedChunkCoordinatesInBounds(worldId, -12, 20, -19, 13)).thenReturn(List.of(
-            new ObserverController.LoadedChunkCoordinate(-12, -19),
-            new ObserverController.LoadedChunkCoordinate(20, 13),
-            new ObserverController.LoadedChunkCoordinate(5, -3)
+            new LoadedChunkCoordinate(-12, -19),
+            new LoadedChunkCoordinate(20, 13),
+            new LoadedChunkCoordinate(5, -3)
         ));
         ChunkGridExporter exporter = mock(ChunkGridExporter.class);
         when(exporter.scoreChunk(world, -12, -19)).thenReturn(2.5D);
@@ -91,8 +92,8 @@ public class BukkitHeatmapChunkSamplerTest {
         ObserverController observer = mock(ObserverController.class);
         when(observer.heatmapWorld("react-test:world")).thenReturn(Optional.of(world));
         when(observer.loadedChunkCoordinatesInBounds(worldId, -18, 17, -18, 17)).thenReturn(List.of(
-            new ObserverController.LoadedChunkCoordinate(-18, -18),
-            new ObserverController.LoadedChunkCoordinate(-17, -17)
+            new LoadedChunkCoordinate(-18, -18),
+            new LoadedChunkCoordinate(-17, -17)
         ));
         ChunkGridExporter exporter = mock(ChunkGridExporter.class);
         when(exporter.scoreChunk(world, -18, -18)).thenReturn(2D);

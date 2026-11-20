@@ -76,7 +76,7 @@ class ObserverControllerLoadedChunkIndexTest {
       for (int viewer = 0; viewer < 1_000; viewer++) {
         Assertions.assertEquals(13, controller.loadedChunkCoordinatesInRadius(world, 0, 0, 2).size());
       }
-      List<ObserverController.LoadedChunkCoordinate> square = controller.loadedChunkCoordinatesInBounds(
+      List<LoadedChunkCoordinate> square = controller.loadedChunkCoordinatesInBounds(
           world.getUID(),
           -2,
           2,
@@ -84,8 +84,8 @@ class ObserverControllerLoadedChunkIndexTest {
           2
       );
       Assertions.assertEquals(25, square.size());
-      Assertions.assertTrue(square.contains(new ObserverController.LoadedChunkCoordinate(-2, -2)));
-      Assertions.assertTrue(square.contains(new ObserverController.LoadedChunkCoordinate(2, 2)));
+      Assertions.assertTrue(square.contains(new LoadedChunkCoordinate(-2, -2)));
+      Assertions.assertTrue(square.contains(new LoadedChunkCoordinate(2, 2)));
 
       Mockito.verify(world, Mockito.times(1)).getLoadedChunks();
 
@@ -94,7 +94,7 @@ class ObserverControllerLoadedChunkIndexTest {
       Mockito.when(load.getChunk()).thenReturn(added);
       controller.on(load);
       Assertions.assertEquals(
-          List.of(new ObserverController.LoadedChunkCoordinate(8, 8)),
+          List.of(new LoadedChunkCoordinate(8, 8)),
           controller.loadedChunkCoordinatesInRadius(world, 8, 8, 0)
       );
 
@@ -131,7 +131,7 @@ class ObserverControllerLoadedChunkIndexTest {
       Mockito.clearInvocations(chunk);
 
       Assertions.assertEquals(
-          List.of(new ObserverController.LoadedChunkCoordinate(4, 6)),
+          List.of(new LoadedChunkCoordinate(4, 6)),
           controller.loadedChunkCoordinatesInRadius(world, 0, 0, 160)
       );
       Mockito.verify(chunk, Mockito.never()).getX();

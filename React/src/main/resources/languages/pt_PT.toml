@@ -1025,14 +1025,6 @@ summary = "Raio do mapa, em chunks, usado pela base do mapa de calor de chunks (
 impact = "Abaixo deste valor, o mapa mostra um estado de calma explícito em vez de amplificar o ruído de medição em cores de escala completa."
 summary = "Pontuação de pico mínima de um chunk exigida antes de o mapa de calor desenhar atividade."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.x]
-impact = "Estes são dados internos do estado e normalmente não devem ser alterados manualmente."
-summary = "Coordenada do eixo X usada pelo acompanhamento interno da base do mapa de calor de chunks."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featurechunkheatmapbase_pixel.field.y]
-impact = "Estes são dados internos do estado e normalmente não devem ser alterados manualmente."
-summary = "Coordenada do eixo Y usada pelo acompanhamento interno da base do mapa de calor de chunks."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featurechunkloadgencostmap]
 description = "Configuração da funcionalidade Mapa de custo de geração e carga de chunks. Esta funcionalidade monitoriza continuamente o comportamento do servidor e aplica salvaguardas durante a execução."
 
