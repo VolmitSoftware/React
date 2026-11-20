@@ -111,6 +111,25 @@ abstract final class HostFixtures {
 
   /// Host details. Disk and network counters grow with [now], so the
   /// Environment page shows live rates.
+  /// The plugins the fake servers list; their costs come from no sampler.
+  static List<Map<String, dynamic>> owners() => <Map<String, dynamic>>[
+    for (final (String name, String version, bool enabled)
+        in const <(String, String, bool)>[
+          ('React', '5.0.0', true),
+          ('Iris', '4.0.0', true),
+          ('WorldEdit', '7.3.10', true),
+          ('Essentials', '2.21.0', false),
+        ])
+      <String, dynamic>{
+        'id': name,
+        'name': name,
+        'version': version,
+        'enabled': enabled,
+        'samplerId': 'plugin-${name.toLowerCase()}',
+        'includedIn': null,
+      },
+  ];
+
   static Map<String, dynamic> environment(
     FakeServerProfile profile,
     DateTime now,
@@ -177,13 +196,7 @@ abstract final class HostFixtures {
           494384795648,
           14800000000,
         ),
-        _mount(
-          'map auto_home',
-          '/System/Volumes/Data/home',
-          'autofs',
-          0,
-          0,
-        ),
+        _mount('map auto_home', '/System/Volumes/Data/home', 'autofs', 0, 0),
         _mount(
           'Cryptex',
           '/private/var/run/com.apple.security.cryptexd/mnt/'

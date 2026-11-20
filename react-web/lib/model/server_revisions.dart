@@ -1,5 +1,5 @@
 /// The kinds of server state the plugin versions with a revision counter.
-enum RevisionKind { features, tweaks, config, worlds, packs, actions }
+enum RevisionKind { features, tweaks, config, worlds, packs, actions, owners }
 
 /// Per-kind revision counters carried by every metrics frame and response.
 /// Absent on old plugins, in which case nothing is refetched on change.

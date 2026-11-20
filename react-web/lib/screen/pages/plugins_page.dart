@@ -1,5 +1,5 @@
-/// Plugins (L4), or Mods on a modded server: integrations and, for admins,
-/// plugin API packs.
+/// Plugins (L4), or Mods on a modded server: what is loaded, integrations
+/// and, for admins, plugin API packs.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
@@ -13,6 +13,7 @@ import '../../ui/kit/page.dart';
 import '../../ui/kit/role_gate.dart';
 import '../../ui/kit/tabs.dart';
 import '../integrations.dart';
+import '../owners.dart';
 import '../plugin_api_packs.dart';
 
 class PluginsPage extends StatelessWidget {
@@ -42,6 +43,11 @@ class PluginsPage extends StatelessWidget {
       tabs: AppTabs(
         label: reactorText(title),
         tabs: <AppTab>[
+          AppTab(
+            'installed',
+            reactorText(ReactorText.ownersInstalled),
+            OwnersScreen(modded: modded),
+          ),
           AppTab(
             'integrations',
             reactorText(ReactorText.integrationsTitle),

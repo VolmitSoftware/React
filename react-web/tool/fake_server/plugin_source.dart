@@ -16,14 +16,24 @@ final class PluginControlSource {
   const PluginControlSource({required this.features, required this.tweaks});
 
   /// Reads `<content>/feature` and `<content>/tweak` under the plugin's
-  /// `art/arcane/react/content` source folder.
+  /// `art/arcane/react/content` source folder and the core module's.
   static PluginControlSource read(Directory content) {
     if (!content.existsSync()) {
       throw StateError('Plugin sources not found at ${content.path}');
     }
+    final List<String> roots = <String>{
+      content.path,
+      content.path.replaceFirst('/src/main/java/', '/core/src/main/java/'),
+    }.toList();
     return PluginControlSource(
-      features: _controls(Directory('${content.path}/feature'), 'Feature'),
-      tweaks: _controls(Directory('${content.path}/tweak'), 'Tweak'),
+      features: <Map<String, dynamic>>[
+        for (final String root in roots)
+          ..._controls(Directory('$root/feature'), 'Feature'),
+      ],
+      tweaks: <Map<String, dynamic>>[
+        for (final String root in roots)
+          ..._controls(Directory('$root/tweak'), 'Tweak'),
+      ],
     );
   }
 

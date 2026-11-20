@@ -191,7 +191,7 @@ class LiveSyncIntegrationTest {
         JsonObject sample = samplers.get(0).getAsJsonObject();
         assertEquals(Set.of("id", "name", "suffix", "value", "display"), sample.keySet());
         JsonObject revisions = first.getAsJsonObject("revisions");
-        assertEquals(Set.of("features", "tweaks", "config", "worlds", "packs", "actions"), revisions.keySet());
+        assertEquals(Set.of("features", "tweaks", "config", "worlds", "packs", "actions", "owners"), revisions.keySet());
 
         long tweaksBefore = revisions.get("tweaks").getAsLong();
         long started = System.nanoTime();

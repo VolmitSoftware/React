@@ -9,18 +9,20 @@ public final class WebRevisions {
     CONFIG,
     WORLDS,
     PACKS,
-    ACTIONS
+    ACTIONS,
+    OWNERS
   }
 
-  public record Snapshot(long features, long tweaks, long config, long worlds, long packs, long actions) {
+  public record Snapshot(long features, long tweaks, long config, long worlds, long packs, long actions, long owners) {
     Snapshot bumped(Kind kind) {
       return switch (kind) {
-        case FEATURES -> new Snapshot(features + 1L, tweaks, config, worlds, packs, actions);
-        case TWEAKS -> new Snapshot(features, tweaks + 1L, config, worlds, packs, actions);
-        case CONFIG -> new Snapshot(features, tweaks, config + 1L, worlds, packs, actions);
-        case WORLDS -> new Snapshot(features, tweaks, config, worlds + 1L, packs, actions);
-        case PACKS -> new Snapshot(features, tweaks, config, worlds, packs + 1L, actions);
-        case ACTIONS -> new Snapshot(features, tweaks, config, worlds, packs, actions + 1L);
+        case FEATURES -> new Snapshot(features + 1L, tweaks, config, worlds, packs, actions, owners);
+        case TWEAKS -> new Snapshot(features, tweaks + 1L, config, worlds, packs, actions, owners);
+        case CONFIG -> new Snapshot(features, tweaks, config + 1L, worlds, packs, actions, owners);
+        case WORLDS -> new Snapshot(features, tweaks, config, worlds + 1L, packs, actions, owners);
+        case PACKS -> new Snapshot(features, tweaks, config, worlds, packs + 1L, actions, owners);
+        case ACTIONS -> new Snapshot(features, tweaks, config, worlds, packs, actions + 1L, owners);
+        case OWNERS -> new Snapshot(features, tweaks, config, worlds, packs, actions, owners + 1L);
       };
     }
   }
@@ -75,6 +77,6 @@ public final class WebRevisions {
   }
 
   private static Snapshot seeded(long seed) {
-    return new Snapshot(seed, seed, seed, seed, seed, seed);
+    return new Snapshot(seed, seed, seed, seed, seed, seed, seed);
   }
 }

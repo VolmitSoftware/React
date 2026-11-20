@@ -35,6 +35,7 @@ import art.arcane.react.api.web.resource.IncidentResource;
 import art.arcane.react.api.web.resource.IntegrationResource;
 import art.arcane.react.api.web.resource.LogsResource;
 import art.arcane.react.api.web.resource.MetricsResource;
+import art.arcane.react.api.web.resource.OwnerResource;
 import art.arcane.react.api.web.resource.PairResource;
 import art.arcane.react.api.web.resource.PlayerResource;
 import art.arcane.react.api.web.resource.SummaryResource;
@@ -707,6 +708,14 @@ public class ReactWebServer {
                     javalin.before("/api/v1/integrations", auth);
                 }
                 javalin.get("/api/v1/integrations", integrations::get);
+                OwnerResource owners = new OwnerResource(() -> {
+                    ReactPlatform platform = ReactPlatforms.getOrNull();
+                    return OwnerListing.dtos(platform == null ? "plugin" : platform.ownerNoun(), localHost.owners());
+                });
+                if (requireTokenForReads) {
+                    javalin.before("/api/v1/owners", auth);
+                }
+                javalin.get("/api/v1/owners", owners::list);
                 PluginApiPackRoutes pluginApiPacks = localHost.pluginApiPacks(mutationReporter);
                 if (requireTokenForReads) {
                     javalin.before("/api/v1/plugin-api-packs", auth);

@@ -7,6 +7,7 @@ import '../model/action_descriptor.dart';
 import '../model/config_tree.dart';
 import '../model/control_item.dart';
 import '../model/environment_info.dart';
+import '../model/owner_info.dart';
 import '../model/heatmap.dart';
 import '../model/identity_info.dart';
 import '../model/range_history.dart';
@@ -151,6 +152,11 @@ abstract interface class INetworkClient {
   Future<NetworkInfo> network();
 }
 
+/// `GET /owners`: every loaded plugin or mod.
+abstract interface class IOwnerClient {
+  Future<List<OwnerInfo>> owners();
+}
+
 abstract interface class IPluginApiPackClient {
   Future<PluginApiCatalog> pluginApiPacks();
   Future<PluginApiValidationResult> validatePluginApiPack(String content);
@@ -181,6 +187,7 @@ class ReactClient
         ISummaryClient,
         IHistoryClient,
         INetworkClient,
+        IOwnerClient,
         IPluginApiPackClient {
   final ServerCredential cred;
   final http.Client _http;
@@ -460,6 +467,11 @@ class ReactClient
     final String query = params.isEmpty ? '' : '?${_query(params)}';
     return HeatmapGrid.fromJson(await _getData('/heatmaps/$id$query'));
   }
+
+  @override
+  Future<List<OwnerInfo>> owners() async => (await _getList('/owners'))
+      .map((dynamic value) => OwnerInfo.fromJson(value as Map<String, dynamic>))
+      .toList(growable: false);
 
   @override
   Future<List<OnlinePlayerInfo>> players() async => (await _getList('/players'))

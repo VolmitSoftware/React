@@ -20,6 +20,7 @@
 package art.arcane.react.core.controller;
 
 import art.arcane.react.React;
+import art.arcane.react.api.web.WebRevisions;
 import art.arcane.react.core.integration.IntegrationCapabilitySupport;
 import art.arcane.react.core.plugincost.SamplerPluginCost;
 import art.arcane.react.util.plugin.IController;
@@ -67,11 +68,13 @@ public class PluginCostController implements IController, Listener {
   @EventHandler
   public void on(PluginEnableEvent event) {
     registerFor(event.getPlugin());
+    WebRevisions.bump(WebRevisions.Kind.OWNERS);
   }
 
   @EventHandler
   public void on(PluginDisableEvent event) {
     unregisterFor(event.getPlugin());
+    WebRevisions.bump(WebRevisions.Kind.OWNERS);
   }
 
   private void registerFor(Plugin plugin) {

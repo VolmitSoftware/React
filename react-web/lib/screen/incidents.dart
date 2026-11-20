@@ -11,8 +11,7 @@ import 'dart:math' as math;
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:arcane_jaspr/component/view/spec_row.dart';
 import 'package:jaspr/dom.dart' as dom;
-import 'package:jaspr/jaspr.dart' show Component, kIsWeb;
-import 'package:universal_web/web.dart' as web;
+import 'package:jaspr/jaspr.dart' show Component;
 
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
@@ -31,6 +30,7 @@ import '../ui/kit/alert.dart';
 import '../ui/kit/badge.dart';
 import '../ui/kit/card.dart';
 import '../ui/kit/health_badge.dart';
+import '../ui/kit/kept_open_accordion.dart';
 import '../ui/kit/metric_tile.dart';
 import '../ui/kit/mode.dart';
 import '../ui/kit/page.dart';
@@ -481,9 +481,8 @@ class IncidentsView extends StatelessWidget {
 }
 
 /// The incidents as shadcn accordion rows, newest first. The rows are built
-/// again only when the incidents, the mode or the language change, and a
-/// rebuild reopens the rows that were open, so polling never folds a row
-/// someone is reading.
+/// again only when the incidents, the mode or the language change; open rows
+/// stay open across rebuilds.
 class _IncidentList extends StatefulWidget {
   const _IncidentList({required this.incidents, required this.now});
 
@@ -495,22 +494,8 @@ class _IncidentList extends StatefulWidget {
 }
 
 class _IncidentListState extends State<_IncidentList> {
-  static const String _listId = 'reactor-incident-list';
-
   String? _key;
   Widget? _rows;
-
-  /// The incidents whose rows are open on the page now.
-  Set<String> _openIds() {
-    if (!kIsWeb) return const <String>{};
-    final web.NodeList found = web.document.querySelectorAll(
-      '#$_listId details[open] [data-incident]',
-    );
-    return <String>{
-      for (int index = 0; index < found.length; index++)
-        ?(found.item(index) as web.Element?)?.getAttribute('data-incident'),
-    };
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -534,7 +519,6 @@ class _IncidentListState extends State<_IncidentList> {
   }
 
   Widget _build(bool advanced, DateTime now) {
-    final Set<String> open = _openIds();
     final List<IncidentRecord> incidents =
         List<IncidentRecord>.of(component.incidents)
           ..sort((IncidentRecord left, IncidentRecord right) {
@@ -542,20 +526,18 @@ class _IncidentListState extends State<_IncidentList> {
             if (leftOver != _resolved(right)) return leftOver ? 1 : -1;
             return right.occurredAtMs.compareTo(left.occurredAtMs);
           });
-    return dom.div(id: _listId, <Widget>[
-      ArcaneAccordion(
-        allowMultiple: true,
-        items: <ArcaneAccordionItem>[
-          for (final IncidentRecord incident in incidents)
-            ArcaneAccordionItem(
-              title: incident.title,
-              customTitle: _summary(incident, now),
-              customContent: _detail(incident, advanced),
-              defaultOpen: open.contains(incident.id),
-            ),
-        ],
-      ),
-    ]);
+    return KeptOpenAccordion(
+      id: 'reactor-incident-list',
+      items: <KeptOpenItem>[
+        for (final IncidentRecord incident in incidents)
+          KeptOpenItem(
+            key: incident.id,
+            title: incident.title,
+            customTitle: _summary(incident, now),
+            content: _detail(incident, advanced),
+          ),
+      ],
+    );
   }
 
   /// The state badge (Resolved once it is over) and how long ago, then the
@@ -564,49 +546,46 @@ class _IncidentListState extends State<_IncidentList> {
     final (String severity, BadgeTone tone) = _resolved(incident)
         ? (reactorText(ReactorText.incidentsResolved), BadgeTone.neutral)
         : _severity(incident.severity);
-    return dom.div(
-      attributes: <String, String>{'data-incident': incident.id},
-      <Widget>[
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 4,
-          children: <Widget>[
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: <Widget>[
-                StatusBadge(severity, tone: tone),
-                dom.span(
-                  classes: 'ui-caption',
-                  attributes: <String, String>{
-                    'title': _stamp(incident.occurredAtMs),
-                  },
-                  <Widget>[
-                    Component.text(
-                      incident.occurredAtMs <= 0
-                          ? reactorText(ReactorText.commonUnavailable)
-                          : _ago(
-                              now.difference(
-                                DateTime.fromMillisecondsSinceEpoch(
-                                  incident.occurredAtMs,
-                                ),
+    return dom.div(<Widget>[
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 4,
+        children: <Widget>[
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              StatusBadge(severity, tone: tone),
+              dom.span(
+                classes: 'ui-caption',
+                attributes: <String, String>{
+                  'title': _stamp(incident.occurredAtMs),
+                },
+                <Widget>[
+                  Component.text(
+                    incident.occurredAtMs <= 0
+                        ? reactorText(ReactorText.commonUnavailable)
+                        : _ago(
+                            now.difference(
+                              DateTime.fromMillisecondsSinceEpoch(
+                                incident.occurredAtMs,
                               ),
                             ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            dom.span(<Widget>[Component.text(incident.title)]),
-            if (incident.cause.isNotEmpty)
-              dom.span(classes: 'ui-caption', <Widget>[
-                Component.text(incident.cause),
-              ]),
-          ],
-        ),
-      ],
-    );
+                          ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          dom.span(<Widget>[Component.text(incident.title)]),
+          if (incident.cause.isNotEmpty)
+            dom.span(classes: 'ui-caption', <Widget>[
+              Component.text(incident.cause),
+            ]),
+        ],
+      ),
+    ]);
   }
 
   static bool _resolved(IncidentRecord incident) =>

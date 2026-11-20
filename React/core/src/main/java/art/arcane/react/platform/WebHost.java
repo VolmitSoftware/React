@@ -6,6 +6,7 @@ import art.arcane.react.api.web.ActionDispatcher;
 import art.arcane.react.api.web.ActionTicketRegistry;
 import art.arcane.react.api.web.AuditLog;
 import art.arcane.react.api.web.AuditWebMutationReporter;
+import art.arcane.react.api.web.OwnerListing;
 import art.arcane.react.api.web.ConsoleCommandDispatcher;
 import art.arcane.react.api.web.ControlBackend;
 import art.arcane.react.api.web.PlayerBackend;
@@ -182,6 +183,11 @@ public interface WebHost {
   }
 
   default List<String> integrationTimeline(int limit) {
+    return List.of();
+  }
+
+  /** Every loaded plugin or mod, enabled or not. */
+  default List<OwnerListing.Owner> owners() {
     return List.of();
   }
 

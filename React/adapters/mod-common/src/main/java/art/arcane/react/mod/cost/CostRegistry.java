@@ -35,6 +35,11 @@ public final class CostRegistry {
         return resolver == null ? Map.of() : resolver.costOwners();
     }
 
+    public static String costOwnerOf(String modId) {
+        ModOwners resolver = owners;
+        return resolver == null ? modId : resolver.costOwnerOf(modId);
+    }
+
     public static CostBucket bucket(String ownerId, CostKind kind) {
         return BUCKETS.computeIfAbsent(kind.name() + '/' + ownerId, (String key) -> new CostBucket(ownerId, kind));
     }

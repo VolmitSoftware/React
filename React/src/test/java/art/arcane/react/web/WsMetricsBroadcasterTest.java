@@ -16,7 +16,7 @@ import java.util.function.Supplier;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class WsMetricsBroadcasterTest {
-  private static final WebRevisions.Snapshot REVISIONS = new WebRevisions.Snapshot(1L, 1L, 1L, 1L, 1L, 1L);
+  private static final WebRevisions.Snapshot REVISIONS = new WebRevisions.Snapshot(1L, 1L, 1L, 1L, 1L, 1L, 1L);
 
   @Test
   void returnsZeroAndDoesNoWorkWithoutSessions() {
@@ -69,7 +69,7 @@ public class WsMetricsBroadcasterTest {
     assertEquals(0, broadcaster.broadcastOnce());
     sequence.incrementAndGet();
     assertEquals(1, broadcaster.broadcastOnce());
-    revisions.set(new WebRevisions.Snapshot(1L, 2L, 1L, 1L, 1L, 1L));
+    revisions.set(new WebRevisions.Snapshot(1L, 2L, 1L, 1L, 1L, 1L, 1L));
     assertEquals(1, broadcaster.broadcastOnce());
     assertEquals(0, broadcaster.broadcastOnce());
     assertEquals(List.of("SEQ:4:1", "SEQ:5:1", "SEQ:5:2"), transport.sent());

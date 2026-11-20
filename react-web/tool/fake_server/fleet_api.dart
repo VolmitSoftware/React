@@ -56,6 +56,9 @@ extension _FleetApi on FakeFleet {
       case ('environment', 1):
         _expect(request, 'GET');
         await _writeData(request, HostFixtures.environment(profile, now));
+      case ('owners', 1):
+        _expect(request, 'GET');
+        await _writeData(request, HostFixtures.owners());
       case ('config', _):
         await _handleConfig(request, state, token, route);
       case ('logs', 1):

@@ -38,5 +38,7 @@ class ModOwnersTest {
 
         assertEquals(Map.of("minecraft", "Name minecraft", "fabric-api", "Name fabric-api", "react", "Name react"),
                 owners.costOwners());
+        assertEquals("fabric-api", owners.costOwnerOf("fabric-api-base"));
+        assertEquals("minecraft", owners.costOwnerOf("minecraft"));
     }
 }

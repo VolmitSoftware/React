@@ -12,6 +12,7 @@ import 'connection_manager.dart';
 import 'control_list_controller.dart';
 import 'fleet_manager.dart';
 import 'log_controller.dart';
+import 'owners_controller.dart';
 import 'plugin_api_packs_controller.dart';
 import 'server_identity.dart';
 import 'revision_feed.dart';
@@ -43,6 +44,7 @@ class ServerSession {
   ConfigController? _config;
   ActionsController? _actions;
   PluginApiPacksController? _packs;
+  OwnersController? _owners;
   LogController? _logs;
   SamplerCatalog? _catalog;
   ServerIdentity? _identity;
@@ -140,6 +142,12 @@ class ServerSession {
     revisions: revisions,
   );
 
+  OwnersController get owners => _owners ??= OwnersController(
+    _capability<IOwnerClient>(),
+    serverId: serverId,
+    revisions: revisions,
+  );
+
   /// Opens its socket when the first listener attaches and closes it 30 s
   /// after the last one leaves.
   LogController get logs => _logs ??= LogController(
@@ -188,6 +196,7 @@ class ServerSession {
     _config?.dispose();
     _actions?.dispose();
     _packs?.dispose();
+    _owners?.dispose();
     _logs?.dispose();
     revisions.dispose();
     connection.dispose();

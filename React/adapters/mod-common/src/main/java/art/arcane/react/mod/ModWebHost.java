@@ -15,6 +15,9 @@ import art.arcane.react.api.web.RegistryActionBackend;
 import art.arcane.react.api.web.RegistryControlBackend;
 import art.arcane.react.api.web.FeatureWorldBackend;
 import art.arcane.react.api.web.WorldBackend;
+import art.arcane.react.api.web.OwnerListing;
+import art.arcane.react.mod.cost.CostRegistry;
+import art.arcane.react.mod.cost.ModOwners;
 import art.arcane.react.api.web.heatmap.ChunkGridExporter;
 import art.arcane.react.api.web.heatmap.HeatmapChunkSampler;
 import art.arcane.react.api.web.WebConfiguration;
@@ -37,6 +40,7 @@ import net.minecraft.server.MinecraftServer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -195,6 +199,16 @@ final class ModWebHost implements WebHost {
     @Override
     public IncidentScore incidentScore() {
         return IncidentScore.sample(samples.get());
+    }
+
+    @Override
+    public List<OwnerListing.Owner> owners() {
+        List<ModOwners.LoadedMod> mods = CostRegistry.loadedMods();
+        List<OwnerListing.Owner> owners = new ArrayList<>(mods.size());
+        for (ModOwners.LoadedMod mod : mods) {
+            owners.add(new OwnerListing.Owner(mod.id(), mod.name(), mod.version(), true, CostRegistry.costOwnerOf(mod.id())));
+        }
+        return owners;
     }
 
     @Override

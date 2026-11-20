@@ -24,10 +24,14 @@ public interface ModOwners {
     default Map<String, String> costOwners() {
         Map<String, String> owners = new TreeMap<>();
         for (LoadedMod mod : loadedMods()) {
-            String owner = Objects.requireNonNullElse(ownerOfNamespace(mod.id()), mod.id());
-            owners.computeIfAbsent(owner, this::displayName);
+            owners.computeIfAbsent(costOwnerOf(mod.id()), this::displayName);
         }
         return owners;
+    }
+
+    /** The owner whose cost counts this loaded mod's time: the mod itself, or the mod it is nested in or bundled with. */
+    default String costOwnerOf(String modId) {
+        return Objects.requireNonNullElse(ownerOfNamespace(modId), modId);
     }
 
     record LoadedMod(String id, String name, String version) {

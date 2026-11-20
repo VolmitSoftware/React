@@ -6,6 +6,7 @@ import '../model/action_descriptor.dart';
 import '../model/config_tree.dart';
 import '../model/control_item.dart';
 import '../model/environment_info.dart';
+import '../model/owner_info.dart';
 import '../model/heatmap.dart';
 import '../model/identity_info.dart';
 import '../model/log_line.dart';
@@ -42,6 +43,7 @@ class HappyEyeballsClient
         ISummaryClient,
         IHistoryClient,
         INetworkClient,
+        IOwnerClient,
         IPluginApiPackClient,
         IServerPresence {
   final IReactClient? _direct;
@@ -266,6 +268,11 @@ class HappyEyeballsClient
     throw const ReactUnavailable(
       'Active transport does not support metric history',
     );
+  }
+
+  IOwnerClient _owners(IReactClient client) {
+    if (client is IOwnerClient) return client as IOwnerClient;
+    throw const ReactUnavailable('Active transport does not list owners');
   }
 
   IPluginApiPackClient _pluginApiPacks(IReactClient client) {
@@ -509,9 +516,12 @@ class HappyEyeballsClient
   );
 
   @override
-  Future<PluginApiCatalog> pluginApiPacks() => _read(
-    (IReactClient client) => _pluginApiPacks(client).pluginApiPacks(),
-  );
+  Future<List<OwnerInfo>> owners() =>
+      _read((IReactClient client) => _owners(client).owners());
+
+  @override
+  Future<PluginApiCatalog> pluginApiPacks() =>
+      _read((IReactClient client) => _pluginApiPacks(client).pluginApiPacks());
 
   @override
   Future<PluginApiValidationResult> validatePluginApiPack(String content) =>

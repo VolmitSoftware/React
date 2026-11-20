@@ -6,6 +6,7 @@ import '../model/action_descriptor.dart';
 import '../model/config_tree.dart';
 import '../model/control_item.dart';
 import '../model/environment_info.dart';
+import '../model/owner_info.dart';
 import '../model/heatmap.dart';
 import '../model/identity_info.dart';
 import '../model/log_line.dart';
@@ -45,6 +46,7 @@ class RelayReactClient
         ISummaryClient,
         IHistoryClient,
         INetworkClient,
+        IOwnerClient,
         IPluginApiPackClient,
         IServerPresence {
   final IRelayConnection _connection;
@@ -339,6 +341,16 @@ class RelayReactClient
         : '?${query.entries.map((MapEntry<String, String> entry) => '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(entry.value)}').join('&')}';
     final RelayResponse response = await _get('/heatmaps/$id$suffix');
     return HeatmapGrid.fromJson(_decodeData(response.body));
+  }
+
+  @override
+  Future<List<OwnerInfo>> owners() async {
+    final RelayResponse response = await _get('/owners');
+    return _decodeList(response.body)
+        .map(
+          (dynamic entry) => OwnerInfo.fromJson(entry as Map<String, dynamic>),
+        )
+        .toList(growable: false);
   }
 
   @override

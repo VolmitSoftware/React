@@ -656,16 +656,31 @@ const Set<String> _englishInvariantKeys = <String>{
   'screen.chunks.title',
   'screen.overview.tps',
   'heatmap.teleport_confirm_message',
+  'screen.owners.mod',
+  'screen.owners.plugin',
 };
 const Map<String, Set<String>> _localeEnglishInvariantKeys =
     <String, Set<String>>{
-      'de_DE': <String>{'chart.range_live', 'start.online', 'status.live'},
+      'de_DE': <String>{
+        'chart.range_live',
+        'screen.owners.included_in',
+        'screen.owners.version',
+        'start.online',
+        'status.live',
+      },
+      'fr_FR': <String>{'screen.owners.version'},
       'es_ES': <String>{'screen.events.listeners'},
-      'it_IT': <String>{'chart.range_live', 'start.online', 'status.live'},
+      'it_IT': <String>{
+        'chart.range_live',
+        'screen.owners.included_in',
+        'start.online',
+        'status.live',
+      },
       'nl_NL': <String>{
         'chart.range_live',
         'screen.events.listeners',
         'screen.mechanics.updates',
+        'screen.owners.included_in',
         'start.online',
         'status.live',
       },

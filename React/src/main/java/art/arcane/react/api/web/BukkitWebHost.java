@@ -40,6 +40,7 @@ import io.javalin.http.NotFoundResponse;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -318,6 +319,17 @@ public final class BukkitWebHost implements WebHost {
       dtos.add(dto);
     }
     return dtos;
+  }
+
+  @Override
+  public List<OwnerListing.Owner> owners() {
+    Plugin[] plugins = Bukkit.getPluginManager().getPlugins();
+    List<OwnerListing.Owner> owners = new ArrayList<>(plugins.length);
+    for (Plugin plugin : plugins) {
+      String name = plugin.getName();
+      owners.add(new OwnerListing.Owner(name, name, plugin.getDescription().getVersion(), plugin.isEnabled(), name));
+    }
+    return owners;
   }
 
   @Override

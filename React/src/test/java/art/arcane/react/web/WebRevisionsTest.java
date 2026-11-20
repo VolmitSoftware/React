@@ -32,6 +32,17 @@ class WebRevisionsTest {
     assertEquals(before.config(), after.config());
     assertEquals(before.worlds(), after.worlds());
     assertEquals(before.actions(), after.actions());
+    assertEquals(before.owners(), after.owners());
+  }
+
+  @Test
+  void ownersBumpLeavesTheOtherKinds() {
+    WebRevisions.Snapshot before = WebRevisions.current();
+    WebRevisions.bump(WebRevisions.Kind.OWNERS);
+    WebRevisions.Snapshot after = WebRevisions.current();
+    assertEquals(before.owners() + 1L, after.owners());
+    assertEquals(before.packs(), after.packs());
+    assertEquals(before.features(), after.features());
   }
 
   @Test

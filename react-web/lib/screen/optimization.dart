@@ -28,6 +28,7 @@ import '../ui/kit/badge.dart';
 import '../ui/kit/card.dart';
 import '../ui/kit/confirm_dialog.dart';
 import '../ui/kit/data_list.dart';
+import '../ui/kit/kept_open_accordion.dart';
 import '../ui/kit/density.dart';
 import '../ui/kit/info_tip.dart';
 import '../ui/kit/menu.dart';
@@ -289,18 +290,19 @@ class ControlListView extends StatelessWidget {
             : a.compareTo(b),
       );
     final bool searching = query.trim().isNotEmpty;
-    return ArcaneAccordion(
+    return KeptOpenAccordion(
       key: ValueKey<String>('groups-$searching'),
-      allowMultiple: true,
-      items: <ArcaneAccordionItem>[
+      id: 'reactor-groups-${itemLabel.hashCode}-$searching',
+      items: <KeptOpenItem>[
         for (final String name in names)
-          ArcaneAccordionItem(
+          KeptOpenItem(
+            key: name,
             title: name,
             customTitle: dom.span(classes: 'reactor-row-title', <Widget>[
               dom.span(<Widget>[Component.text(name)]),
               StatusBadge('${byCategory[name]!.length}'),
             ]),
-            customContent: _list(context, byCategory[name]!),
+            content: _list(context, byCategory[name]!),
             defaultOpen: searching,
           ),
       ],
