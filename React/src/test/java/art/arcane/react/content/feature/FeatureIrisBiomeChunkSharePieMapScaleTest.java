@@ -40,8 +40,8 @@ class FeatureIrisBiomeChunkSharePieMapScaleTest {
     List<ObserverController.LoadedChunkTarget> coordinates = coordinates(worldId, 100_000);
     Mockito.when(observer.nextLoadedChunkCoordinateBatch(32)).thenReturn(coordinates);
 
-    FeatureIrisBiomeChunkSharePieMap feature = new FeatureIrisBiomeChunkSharePieMap();
-    feature.onActivate();
+    IrisBiomeChunkSampler feature = new IrisBiomeChunkSampler();
+    feature.start();
     AtomicInteger scheduled = new AtomicInteger();
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
@@ -66,7 +66,7 @@ class FeatureIrisBiomeChunkSharePieMapScaleTest {
       Mockito.verify(world, Mockito.never()).isChunkLoaded(Mockito.anyInt(), Mockito.anyInt());
       Mockito.verify(world, Mockito.never()).getChunkAt(Mockito.anyInt(), Mockito.anyInt());
     } finally {
-      feature.onDeactivate();
+      feature.stop();
     }
   }
 
@@ -82,8 +82,8 @@ class FeatureIrisBiomeChunkSharePieMapScaleTest {
       return coordinates.subList(start, start + 32);
     });
 
-    FeatureIrisBiomeChunkSharePieMap feature = new FeatureIrisBiomeChunkSharePieMap();
-    feature.onActivate();
+    IrisBiomeChunkSampler feature = new IrisBiomeChunkSampler();
+    feature.start();
     AtomicInteger scheduled = new AtomicInteger();
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
@@ -108,7 +108,7 @@ class FeatureIrisBiomeChunkSharePieMapScaleTest {
       Mockito.verify(world, Mockito.never()).getLoadedChunks();
       Mockito.verify(world, Mockito.never()).getChunkAt(Mockito.anyInt(), Mockito.anyInt());
     } finally {
-      feature.onDeactivate();
+      feature.stop();
     }
   }
 
@@ -128,8 +128,8 @@ class FeatureIrisBiomeChunkSharePieMapScaleTest {
     Mockito.when(unload.getChunk()).thenReturn(chunk);
     Mockito.when(observer.nextLoadedChunkCoordinateBatch(32)).thenReturn(List.of());
 
-    FeatureIrisBiomeChunkSharePieMap feature = new FeatureIrisBiomeChunkSharePieMap();
-    feature.onActivate();
+    IrisBiomeChunkSampler feature = new IrisBiomeChunkSampler();
+    feature.start();
     AtomicReference<Runnable> ownerTask = new AtomicReference<>();
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
@@ -156,7 +156,7 @@ class FeatureIrisBiomeChunkSharePieMapScaleTest {
       Mockito.verifyNoInteractions(world);
       Assertions.assertTrue(feature.bucketSnapshot(worldId).isEmpty());
     } finally {
-      feature.onDeactivate();
+      feature.stop();
     }
   }
 
@@ -188,7 +188,7 @@ class FeatureIrisBiomeChunkSharePieMapScaleTest {
     ));
 
     TestBiomeMap feature = new TestBiomeMap();
-    feature.onActivate();
+    feature.start();
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
          MockedStatic<J> scheduler = Mockito.mockStatic(J.class)) {
@@ -213,7 +213,7 @@ class FeatureIrisBiomeChunkSharePieMapScaleTest {
       Assertions.assertEquals(Map.of("Desert", 1L), feature.bucketSnapshot(worldId));
       Mockito.verify(world, Mockito.never()).getLoadedChunks();
     } finally {
-      feature.onDeactivate();
+      feature.stop();
     }
   }
 
@@ -225,7 +225,7 @@ class FeatureIrisBiomeChunkSharePieMapScaleTest {
     return coordinates;
   }
 
-  private static final class TestBiomeMap extends FeatureIrisBiomeChunkSharePieMap {
+  private static final class TestBiomeMap extends IrisBiomeChunkSampler {
     private final List<Integer> sampleHeights = new ArrayList<>();
 
     @Override

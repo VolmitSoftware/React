@@ -80,28 +80,12 @@ public interface CommandHost {
     unavailable(sender, "action purge-entities");
   }
 
-  default void purgeChunks(VolmitSender sender, String world) {
-    unavailable(sender, "action purge-chunks");
-  }
-
-  default void quarantineHotChunks(VolmitSender sender, int maxChunks, double minScore, String world) {
-    unavailable(sender, "action quarantine-hot-chunks");
-  }
-
   default void trimEntitiesByAgePriority(VolmitSender sender, int maxEntities, int minAgeSeconds, String world) {
     unavailable(sender, "action trim-entities-by-age-priority");
   }
 
   default void hopperNetworkNormalize(VolmitSender sender, int maxChunks, double minHopperUpdates, String world) {
     unavailable(sender, "action hopper-network-normalize");
-  }
-
-  default void prewarmCriticalChunks(VolmitSender sender, int maxChunks, int neighborRadius, String world) {
-    unavailable(sender, "action prewarm-critical-chunks");
-  }
-
-  default void incidentPlaybook(VolmitSender sender, boolean includeGarbageCollection, int tier, String world) {
-    unavailable(sender, "action incident-playbook");
   }
 
   default void benchmark(VolmitSender sender, Set<BenchmarkTarget> targets) {

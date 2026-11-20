@@ -116,16 +116,6 @@ public final class BukkitCommandHost implements CommandHost {
   }
 
   @Override
-  public void purgeChunks(VolmitSender sender, String world) {
-    action.purgeChunks(sender, world);
-  }
-
-  @Override
-  public void quarantineHotChunks(VolmitSender sender, int maxChunks, double minScore, String world) {
-    action.quarantineHotChunks(sender, maxChunks, minScore, world);
-  }
-
-  @Override
   public void trimEntitiesByAgePriority(VolmitSender sender, int maxEntities, int minAgeSeconds, String world) {
     action.trimEntitiesByAgePriority(sender, maxEntities, minAgeSeconds, world);
   }
@@ -133,16 +123,6 @@ public final class BukkitCommandHost implements CommandHost {
   @Override
   public void hopperNetworkNormalize(VolmitSender sender, int maxChunks, double minHopperUpdates, String world) {
     action.hopperNetworkNormalize(sender, maxChunks, minHopperUpdates, world);
-  }
-
-  @Override
-  public void prewarmCriticalChunks(VolmitSender sender, int maxChunks, int neighborRadius, String world) {
-    action.prewarmCriticalChunks(sender, maxChunks, neighborRadius, world);
-  }
-
-  @Override
-  public void incidentPlaybook(VolmitSender sender, boolean includeGarbageCollection, int tier, String world) {
-    action.incidentPlaybook(sender, includeGarbageCollection, tier, world);
   }
 
   @Override

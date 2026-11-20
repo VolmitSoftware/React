@@ -10,6 +10,16 @@ import art.arcane.react.platform.ComponentHost;
 import art.arcane.react.platform.EntityHost;
 import art.arcane.react.platform.HopperHost;
 import art.arcane.react.platform.ViewDistanceHost;
+import art.arcane.react.platform.ChunkHeatmapHost;
+import art.arcane.react.platform.ChunkHost;
+import art.arcane.react.platform.DropHost;
+import art.arcane.react.platform.GameRuleHost;
+import art.arcane.react.platform.IncidentHost;
+import art.arcane.react.platform.IntegrationMetricsHost;
+import art.arcane.react.platform.MapAnchorHost;
+import art.arcane.react.platform.MapDataHost;
+import art.arcane.react.platform.PlayerHost;
+import art.arcane.react.platform.ShorthandHost;
 import art.arcane.react.platform.WorldHost;
 import art.arcane.react.platform.LanguageHost;
 import art.arcane.react.platform.ReactCommandSender;
@@ -58,6 +68,13 @@ public final class BukkitReactPlatform implements ReactPlatform {
   private final EntityHost entityHost = new BukkitEntityHost();
   private final HopperHost hopperHost = new BukkitHopperHost();
   private final ViewDistanceHost viewDistanceHost = new BukkitViewDistanceHost();
+  private final ChunkHost chunkHost = new BukkitChunkHost();
+  private final PlayerHost playerHost = new BukkitPlayerHost();
+  private final IncidentHost incidentHost = new BukkitIncidentHost();
+  private final GameRuleHost gameRuleHost = new BukkitGameRuleHost();
+  private final DropHost dropHost = new BukkitDropHost();
+  private final ShorthandHost shorthandHost = new BukkitShorthandHost();
+  private final MapDataHost mapDataHost = new BukkitMapDataHost();
 
   public static BukkitReactPlatform instance() {
     return INSTANCE;
@@ -263,6 +280,58 @@ public final class BukkitReactPlatform implements ReactPlatform {
   @Override
   public Optional<ViewDistanceHost> viewDistanceHost() {
     return Optional.of(viewDistanceHost);
+  }
+
+  // Chunks, players, world rules and maps
+
+  @Override
+  public Optional<ChunkHost> chunkHost() {
+    return Optional.of(chunkHost);
+  }
+
+  @Override
+  public Optional<PlayerHost> playerHost() {
+    return Optional.of(playerHost);
+  }
+
+  @Override
+  public Optional<IncidentHost> incidentHost() {
+    return Optional.of(incidentHost);
+  }
+
+  @Override
+  public Optional<GameRuleHost> gameRuleHost() {
+    return Optional.of(gameRuleHost);
+  }
+
+  @Override
+  public Optional<DropHost> dropHost() {
+    return Optional.of(dropHost);
+  }
+
+  @Override
+  public Optional<ShorthandHost> shorthandHost() {
+    return Optional.of(shorthandHost);
+  }
+
+  @Override
+  public Optional<IntegrationMetricsHost> integrationMetricsHost() {
+    return Optional.of(BukkitIntegrationMetricsHost.INSTANCE);
+  }
+
+  @Override
+  public Optional<ChunkHeatmapHost> chunkHeatmapHost() {
+    return Optional.of(BukkitChunkHeatmapHost.INSTANCE);
+  }
+
+  @Override
+  public Optional<MapAnchorHost> mapAnchorHost() {
+    return Optional.of(BukkitMapAnchorHost.INSTANCE);
+  }
+
+  @Override
+  public Optional<MapDataHost> mapDataHost() {
+    return Optional.of(mapDataHost);
   }
 
   @Override

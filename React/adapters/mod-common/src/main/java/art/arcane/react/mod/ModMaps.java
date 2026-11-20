@@ -76,13 +76,19 @@ final class ModMaps implements MapRuntimeConfig {
         registry = created;
         runtime = started;
         started.start();
-        ModDashboardMaps createdDashboards = ModDashboardMaps.create(server, platform, started::frameAnchor);
+        ModDashboardMaps createdDashboards = ModDashboardMaps.create(platform);
         createdDashboards.registerInto(created);
         dashboards = createdDashboards;
         for (ReactRenderer renderer : samplerRenderers("", "")) {
             created.register(renderer);
         }
         started.seedOnlineState();
+    }
+
+    /** The frame a map hangs in, for framed heatmaps; null while maps are stopped or the map is not framed. */
+    MapRuntime.FrameAnchor frameAnchor(int mapId) {
+        MapRuntime<ItemStack> active = runtime;
+        return active == null ? null : active.frameAnchor(mapId);
     }
 
     /** The dashboard heatmaps React Web lists, empty while maps are stopped. */

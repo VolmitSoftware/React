@@ -1,5 +1,8 @@
 package art.arcane.react.content.tweak;
 
+import art.arcane.react.platform.ReactPlatforms;
+import art.arcane.react.platform.bukkit.BukkitDropHost;
+
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -33,7 +36,7 @@ import java.util.List;
 public class TweakFastDropsTest {
   @Test
   public void blockDropsIgnoreAlreadyClaimedEvents() throws Exception {
-    Method handler = TweakFastDrops.class.getDeclaredMethod("on", BlockDropItemEvent.class);
+    Method handler = BukkitDropHost.class.getDeclaredMethod("on", BlockDropItemEvent.class);
     EventHandler annotation = handler.getAnnotation(EventHandler.class);
 
     Assertions.assertNotNull(annotation);
@@ -42,7 +45,7 @@ public class TweakFastDropsTest {
 
   @Test
   public void blockExperienceIgnoresCancelledBreaks() throws Exception {
-    Method handler = TweakFastDrops.class.getDeclaredMethod("on", BlockBreakEvent.class);
+    Method handler = BukkitDropHost.class.getDeclaredMethod("on", BlockBreakEvent.class);
     EventHandler annotation = handler.getAnnotation(EventHandler.class);
 
     Assertions.assertNotNull(annotation);
@@ -73,7 +76,7 @@ public class TweakFastDropsTest {
     Mockito.when(player.getGameMode()).thenReturn(GameMode.SURVIVAL);
     Mockito.when(player.getInventory()).thenReturn(inventory);
 
-    tweak.on(event);
+    fire(tweak, event);
 
     Assertions.assertEquals(List.of(entity), drops);
     Mockito.verify(inventory, Mockito.never()).addItem(Mockito.any(ItemStack[].class));
@@ -113,7 +116,7 @@ public class TweakFastDropsTest {
       return leftovers;
     });
 
-    tweak.on(event);
+    fire(tweak, event);
 
     Assertions.assertTrue(drops.isEmpty());
     Mockito.verify(inventory).addItem(transfer);
@@ -154,7 +157,7 @@ public class TweakFastDropsTest {
     Mockito.when(original.clone()).thenReturn(transfer);
     Mockito.when(inventory.addItem(transfer)).thenReturn(leftovers);
 
-    tweak.on(event);
+    fire(tweak, event);
 
     Assertions.assertTrue(drops.isEmpty());
     Mockito.verify(inventory).addItem(transfer);
@@ -176,7 +179,7 @@ public class TweakFastDropsTest {
     Mockito.when(player.getGameMode()).thenReturn(GameMode.SURVIVAL);
 
     PluginManager events = experienceEvents(player);
-    tweak.on(event);
+    fire(tweak, event);
 
     Mockito.verify(event).setExpToDrop(0);
     Mockito.verify(events).callEvent(Mockito.any(PlayerExpChangeEvent.class));
@@ -199,7 +202,7 @@ public class TweakFastDropsTest {
       return null;
     }).when(events).callEvent(Mockito.any(PlayerExpChangeEvent.class));
 
-    tweak.on(event);
+    fire(tweak, event);
 
     Mockito.verify(events).callEvent(Mockito.any(PlayerExpChangeEvent.class));
     Mockito.verify(player).giveExp(3);
@@ -227,7 +230,7 @@ public class TweakFastDropsTest {
       return null;
     }).when(events).callEvent(Mockito.any(PlayerExpChangeEvent.class));
 
-    tweak.on(event);
+    fire(tweak, event);
 
     Mockito.verify(events).callEvent(Mockito.any(PlayerExpChangeEvent.class));
     Mockito.verify(player, Mockito.never()).giveExp(Mockito.anyInt());
@@ -247,13 +250,29 @@ public class TweakFastDropsTest {
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.isOwnedByCurrentRegion(player)).thenReturn(false);
 
-      tweak.on(event);
+      fire(tweak, event);
 
       Mockito.verify(player, Mockito.never()).getLocation();
       Mockito.verify(player, Mockito.never()).getInventory();
       Mockito.verify(player, Mockito.never()).giveExp(Mockito.anyInt());
       Mockito.verify(event, Mockito.never()).getDrops();
       Mockito.verify(event, Mockito.never()).setDroppedExp(Mockito.anyInt());
+    }
+  }
+
+  private static void fire(TweakFastDrops tweak, Object event) {
+    BukkitDropHost host = (BukkitDropHost) ReactPlatforms.get().dropHost().orElseThrow();
+    tweak.onActivate();
+    try {
+      if (event instanceof EntityDeathEvent death) {
+        host.on(death);
+      } else if (event instanceof BlockDropItemEvent drops) {
+        host.on(drops);
+      } else if (event instanceof BlockBreakEvent broken) {
+        host.on(broken);
+      }
+    } finally {
+      tweak.onDeactivate();
     }
   }
 

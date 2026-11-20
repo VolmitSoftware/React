@@ -10,6 +10,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.phys.AABB;
 
@@ -137,6 +138,50 @@ final class ModEntityHost implements EntityHost {
     public void remove(GameEntity entity) {
         if (entity.handle() instanceof Entity handle) {
             killer.kill(handle);
+        }
+    }
+
+    // Chunk quarantine culling
+
+    @Override
+    public boolean isDead(GameEntity entity) {
+        return !(entity.handle() instanceof Entity handle) || handle.isRemoved() || !handle.isAlive();
+    }
+
+    @Override
+    public boolean isTamed(GameEntity entity) {
+        return entity.handle() instanceof TamableAnimal tamable && tamable.isTame();
+    }
+
+    @Override
+    public boolean isVillager(GameEntity entity) {
+        return entity.handle() instanceof Entity handle && isVanilla(handle.getType(), "villager");
+    }
+
+    @Override
+    public boolean isBoss(GameEntity entity) {
+        if (!(entity.handle() instanceof Entity handle)) {
+            return false;
+        }
+        EntityType<?> type = handle.getType();
+        return isVanilla(type, "ender_dragon") || isVanilla(type, "wither") || isVanilla(type, "warden");
+    }
+
+    private static boolean isVanilla(EntityType<?> type, String path) {
+        return "minecraft".equals(VanillaApi.namespace(type)) && path.equals(VanillaApi.path(type));
+    }
+
+    @Override
+    public void removeNow(GameEntity entity) {
+        if (entity.handle() instanceof Entity handle) {
+            handle.discard();
+        }
+    }
+
+    @Override
+    public void kill(GameEntity entity, int seconds) {
+        if (entity.handle() instanceof Entity handle) {
+            killer.kill(handle, seconds);
         }
     }
 

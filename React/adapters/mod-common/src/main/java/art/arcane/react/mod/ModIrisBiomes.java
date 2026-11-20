@@ -4,7 +4,6 @@ import art.arcane.react.content.feature.SharePieRenderer;
 import art.arcane.react.mod.mixin.ChunkMapAccess;
 import art.arcane.react.platform.MapRenderTarget;
 import art.arcane.react.platform.PlatformLog;
-import art.arcane.react.platform.PlatformScheduler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -40,11 +39,13 @@ final class ModIrisBiomes {
         this.server = server;
     }
 
-    void schedule(PlatformScheduler scheduler) {
-        scheduler.global(() -> {
-            sample();
-            schedule(scheduler);
-        }, REFRESH_TICKS);
+    /** Server thread. */
+    void sampleNow() {
+        sample();
+    }
+
+    void clear() {
+        labels.clear();
     }
 
     /** Chunk count by biome label for the world the map shows. */

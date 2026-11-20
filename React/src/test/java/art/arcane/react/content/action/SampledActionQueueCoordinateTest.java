@@ -4,7 +4,6 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerHopperUpdates;
 import art.arcane.react.core.controller.ObserverController;
-import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledServer;
 import art.arcane.react.model.SampledWorld;
@@ -44,9 +43,9 @@ class SampledActionQueueCoordinateTest {
           .includePlayerChunks(false)
           .build();
       Method prewarmQueue = ActionPrewarmCriticalChunks.class.getDeclaredMethod(
-          "buildQueue", ActionPrewarmCriticalChunks.Params.class, NearbyPlayerIndexController.class);
+          "buildQueue", ActionPrewarmCriticalChunks.Params.class);
       prewarmQueue.setAccessible(true);
-      List<?> prewarm = (List<?>) prewarmQueue.invoke(new ActionPrewarmCriticalChunks(), prewarmParams, null);
+      List<?> prewarm = (List<?>) prewarmQueue.invoke(new ActionPrewarmCriticalChunks(), prewarmParams);
 
       ActionHopperNetworkNormalize.Params hopperParams = ActionHopperNetworkNormalize.Params.builder()
           .minimumHopperUpdatesPerChunk(1D)

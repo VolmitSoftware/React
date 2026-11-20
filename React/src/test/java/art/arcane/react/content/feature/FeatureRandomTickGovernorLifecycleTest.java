@@ -4,6 +4,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
+import art.arcane.react.platform.ReactWorld;
 import org.bukkit.World;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -112,13 +113,13 @@ class FeatureRandomTickGovernorLifecycleTest {
     private final List<Integer> writes = new ArrayList<>();
 
     @Override
-    Integer readRandomTickSpeed(World world) {
-      return values.computeIfAbsent(world.getUID(), ignored -> 3);
+    Integer readRandomTickSpeed(ReactWorld world) {
+      return values.computeIfAbsent(world.id(), ignored -> 3);
     }
 
     @Override
-    boolean writeRandomTickSpeed(World world, int value) {
-      values.put(world.getUID(), value);
+    boolean writeRandomTickSpeed(ReactWorld world, int value) {
+      values.put(world.id(), value);
       writes.add(value);
       return true;
     }

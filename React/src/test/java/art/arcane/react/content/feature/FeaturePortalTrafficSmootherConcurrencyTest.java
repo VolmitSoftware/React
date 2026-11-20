@@ -1,5 +1,6 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.BukkitPlayerHost;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -161,7 +162,7 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
         return true;
       });
 
-      feature.on(event);
+      portals(feature).on(event);
       Mockito.verify(event).setCancelled(true);
       Assertions.assertNotNull(callback.get());
       Assertions.assertNotNull(retired.get());
@@ -228,7 +229,7 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
         return true;
       });
 
-      feature.on(firstEvent);
+      portals(feature).on(firstEvent);
       Assertions.assertEquals(1, callbacks.size());
       Mockito.verify(firstEvent).setCancelled(true);
       callbacks.getFirst().run();
@@ -242,12 +243,12 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
           Mockito.any(org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.class)
       );
 
-      feature.on(secondEvent);
+      portals(feature).on(secondEvent);
       Assertions.assertEquals(1, callbacks.size());
       Mockito.verify(secondEvent, Mockito.never()).setCancelled(true);
 
       traversal.complete(true);
-      feature.on(secondEvent);
+      portals(feature).on(secondEvent);
       Assertions.assertEquals(2, callbacks.size());
       Mockito.verify(secondEvent).setCancelled(true);
 
@@ -289,8 +290,8 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
         return true;
       });
 
-      feature.on(acceptedEvent);
-      feature.on(duplicateEvent);
+      portals(feature).on(acceptedEvent);
+      portals(feature).on(duplicateEvent);
 
       Mockito.verify(acceptedEvent).setCancelled(true);
       Mockito.verify(duplicateEvent, Mockito.never()).setCancelled(true);
@@ -325,7 +326,7 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
     Mockito.when(event.getTo()).thenReturn(new Location(world, 8, 64, 8));
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      feature.on(event);
+      portals(feature).on(event);
 
       Mockito.verify(event, Mockito.never()).setCancelled(true);
       scheduling.verify(() -> J.runEntity(
@@ -375,11 +376,11 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
         return true;
       });
 
-      feature.on(firstEvent);
+      portals(feature).on(firstEvent);
       Assertions.assertEquals(1, callbacks.size());
       retired.getFirst().run();
 
-      feature.on(secondEvent);
+      portals(feature).on(secondEvent);
       Assertions.assertEquals(2, callbacks.size());
       callbacks.getFirst().run();
 
@@ -391,6 +392,12 @@ class FeaturePortalTrafficSmootherConcurrencyTest {
       retired.get(1).run();
       feature.onDeactivate();
     }
+  }
+
+  private static BukkitPlayerHost portals(FeaturePortalTrafficSmoother feature) {
+    BukkitPlayerHost host = new BukkitPlayerHost();
+    host.onPortal(feature::portal);
+    return host;
   }
 
   private static void setBoolean(Object target, String fieldName, boolean value)

@@ -1,6 +1,7 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.platform.bukkit.BukkitPlayerHost;
 import art.arcane.react.util.project.world.EntityKiller;
 import art.arcane.volmlib.util.event.ProtectionProbe;
 import org.bukkit.Location;
@@ -36,7 +37,9 @@ class ProtectionProbeActivityTest {
   void previewDoesNotConsumeTheInteractionBudget() throws Exception {
     FeatureAdaptRuntimeSurgeGuard feature = new FeatureAdaptRuntimeSurgeGuard();
     setField(feature, "surge", true);
-    feature.on(probe(player()));
+    BukkitPlayerHost host = new BukkitPlayerHost();
+    host.onInteract(feature::interact);
+    host.on(probe(player()));
 
     Map<?, ?> counters = (Map<?, ?>) field(feature, "interactionOps");
     assertTrue(counters.isEmpty());
@@ -51,7 +54,9 @@ class ProtectionProbeActivityTest {
     setField(feature, "activeGeneration", 1L);
     setField(feature, "lastActivityMs", activity);
 
-    feature.on(probe(player));
+    BukkitPlayerHost host = new BukkitPlayerHost();
+    host.onInteract(feature::interact);
+    host.on(probe(player));
 
     assertEquals(1L, activity.get(player.getUniqueId()));
   }

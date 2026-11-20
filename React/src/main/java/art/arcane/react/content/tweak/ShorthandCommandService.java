@@ -58,7 +58,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
 import java.util.regex.Pattern;
 
-final class ShorthandCommandService {
+public final class ShorthandCommandService {
   private static final String COMMAND_NAMESPACE = "react";
   private static final String AIR_KEY = "minecraft:air";
   private static final int MAX_GIVE_STACKS = 100;
@@ -80,12 +80,12 @@ final class ShorthandCommandService {
     this.reportedCompletionFailures = ConcurrentHashMap.newKeySet();
   }
 
-  static ShorthandCommandService create(TweakShorthands settings) {
+  public static ShorthandCommandService create(TweakShorthands settings) {
     Registry<ItemType> itemRegistry = RegistryAccess.registryAccess().getRegistry(RegistryKey.ITEM);
     return new ShorthandCommandService(settings, Bukkit.getCommandMap(), ItemCatalog.fromRegistry(itemRegistry));
   }
 
-  void register() {
+  public void register() {
     synchronized (commandMap) {
       registerConfiguredCommands();
     }
@@ -114,7 +114,7 @@ final class ShorthandCommandService {
     registerCustomCommands();
   }
 
-  void unregister() {
+  public void unregister() {
     synchronized (commandMap) {
       if (registrations.isEmpty()) {
         return;

@@ -1,5 +1,9 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.core.incident.IncidentRecord;
+import art.arcane.react.platform.IncidentHost;
+import art.arcane.react.platform.ReactPlatform;
+import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.api.action.Action;
 import art.arcane.react.api.feature.Feature;
 import art.arcane.react.api.tweak.Tweak;
@@ -9,6 +13,8 @@ import art.arcane.react.api.web.ControlBackend;
 import art.arcane.react.api.web.ControlSerializer;
 import art.arcane.react.api.web.RegistryActionBackend;
 import art.arcane.react.api.web.RegistryControlBackend;
+import art.arcane.react.api.web.FeatureWorldBackend;
+import art.arcane.react.api.web.WorldBackend;
 import art.arcane.react.api.web.heatmap.ChunkGridExporter;
 import art.arcane.react.api.web.heatmap.HeatmapChunkSampler;
 import art.arcane.react.api.web.WebConfiguration;
@@ -66,10 +72,21 @@ final class ModWebHost implements WebHost {
     }
 
     @Override
+    public WorldBackend worlds() {
+        return new FeatureWorldBackend();
+    }
+
+    @Override
     public HeatmapChunkSampler heatmapSampler() {
         return (ChunkGridExporter exporter, String world, Integer centerX, Integer centerZ, int radius) -> maps.heatmapSampler()
                 .map((HeatmapChunkSampler sampler) -> sampler.scan(exporter, world, centerX, centerZ, radius))
                 .orElse(null);
+    }
+
+    @Override
+    public List<IncidentRecord> incidents(int limit) {
+        ReactPlatform platform = ReactPlatforms.getOrNull();
+        return platform == null ? List.of() : platform.incidentHost().map((IncidentHost host) -> host.recent(limit)).orElse(List.of());
     }
 
     @Override

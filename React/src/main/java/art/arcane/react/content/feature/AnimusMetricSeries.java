@@ -13,14 +13,14 @@ import java.util.Map;
 /**
  * Animus metrics from the values it publishes through React's metric API.
  */
-final class AnimusMetricSeries {
+public final class AnimusMetricSeries {
   private static final long CACHE_TTL_MS = 250L;
   private static volatile CachedSnapshot cached = new CachedSnapshot(AnimusMetrics.Snapshot.empty(), 0L);
 
   private AnimusMetricSeries() {
   }
 
-  static AnimusMetrics.Snapshot snapshot() {
+  public static AnimusMetrics.Snapshot snapshot() {
     long now = System.currentTimeMillis();
     CachedSnapshot current = cached;
     if (now >= current.capturedAtMs() && now - current.capturedAtMs() < CACHE_TTL_MS) {

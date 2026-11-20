@@ -16,7 +16,12 @@ import art.arcane.react.util.project.world.EntityRemovalPolicy;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Tameable;
+import org.bukkit.entity.Villager;
+import org.bukkit.entity.Warden;
+import org.bukkit.entity.Wither;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
@@ -107,6 +112,39 @@ final class BukkitEntityHost implements EntityHost {
   @Override
   public void remove(GameEntity entity) {
     React.kill(BukkitGameEntity.bukkit(entity));
+  }
+
+  // Chunk quarantine culling
+
+  @Override
+  public boolean isDead(GameEntity entity) {
+    return BukkitGameEntity.bukkit(entity).isDead();
+  }
+
+  @Override
+  public boolean isTamed(GameEntity entity) {
+    return BukkitGameEntity.bukkit(entity) instanceof Tameable tameable && tameable.isTamed();
+  }
+
+  @Override
+  public boolean isVillager(GameEntity entity) {
+    return BukkitGameEntity.bukkit(entity) instanceof Villager;
+  }
+
+  @Override
+  public boolean isBoss(GameEntity entity) {
+    Entity bukkit = BukkitGameEntity.bukkit(entity);
+    return bukkit instanceof EnderDragon || bukkit instanceof Wither || bukkit instanceof Warden;
+  }
+
+  @Override
+  public void removeNow(GameEntity entity) {
+    BukkitGameEntity.bukkit(entity).remove();
+  }
+
+  @Override
+  public void kill(GameEntity entity, int seconds) {
+    React.kill(BukkitGameEntity.bukkit(entity), seconds);
   }
 
   private static List<GameEntity> wrap(Collection<? extends Entity> entities) {

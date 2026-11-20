@@ -34,6 +34,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.Material;
+import art.arcane.react.platform.bukkit.BukkitGameRuleHost;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -433,7 +434,7 @@ public class FeatureCropFastForward extends ReactFeature implements Listener {
 
   private int readRandomTickSpeed(World world) {
     try {
-      Integer value = world.getGameRuleValue(FeatureRandomTickGovernor.randomTickSpeedRule());
+      Integer value = world.getGameRuleValue(BukkitGameRuleHost.randomTickSpeedRule());
       return value == null ? 3 : Math.max(0, value);
     } catch (Throwable ex) {
       return 3;

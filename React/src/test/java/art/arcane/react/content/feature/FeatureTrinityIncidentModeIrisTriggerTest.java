@@ -9,6 +9,7 @@ import art.arcane.react.core.incident.IncidentEvidence;
 import art.arcane.react.core.incident.IncidentRecord;
 import art.arcane.react.core.integration.RemoteSamplerBridge;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.integration.IntegrationMetricSample;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -74,9 +75,9 @@ class FeatureTrinityIncidentModeIrisTriggerTest {
     Sampler tickSampler = Mockito.mock(Sampler.class);
     Mockito.when(tickSampler.sample()).thenReturn(tickMs);
     RemoteSamplerBridge bridge = Mockito.mock(RemoteSamplerBridge.class);
-    Mockito.when(bridge.valueOr(Mockito.anyString(), Mockito.anyString(), Mockito.anyDouble()))
-        .thenAnswer(invocation -> invocation.getArgument(2));
-    Mockito.when(bridge.valueOr("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE, -1D)).thenReturn(pregenInFlight);
+    IntegrationMetricSample pregen = Mockito.mock(IntegrationMetricSample.class);
+    Mockito.when(pregen.valueOr(Mockito.anyDouble())).thenReturn(pregenInFlight);
+    Mockito.when(bridge.getSample("iris", IntegrationMetricSchema.IRIS_PREGEN_QUEUE)).thenReturn(pregen);
     IntegrationController integration = Mockito.mock(IntegrationController.class);
     Mockito.when(integration.getRemoteSamplerBridge()).thenReturn(bridge);
     IncidentController incidents = Mockito.mock(IncidentController.class);

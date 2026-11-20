@@ -1,5 +1,7 @@
 package art.arcane.react.api.test.checks;
 
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
+import art.arcane.react.platform.bukkit.BukkitReactWorld;
 import art.arcane.react.React;
 import art.arcane.react.api.action.Action;
 import art.arcane.react.api.action.ActionParams;
@@ -177,7 +179,7 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
         purgeEntitiesParams.setArea(area);
       }
 
-      area.selectLoadedRadius(world, centerChunkX, centerChunkZ, PURGE_RADIUS);
+      area.selectLoadedRadius(new BukkitReactWorld(world), centerChunkX, centerChunkZ, PURGE_RADIUS);
       return purgeEntitiesParams;
     }
 
@@ -188,12 +190,12 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
         purgeChunksParams.setArea(area);
       }
 
-      area.selectLoadedRadius(world, centerChunkX, centerChunkZ, PURGE_RADIUS);
+      area.selectLoadedRadius(new BukkitReactWorld(world), centerChunkX, centerChunkZ, PURGE_RADIUS);
       return purgeChunksParams;
     }
 
     if (ActionQuarantineHotChunks.ID.equals(actionId) && params instanceof ActionQuarantineHotChunks.Params quarantineParams) {
-      quarantineParams.withWorld(world);
+      quarantineParams.withWorld(WorldIdentity.serialize(world));
       quarantineParams.setMaxChunks(Math.min(quarantineParams.getMaxChunks(), 8));
       return quarantineParams;
     }
@@ -212,7 +214,7 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
     }
 
     if (ActionPrewarmCriticalChunks.ID.equals(actionId) && params instanceof ActionPrewarmCriticalChunks.Params prewarmParams) {
-      prewarmParams.withWorld(world);
+      prewarmParams.withWorld(WorldIdentity.serialize(world));
       prewarmParams.setMaxChunks(Math.min(prewarmParams.getMaxChunks(), 8));
       return prewarmParams;
     }

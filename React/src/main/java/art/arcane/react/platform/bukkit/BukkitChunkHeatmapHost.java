@@ -11,6 +11,7 @@ import art.arcane.react.model.SampledChunk;
 import art.arcane.react.platform.ChunkHeatmapHost;
 
 import java.util.ArrayList;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -70,5 +71,23 @@ public final class BukkitChunkHeatmapHost implements ChunkHeatmapHost {
           snapshot.speed(), snapshot.gliding(), snapshot.mounted()));
     }
     return players;
+  }
+
+  @Override
+  public Optional<SampledChunk> worstChunk() {
+    ObserverController observer = React.controller(ObserverController.class);
+    return observer == null ? Optional.empty() : Optional.ofNullable(observer.absoluteWorst());
+  }
+
+  @Override
+  public Optional<SampledChunk> sampledChunk(String worldKey, int chunkX, int chunkZ) {
+    ObserverController observer = React.controller(ObserverController.class);
+    return observer == null ? Optional.empty() : observer.sampledChunk(worldKey, chunkX, chunkZ);
+  }
+
+  @Override
+  public List<LoadedChunkCoordinate> loadedChunksInRadius(UUID worldId, int centerX, int centerZ, int radius) {
+    ObserverController observer = React.controller(ObserverController.class);
+    return observer == null ? List.of() : observer.loadedChunkCoordinatesInRadius(worldId, centerX, centerZ, radius);
   }
 }

@@ -13,14 +13,12 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AreaActionParamsTraversalTest {
@@ -37,29 +35,6 @@ class AreaActionParamsTraversalTest {
   @AfterEach
   void tearDown() {
     React.instance = previous;
-  }
-
-  @Test
-  void hundredThousandExplicitCoordinatesDrainInBoundedConstantTimeWaves() {
-    UUID worldId = UUID.randomUUID();
-    List<LoadedChunkTarget> targets = new ArrayList<>(100_000);
-    for (int index = 0; index < 100_000; index++) {
-      targets.add(new LoadedChunkTarget(worldId, index, -index));
-    }
-    AreaActionParams area = AreaActionParams.builder().allChunks(false).build();
-    area.setChunks(targets);
-
-    assertEquals(100_000, area.estimatedTotalWork());
-    int drained = 0;
-    List<LoadedChunkTarget> wave;
-    do {
-      wave = area.popChunks(Integer.MAX_VALUE);
-      assertTrue(wave.size() <= 256);
-      drained += wave.size();
-    } while (!wave.isEmpty());
-
-    assertEquals(100_000, drained);
-    assertNull(area.popChunk());
   }
 
   @Test

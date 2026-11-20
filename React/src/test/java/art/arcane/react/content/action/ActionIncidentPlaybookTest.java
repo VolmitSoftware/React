@@ -14,6 +14,8 @@ import art.arcane.react.content.sampler.SamplerMemoryGarbage;
 import art.arcane.react.content.sampler.SamplerMemoryUsed;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.core.controller.ReactComponents;
+import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.model.SampledServer;
 import art.arcane.react.model.SampledWorld;
 import org.junit.jupiter.api.Assertions;
@@ -25,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 class ActionIncidentPlaybookTest {
   @Test
@@ -53,8 +56,8 @@ class ActionIncidentPlaybookTest {
       fixture.playbook.workOn(parent);
       Assertions.assertTrue(parent.isDone());
       Assertions.assertFalse(parent.isFailed());
-      fixture.react.verify(() -> React.action(ActionPrewarmCriticalChunks.ID), Mockito.never());
-      fixture.react.verify(() -> React.action(ActionCollectGarbage.ID), Mockito.never());
+      fixture.components.verify(() -> ReactComponents.action(ActionPrewarmCriticalChunks.ID), Mockito.never());
+      fixture.components.verify(() -> ReactComponents.action(ActionCollectGarbage.ID), Mockito.never());
     }
   }
 
@@ -97,7 +100,7 @@ class ActionIncidentPlaybookTest {
       fixture.playbook.workOn(parent);
       Assertions.assertTrue(parent.isDone());
       Assertions.assertEquals(0, parent.getCount());
-      fixture.react.verify(() -> React.action(Mockito.anyString()), Mockito.never());
+      fixture.components.verify(() -> ReactComponents.action(Mockito.anyString()), Mockito.never());
     }
   }
 
@@ -111,7 +114,7 @@ class ActionIncidentPlaybookTest {
       fixture.playbook.workOn(parent);
       Assertions.assertTrue(parent.isDone());
       Assertions.assertEquals(0, parent.getCount());
-      fixture.react.verify(() -> React.action(Mockito.anyString()), Mockito.never());
+      fixture.components.verify(() -> ReactComponents.action(Mockito.anyString()), Mockito.never());
     }
   }
 
@@ -170,6 +173,7 @@ class ActionIncidentPlaybookTest {
 
   private static final class Fixture implements AutoCloseable {
     private final MockedStatic<React> react = Mockito.mockStatic(React.class);
+    private final MockedStatic<ReactComponents> components = Mockito.mockStatic(ReactComponents.class, Mockito.CALLS_REAL_METHODS);
     private final ActionIncidentPlaybook playbook = new ActionIncidentPlaybook();
     private final SampledServer sampled = new SampledServer();
     private final Map<String, Sampler> metrics = new HashMap<>();
@@ -179,8 +183,10 @@ class ActionIncidentPlaybookTest {
       ObserverController observer = Mockito.mock(ObserverController.class);
       Mockito.when(observer.getSampled()).thenReturn(sampled);
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
-      react.when(() -> React.sampler(Mockito.anyString())).thenAnswer(invocation -> metrics.get(invocation.getArgument(0)));
-      react.when(() -> React.action(Mockito.anyString())).thenAnswer(invocation -> actions.get(invocation.getArgument(0)));
+      SampleController samplers = Mockito.mock(SampleController.class);
+      Mockito.when(samplers.getSampler(Mockito.anyString())).thenAnswer(invocation -> metrics.get(invocation.getArgument(0)));
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samplers);
+      components.when(() -> ReactComponents.action(Mockito.anyString())).thenAnswer(invocation -> actions.get(invocation.getArgument(0)));
       tick(60D);
       metric(SamplerIncidentScore.ID, 0D);
     }
@@ -193,7 +199,7 @@ class ActionIncidentPlaybookTest {
     }
 
     private StubAction action(String id, int finishAfter) {
-      StubAction action = new StubAction(id, finishAfter);
+      StubAction action = new StubAction(id, finishAfter, defaults(id));
       actions.put(id, action);
       return action;
     }
@@ -202,6 +208,16 @@ class ActionIncidentPlaybookTest {
       ActionTicket<ActionIncidentPlaybook.Params> parent = playbook.create();
       parent.start();
       return parent;
+    }
+
+    private static Supplier<ActionParams> defaults(String id) {
+      if (ActionHopperNetworkNormalize.ID.equals(id)) {
+        return () -> ActionHopperNetworkNormalize.Params.builder().build();
+      }
+      if (ActionTrimEntitiesByAgePriority.ID.equals(id)) {
+        return () -> ActionTrimEntitiesByAgePriority.Params.builder().build();
+      }
+      return () -> ActionIncidentPlaybook.Params.builder().build();
     }
 
     private void tick(double value) {
@@ -217,17 +233,20 @@ class ActionIncidentPlaybookTest {
 
     @Override
     public void close() {
+      components.close();
       react.close();
     }
   }
 
   private static final class StubAction extends ReactAction<ActionParams> {
     private final int finishAfter;
+    private final Supplier<ActionParams> defaults;
     private int workCalls;
 
-    private StubAction(String id, int finishAfter) {
+    private StubAction(String id, int finishAfter, Supplier<ActionParams> defaults) {
       super(id);
       this.finishAfter = finishAfter;
+      this.defaults = defaults;
     }
 
     @Override
@@ -241,7 +260,7 @@ class ActionIncidentPlaybookTest {
 
     @Override
     public ActionParams getDefaultParams() {
-      return ActionIncidentPlaybook.Params.builder().build();
+      return defaults.get();
     }
 
     @Override

@@ -72,4 +72,27 @@ public interface EntityHost {
    * Removes the entity the way React always does, with its drop and death rules.
    */
   void remove(GameEntity entity);
+
+  // Chunk quarantine culling
+
+  boolean isDead(GameEntity entity);
+
+  boolean isTamed(GameEntity entity);
+
+  boolean isVillager(GameEntity entity);
+
+  /**
+   * True for the ender dragon, wither and warden.
+   */
+  boolean isBoss(GameEntity entity);
+
+  /**
+   * Removes the entity at once, without React's countdown.
+   */
+  void removeNow(GameEntity entity);
+
+  /**
+   * Removes the entity with React's visible countdown of {@code seconds}.
+   */
+  void kill(GameEntity entity, int seconds);
 }

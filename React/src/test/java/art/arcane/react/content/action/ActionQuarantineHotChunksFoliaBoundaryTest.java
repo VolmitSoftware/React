@@ -2,6 +2,7 @@ package art.arcane.react.content.action;
 
 import art.arcane.react.React;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
+import art.arcane.react.platform.bukkit.BukkitReactWorld;
 import org.bukkit.World;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ class ActionQuarantineHotChunksFoliaBoundaryTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
       react.when(() -> React.controller(NearbyPlayerIndexController.class)).thenReturn(playerIndex);
 
-      Assertions.assertTrue(action.hasNearbyPlayer(world, 2, -2, 56D));
+      Assertions.assertTrue(action.hasNearbyPlayer(new BukkitReactWorld(world), 2, -2, 56D));
 
       Mockito.verify(world, Mockito.never()).getPlayers();
       Mockito.verify(playerIndex).hasNearbyPlayerInColumn(world, 40D, -24D, 56D);
@@ -38,7 +39,7 @@ class ActionQuarantineHotChunksFoliaBoundaryTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
       react.when(() -> React.controller(NearbyPlayerIndexController.class)).thenReturn(playerIndex);
 
-      Assertions.assertTrue(action.hasNearbyPlayer(world, 0, 0, 56D));
+      Assertions.assertTrue(action.hasNearbyPlayer(new BukkitReactWorld(world), 0, 0, 56D));
       Mockito.verify(playerIndex, Mockito.never()).hasNearbyPlayerInColumn(
           Mockito.any(World.class),
           Mockito.anyDouble(),
@@ -56,7 +57,7 @@ class ActionQuarantineHotChunksFoliaBoundaryTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
       react.when(() -> React.controller(NearbyPlayerIndexController.class)).thenReturn(null);
 
-      Assertions.assertTrue(action.hasNearbyPlayer(world, 0, 0, 56D));
+      Assertions.assertTrue(action.hasNearbyPlayer(new BukkitReactWorld(world), 0, 0, 56D));
       Mockito.verifyNoInteractions(world);
     }
   }

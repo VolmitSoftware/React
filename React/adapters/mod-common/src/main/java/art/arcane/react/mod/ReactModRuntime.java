@@ -206,6 +206,8 @@ public final class ReactModRuntime {
         }
         active.platform().entityKiller().stopAll();
         ModHopperHost.clear();
+        ModDropHost.clear();
+        ModPlayerHost.clear();
         active.platform().modScheduler().deactivate();
         active.webConfig().stop();
         active.platform().ownerCost().stop();

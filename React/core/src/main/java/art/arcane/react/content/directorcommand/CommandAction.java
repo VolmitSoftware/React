@@ -96,7 +96,7 @@ public class CommandAction implements DirectorExecutor {
       )
       String world
   ) {
-    host().purgeChunks(sender(), world);
+    ActionCommands.purgeChunks(sender(), world);
   }
 
   @Director(
@@ -144,7 +144,7 @@ public class CommandAction implements DirectorExecutor {
       )
       String world
   ) {
-    host().quarantineHotChunks(sender(), maxChunks, minScore, world);
+    ActionCommands.quarantineHotChunks(sender(), maxChunks, minScore, world);
   }
 
   @Director(
@@ -258,7 +258,7 @@ public class CommandAction implements DirectorExecutor {
       )
       String world
   ) {
-    host().prewarmCriticalChunks(sender(), maxChunks, neighborRadius, world);
+    ActionCommands.prewarmCriticalChunks(sender(), maxChunks, neighborRadius, world);
   }
 
   @Director(
@@ -296,7 +296,7 @@ public class CommandAction implements DirectorExecutor {
       )
       String world
   ) {
-    host().incidentPlaybook(sender(), includeGC, tier, world);
+    ActionCommands.incidentPlaybook(sender(), includeGC, tier, world);
   }
 
   @Director(

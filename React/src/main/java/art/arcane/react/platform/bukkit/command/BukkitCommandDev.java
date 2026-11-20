@@ -1,5 +1,7 @@
 package art.arcane.react.platform.bukkit.command;
 
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
+import art.arcane.react.platform.bukkit.BukkitReactWorld;
 import art.arcane.react.React;
 import art.arcane.react.api.action.Action;
 import art.arcane.react.api.action.ActionParams;
@@ -398,7 +400,7 @@ public final class BukkitCommandDev {
       }
 
       area.selectLoadedRadius(
-          world,
+          new BukkitReactWorld(world),
           executingPlayer.getLocation().getChunk().getX(),
           executingPlayer.getLocation().getChunk().getZ(),
           radius
@@ -414,7 +416,7 @@ public final class BukkitCommandDev {
       }
 
       area.selectLoadedRadius(
-          world,
+          new BukkitReactWorld(world),
           executingPlayer.getLocation().getChunk().getX(),
           executingPlayer.getLocation().getChunk().getZ(),
           radius
@@ -423,7 +425,7 @@ public final class BukkitCommandDev {
     }
 
     if (ActionQuarantineHotChunks.ID.equals(actionId) && params instanceof ActionQuarantineHotChunks.Params quarantineParams) {
-      quarantineParams.withWorld(world);
+      quarantineParams.withWorld(WorldIdentity.serialize(world));
       quarantineParams.setMaxChunks(Math.min(quarantineParams.getMaxChunks(), 8));
       return quarantineParams;
     }
@@ -442,7 +444,7 @@ public final class BukkitCommandDev {
     }
 
     if (ActionPrewarmCriticalChunks.ID.equals(actionId) && params instanceof ActionPrewarmCriticalChunks.Params prewarmParams) {
-      prewarmParams.withWorld(world);
+      prewarmParams.withWorld(WorldIdentity.serialize(world));
       prewarmParams.setMaxChunks(Math.min(prewarmParams.getMaxChunks(), 8));
       return prewarmParams;
     }

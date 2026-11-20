@@ -9,6 +9,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunk;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +48,14 @@ final class ModChunkSamples {
     Optional<SampledChunk> chunk(String worldKey, int chunkX, int chunkZ) {
         Map<Long, SampledChunk> chunks = worldKey == null ? null : worlds.get(worldKey);
         return chunks == null ? Optional.empty() : Optional.ofNullable(chunks.get(VanillaApi.pack(chunkX, chunkZ)));
+    }
+
+    List<SampledChunk> chunks() {
+        List<SampledChunk> all = new ArrayList<>();
+        for (Map<Long, SampledChunk> world : worlds.values()) {
+            all.addAll(world.values());
+        }
+        return all;
     }
 
     double value(String worldKey, int chunkX, int chunkZ, String samplerId) {

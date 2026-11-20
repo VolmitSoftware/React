@@ -124,6 +124,50 @@ public interface ReactPlatform {
     return Optional.empty();
   }
 
+  // Chunks, players, world rules and maps
+
+  default Optional<ChunkHost> chunkHost() {
+    return Optional.empty();
+  }
+
+  default Optional<PlayerHost> playerHost() {
+    return Optional.empty();
+  }
+
+  default Optional<IncidentHost> incidentHost() {
+    return Optional.empty();
+  }
+
+  default Optional<GameRuleHost> gameRuleHost() {
+    return Optional.empty();
+  }
+
+  default Optional<DropHost> dropHost() {
+    return Optional.empty();
+  }
+
+  default Optional<ShorthandHost> shorthandHost() {
+    return Optional.empty();
+  }
+
+  default Optional<IntegrationMetricsHost> integrationMetricsHost() {
+    return Optional.empty();
+  }
+
+  default Optional<ChunkHeatmapHost> chunkHeatmapHost() {
+    return Optional.empty();
+  }
+
+  default Optional<MapAnchorHost> mapAnchorHost() {
+    return Optional.empty();
+  }
+
+  default Optional<MapDataHost> mapDataHost() {
+    return Optional.empty();
+  }
+
+  // Stats
+
   default Optional<TickStatsHost> tickStatsHost() {
     return Optional.empty();
   }

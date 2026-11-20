@@ -32,6 +32,8 @@ final class ModLanguageHost implements LanguageHost {
     static final class Settings {
         @ConfigDoc(value = "Locale used for React player and operator interfaces.", impact = "Code-owned English remains the fallback; editable TOML catalogs are loaded from languages.")
         String language = "en_US";
+        @ConfigDoc(value = "Enables plugin-gated secret integration features.", impact = "Disabled by default. Enable to allow Iris/Adapt secret bundles when dependencies are present.")
+        boolean integrationSecretsEnabled = false;
     }
 
     ModLanguageHost(File dataFolder) {
@@ -61,6 +63,10 @@ final class ModLanguageHost implements LanguageHost {
 
     File settingsFile() {
         return settingsFile;
+    }
+
+    boolean integrationSecretsEnabled() {
+        return settings.integrationSecretsEnabled;
     }
 
     @Override

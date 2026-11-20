@@ -21,6 +21,7 @@ package art.arcane.react.util.project.world;
 
 import art.arcane.react.React;
 import art.arcane.react.content.tweak.TweakFastDrops;
+import art.arcane.react.platform.bukkit.BukkitReactPlayer;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -73,7 +74,7 @@ public class ChainedColumn {
       ItemStack item = new ItemStack(drops, d);
 
       if (player != null) {
-        fastDrops.giveItem(block.getLocation().add(0.5, 0.5, 0.5), player, item);
+        fastDrops.giveItem(block.getLocation().add(0.5, 0.5, 0.5), new BukkitReactPlayer(player), item);
       } else {
         block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0, 0.5), item);
       }

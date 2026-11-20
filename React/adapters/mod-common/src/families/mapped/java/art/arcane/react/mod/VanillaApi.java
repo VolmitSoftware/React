@@ -1,5 +1,6 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.platform.GameLocation;
 import net.minecraft.SharedConstants;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -15,6 +16,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
@@ -23,6 +25,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.portal.DimensionTransition;
+import net.minecraft.world.phys.Vec3;
 
 /** The 1.21.1 forms of the vanilla calls whose names or shapes changed later. */
 public final class VanillaApi {
@@ -106,6 +110,23 @@ public final class VanillaApi {
         return level.getMaxBuildHeight() - 1;
     }
 
+    static int randomTickSpeed(ServerLevel level) {
+        return level.getGameRules().getInt(net.minecraft.world.level.GameRules.RULE_RANDOMTICKING);
+    }
+
+    static void setRandomTickSpeed(ServerLevel level, int value) {
+        level.getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_RANDOMTICKING).set(value, level.getServer());
+    }
+
+    static ServerPlayer killer(net.minecraft.world.entity.LivingEntity victim, net.minecraft.world.damagesource.DamageSource source) {
+        net.minecraft.world.entity.Entity attacker = source == null ? null : source.getEntity();
+        return attacker instanceof ServerPlayer ? (ServerPlayer) attacker : null;
+    }
+
+    static boolean isSurvival(ServerPlayer player) {
+        return player.gameMode.getGameModeForPlayer() == net.minecraft.world.level.GameType.SURVIVAL;
+    }
+
     static int forcedChunkCount(ServerLevel level) {
         return level.getForcedChunks().size();
     }
@@ -159,5 +180,19 @@ public final class VanillaApi {
 
     static boolean gamemaster(ServerPlayer player) {
         return player.hasPermissions(GAMEMASTER_LEVEL);
+    }
+
+    /** Where a portal transition leads, or null for a transition React cannot read. */
+    static GameLocation portalDestination(Object transition) {
+        if (!(transition instanceof DimensionTransition dimension) || dimension.newLevel() == null) {
+            return null;
+        }
+        Vec3 position = dimension.pos();
+        return new GameLocation(ModReactWorld.idOf(dimension.newLevel()), position.x, position.y, position.z);
+    }
+
+    /** Sends the entity along a portal transition captured earlier; false when the trip failed. */
+    static boolean travel(Entity entity, Object transition) {
+        return transition instanceof DimensionTransition dimension && entity.changeDimension(dimension) != null;
     }
 }

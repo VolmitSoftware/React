@@ -1,5 +1,6 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.platform.GameLocation;
 import net.minecraft.SharedConstants;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
@@ -18,6 +19,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionSet;
 import net.minecraft.server.permissions.Permissions;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
@@ -26,6 +28,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.portal.TeleportTransition;
+import net.minecraft.world.phys.Vec3;
 
 import java.net.URI;
 
@@ -109,6 +113,22 @@ public final class VanillaApi {
         return level.getMaxY();
     }
 
+    static int randomTickSpeed(ServerLevel level) {
+        return level.getGameRules().get(net.minecraft.world.level.gamerules.GameRules.RANDOM_TICK_SPEED);
+    }
+
+    static void setRandomTickSpeed(ServerLevel level, int value) {
+        level.getGameRules().set(net.minecraft.world.level.gamerules.GameRules.RANDOM_TICK_SPEED, value, level.getServer());
+    }
+
+    static ServerPlayer killer(net.minecraft.world.entity.LivingEntity victim, net.minecraft.world.damagesource.DamageSource source) {
+        return victim.getLastHurtByPlayer() instanceof ServerPlayer ? (ServerPlayer) victim.getLastHurtByPlayer() : null;
+    }
+
+    static boolean isSurvival(ServerPlayer player) {
+        return player.gameMode() == net.minecraft.world.level.GameType.SURVIVAL;
+    }
+
     static int forcedChunkCount(ServerLevel level) {
         return level.getForceLoadedChunks().size();
     }
@@ -166,5 +186,19 @@ public final class VanillaApi {
     private static boolean granted(PermissionSet permissions, String atom) {
         Identifier key = atom == null ? null : Identifier.tryParse(atom);
         return key != null && permissions.hasPermission(Permission.Atom.create(key));
+    }
+
+    /** Where a portal transition leads, or null for a transition React cannot read. */
+    static GameLocation portalDestination(Object transition) {
+        if (!(transition instanceof TeleportTransition teleport) || teleport.newLevel() == null) {
+            return null;
+        }
+        Vec3 position = teleport.position();
+        return new GameLocation(ModReactWorld.idOf(teleport.newLevel()), position.x, position.y, position.z);
+    }
+
+    /** Sends the entity along a portal transition captured earlier; false when the trip failed. */
+    static boolean travel(Entity entity, Object transition) {
+        return transition instanceof TeleportTransition teleport && entity.teleport(teleport) != null;
     }
 }

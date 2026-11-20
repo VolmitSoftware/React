@@ -31,10 +31,11 @@ final class ModEntityKiller {
         private final boolean hadName;
         private final Component originalName;
         private final boolean originalVisible;
-        private int seconds = SECONDS;
+        private int seconds;
 
-        private Countdown(Entity entity) {
+        private Countdown(Entity entity, int seconds) {
             this.entity = entity;
+            this.seconds = seconds;
             this.hadName = entity.hasCustomName();
             this.originalName = entity.getCustomName();
             this.originalVisible = entity.isCustomNameVisible();
@@ -42,10 +43,14 @@ final class ModEntityKiller {
     }
 
     void kill(Entity entity) {
+        kill(entity, SECONDS);
+    }
+
+    void kill(Entity entity, int seconds) {
         if (entity == null || entity.isRemoved()) {
             return;
         }
-        active.putIfAbsent(entity.getUUID(), new Countdown(entity));
+        active.putIfAbsent(entity.getUUID(), new Countdown(entity, seconds));
     }
 
     boolean isCountingDown(Entity entity) {

@@ -7,6 +7,7 @@ import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.core.controller.NearbyPlayerIndexController.PlayerViewSnapshot;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.core.controller.ReactComponents;
 import art.arcane.react.model.SampledServer;
 import art.arcane.react.model.SampledWorld;
 import art.arcane.react.util.common.scheduling.J;
@@ -241,6 +242,7 @@ class ActionPrewarmCriticalChunksTest {
     private final ActionController controller = Mockito.mock(ActionController.class);
     private final NearbyPlayerIndexController players = Mockito.mock(NearbyPlayerIndexController.class);
     private final MockedStatic<React> react = Mockito.mockStatic(React.class);
+    private final MockedStatic<ReactComponents> components = Mockito.mockStatic(ReactComponents.class, Mockito.CALLS_REAL_METHODS);
     private final MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
     private final MockedStatic<WorldIdentity> identity = Mockito.mockStatic(WorldIdentity.class);
     private final MockedStatic<WorldChunks> chunks = Mockito.mockStatic(WorldChunks.class);
@@ -261,7 +263,7 @@ class ActionPrewarmCriticalChunksTest {
       sampled.getWorlds().put(sampledWorld.getWorldId(), sampledWorld);
       Mockito.when(observer.getSampled()).thenReturn(sampled);
       Mockito.when(controller.getActionSpeedMultiplier()).thenReturn(8);
-      react.when(() -> React.controller(ActionController.class)).thenReturn(controller);
+      components.when(ReactComponents::actions).thenReturn(controller);
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
       react.when(() -> React.controller(NearbyPlayerIndexController.class)).thenReturn(players);
       identity.when(() -> WorldIdentity.resolve("test:world")).thenReturn(Optional.of(world));
@@ -306,6 +308,7 @@ class ActionPrewarmCriticalChunksTest {
       chunks.close();
       identity.close();
       scheduling.close();
+      components.close();
       react.close();
     }
   }

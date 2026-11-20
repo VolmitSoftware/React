@@ -4,6 +4,9 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.EntityController;
+import art.arcane.react.platform.bukkit.BukkitPlayerHost;
+import art.arcane.react.platform.bukkit.BukkitReactPlayer;
+import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -27,7 +30,7 @@ class FeatureAfkViewSheddingLifecycleTest {
   void overlappingClaimsRestoreTheExactOriginalDistance() {
     Player player = Mockito.mock(Player.class);
     FeatureAfkViewShedding.ViewDistanceState state =
-        new FeatureAfkViewShedding.ViewDistanceState(12, player);
+        new FeatureAfkViewShedding.ViewDistanceState(12, new BukkitReactPlayer(player));
 
     Assertions.assertTrue(state.claim(FeatureAfkViewShedding.ClaimKind.PRESSURE, 1L, 8));
     Assertions.assertTrue(state.claim(FeatureAfkViewShedding.ClaimKind.IDLE, 1L, 4));
@@ -44,7 +47,7 @@ class FeatureAfkViewSheddingLifecycleTest {
   void staleCleanupCannotReleaseANewerClaim() {
     Player player = Mockito.mock(Player.class);
     FeatureAfkViewShedding.ViewDistanceState state =
-        new FeatureAfkViewShedding.ViewDistanceState(12, player);
+        new FeatureAfkViewShedding.ViewDistanceState(12, new BukkitReactPlayer(player));
 
     Assertions.assertTrue(state.claim(FeatureAfkViewShedding.ClaimKind.IDLE, 1L, 4));
     Assertions.assertTrue(state.releaseGeneration(1L));
@@ -86,7 +89,7 @@ class FeatureAfkViewSheddingLifecycleTest {
       feature.onTick();
       Assertions.assertEquals(1, queued.size());
 
-      feature.on(moveEvent);
+      players().on(moveEvent);
       queued.removeFirst().run();
 
       Mockito.verify(player, Mockito.never()).setSendViewDistance(Mockito.anyInt());
@@ -143,7 +146,7 @@ class FeatureAfkViewSheddingLifecycleTest {
       Assertions.assertEquals(1, queued.size());
       queued.removeFirst().run();
       Assertions.assertEquals(4, distance.get());
-      feature.on(moveEvent);
+      players().on(moveEvent);
       Assertions.assertEquals(4, distance.get());
 
       Thread completion = new Thread(() -> {
@@ -222,7 +225,7 @@ class FeatureAfkViewSheddingLifecycleTest {
       feature.onTick();
       queued.removeFirst().run();
       Assertions.assertEquals(4, distance.get());
-      feature.on(moveEvent);
+      players().on(moveEvent);
       Assertions.assertEquals(1, stranded.size());
       Assertions.assertEquals(1, pendingReconciliations(feature).get());
 
@@ -297,6 +300,10 @@ class FeatureAfkViewSheddingLifecycleTest {
 
       Assertions.assertDoesNotThrow(feature::onDeactivate);
     }
+  }
+
+  private static BukkitPlayerHost players() {
+    return (BukkitPlayerHost) ReactPlatforms.get().playerHost().orElseThrow();
   }
 
   private static AtomicInteger pendingReconciliations(FeatureAfkViewShedding feature)

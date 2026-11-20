@@ -199,6 +199,44 @@ final class ModChunkHeatmapHost implements ChunkHeatmapHost, HeatmapChunkSampler
         return result;
     }
 
+    @Override
+    public Optional<SampledChunk> worstChunk() {
+        return samples.worst();
+    }
+
+    @Override
+    public Optional<SampledChunk> sampledChunk(String worldKey, int chunkX, int chunkZ) {
+        return samples.chunk(worldKey, chunkX, chunkZ);
+    }
+
+    /** Server thread: reads the level's chunk map directly instead of the last heatmap capture. */
+    @Override
+    public List<LoadedChunkCoordinate> loadedChunksInRadius(UUID worldId, int centerX, int centerZ, int radius) {
+        ServerLevel level = null;
+        for (ServerLevel candidate : server.getAllLevels()) {
+            if (ModReactWorld.idOf(candidate).equals(worldId)) {
+                level = candidate;
+                break;
+            }
+        }
+        if (level == null) {
+            return List.of();
+        }
+        int safeRadius = Math.max(0, radius);
+        long radiusSquared = (long) safeRadius * safeRadius;
+        List<LoadedChunkCoordinate> loaded = new ArrayList<>();
+        for (int chunkX = centerX - safeRadius; chunkX <= centerX + safeRadius; chunkX++) {
+            for (int chunkZ = centerZ - safeRadius; chunkZ <= centerZ + safeRadius; chunkZ++) {
+                long dx = (long) chunkX - centerX;
+                long dz = (long) chunkZ - centerZ;
+                if ((dx * dx) + (dz * dz) <= radiusSquared && level.getChunkSource().getChunkNow(chunkX, chunkZ) != null) {
+                    loaded.add(new LoadedChunkCoordinate(chunkX, chunkZ));
+                }
+            }
+        }
+        return loaded;
+    }
+
     private static HeatmapWorldRef worldRef(UUID worldId, ServerLevel level) {
         String name = ModReactWorld.nameOf(level);
         BlockPos spawn = VanillaApi.spawn(level);

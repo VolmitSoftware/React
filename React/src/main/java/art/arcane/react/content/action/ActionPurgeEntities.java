@@ -19,12 +19,13 @@
 
 package art.arcane.react.content.action;
 
+import art.arcane.react.platform.ChunkRef;
+import art.arcane.react.platform.bukkit.BukkitReactWorld;
 import art.arcane.react.React;
 import art.arcane.react.api.action.ActionParams;
 import art.arcane.react.api.action.ActionTicket;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.core.controller.ActionController;
-import art.arcane.react.core.controller.ObserverController.LoadedChunkTarget;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.ActionMessages;
 import art.arcane.react.model.AreaActionParams;
@@ -81,7 +82,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     super(ID);
   }
 
-  List<LoadedChunkTarget> pullChunks(ActionTicket<Params> ticket, int max) {
+  List<ChunkRef> pullChunks(ActionTicket<Params> ticket, int max) {
     return ticket.getParams().getArea().popChunks(max);
   }
 
@@ -101,14 +102,14 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
   }
 
   private void workOnAsync(ActionTicket<Params> ticket) {
-    List<LoadedChunkTarget> chunks = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
+    List<ChunkRef> chunks = pullChunks(ticket, React.controller(ActionController.class).getActionSpeedMultiplier());
 
     if (ticket.getTotalWork() <= 1) {
       ticket.setTotalWork(Math.max(1, ticket.getParams().getArea().estimatedTotalWork()));
     }
 
     if (!chunks.isEmpty()) {
-      for (LoadedChunkTarget chunk : chunks) {
+      for (ChunkRef chunk : chunks) {
         purgeChunkFolia(chunk, ticket.getParams());
       }
       ticket.addWork(chunks.size());
@@ -160,7 +161,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
         && !EntityRemovalPolicy.protectsNamedEntity(entity, params.isProtectNamedEntities());
   }
 
-  private void purgeChunkFolia(LoadedChunkTarget chunk, Params params) {
+  private void purgeChunkFolia(ChunkRef chunk, Params params) {
     if (chunk == null || params == null) {
       return;
     }
@@ -240,7 +241,7 @@ public class ActionPurgeEntities extends ReactAction<ActionPurgeEntities.Params>
     }
 
     public Params addRadius(World world, int x, int z, int radius) {
-      area.selectLoadedRadius(world, x, z, radius);
+      area.selectLoadedRadius(new BukkitReactWorld(world), x, z, radius);
       return this;
     }
   }

@@ -22,6 +22,16 @@ import art.arcane.react.platform.RuntimeStatsHost;
 import art.arcane.react.platform.SamplerHost;
 import art.arcane.react.platform.TickStatsHost;
 import art.arcane.react.platform.ViewDistanceHost;
+import art.arcane.react.platform.ChunkHeatmapHost;
+import art.arcane.react.platform.ChunkHost;
+import art.arcane.react.platform.IntegrationMetricsHost;
+import art.arcane.react.platform.MapAnchorHost;
+import art.arcane.react.platform.MapDataHost;
+import art.arcane.react.platform.DropHost;
+import art.arcane.react.platform.GameRuleHost;
+import art.arcane.react.platform.IncidentHost;
+import art.arcane.react.platform.PlayerHost;
+import art.arcane.react.platform.ShorthandHost;
 import art.arcane.react.platform.WorldHost;
 import art.arcane.react.platform.WorldStatsHost;
 import art.arcane.react.platform.cost.OwnerCostProbe;
@@ -64,7 +74,13 @@ public final class ModReactPlatform implements ReactPlatform {
     private final EntityHost entityHost;
     private final HopperHost hopperHost = new ModHopperHost();
     private final ModViewDistanceHost viewDistanceHost;
-    private volatile ModIntegrationMetrics integrations;
+    private final ModChunkHost chunkHost;
+    private final ModPlayerHost playerHost;
+    private final ModIncidentHost incidentHost;
+    private final ModGameRuleHost gameRuleHost;
+    private final ModDropHost dropHost;
+    private final ModShorthandHost shorthandHost;
+    private final ModMapData mapData;
 
     ModReactPlatform(String loader, MinecraftServer server, File dataFolder, Logger logger, ModTicks ticks, ExecutorService async,
                      List<Runnable> startupTasks, LanguageHost languageHost, OwnerCostProbe costProbe, Supplier<SampleController> samples,
@@ -88,10 +104,18 @@ public final class ModReactPlatform implements ReactPlatform {
         this.playerStatsHost = new ModPlayerStatsHost(server);
         this.ownerCost = new ModOwnerCost(costProbe, samples);
         this.runtimeStatsHost = new ModRuntimeStatsHost(telemetry, modSamplerHost.chunks(), ownerCost);
-        this.componentHost = new ModComponentHost(ticks, async, telemetry.jobs(), scheduler::isReady, logger, registryHost);
+        this.mapData = new ModMapData(server, modSamplerHost.chunks(), ownerCost, maps::frameAnchor);
+        this.componentHost = new ModComponentHost(ticks, async, telemetry.jobs(), scheduler::isReady, logger, registryHost, mapData::isInstalled,
+                () -> languageHost instanceof ModLanguageHost && ((ModLanguageHost) languageHost).integrationSecretsEnabled());
         this.worldHost = new ModWorldHost(server);
         this.entityHost = new ModEntityHost(server, entityKiller);
         this.viewDistanceHost = new ModViewDistanceHost(server);
+        this.chunkHost = new ModChunkHost(server, modSamplerHost.chunks());
+        this.playerHost = new ModPlayerHost(server);
+        this.incidentHost = new ModIncidentHost();
+        this.gameRuleHost = new ModGameRuleHost();
+        this.dropHost = new ModDropHost();
+        this.shorthandHost = new ModShorthandHost(server);
     }
 
     ModComponentHost components() {
@@ -103,11 +127,7 @@ public final class ModReactPlatform implements ReactPlatform {
     }
 
     Optional<ModIntegrationMetrics> integrations() {
-        return Optional.ofNullable(integrations);
-    }
-
-    void integrations(ModIntegrationMetrics integrations) {
-        this.integrations = integrations;
+        return Optional.of(mapData.integrations());
     }
 
     ModViewDistanceHost viewDistances() {
@@ -120,6 +140,10 @@ public final class ModReactPlatform implements ReactPlatform {
 
     ModOwnerCost ownerCost() {
         return ownerCost;
+    }
+
+    ModMapData mapData() {
+        return mapData;
     }
 
     ModPlatformScheduler modScheduler() {
@@ -288,6 +312,58 @@ public final class ModReactPlatform implements ReactPlatform {
     @Override
     public Optional<ViewDistanceHost> viewDistanceHost() {
         return Optional.of(viewDistanceHost);
+    }
+
+    // Chunks, players, world rules and maps
+
+    @Override
+    public Optional<ChunkHost> chunkHost() {
+        return Optional.of(chunkHost);
+    }
+
+    @Override
+    public Optional<PlayerHost> playerHost() {
+        return Optional.of(playerHost);
+    }
+
+    @Override
+    public Optional<IncidentHost> incidentHost() {
+        return Optional.of(incidentHost);
+    }
+
+    @Override
+    public Optional<GameRuleHost> gameRuleHost() {
+        return Optional.of(gameRuleHost);
+    }
+
+    @Override
+    public Optional<DropHost> dropHost() {
+        return Optional.of(dropHost);
+    }
+
+    @Override
+    public Optional<ShorthandHost> shorthandHost() {
+        return Optional.of(shorthandHost);
+    }
+
+    @Override
+    public Optional<IntegrationMetricsHost> integrationMetricsHost() {
+        return Optional.of(mapData.integrations());
+    }
+
+    @Override
+    public Optional<ChunkHeatmapHost> chunkHeatmapHost() {
+        return Optional.of(mapData.heatmaps());
+    }
+
+    @Override
+    public Optional<MapAnchorHost> mapAnchorHost() {
+        return Optional.of(mapData.anchors());
+    }
+
+    @Override
+    public Optional<MapDataHost> mapDataHost() {
+        return Optional.of(mapData);
     }
 
     // Owner cost

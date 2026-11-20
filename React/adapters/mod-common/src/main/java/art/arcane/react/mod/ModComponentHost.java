@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 
 /**
  * Feature, tweak and action ticking on mods. The server thread keeps the clock and React's async pool runs each due
@@ -24,16 +25,20 @@ final class ModComponentHost implements ComponentHost {
     private final BooleanSupplier ready;
     private final Logger logger;
     private final ComponentConfigEditor editor;
+    private final Predicate<String> integrationInstalled;
+    private final BooleanSupplier integrationSecrets;
     private volatile boolean enabled = true;
 
     ModComponentHost(ModTicks ticks, ExecutorService async, JobController jobs, BooleanSupplier ready, Logger logger,
-                     RegistryHost registry) {
+                     RegistryHost registry, Predicate<String> integrationInstalled, BooleanSupplier integrationSecrets) {
         this.ticks = ticks;
         this.async = async;
         this.jobs = jobs;
         this.ready = ready;
         this.logger = logger;
         this.editor = new ComponentConfigEditor(registry, TomlFiles::save);
+        this.integrationInstalled = integrationInstalled;
+        this.integrationSecrets = integrationSecrets;
     }
 
     void disable() {
@@ -90,6 +95,21 @@ final class ModComponentHost implements ComponentHost {
     @Override
     public boolean isMonitoringOnly() {
         return false;
+    }
+
+    @Override
+    public boolean integrationSecretsEnabled() {
+        return integrationSecrets.getAsBoolean();
+    }
+
+    @Override
+    public boolean hasCapability(String capability) {
+        return integrationInstalled.test(capability);
+    }
+
+    @Override
+    public boolean isIntegrationInstalled(String capability) {
+        return integrationInstalled.test(capability);
     }
 
     @Override
