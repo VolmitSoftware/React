@@ -15,10 +15,10 @@ class AnimusMetricSeriesTest {
   @Test
   void missingStoreOrUndeclaredSourceIsAnEmptyUndeclaredSnapshot() {
     long now = System.currentTimeMillis();
-    AnimusMetricSeries.Snapshot noStore = AnimusMetricSeries.fromStore(null, now);
-    AnimusMetricSeries.Snapshot noSource = AnimusMetricSeries.fromStore(new PublishedMetricStore(), now);
+    AnimusMetrics.Snapshot noStore = AnimusMetricSeries.fromStore(null, now);
+    AnimusMetrics.Snapshot noSource = AnimusMetricSeries.fromStore(new PublishedMetricStore(), now);
 
-    for (AnimusMetricSeries.Snapshot snapshot : List.of(noStore, noSource)) {
+    for (AnimusMetrics.Snapshot snapshot : List.of(noStore, noSource)) {
       Assertions.assertFalse(snapshot.declared());
       Assertions.assertTrue(snapshot.costs().isEmpty());
       Assertions.assertTrue(snapshot.packetKinds().isEmpty());
@@ -36,7 +36,7 @@ class AnimusMetricSeriesTest {
         ReactMetric.rate("animus.net.bytes_per_second", "Bandwidth", "B/s")
     ));
 
-    AnimusMetricSeries.Snapshot snapshot = AnimusMetricSeries.fromStore(store, System.currentTimeMillis());
+    AnimusMetrics.Snapshot snapshot = AnimusMetricSeries.fromStore(store, System.currentTimeMillis());
 
     Assertions.assertTrue(snapshot.declared());
     Assertions.assertTrue(snapshot.costs().isEmpty());
@@ -61,7 +61,7 @@ class AnimusMetricSeriesTest {
         Map.entry("animus.npcs.active", 25D)
     ));
 
-    AnimusMetricSeries.Snapshot snapshot = AnimusMetricSeries.fromStore(store, now);
+    AnimusMetrics.Snapshot snapshot = AnimusMetricSeries.fromStore(store, now);
 
     Assertions.assertTrue(snapshot.declared());
     Assertions.assertEquals(List.of("navigation", "presentation"), ids(snapshot.costs()));
@@ -85,7 +85,7 @@ class AnimusMetricSeriesTest {
         "animus.pressure.nav.deep", 80D
     ));
 
-    AnimusMetricSeries.Snapshot snapshot = AnimusMetricSeries.fromStore(store, now);
+    AnimusMetrics.Snapshot snapshot = AnimusMetricSeries.fromStore(store, now);
 
     Assertions.assertTrue(snapshot.costs().isEmpty());
     Assertions.assertTrue(snapshot.packetKinds().isEmpty());
@@ -97,7 +97,7 @@ class AnimusMetricSeriesTest {
     long now = System.currentTimeMillis();
     PublishedMetricStore store = publish(now, Map.of("animus.cost.gui_ms", 2D));
 
-    AnimusMetricSeries.Snapshot snapshot = AnimusMetricSeries.fromStore(store, now + PublishedMetricStore.MAX_STALE_MS + 1L);
+    AnimusMetrics.Snapshot snapshot = AnimusMetricSeries.fromStore(store, now + PublishedMetricStore.MAX_STALE_MS + 1L);
 
     Assertions.assertTrue(snapshot.declared());
     Assertions.assertTrue(snapshot.costs().isEmpty());
@@ -105,9 +105,9 @@ class AnimusMetricSeriesTest {
 
   @Test
   void displayNamesAreTitleCased() {
-    Assertions.assertEquals("Hotload Watch", AnimusMetricSeries.displayName("hotload_watch"));
-    Assertions.assertEquals("Spawn", AnimusMetricSeries.displayName("spawn"));
-    Assertions.assertEquals("", AnimusMetricSeries.displayName(" "));
+    Assertions.assertEquals("Hotload Watch", AnimusMetrics.displayName("hotload_watch"));
+    Assertions.assertEquals("Spawn", AnimusMetrics.displayName("spawn"));
+    Assertions.assertEquals("", AnimusMetrics.displayName(" "));
   }
 
   private static PublishedMetricStore publish(long now, Map<String, Double> values) {
@@ -123,9 +123,9 @@ class AnimusMetricSeriesTest {
     return store;
   }
 
-  private static List<String> ids(List<AnimusMetricSeries.Entry> entries) {
+  private static List<String> ids(List<AnimusMetrics.Entry> entries) {
     List<String> ids = new ArrayList<>();
-    for (AnimusMetricSeries.Entry entry : entries) {
+    for (AnimusMetrics.Entry entry : entries) {
       ids.add(entry.id());
     }
     return ids;

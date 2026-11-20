@@ -2495,26 +2495,6 @@ summary = "Von der Tick Spike Origin Replay Map verwendete Dauer, nach der ein C
 impact = "Niedrigere Werte reagieren schneller, verbrauchen aber mehr CPU; höhere Werte reduzieren den Overhead, reagieren aber später."
 summary = "Hauptauswertungsintervall für die Tick Spike Origin Replay Map in Millisekunden."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "Dies sind Laufzeit-Identitätsdaten und sollten normalerweise automatischen Updates überlassen werden."
-summary = "Weltkennung, die die Tick Spike Origin Replay Map für die interne Verfolgung verwendet."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "Dies sind interne Zustandsdaten und sollten normalerweise nicht manuell geändert werden."
-summary = "X-Achsen-Koordinate, die die Tick Spike Origin Replay Map für die interne Verfolgung verwendet."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "Dies sind interne Zustandsdaten und sollten normalerweise nicht manuell geändert werden."
-summary = "Z-Achsen-Koordinate, die die Tick Spike Origin Replay Map für die interne Verfolgung verwendet."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "Höhere Werte kennzeichnen einen stärkeren Spike-Beitrag, der wie konfiguriert mit der Zeit abklingt."
-summary = "Angesammelter Hitze-Score, den die Tick Spike Origin Replay Map für die Hotspot-Wiedergabe verfolgt."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "Hauptsächlich Laufzeitzustand; eine manuelle Änderung kann das Abklingzeit- oder Drosselungsverhalten verfälschen."
-summary = "Interner Zeitstempel, den die Tick Spike Origin Replay Map verwendet, um Zeitfenster und Abklingen zu verfolgen."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "Konfiguration der Funktion Tracker Range Governor. Verkleinert vorübergehend die Tracking-Reichweiten der Entitäten pro Welt (Gegenstände, Sonstiges, Displays, Tiere, Monster), solange der Server unter anhaltender Belastung steht, und verringert so Entity-Tracker und Paket-Fanout. Änderungen gelten für Entitäten, sobald sie verfolgt werden; daher reagieren sich schnell ändernde Entitäten wie Gegenstände innerhalb von Sekunden. Die Reichweiten werden wiederhergestellt, sobald sich der Server erholt hat."
 

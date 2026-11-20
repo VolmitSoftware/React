@@ -2495,26 +2495,6 @@ summary = "tick spike origin replay map: vanhentuneen chunkin kesto (millisekunt
 impact = "Pienemmät arvot reagoivat nopeammin mutta kuluttavat enemmän CPU:ta; suuremmat arvot vähentävät kuormaa mutta reagoivat myöhemmin."
 summary = "tick spike origin replay map: pääarviointiväli millisekunteina."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "Tämä on ajonaikaista tunnistetietoa, ja se kannattaa yleensä jättää automaattisten päivitysten hoidettavaksi."
-summary = "tick spike origin replay map: maailman tunniste sisäisessä seurannassa."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "Tämä on sisäistä tilatietoa, eikä sitä yleensä pidä muuttaa käsin."
-summary = "tick spike origin replay map: X-akselin koordinaatti sisäisessä seurannassa."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "Tämä on sisäistä tilatietoa, eikä sitä yleensä pidä muuttaa käsin."
-summary = "tick spike origin replay map: Z-akselin koordinaatti sisäisessä seurannassa."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "Suuremmat arvot merkitsevät voimakkaampaa piikkiosuutta, ja ne vaimenevat ajan myötä asetusten mukaan."
-summary = "Kertynyt lämpöpistemäärä, jota tick spike origin replay map seuraa kuumien kohtien toistoa varten."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "Pääosin ajonaikaista tilaa; sen muuttaminen käsin voi vääristää odotusajan tai rajoituksen toimintaa."
-summary = "tick spike origin replay map: sisäinen aikaleima ajoitusikkunoiden ja vaimenemisen seurantaan."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "Tracker Range Governor -ominaisuuden asetukset. Pienentää väliaikaisesti maailmakohtaisia entiteettien seuranta-alueita (esineet, sekalaiset, näytöt, eläimet, hirviöt), kun palvelin on jatkuvassa paineessa, mikä vähentää entiteettiseurannan ja pakettien jakelua. Muutokset koskevat entiteetteja niiden tullessa seuratuiksi, joten nopeasti vaihtuvat entiteetit, kuten esineet, reagoivat sekunneissa; alueet palautetaan, kun palvelin on toipunut."
 

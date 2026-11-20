@@ -183,23 +183,24 @@ public final class SamplerRenderer implements ReactRenderer {
     set(0, footerY, w, footerH, FOOTER_BAND);
     set(3 * s, footerY + (3 * s), 4 * s, 4 * s, marker);
     text(10 * s, footerY + (2 * s), nowLabel, TEXT_BRIGHT);
-    String lowLabel = ReactLanguage.raw(
-        RendererMessages.SAMPLER_LOW_VALUE,
-        MessageArgument.untrusted("value", sampler.format(min))
-    );
+
     String highLabel = ReactLanguage.raw(
         RendererMessages.SAMPLER_HIGH_VALUE,
         MessageArgument.untrusted("value", sampler.format(max))
     );
-    int highX = w - (3 * s) - textWidth(highLabel);
-    int lowX = highX - (6 * s) - textWidth(lowLabel);
-    int nowEnd = (10 * s) + textWidth(nowLabel);
-    if (lowX > nowEnd + (4 * s)) {
-      text(lowX, footerY + (2 * s), lowLabel, TEXT_DIM);
-      text(highX, footerY + (2 * s), highLabel, TEXT_DIM);
-    } else if (highX > nowEnd + (4 * s)) {
-      text(highX, footerY + (2 * s), highLabel, TEXT_DIM);
-    }
+    String lowLabel = ReactLanguage.raw(
+        RendererMessages.SAMPLER_LOW_VALUE,
+        MessageArgument.untrusted("value", sampler.format(min))
+    );
+    int axisBackingRgb = MapColors.lerpRgb(0.5D, bottomRgb, MapTheme.SURFACE_0.toRGB());
+    axisLabel(highLabel, chartTop + s, axisBackingRgb, s);
+    axisLabel(lowLabel, chartBottom - textHeight() - s, axisBackingRgb, s);
+  }
+
+  private void axisLabel(String label, int y, int backingRgb, int s) {
+    int x = 3 * s;
+    fillRgb(x - s, y - s, textWidth(label) + (2 * s), textHeight() + (2 * s), backingRgb);
+    text(x, y, label, MapTheme.TEXT_SOFT);
   }
 
   private int chartYFor(Graph g, int x, int w, int samples, double pmin, double range, int chartTop, int chartBottom) {

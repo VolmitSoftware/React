@@ -21,16 +21,29 @@ package art.arcane.react.api.rendering;
 
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
-import art.arcane.react.model.ReactConfiguration;
+import art.arcane.react.platform.IntegrationMetricsHost;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.volmlib.util.localization.TextKey;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 public class RendererAdaptMetrics extends RendererIntegrationMetricsBase {
   public static final String ID = "adapt-metrics";
+  private final Supplier<String> abilityOpsKey;
+  private final Supplier<String> abilityOpsLabel;
+
+  /**
+   * @param abilityOpsKey   the ability-ops metric the operator picked
+   * @param abilityOpsLabel its short label, shown in the row title
+   */
+  public RendererAdaptMetrics(IntegrationMetricsHost host, Supplier<String> abilityOpsKey, Supplier<String> abilityOpsLabel) {
+    super(host);
+    this.abilityOpsKey = abilityOpsKey;
+    this.abilityOpsLabel = abilityOpsLabel;
+  }
 
   @Override
   public String getId() {
@@ -61,7 +74,7 @@ public class RendererAdaptMetrics extends RendererIntegrationMetricsBase {
   protected List<MetricLine> metricLines() {
     return List.of(
         new MetricLine(IntegrationMetricSchema.ADAPT_SESSION_LOAD, RendererMessages.METRIC_SESSION, 1, " %"),
-        new MetricLine(ReactConfiguration.adaptAbilityOpsMetricKey(), RendererMessages.METRIC_ABILITY_MODE, 0, " op/m"),
+        new MetricLine(abilityOpsKey.get(), RendererMessages.METRIC_ABILITY_MODE, 0, " op/m"),
         new MetricLine(IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS_TICK, RendererMessages.METRIC_ALL_PER_TICK, 3, " op/t"),
         new MetricLine(IntegrationMetricSchema.ADAPT_WORLD_POLICY_LATENCY, RendererMessages.METRIC_POLICY, 2, " ms")
     );
@@ -74,7 +87,7 @@ public class RendererAdaptMetrics extends RendererIntegrationMetricsBase {
     }
     return ReactLanguage.raw(
         RendererMessages.METRIC_ABILITY_MODE,
-        MessageArgument.untrusted("mode", ReactConfiguration.adaptAbilityOpsMetricLabel())
+        MessageArgument.untrusted("mode", abilityOpsLabel.get())
     );
   }
 }

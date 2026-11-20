@@ -5,21 +5,29 @@ import art.arcane.react.api.web.heatmap.HeatmapChunkSampler;
 import art.arcane.react.api.rendering.MapRendererRegistry;
 import art.arcane.react.api.rendering.MapRuntime;
 import art.arcane.react.api.rendering.ReactRenderer;
+import art.arcane.react.api.rendering.RendererIrisMetrics;
+import art.arcane.react.api.rendering.RendererIrisWorldMetrics;
 import art.arcane.react.api.rendering.RendererReactMetrics;
 import art.arcane.react.api.sampler.SamplerHosts;
+import art.arcane.react.content.feature.AnimusCostSharePieRenderer;
+import art.arcane.react.content.feature.AnimusNetworkListRenderer;
+import art.arcane.react.content.feature.AnimusPressureHeatmap;
 import art.arcane.react.content.feature.ChunkCostHeatmap;
 import art.arcane.react.content.feature.ChunkHeatmapRenderer;
 import art.arcane.react.content.feature.ChunkLoadGenCostHeatmap;
 import art.arcane.react.content.feature.EntityPressureHeatmap;
 import art.arcane.react.content.feature.HopperThroughputHeatmap;
 import art.arcane.react.content.feature.OwnerEventImpactListRenderer;
+import art.arcane.react.content.feature.OwnerImpactPieRenderer;
 import art.arcane.react.content.feature.PlayerImpactHeatmap;
 import art.arcane.react.content.feature.RedstoneActivityHeatmap;
+import art.arcane.react.content.feature.TickSpikeReplayHeatmap;
 import art.arcane.react.platform.PlatformScheduler;
 import net.minecraft.server.MinecraftServer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.IntFunction;
 
 /**
@@ -33,7 +41,37 @@ public final class ModDashboardMaps {
 
     private ModDashboardMaps(ModChunkHeatmapHost heatmaps, List<ReactRenderer> renderers) {
         this.heatmaps = heatmaps;
-        this.renderers = renderers;
+        this.renderers = new ArrayList<>(renderers);
+    }
+
+    /** Dashboards for Iris, Wormholes, Adapt and Animus, added only when that mod is installed. */
+    private void registerIntegrations(MinecraftServer server, ModReactPlatform platform, ModChunkHeatmapHost heatmaps,
+                                      ModMapAnchorHost anchors, ChunkHeatmapRenderer.Settings settings) {
+        List<ModIntegrationMetrics.Source> sources = ModIntegrationSources.installed();
+        ModIntegrationMetrics integrations = new ModIntegrationMetrics(server, sources);
+        for (ModIntegrationMetrics.Source source : sources) {
+            switch (source.id()) {
+                case "iris" -> {
+                    renderers.addAll(RendererIrisMetrics.dashboards(integrations));
+                    renderers.addAll(RendererIrisWorldMetrics.dashboards(integrations));
+                }
+                case "wormholes" -> renderers.add(ModIntegrationSources.wormholesDashboard(integrations));
+                case "adapt" -> renderers.add(ModIntegrationSources.adaptDashboard(integrations));
+                default -> {
+                }
+            }
+        }
+        if (integrations.any()) {
+            integrations.refresh();
+            integrations.schedule(platform.scheduler());
+        }
+        ModAnimusMetrics animus = ModAnimusMetrics.installed();
+        if (animus != null) {
+            renderers.add(new AnimusCostSharePieRenderer(animus::snapshot, (UUID viewerId) -> server.getPlayerList().getPlayer(viewerId) != null));
+            renderers.add(new AnimusNetworkListRenderer(animus::snapshot, anchors));
+            renderers.add(new AnimusPressureHeatmap(heatmaps, anchors, settings, animus::snapshot));
+            animus.schedule(platform.scheduler());
+        }
     }
 
     static ModDashboardMaps create(MinecraftServer server, ModReactPlatform platform, IntFunction<MapRuntime.FrameAnchor> frameAnchors) {
@@ -42,6 +80,7 @@ public final class ModDashboardMaps {
         ModMapAnchorHost anchors = new ModMapAnchorHost(server, frameAnchors);
         ModOwnerCost ownerCost = platform.ownerCost();
         ChunkHeatmapRenderer.Settings settings = ChunkHeatmapRenderer.DEFAULT_SETTINGS;
+        ModTickSpikeReplay replay = new ModTickSpikeReplay(server, samplerHost.chunks());
         ModDashboardMaps maps = new ModDashboardMaps(heatmaps, List.of(
                 new RendererReactMetrics(SamplerHosts::sampler),
                 new ChunkCostHeatmap(heatmaps, anchors, settings),
@@ -50,9 +89,13 @@ public final class ModDashboardMaps {
                 new RedstoneActivityHeatmap(heatmaps, anchors, settings),
                 new HopperThroughputHeatmap(heatmaps, anchors, settings),
                 new PlayerImpactHeatmap(heatmaps, anchors, PlayerImpactHeatmap.DEFAULT_PLAYER_SETTINGS),
-                new OwnerEventImpactListRenderer(anchors, () -> ownerCost, () -> 0)
+                new OwnerEventImpactListRenderer(anchors, () -> ownerCost, () -> 0),
+                new OwnerImpactPieRenderer(() -> ownerCost, (UUID viewerId) -> server.getPlayerList().getPlayer(viewerId) != null),
+                new TickSpikeReplayHeatmap(heatmaps, anchors, settings, replay.replay())
         ));
         maps.schedule(platform.scheduler(), false);
+        replay.schedule(platform.scheduler());
+        maps.registerIntegrations(server, platform, heatmaps, anchors, settings);
         return maps;
     }
 

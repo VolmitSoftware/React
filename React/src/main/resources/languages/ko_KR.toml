@@ -2495,26 +2495,6 @@ summary = "틱 스파이크 발생 위치 재생 지도가 사용하는 오래�
 impact = "값이 낮을수록 반응이 빨라지지만 CPU를 더 사용하고, 높을수록 오버헤드는 줄지만 반응이 늦어집니다."
 summary = "틱 스파이크 발생 위치 재생 지도의 주 평가 간격(밀리초)."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "런타임 식별 데이터이므로 일반적으로 자동 업데이트에 맡겨야 합니다."
-summary = "틱 스파이크 발생 위치 재생 지도 내부 추적에 사용하는 월드 식별자."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "내부 상태 데이터이므로 일반적으로 수동으로 변경하지 않아야 합니다."
-summary = "틱 스파이크 발생 위치 재생 지도 내부 추적에 사용하는 X축 좌표."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "내부 상태 데이터이므로 일반적으로 수동으로 변경하지 않아야 합니다."
-summary = "틱 스파이크 발생 위치 재생 지도 내부 추적에 사용하는 Z축 좌표."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "값이 높을수록 스파이크 기여가 크다는 뜻이며 설정에 따라 시간이 지나며 감쇠합니다."
-summary = "핫스팟 재생을 위해 틱 스파이크 발생 위치 재생 지도가 추적하는 누적 열 점수."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "주로 런타임 상태이며, 수동으로 변경하면 쿨다운이나 스로틀링 동작이 왜곡될 수 있습니다."
-summary = "틱 스파이크 발생 위치 재생 지도가 시간 구간과 감쇠를 추적하는 데 사용하는 내부 타임스탬프."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "트래커 범위 거버너 기능 설정. 서버가 지속적인 부하를 받는 동안 월드별 엔티티 추적 범위(아이템, 기타, 디스플레이, 동물, 몬스터)를 일시적으로 줄여 엔티티 트래커와 패킷 전송량을 줄입니다. 변경은 엔티티가 추적되기 시작할 때 적용되므로 아이템처럼 빠르게 교체되는 엔티티는 몇 초 안에 반응하며, 서버가 회복되면 범위가 복원됩니다."
 

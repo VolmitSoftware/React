@@ -2495,26 +2495,6 @@ summary = "游戏刻峰值来源回放地图使用的过期区块持续时间（
 impact = "值越低，响应越快但消耗更多 CPU；值越高，开销越低但响应越晚。"
 summary = "游戏刻峰值来源回放地图的主要评估间隔（毫秒）。"
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "这是运行时标识数据，通常应交由自动更新处理。"
-summary = "游戏刻峰值来源回放地图内部跟踪使用的世界标识。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "这是内部状态数据，通常不应手动修改。"
-summary = "游戏刻峰值来源回放地图内部跟踪使用的 X 轴坐标。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "这是内部状态数据，通常不应手动修改。"
-summary = "游戏刻峰值来源回放地图内部跟踪使用的 Z 轴坐标。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "值越高，表示峰值贡献越强，并按配置随时间衰减。"
-summary = "游戏刻峰值来源回放地图为热点回放跟踪的累计热度分数。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "主要为运行时状态；手动修改可能扰乱冷却或节流行为。"
-summary = "游戏刻峰值来源回放地图用于跟踪计时窗口和衰减的内部时间戳。"
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "追踪范围调控器功能的配置。服务器持续承压时，临时缩小各世界的实体追踪范围（物品、杂项、展示实体、动物、怪物），减少实体追踪器和数据包的扇出。变更会在实体被追踪时生效，因此物品等快速更替的实体会在数秒内作出反应；服务器恢复后，范围会恢复。"
 

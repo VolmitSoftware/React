@@ -13,7 +13,10 @@ import art.arcane.react.content.sampler.SamplerReactJobsQueue;
 import art.arcane.react.content.sampler.SamplerSchedulerBacklog;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.content.sampler.SamplerTicksPerSecond;
+import art.arcane.react.api.rendering.IntegrationDashboardsGoldenTest;
 import art.arcane.react.core.controller.EventController;
+import art.arcane.react.core.controller.IntegrationController;
+import art.arcane.react.core.integration.ThirdPartyMetricRegistry;
 import art.arcane.react.core.controller.LoadedChunkCoordinate;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
@@ -63,7 +66,12 @@ class DashboardMapsGoldenTest {
       "heatmap-no-world", "f77a609ced4647ae",
       "plugin-event-impact-list-map", "cbe4d63824bb9975",
       "plugin-event-impact-list-map-wall", "cac99e5722bbe340",
-      "plugin-event-impact-list-map-empty", "60e398b6dde34ab0"
+      "plugin-event-impact-list-map-empty", "60e398b6dde34ab0",
+      "plugin-event-impact-pie-map", "43a5f7b6bec8dfa3",
+      "plugin-event-impact-pie-map-wall", "ab4af14f3df8b033",
+      "tick-spike-origin-replay-map", "0f60933dcf71e485",
+      "tick-spike-origin-replay-map-wall", "536f40c7b91bbcbc",
+      "animus-runtime-pressure-overlay", "9c32007fb7620a3c"
   );
 
   private React previous;
@@ -96,6 +104,7 @@ class DashboardMapsGoldenTest {
     Mockito.when(viewer.getWorld()).thenReturn(world);
     Mockito.when(viewer.getLocation()).thenReturn(new Location(world, 20D, 64D, 36D));
     Mockito.when(viewer.getUniqueId()).thenReturn(viewerId);
+    Mockito.when(viewer.isOnline()).thenReturn(true);
 
     MapController mapController = Mockito.mock(MapController.class);
     Mockito.when(mapController.resolveMapAnchor(Mockito.any(MapRenderTarget.class)))
@@ -136,6 +145,24 @@ class DashboardMapsGoldenTest {
       actual.put("redstone-activity-heatmap", hash(new FeatureRedstoneActivityHeatmap(), held, null));
       actual.put("hopper-container-throughput-map", hash(new FeatureHopperContainerThroughputMap(), held, null));
       actual.put("player-impact-overlay", hash(new FeaturePlayerImpactOverlay(), held, null));
+
+      resetImpactSeries();
+      actual.put("plugin-event-impact-pie-map", hash(new FeaturePluginEventImpactPieMap(), held, null));
+      resetImpactSeries();
+      actual.put("plugin-event-impact-pie-map-wall",
+          hash(new FeaturePluginEventImpactPieMap(), held, new MegamapGrid.MegamapTile(2, 2, 1, 0)));
+      resetImpactSeries();
+      IntegrationController integration = Mockito.mock(IntegrationController.class);
+      ThirdPartyMetricRegistry thirdParty = Mockito.mock(ThirdPartyMetricRegistry.class);
+      Mockito.when(integration.getThirdPartyMetrics()).thenReturn(thirdParty);
+      Mockito.when(thirdParty.store()).thenReturn(IntegrationDashboardsGoldenTest.animusStore());
+      react.when(() -> React.controller(IntegrationController.class)).thenReturn(integration);
+      IntegrationDashboardsGoldenTest.resetAnimusCache();
+      actual.put("animus-runtime-pressure-overlay", hash(new FeatureAnimusRuntimePressureOverlay(), held, null));
+      IntegrationDashboardsGoldenTest.resetAnimusCache();
+      FeatureTickSpikeOriginReplayMap replay = seededReplay(worldId);
+      actual.put("tick-spike-origin-replay-map", hash(replay, held, null));
+      actual.put("tick-spike-origin-replay-map-wall", hash(replay, held, new MegamapGrid.MegamapTile(2, 2, 0, 1)));
 
       Mockito.when(mapController.hasFrameAnchor(Mockito.any(MapRenderTarget.class))).thenReturn(true);
       Mockito.when(mapController.resolveMapAnchor(Mockito.any(MapRenderTarget.class)))
@@ -211,6 +238,19 @@ class DashboardMapsGoldenTest {
       default -> 1D;
     };
     return new FixedSampler(id, value);
+  }
+
+  private static FeatureTickSpikeOriginReplayMap seededReplay(UUID worldId) throws ReflectiveOperationException {
+    FeatureTickSpikeOriginReplayMap replay = new FeatureTickSpikeOriginReplayMap();
+    replay.onActivate();
+    Field field = FeatureTickSpikeOriginReplayMap.class.getDeclaredField("replay");
+    field.setAccessible(true);
+    TickSpikeReplay heat = (TickSpikeReplay) field.get(replay);
+    int[][] cells = {{0, 0, 40}, {1, 2, 22}, {-2, 3, 9}, {4, -1, 31}, {-3, -3, 4}, {2, 4, 15}, {-1, 1, 27}, {3, 3, 2}};
+    for (int[] cell : cells) {
+      heat.addHeat(worldId, cell[0], cell[1], cell[2], 1_000L);
+    }
+    return replay;
   }
 
   private static void resetImpactSeries() throws ReflectiveOperationException {

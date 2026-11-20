@@ -2495,26 +2495,6 @@ summary = "Czas nieaktualności chunka używany przez tick spike origin replay m
 impact = "Niższe wartości reagują szybciej, ale zużywają więcej CPU; wyższe wartości redukują koszty ogólne, ale reagują później."
 summary = "Główny odstęp oceny tick spike origin replay map w milisekundach."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "To dane tożsamości czasu działania; zwykle należy pozostawić je automatycznym aktualizacjom."
-summary = "Identyfikator świata używany przez wewnętrzne śledzenie tick spike origin replay map."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "To wewnętrzne dane stanu i zwykle nie należy ich zmieniać ręcznie."
-summary = "Współrzędna osi X używana przez wewnętrzne śledzenie tick spike origin replay map."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "To wewnętrzne dane stanu i zwykle nie należy ich zmieniać ręcznie."
-summary = "Współrzędna osi Z używana przez wewnętrzne śledzenie tick spike origin replay map."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "Wyższe wartości oznaczają większy udział skoków i rozkład w czasie, jak skonfigurowano."
-summary = "Skumulowany wynik ciepła śledzony przez tick spike origin replay map na potrzeby odtwarzania hotspotów."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "Głównie stan czasu działania; ręczna zmiana może zakłócić czas odnowienia lub dławienie."
-summary = "Wewnętrzny znacznik czasu używany przez tick spike origin replay map do śledzenia okien czasowych i zaniku."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "Konfiguracja funkcji Tracker Range Governor. Tymczasowo zmniejsza zakresy śledzenia bytów w poszczególnych światach (przedmioty, różne, wyświetlacze, zwierzęta, potwory), gdy serwer jest pod stałym obciążeniem, ograniczając entity tracker i rozsyłanie pakietów. Zmiany dotyczą bytów w momencie rozpoczęcia ich śledzenia, więc szybko wymieniające się byty, jak przedmioty, reagują w ciągu sekund; zakresy są przywracane po powrocie serwera do normy."
 

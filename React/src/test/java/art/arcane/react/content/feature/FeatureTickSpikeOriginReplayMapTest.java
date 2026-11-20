@@ -83,7 +83,7 @@ class FeatureTickSpikeOriginReplayMapTest {
         0D,
         60_000_000D
     );
-    Assertions.assertTrue(feature.chunkScore(worldRef, 40, -20) > 0D);
-    Assertions.assertEquals(0D, feature.chunkScore(worldRef, 44, -20));
+    Assertions.assertTrue(feature.scoreChunk(worldRef, 40, -20) > 0D);
+    Assertions.assertEquals(0D, feature.scoreChunk(worldRef, 44, -20));
   }
 }

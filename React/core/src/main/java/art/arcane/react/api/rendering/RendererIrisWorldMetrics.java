@@ -1,19 +1,14 @@
 package art.arcane.react.api.rendering;
 
-import art.arcane.react.platform.bukkit.BukkitMapTargets;
 
-import art.arcane.react.React;
-import art.arcane.react.core.controller.IntegrationController;
-import art.arcane.react.core.integration.RemoteSamplerBridge;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
+import art.arcane.react.platform.IntegrationMetricsHost;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricGroup;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
-import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import art.arcane.volmlib.util.localization.TextKey;
-import org.bukkit.World;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -24,15 +19,16 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
   private final TextKey panelTitle;
   private final List<MetricLine> metrics;
 
-  private RendererIrisWorldMetrics(String id, TextKey panelTitle, List<MetricLine> metrics) {
+  private RendererIrisWorldMetrics(IntegrationMetricsHost host, String id, TextKey panelTitle, List<MetricLine> metrics) {
+    super(host);
     this.id = id;
     this.panelTitle = panelTitle;
     this.metrics = List.copyOf(metrics);
   }
 
-  public static List<RendererIrisWorldMetrics> dashboards() {
+  public static List<RendererIrisWorldMetrics> dashboards(IntegrationMetricsHost host) {
     return List.of(
-        panel("iris-world-overview", RendererMessages.TITLE_IRIS_WORLD_OVERVIEW,
+        panel(host, "iris-world-overview", RendererMessages.TITLE_IRIS_WORLD_OVERVIEW,
             metric(IntegrationMetricSchema.IRIS_ENGINE_ACTIVE, RendererMessages.METRIC_ACTIVE, 0, ""),
             metric(IntegrationMetricSchema.IRIS_LOADED_CHUNKS, RendererMessages.METRIC_CHUNKS, 0, ""),
             metric(IntegrationMetricSchema.IRIS_LOADED_ENTITIES, RendererMessages.METRIC_ENTITIES, 0, ""),
@@ -40,7 +36,7 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
             metric(IntegrationMetricSchema.IRIS_CHUNKS_PER_SECOND, RendererMessages.METRIC_CHUNK_RATE, 1, " ch/s"),
             metric(IntegrationMetricSchema.IRIS_CHUNKS_GENERATED_SESSION, RendererMessages.METRIC_SESSION_CHUNKS, 0, ""),
             metric(IntegrationMetricSchema.IRIS_CHUNKS_GENERATED_TOTAL, RendererMessages.METRIC_LIFETIME_CHUNKS, 0, "")),
-        panel("iris-world-engine", RendererMessages.TITLE_IRIS_WORLD_ENGINE,
+        panel(host, "iris-world-engine", RendererMessages.TITLE_IRIS_WORLD_ENGINE,
             metric(IntegrationMetricSchema.IRIS_BLOCK_UPDATES_PER_SECOND, RendererMessages.METRIC_BLOCK_UPDATES, 0, " /s"),
             metric(IntegrationMetricSchema.IRIS_GENERATION_ACTIVE_LEASES, RendererMessages.METRIC_ACTIVE_LEASES, 0, ""),
             metric(IntegrationMetricSchema.IRIS_ENGINE_PARALLELISM, RendererMessages.METRIC_PARALLELISM, 0, ""),
@@ -48,7 +44,7 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
             metric(IntegrationMetricSchema.IRIS_ENGINE_CLOSING, RendererMessages.METRIC_CLOSING, 0, ""),
             metric(IntegrationMetricSchema.IRIS_ENGINE_FAILED, RendererMessages.METRIC_FAILED, 0, ""),
             metric(IntegrationMetricSchema.IRIS_ENGINE_STUDIO, RendererMessages.METRIC_STUDIO, 0, "")),
-        panel("iris-world-mantle", RendererMessages.TITLE_IRIS_WORLD_MANTLE,
+        panel(host, "iris-world-mantle", RendererMessages.TITLE_IRIS_WORLD_MANTLE,
             metric(IntegrationMetricSchema.IRIS_MANTLE_RESIDENT_PLATES, RendererMessages.METRIC_RESIDENT, 0, ""),
             metric(IntegrationMetricSchema.IRIS_MANTLE_QUEUED_PLATES, RendererMessages.METRIC_UNLOAD_QUEUE, 0, ""),
             metric(IntegrationMetricSchema.IRIS_MANTLE_IDLE_AVERAGE_MS, RendererMessages.METRIC_IDLE, 0, " ms"),
@@ -56,7 +52,7 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
             metric(IntegrationMetricSchema.IRIS_GENERATION_ACTIVE_LEASES, RendererMessages.METRIC_GENERATION_LEASES, 0, ""),
             metric(IntegrationMetricSchema.IRIS_CHUNKS_PER_SECOND, RendererMessages.METRIC_CHUNK_RATE, 1, " ch/s"),
             metric(IntegrationMetricSchema.IRIS_BLOCK_UPDATES_PER_SECOND, RendererMessages.METRIC_BLOCK_UPDATES, 0, " /s")),
-        panel("iris-world-generation", RendererMessages.TITLE_IRIS_WORLD_GENERATION,
+        panel(host, "iris-world-generation", RendererMessages.TITLE_IRIS_WORLD_GENERATION,
             metric(IntegrationMetricSchema.IRIS_GENERATION_TOTAL_MS, RendererMessages.METRIC_TOTAL, 2, " ms"),
             metric(IntegrationMetricSchema.IRIS_GENERATION_TERRAIN_MS, RendererMessages.METRIC_TERRAIN, 2, " ms"),
             metric(IntegrationMetricSchema.IRIS_GENERATION_BIOME_MS, RendererMessages.METRIC_BIOME, 2, " ms"),
@@ -64,7 +60,7 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
             metric(IntegrationMetricSchema.IRIS_GENERATION_PERFECTION_MS, RendererMessages.METRIC_PERFECTION, 2, " ms"),
             metric(IntegrationMetricSchema.IRIS_GENERATION_DECORATION_MS, RendererMessages.METRIC_DECORATION, 2, " ms"),
             metric(IntegrationMetricSchema.IRIS_GENERATION_UPDATES_MS, RendererMessages.METRIC_UPDATES, 2, " ms")),
-        panel("iris-world-features", RendererMessages.TITLE_IRIS_WORLD_FEATURES,
+        panel(host, "iris-world-features", RendererMessages.TITLE_IRIS_WORLD_FEATURES,
             metric(IntegrationMetricSchema.IRIS_GENERATION_CAVE_MS, RendererMessages.METRIC_CAVES, 2, " ms"),
             metric(IntegrationMetricSchema.IRIS_GENERATION_DEPOSIT_MS, RendererMessages.METRIC_DEPOSITS, 2, " ms"),
             metric(IntegrationMetricSchema.IRIS_GENERATION_CONTEXT_PREFILL_MS, RendererMessages.METRIC_CONTEXT_PREFILL, 2, " ms"),
@@ -72,7 +68,7 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
             metric(IntegrationMetricSchema.IRIS_GENERATION_CARVE_APPLY_MS, RendererMessages.METRIC_CARVE_APPLY, 2, " ms"),
             metric(IntegrationMetricSchema.IRIS_PREGEN_WAIT_PERMIT_MS, RendererMessages.METRIC_PERMIT_WAIT, 2, " ms"),
             metric(IntegrationMetricSchema.IRIS_PREGEN_WAIT_ADAPTIVE_MS, RendererMessages.METRIC_ADAPTIVE_WAIT, 2, " ms")),
-        panel("iris-world-pregen", RendererMessages.TITLE_IRIS_WORLD_PREGEN,
+        panel(host, "iris-world-pregen", RendererMessages.TITLE_IRIS_WORLD_PREGEN,
             metric(IntegrationMetricSchema.IRIS_PREGEN_ACTIVE, RendererMessages.METRIC_ACTIVE, 0, ""),
             metric(IntegrationMetricSchema.IRIS_PREGEN_PAUSED, RendererMessages.METRIC_PAUSED, 0, ""),
             metric(IntegrationMetricSchema.IRIS_PREGEN_PROGRESS, RendererMessages.METRIC_PROGRESS, 1, "%"),
@@ -80,7 +76,7 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
             metric(IntegrationMetricSchema.IRIS_PREGEN_TOTAL, RendererMessages.METRIC_TOTAL, 0, ""),
             metric(IntegrationMetricSchema.IRIS_PREGEN_REMAINING, RendererMessages.METRIC_REMAINING, 0, ""),
             metric(IntegrationMetricSchema.IRIS_PREGEN_THROUGHPUT, RendererMessages.METRIC_THROUGHPUT, 1, " ch/s")),
-        panel("iris-world-pregen-time", RendererMessages.TITLE_IRIS_WORLD_PREGEN_TIME,
+        panel(host, "iris-world-pregen-time", RendererMessages.TITLE_IRIS_WORLD_PREGEN_TIME,
             metric(IntegrationMetricSchema.IRIS_PREGEN_ETA_MS, RendererMessages.METRIC_ETA, 0, " ms"),
             metric(IntegrationMetricSchema.IRIS_PREGEN_ELAPSED_MS, RendererMessages.METRIC_ELAPSED, 0, " ms"),
             metric(IntegrationMetricSchema.IRIS_PREGEN_FAILED, RendererMessages.METRIC_FAILED_CHUNKS, 0, ""),
@@ -93,7 +89,7 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
 
   public static Set<String> dashboardMetricKeys() {
     Set<String> keys = new LinkedHashSet<>();
-    for (RendererIrisWorldMetrics dashboard : dashboards()) {
+    for (RendererIrisWorldMetrics dashboard : dashboards(IntegrationMetricsHost.NONE)) {
       for (MetricLine metric : dashboard.metricLines()) {
         keys.add(metric.key());
       }
@@ -133,15 +129,15 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
 
   @Override
   protected String headerValue() {
-    IntegrationMetricGroup group = currentGroup(null);
+    IntegrationMetricGroup group = currentGroup();
     return group == null
         ? ReactLanguage.raw(RendererMessages.STATUS_NO_WORLD)
         : fitText(group.label(), 54 * uiScale());
   }
 
   @Override
-  protected IntegrationMetricSample metricSample(RemoteSamplerBridge bridge, MetricLine metric) {
-    IntegrationMetricGroup group = currentGroup(bridge);
+  protected IntegrationMetricSample metricSample(MetricLine metric) {
+    IntegrationMetricGroup group = currentGroup();
     if (group == null) {
       return IntegrationMetricSample.unavailable(
           IntegrationMetricSchema.descriptor(metric.key()),
@@ -159,24 +155,13 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
         : sample;
   }
 
-  private IntegrationMetricGroup currentGroup(RemoteSamplerBridge providedBridge) {
-    RemoteSamplerBridge bridge = providedBridge;
-    if (bridge == null) {
-      IntegrationController controller = React.controller(IntegrationController.class);
-      bridge = controller == null ? null : controller.getRemoteSamplerBridge();
-    }
-    World world = BukkitMapTargets.world(target());
-    if (world == null && BukkitMapTargets.player(target()) != null) {
-      world = BukkitMapTargets.player(target()).getWorld();
-    }
-    if (bridge == null || world == null) {
-      return null;
-    }
-    return bridge.getGroup("iris", "world", WorldIdentity.serialize(world));
+  private IntegrationMetricGroup currentGroup() {
+    String scope = host().available() ? host().worldScope(target()) : null;
+    return scope == null ? null : host().group("iris", "world", scope);
   }
 
-  private static RendererIrisWorldMetrics panel(String id, TextKey title, MetricLine... metrics) {
-    return new RendererIrisWorldMetrics(id, title, List.of(metrics));
+  private static RendererIrisWorldMetrics panel(IntegrationMetricsHost host, String id, TextKey title, MetricLine... metrics) {
+    return new RendererIrisWorldMetrics(host, id, title, List.of(metrics));
   }
 
   private static MetricLine metric(String key, TextKey label, int decimals, String suffix) {

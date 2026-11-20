@@ -2495,26 +2495,6 @@ summary = "遊戲刻尖峰來源重播地圖使用的區塊過期時間（毫秒
 impact = "數值越低，反應越快，但會消耗更多 CPU；數值越高，額外負擔越小，但反應較慢。"
 summary = "遊戲刻尖峰來源重播地圖的主要評估間隔（毫秒）。"
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "這是執行時識別資料，通常應交由自動更新處理。"
-summary = "遊戲刻尖峰來源重播地圖內部追蹤使用的世界識別碼。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "這是內部狀態資料，通常不應手動變更。"
-summary = "遊戲刻尖峰來源重播地圖內部追蹤使用的 X 軸座標。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "這是內部狀態資料，通常不應手動變更。"
-summary = "遊戲刻尖峰來源重播地圖內部追蹤使用的 Z 軸座標。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "數值越高，標示的尖峰貢獻越強，並依設定隨時間衰減。"
-summary = "遊戲刻尖峰來源重播地圖為熱點重播追蹤的累積熱度分數。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "主要為執行時狀態；手動變更可能扭曲冷卻或節流行為。"
-summary = "遊戲刻尖峰來源重播地圖用於追蹤時間窗與衰減的內部時間戳記。"
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "追蹤範圍調節器功能的設定。在伺服器承受持續壓力時，暫時縮小每個世界的實體追蹤範圍（物品、雜項、展示實體、動物、怪物），縮減實體追蹤器與資料包的分發量。變更會在實體被追蹤時套用，因此物品等快速更替的實體會在數秒內反應；伺服器恢復後範圍會還原。"
 

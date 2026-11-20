@@ -20,14 +20,19 @@
 package art.arcane.react.api.rendering;
 
 import art.arcane.react.localization.catalog.RendererMessages;
+import art.arcane.react.platform.IntegrationMetricsHost;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import art.arcane.volmlib.util.localization.TextKey;
 
 import java.util.List;
 
-public class RendererHiddenoreMetrics extends RendererIntegrationMetricsBase {
-  public static final String ID = "hiddenore-metrics";
+public class RendererBiletoolsMetrics extends RendererIntegrationMetricsBase {
+  public static final String ID = "biletools-metrics";
+
+  public RendererBiletoolsMetrics(IntegrationMetricsHost host) {
+    super(host);
+  }
 
   @Override
   public String getId() {
@@ -36,34 +41,32 @@ public class RendererHiddenoreMetrics extends RendererIntegrationMetricsBase {
 
   @Override
   protected String pluginId() {
-    return "hiddenore";
+    return "biletools";
   }
 
   @Override
   protected TextKey title() {
-    return RendererMessages.TITLE_HIDDENORE_METRICS;
+    return RendererMessages.TITLE_BILETOOLS_METRICS;
   }
 
   @Override
   protected TinyColor backgroundColor() {
-    return new TinyColor(20, 15, 8);
+    return new TinyColor(10, 18, 9);
   }
 
   @Override
   protected TinyColor accentColor() {
-    return new TinyColor(214, 160, 52);
+    return new TinyColor(122, 200, 70);
   }
 
   @Override
   protected List<MetricLine> metricLines() {
     return List.of(
-        new MetricLine(IntegrationMetricSchema.HIDDENORE_BLOCKS_BROKEN_PER_SECOND, RendererMessages.METRIC_BREAKS, 1, " blk/s"),
-        new MetricLine(IntegrationMetricSchema.HIDDENORE_DROPS_INJECTED_PER_SECOND, RendererMessages.METRIC_DROPS, 1, " /s"),
-        new MetricLine(IntegrationMetricSchema.HIDDENORE_VEINS_DISCOVERED_PER_SECOND, RendererMessages.METRIC_VEIN_FINDS, 2, " /s"),
-        new MetricLine(IntegrationMetricSchema.HIDDENORE_VEIN_CACHE_CHUNKS, RendererMessages.METRIC_VEIN_CACHE, 0, ""),
-        new MetricLine(IntegrationMetricSchema.HIDDENORE_PDC_READS_PER_SECOND, RendererMessages.METRIC_PDC_READS, 1, " /s"),
-        new MetricLine(IntegrationMetricSchema.HIDDENORE_PDC_WRITES_PER_SECOND, RendererMessages.METRIC_PDC_WRITES, 1, " /s"),
-        new MetricLine(IntegrationMetricSchema.HIDDENORE_DROP_RULES, RendererMessages.METRIC_RULES, 0, "")
+        new MetricLine(IntegrationMetricSchema.BILETOOLS_WATCHED_JARS, RendererMessages.METRIC_WATCHED_JARS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.BILETOOLS_DIRTY_PLUGINS, RendererMessages.METRIC_DIRTY_PLUGINS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.BILETOOLS_RELOADS_TOTAL, RendererMessages.METRIC_RELOADS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.BILETOOLS_LAST_RELOAD_MS, RendererMessages.METRIC_LAST_RELOAD, 0, " ms"),
+        new MetricLine(IntegrationMetricSchema.BILETOOLS_REMOTE_SLAVE_ONLINE, RendererMessages.METRIC_REMOTE_SLAVE, 0, "")
     );
   }
 }

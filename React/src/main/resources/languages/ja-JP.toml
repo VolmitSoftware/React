@@ -2495,26 +2495,6 @@ summary = "ティックスパイク発生源リプレイマップで、チャン
 impact = "値を小さくすると反応は速くなりますが CPU 使用量が増え、大きくするとオーバーヘッドは減りますが反応が遅れます。"
 summary = "ティックスパイク発生源リプレイマップの主な評価間隔（ミリ秒）。"
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "これは、実行時IDデータであり、通常は自動更新に残されるべきです。"
-summary = "ティックスパイク発生源リプレイマップの内部追跡で使用するワールド識別子。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "これは内部状態のデータであり、通常手動で変更されるべきではありません。"
-summary = "ティックスパイク発生源リプレイマップの内部追跡で使用する X 軸座標。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "これは内部状態のデータであり、通常手動で変更されるべきではありません。"
-summary = "ティックスパイク発生源リプレイマップの内部追跡で使用する Z 軸座標。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "値を大きくするとスパイクへの寄与が強いことを示し、設定に従って時間とともに減衰します。"
-summary = "ホットスポットのリプレイのために、ティックスパイク発生源リプレイマップが追跡する累積熱スコア。"
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "主にランタイム状態です。手動で変更すると、クールダウンやスロットルの動作が乱れる場合があります。"
-summary = "ティックスパイク発生源リプレイマップがタイミングウィンドウと減衰を追跡するための内部タイムスタンプ。"
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "トラッカー範囲ガバナー機能の設定。サーバーが持続的な負荷を受けている間、ワールドごとのエンティティ追跡範囲 (アイテム、その他、ディスプレイ、動物、モンスター) を一時的に縮小し、エンティティトラッカーとパケットの配信を削減します。変更はエンティティが追跡されるタイミングで適用されるため、アイテムのように入れ替わりの速いエンティティは数秒で反応します。サーバーが回復すると範囲は復元されます。"
 

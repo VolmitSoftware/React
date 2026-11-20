@@ -2495,26 +2495,6 @@ summary = "Pasenusio pasaulio segmento trukmė, naudojama žaidimo ciklo šuoli�
 impact = "Mažesnės reikšmės reaguoja greičiau, bet naudoja daugiau CPU; didesnės reikšmės sumažina apkrovą, bet reaguoja vėliau."
 summary = "Pagrindinis žaidimo ciklo šuolių kilmės atkūrimo žemėlapio vertinimo intervalas milisekundėmis."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "Tai vykdymo tapatybės duomenys; paprastai juos turėtų atnaujinti pati sistema."
-summary = "Pasaulio identifikatorius, kurį žaidimo ciklo šuolių kilmės atkūrimo žemėlapis naudoja vidiniam sekimui."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "Tai vidinės būsenos duomenys; paprastai jų nereikėtų keisti rankiniu būdu."
-summary = "X ašies koordinatė, kurią žaidimo ciklo šuolių kilmės atkūrimo žemėlapis naudoja vidiniam sekimui."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "Tai vidinės būsenos duomenys; paprastai jų nereikėtų keisti rankiniu būdu."
-summary = "Z ašies koordinatė, kurią žaidimo ciklo šuolių kilmės atkūrimo žemėlapis naudoja vidiniam sekimui."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "Didesnės reikšmės rodo stipresnį šuolio indėlį ir laikui bėgant nyksta pagal nustatymus."
-summary = "Sukauptas šilumos balas, kurį žaidimo ciklo šuolių kilmės atkūrimo žemėlapis seka karštųjų taškų atkūrimui."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "Daugiausia vykdymo būsena; pakeitus rankiniu būdu gali iškraipyti atvėsimo ar ribojimo elgseną."
-summary = "Vidinė laiko žymė, kurią žaidimo ciklo šuolių kilmės atkūrimo žemėlapis naudoja laiko langams ir nykimui sekti."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "Sekimo atstumo valdiklio funkcijos konfigūracija. Kol serveris patiria ilgalaikę apkrovą, laikinai sumažina kiekvieno pasaulio objektų sekimo atstumus (daiktų, įvairių, rodinių, gyvūnų, monstrų), sumažindama objektų sekimo ir paketų išsklaidymą. Pakeitimai taikomi objektams, kai jie pradedami sekti, todėl greitai besikeičiantys objektai, pavyzdžiui, daiktai, reaguoja per kelias sekundes; atstumai atkuriami serveriui atsigavus."
 

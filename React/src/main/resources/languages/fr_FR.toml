@@ -2495,26 +2495,6 @@ summary = "Durée de chunk périmé utilisée par la carte de relecture de l'ori
 impact = "Des valeurs plus basses réagissent plus vite mais consomment plus de CPU ; des valeurs plus élevées réduisent la charge mais réagissent plus tard."
 summary = "Intervalle d'évaluation principal de la carte de relecture de l'origine des pics de tick, en millisecondes."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "Ce sont des données d'identité d'exécution qui devraient normalement être laissées aux mises à jour automatiques."
-summary = "Identifiant de monde utilisé par le suivi interne de la carte de relecture de l'origine des pics de tick."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "Ce sont des données d'état internes qui ne doivent normalement pas être modifiées manuellement."
-summary = "Coordonnée X utilisée par le suivi interne de la carte de relecture de l'origine des pics de tick."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "Ce sont des données d'état internes qui ne doivent normalement pas être modifiées manuellement."
-summary = "Coordonnée Z utilisée par le suivi interne de la carte de relecture de l'origine des pics de tick."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "Des valeurs plus élevées marquent une contribution de pic plus forte et décroissent avec le temps selon la configuration."
-summary = "Score de chaleur cumulé suivi par la carte de relecture de l'origine des pics de tick pour la relecture des points chauds."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "État principalement d'exécution ; le modifier manuellement peut fausser le délai de recharge ou le comportement de limitation."
-summary = "Horodatage interne utilisé par la carte de relecture de l'origine des pics de tick pour suivre les fenêtres de temps et la décroissance."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "Configuration de la fonctionnalité Régulateur de portée de suivi. Réduit temporairement les portées de suivi des entités par monde (objets, divers, affichages, animaux, monstres) lorsque le serveur subit une pression soutenue, ce qui diminue le suivi des entités et la diffusion de paquets. Les changements s'appliquent aux entités au moment où elles sont suivies, donc les entités à rotation rapide comme les objets réagissent en quelques secondes ; les portées sont rétablies une fois que le serveur récupère."
 

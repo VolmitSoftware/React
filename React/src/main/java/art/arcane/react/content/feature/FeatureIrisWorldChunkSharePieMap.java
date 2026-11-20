@@ -33,7 +33,7 @@ public class FeatureIrisWorldChunkSharePieMap extends FeatureIrisChunkSharePieBa
 
   @Override
   protected Map<String, Long> collectBuckets(Player viewer) {
-    Map<String, Long> counts = newCounterMap();
+    Map<String, Long> counts = SharePieRenderer.newCounterMap();
     IntegrationController controller = React.controller(IntegrationController.class);
     RemoteSamplerBridge bridge = controller == null ? null : controller.getRemoteSamplerBridge();
     if (bridge == null) {
@@ -46,7 +46,7 @@ public class FeatureIrisWorldChunkSharePieMap extends FeatureIrisChunkSharePieBa
         continue;
       }
       long loadedChunks = Math.max(0L, Math.round(sample.valueOr(0D)));
-      counts.merge(displayName(group.label()), loadedChunks, Long::sum);
+      counts.merge(SharePieRenderer.displayName(group.label()), loadedChunks, Long::sum);
     }
     return counts;
   }

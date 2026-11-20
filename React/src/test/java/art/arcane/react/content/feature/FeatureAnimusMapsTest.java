@@ -76,25 +76,25 @@ class FeatureAnimusMapsTest {
 
   @Test
   void overlayAddsPressureOnlyFromAnimusPressureAndMeasuredCost() {
-    double baseOnly = FeatureAnimusRuntimePressureOverlay.pressureScore(100D, Double.NaN, Double.NaN);
+    double baseOnly = AnimusPressureHeatmap.pressureScore(100D, Double.NaN, Double.NaN);
     Assertions.assertEquals(35D, baseOnly, 1.0E-9D);
-    Assertions.assertEquals(baseOnly, FeatureAnimusRuntimePressureOverlay.pressureScore(100D, 0D, 0D), 1.0E-9D);
-    Assertions.assertTrue(FeatureAnimusRuntimePressureOverlay.pressureScore(100D, 60D, 0D) > baseOnly);
-    Assertions.assertTrue(FeatureAnimusRuntimePressureOverlay.pressureScore(100D, 0D, 25D) > baseOnly);
+    Assertions.assertEquals(baseOnly, AnimusPressureHeatmap.pressureScore(100D, 0D, 0D), 1.0E-9D);
+    Assertions.assertTrue(AnimusPressureHeatmap.pressureScore(100D, 60D, 0D) > baseOnly);
+    Assertions.assertTrue(AnimusPressureHeatmap.pressureScore(100D, 0D, 25D) > baseOnly);
     Assertions.assertEquals(
-        FeatureAnimusRuntimePressureOverlay.pressureScore(0D, 100D, 0D),
-        FeatureAnimusRuntimePressureOverlay.pressureScore(0D, 400D, 0D),
+        AnimusPressureHeatmap.pressureScore(0D, 100D, 0D),
+        AnimusPressureHeatmap.pressureScore(0D, 400D, 0D),
         1.0E-9D
     );
   }
 
   @Test
   void costPieBucketsSubsystemsInMicrosecondsAndFormatsMilliseconds() {
-    AnimusMetricSeries.Snapshot snapshot = new AnimusMetricSeries.Snapshot(
+    AnimusMetrics.Snapshot snapshot = new AnimusMetrics.Snapshot(
         true,
         List.of(
-            new AnimusMetricSeries.Entry("navigation", "Navigation", 4.25D),
-            new AnimusMetricSeries.Entry("gui", "Gui", 0.0001D)
+            new AnimusMetrics.Entry("navigation", "Navigation", 4.25D),
+            new AnimusMetrics.Entry("gui", "Gui", 0.0001D)
         ),
         List.of(),
         Double.NaN,
@@ -103,13 +103,13 @@ class FeatureAnimusMapsTest {
         Double.NaN
     );
 
-    Map<String, Long> buckets = FeatureAnimusCostSharePieMap.costBuckets(snapshot);
+    Map<String, Long> buckets = AnimusCostSharePieRenderer.costBuckets(snapshot);
 
     Assertions.assertEquals(Map.of("Navigation", 4250L), buckets);
-    Assertions.assertTrue(FeatureAnimusCostSharePieMap.costBuckets(AnimusMetricSeries.Snapshot.empty()).isEmpty());
-    Assertions.assertEquals("4.25", FeatureAnimusCostSharePieMap.formatMillis(4250L));
-    Assertions.assertEquals("42.5", FeatureAnimusCostSharePieMap.formatMillis(42_500L));
-    Assertions.assertEquals("425", FeatureAnimusCostSharePieMap.formatMillis(425_000L));
+    Assertions.assertTrue(AnimusCostSharePieRenderer.costBuckets(AnimusMetrics.Snapshot.empty()).isEmpty());
+    Assertions.assertEquals("4.25", AnimusCostSharePieRenderer.formatMillis(4250L));
+    Assertions.assertEquals("42.5", AnimusCostSharePieRenderer.formatMillis(42_500L));
+    Assertions.assertEquals("425", AnimusCostSharePieRenderer.formatMillis(425_000L));
   }
 
   private static List<Feature> features() {

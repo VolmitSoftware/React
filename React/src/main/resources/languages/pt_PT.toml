@@ -2495,26 +2495,6 @@ summary = "Duração a partir da qual um chunk é considerado obsoleto no mapa d
 impact = "Valores mais baixos reagem mais depressa, mas consomem mais CPU; valores mais elevados reduzem a sobrecarga, mas reagem mais tarde."
 summary = "Intervalo principal de avaliação do mapa de repetição da origem de picos de tick, em milissegundos."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "Estes são dados de identidade em tempo de execução e normalmente devem ser deixados para atualizações automáticas."
-summary = "Identificador do mundo usado pelo acompanhamento interno do mapa de repetição da origem de picos de tick."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "Estes são dados internos do estado e normalmente não devem ser alterados manualmente."
-summary = "Coordenada do eixo X usada pelo acompanhamento interno do mapa de repetição da origem de picos de tick."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "Estes são dados internos do estado e normalmente não devem ser alterados manualmente."
-summary = "Coordenada do eixo Z usada pelo acompanhamento interno do mapa de repetição da origem de picos de tick."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "Valores mais elevados marcam uma contribuição de picos mais forte e a deterioração ao longo do tempo, conforme configurado."
-summary = "Pontuação de calor acumulada acompanhada pelo mapa de repetição da origem de picos de tick para a repetição de pontos críticos."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "Principalmente estado de execução; alterar isto manualmente pode distorcer o tempo de espera ou o comportamento de limitação."
-summary = "Marca temporal interna usada pelo mapa de repetição da origem de picos de tick para acompanhar janelas de tempo e decaimento."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "Configuração da funcionalidade Governador do alcance do rastreador. Reduz temporariamente os alcances de rastreamento de entidades por mundo (itens, diversos, displays, animais, monstros) enquanto o servidor está sob pressão sustentada, diminuindo a difusão do rastreador de entidades e de pacotes. As alterações aplicam-se às entidades à medida que passam a ser rastreadas, pelo que entidades de rotação rápida, como itens, reagem em segundos; os alcances são restaurados quando o servidor recupera."
 

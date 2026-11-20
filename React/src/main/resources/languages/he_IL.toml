@@ -2495,26 +2495,6 @@ summary = "משך הצ'אנק המיושן שבו משתמשת מפת ההנגנ
 impact = "ערכים נמוכים יותר מגיבים מהר יותר אך צורכים יותר CPU; ערכים גבוהים יותר מפחיתים את התקורה אך מגיבים מאוחר יותר."
 summary = "מרווח ההערכה הראשי של מפת ההנגנה מחדש של מקור קפיצות הטיק באלפיות שנייה."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "אלה נתוני זהות של זמן ריצה, ובדרך כלל יש להשאיר אותם לעדכון אוטומטי."
-summary = "מזהה העולם שבו משתמש המעקב הפנימי של מפת ההנגנה מחדש של מקור קפיצות הטיק."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "אלה נתוני מצב פנימיים, ובדרך כלל אין לשנות אותם ידנית."
-summary = "קואורדינטת ציר X שבה משתמש המעקב הפנימי של מפת ההנגנה מחדש של מקור קפיצות הטיק."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "אלה נתוני מצב פנימיים, ובדרך כלל אין לשנות אותם ידנית."
-summary = "קואורדינטת ציר Z שבה משתמש המעקב הפנימי של מפת ההנגנה מחדש של מקור קפיצות הטיק."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "ערכים גבוהים יותר מציינים את התרומה הספייקנית והריקבון לאורך זמן כפי שנקבע."
-summary = "ציון החום המצטבר שמפת ההנגנה מחדש של מקור קפיצות הטיק עוקבת אחריו לצורך הנגנה מחדש של נקודות חמות."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "בעיקר מצב זמן ריצה; שינוי ידני עלול לעוות את התנהגות ההמתנה או ההגבלה."
-summary = "חותמת זמן פנימית שבה משתמשת מפת ההנגנה מחדש של מקור קפיצות הטיק כדי לעקוב אחר חלונות תזמון והתפוגגות."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "תצורה של תכונת מווסת טווח המעקב. מקטינה זמנית את טווחי מעקב הישויות לכל עולם (פריטים, שונות, תצוגות, בעלי חיים, מפלצות) בזמן שהשרת נמצא תחת עומס מתמשך, ומצמצמת את פיזור מעקב הישויות והחבילות. השינויים חלים על ישויות ברגע שהן נעקבות, ולכן ישויות שמתחלפות במהירות כמו פריטים מגיבות תוך שניות; הטווחים משוחזרים כשהשרת מתאושש."
 

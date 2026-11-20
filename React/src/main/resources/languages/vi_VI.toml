@@ -2495,26 +2495,6 @@ summary = "Thời lượng chunk lỗi thời mà bản đồ phát lại nguồ
 impact = "Giá trị thấp hơn phản ứng nhanh hơn nhưng tốn nhiều CPU hơn; giá trị cao hơn giảm chi phí nhưng phản ứng chậm hơn."
 summary = "Khoảng thời gian đánh giá chính của bản đồ phát lại nguồn gốc đột biến tick, tính bằng mili giây."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "Đây là dữ liệu thời gian chạy và thường được để lại để tự động cập nhật."
-summary = "Mã định danh thế giới mà bản đồ phát lại nguồn gốc đột biến tick dùng để theo dõi nội bộ."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "Đây là dữ liệu trạng thái nội bộ và thông thường không nên thay đổi thủ công."
-summary = "Tọa độ trục X mà bản đồ phát lại nguồn gốc đột biến tick dùng để theo dõi nội bộ."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "Đây là dữ liệu trạng thái nội bộ và thông thường không nên thay đổi thủ công."
-summary = "Tọa độ trục Z mà bản đồ phát lại nguồn gốc đột biến tick dùng để theo dõi nội bộ."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "Giá trị cao hơn đánh dấu mức đóng góp đột biến mạnh hơn và suy giảm theo thời gian như đã cấu hình."
-summary = "Điểm nhiệt tích lũy mà bản đồ phát lại nguồn gốc đột biến tick theo dõi để phát lại điểm nóng."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "Chủ yếu là trạng thái thời gian chạy; thay đổi thủ công có thể làm sai lệch thời gian hồi hoặc hành vi giới hạn."
-summary = "Dấu thời gian nội bộ mà bản đồ phát lại nguồn gốc đột biến tick dùng để theo dõi các cửa sổ thời gian và sự suy giảm."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "Cấu hình cho tính năng Tracker Range Governor. Tạm thời thu nhỏ phạm vi theo dõi thực thể theo từng thế giới (vật phẩm, linh tinh, hiển thị, động vật, quái vật) khi máy chủ chịu áp lực kéo dài, giảm lượng theo dõi thực thể và phân phát gói tin. Thay đổi áp dụng cho thực thể khi chúng bắt đầu được theo dõi, nên các thực thể thay đổi nhanh như vật phẩm phản ứng trong vài giây; phạm vi được khôi phục khi máy chủ phục hồi."
 

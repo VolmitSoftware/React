@@ -154,7 +154,7 @@ public class FeatureIrisBiomeChunkSharePieMap extends FeatureIrisChunkSharePieBa
 
   @Override
   protected Map<String, Long> collectBuckets(Player viewer) {
-    Map<String, Long> counts = newCounterMap();
+    Map<String, Long> counts = SharePieRenderer.newCounterMap();
     if (viewer == null) {
       return counts;
     }

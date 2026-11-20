@@ -2495,26 +2495,6 @@ summary = "Durata dei chunk obsoleti usato da «tick spike origin replay map» (
 impact = "Valori più bassi reagiscono più velocemente ma consumano più CPU; valori più alti riducono il sovraccarico ma reagiscono più tardi."
 summary = "Intervallo di valutazione principale per «tick spike origin replay map» in millisecondi."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "Si tratta di dati di identità di runtime, che di norma vanno lasciati agli aggiornamenti automatici."
-summary = "Identificatore del mondo usato dal tracciamento interno di «tick spike origin replay map»."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "Questi dati sono interni e non devono essere modificati manualmente."
-summary = "Coordinata dell'asse X usata dal tracciamento interno di «tick spike origin replay map»."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "Questi dati sono interni e non devono essere modificati manualmente."
-summary = "Coordinata dell'asse Z usata dal tracciamento interno di «tick spike origin replay map»."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "Valori più alti indicano un contributo maggiore del picco, che decade nel tempo come configurato."
-summary = "Punteggio di calore accumulato, tracciato da tick spike origin replay map per la riproduzione degli hotspot."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "Principalmente stato di runtime; modificarlo manualmente può alterare il comportamento di cooldown o di throttling."
-summary = "Timestamp interno usato da «tick spike origin replay map» per tracciare le finestre temporali e il decadimento."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "Configurazione della funzione Tracker Range Governor. Riduce temporaneamente gli intervalli di tracciamento delle entità per mondo (oggetti, varie, display, animali, mostri) mentre il server è sotto pressione prolungata, riducendo il fanout del tracker delle entità e dei pacchetti. Le modifiche si applicano alle entità man mano che vengono tracciate, quindi le entità a ricambio rapido come gli oggetti reagiscono entro pochi secondi; gli intervalli vengono ripristinati quando il server si riprende."
 

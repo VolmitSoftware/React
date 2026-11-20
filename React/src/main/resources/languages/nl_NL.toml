@@ -2495,26 +2495,6 @@ summary = "Duur voor verouderde chunks die door tick spike origin replay map wor
 impact = "Lagere waarden reageren sneller maar verbruiken meer CPU; hogere waarden verminderen de overhead maar reageren later."
 summary = "Hoofdevaluatie-interval voor tick spike origin replay map in milliseconden."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "Dit zijn runtime-identiteitsgegevens die normaal gesproken aan automatische updates worden overgelaten."
-summary = "Wereld-ID die tick spike origin replay map intern voor tracking gebruikt."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "Dit zijn interne statusgegevens en die moeten normaal gesproken niet handmatig worden gewijzigd."
-summary = "X-coördinaat die tick spike origin replay map intern voor tracking gebruikt."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "Dit zijn interne statusgegevens en die moeten normaal gesproken niet handmatig worden gewijzigd."
-summary = "Z-coördinaat die tick spike origin replay map intern voor tracking gebruikt."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "Hogere waarden markeren sterkere piekbijdrage en verval in de tijd als geconfigureerd."
-summary = "Opgebouwde hittescore die tick spike origin replay map bijhoudt voor de hotspot-replay."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "Dit is vooral runtime-status; handmatig wijzigen kan het gedrag van cooldowns of throttling verstoren."
-summary = "Interne tijdstempel die tick spike origin replay map gebruikt om timingvensters en verval bij te houden."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "Configuratie voor de functie Tracker Range Governor. Verlaagt tijdelijk de trackingbereiken van entiteiten per wereld (voorwerpen, overig, displays, dieren, monsters) terwijl de server onder aanhoudende druk staat, waardoor de entity-tracker en de pakketfanout krimpen. Wijzigingen gelden voor entiteiten zodra ze worden getrackt, dus snel wisselende entiteiten zoals voorwerpen reageren binnen enkele seconden; bereiken worden hersteld zodra de server herstelt."
 

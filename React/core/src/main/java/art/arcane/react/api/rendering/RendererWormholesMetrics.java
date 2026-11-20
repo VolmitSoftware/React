@@ -20,14 +20,19 @@
 package art.arcane.react.api.rendering;
 
 import art.arcane.react.localization.catalog.RendererMessages;
+import art.arcane.react.platform.IntegrationMetricsHost;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import art.arcane.volmlib.util.localization.TextKey;
 
 import java.util.List;
 
-public class RendererGlossMetrics extends RendererIntegrationMetricsBase {
-  public static final String ID = "gloss-metrics";
+public class RendererWormholesMetrics extends RendererIntegrationMetricsBase {
+  public static final String ID = "wormholes-metrics";
+
+  public RendererWormholesMetrics(IntegrationMetricsHost host) {
+    super(host);
+  }
 
   @Override
   public String getId() {
@@ -36,34 +41,34 @@ public class RendererGlossMetrics extends RendererIntegrationMetricsBase {
 
   @Override
   protected String pluginId() {
-    return "gloss";
+    return "wormholes";
   }
 
   @Override
   protected TextKey title() {
-    return RendererMessages.TITLE_GLOSS_METRICS;
+    return RendererMessages.TITLE_WORMHOLES_METRICS;
   }
 
   @Override
   protected TinyColor backgroundColor() {
-    return new TinyColor(8, 18, 20);
+    return new TinyColor(14, 10, 22);
   }
 
   @Override
   protected TinyColor accentColor() {
-    return new TinyColor(64, 196, 188);
+    return new TinyColor(138, 82, 226);
   }
 
   @Override
   protected List<MetricLine> metricLines() {
     return List.of(
-        new MetricLine(IntegrationMetricSchema.GLOSS_SESSION_HOLDERS, RendererMessages.METRIC_SESSIONS, 0, ""),
-        new MetricLine(IntegrationMetricSchema.GLOSS_MENUS_OPEN, RendererMessages.METRIC_MENUS, 0, ""),
-        new MetricLine(IntegrationMetricSchema.GLOSS_PREVIEWS_OPEN, RendererMessages.METRIC_PREVIEWS, 0, ""),
-        new MetricLine(IntegrationMetricSchema.GLOSS_DISPLAY_ENTITIES, RendererMessages.METRIC_ENTITIES, 0, ""),
-        new MetricLine(IntegrationMetricSchema.GLOSS_DISPLAY_ENTITIES_VISIBLE, RendererMessages.METRIC_VISIBLE, 0, ""),
-        new MetricLine(IntegrationMetricSchema.GLOSS_PACKETS_PER_SECOND, RendererMessages.METRIC_TRAFFIC, 0, " pk/s"),
-        new MetricLine(IntegrationMetricSchema.GLOSS_TICK_MS, RendererMessages.METRIC_TICK, 2, " ms/s")
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_PORTALS, RendererMessages.METRIC_PORTALS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_PROJECTIONS_ACTIVE, RendererMessages.METRIC_PROJECTING, 0, ""),
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_PROJECTION_OBSERVERS, RendererMessages.METRIC_OBSERVERS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_PROJECTION_RENDER_MS, RendererMessages.METRIC_RENDER, 2, " ms/s"),
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_PACKETS_PER_SECOND, RendererMessages.METRIC_TRAFFIC, 0, " pk/s"),
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_SPOOFED_ENTITIES, RendererMessages.METRIC_ENTITIES, 0, ""),
+        new MetricLine(IntegrationMetricSchema.WORMHOLES_TRAVERSALS_PER_MINUTE, RendererMessages.METRIC_TRAVEL, 1, " /min")
     );
   }
 }

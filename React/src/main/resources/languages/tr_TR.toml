@@ -2495,26 +2495,6 @@ summary = "Tik sıçraması kaynağı tekrar haritasının kullandığı eski ch
 impact = "Düşük değerler daha hızlı tepki verir ama daha fazla CPU tüketir; yüksek değerler yükü azaltır ama daha geç tepki verir."
 summary = "Tik sıçraması kaynağı tekrar haritası için milisaniye cinsinden ana değerlendirme aralığı."
 
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.world]
-impact = "Bu, çalışma zamanı kimlik verisidir ve normalde otomatik güncellemelere bırakılmalıdır."
-summary = "Tik sıçraması kaynağı tekrar haritasının dahili izlemesinde kullanılan dünya tanımlayıcısı."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.x]
-impact = "Bu, dahili durum verisidir ve normalde elle değiştirilmemelidir."
-summary = "Tik sıçraması kaynağı tekrar haritasının dahili izlemesinde kullanılan X ekseni koordinatı."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_chunkkey.field.z]
-impact = "Bu, dahili durum verisidir ve normalde elle değiştirilmemelidir."
-summary = "Tik sıçraması kaynağı tekrar haritasının dahili izlemesinde kullanılan Z ekseni koordinatı."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.heat]
-impact = "Yüksek değerler daha güçlü sıçrama katkısını gösterir ve yapılandırıldığı gibi zamanla sönümlenir."
-summary = "Tik sıçraması kaynağı tekrar haritasının sıcak nokta tekrarı için izlediği birikmiş ısı puanı."
-
-[config.documentation.annotation.art.arcane.react.content.feature.featuretickspikeoriginreplaymap_heatcell.field.lastseenms]
-impact = "Ağırlıklı olarak çalışma zamanı durumu; bunu elle değiştirmek bekleme süresi veya kısıtlama davranışını bozabilir."
-summary = "Tik sıçraması kaynağı tekrar haritasının zamanlama pencerelerini ve sönümlenmeyi izlemek için kullandığı dahili zaman damgası."
-
 [config.documentation.annotation.art.arcane.react.content.feature.featuretrackerrangegovernor]
 description = "İzleyici Aralığı Yöneticisi özelliği için yapılandırma. Sunucu sürekli baskı altındayken dünya başına varlık izleme aralıklarını (eşyalar, çeşitli, ekranlar, hayvanlar, canavarlar) geçici olarak küçültür ve varlık izleyici ile paket dağıtımını azaltır. Değişiklikler varlıklar izlenmeye başladıkça uygulanır; bu nedenle eşyalar gibi hızlı değişen varlıklar saniyeler içinde tepki verir; sunucu toparlandığında aralıklar geri yüklenir."
 

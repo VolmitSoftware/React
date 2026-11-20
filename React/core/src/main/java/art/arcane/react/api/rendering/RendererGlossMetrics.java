@@ -20,14 +20,19 @@
 package art.arcane.react.api.rendering;
 
 import art.arcane.react.localization.catalog.RendererMessages;
+import art.arcane.react.platform.IntegrationMetricsHost;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import art.arcane.volmlib.util.localization.TextKey;
 
 import java.util.List;
 
-public class RendererBiletoolsMetrics extends RendererIntegrationMetricsBase {
-  public static final String ID = "biletools-metrics";
+public class RendererGlossMetrics extends RendererIntegrationMetricsBase {
+  public static final String ID = "gloss-metrics";
+
+  public RendererGlossMetrics(IntegrationMetricsHost host) {
+    super(host);
+  }
 
   @Override
   public String getId() {
@@ -36,32 +41,34 @@ public class RendererBiletoolsMetrics extends RendererIntegrationMetricsBase {
 
   @Override
   protected String pluginId() {
-    return "biletools";
+    return "gloss";
   }
 
   @Override
   protected TextKey title() {
-    return RendererMessages.TITLE_BILETOOLS_METRICS;
+    return RendererMessages.TITLE_GLOSS_METRICS;
   }
 
   @Override
   protected TinyColor backgroundColor() {
-    return new TinyColor(10, 18, 9);
+    return new TinyColor(8, 18, 20);
   }
 
   @Override
   protected TinyColor accentColor() {
-    return new TinyColor(122, 200, 70);
+    return new TinyColor(64, 196, 188);
   }
 
   @Override
   protected List<MetricLine> metricLines() {
     return List.of(
-        new MetricLine(IntegrationMetricSchema.BILETOOLS_WATCHED_JARS, RendererMessages.METRIC_WATCHED_JARS, 0, ""),
-        new MetricLine(IntegrationMetricSchema.BILETOOLS_DIRTY_PLUGINS, RendererMessages.METRIC_DIRTY_PLUGINS, 0, ""),
-        new MetricLine(IntegrationMetricSchema.BILETOOLS_RELOADS_TOTAL, RendererMessages.METRIC_RELOADS, 0, ""),
-        new MetricLine(IntegrationMetricSchema.BILETOOLS_LAST_RELOAD_MS, RendererMessages.METRIC_LAST_RELOAD, 0, " ms"),
-        new MetricLine(IntegrationMetricSchema.BILETOOLS_REMOTE_SLAVE_ONLINE, RendererMessages.METRIC_REMOTE_SLAVE, 0, "")
+        new MetricLine(IntegrationMetricSchema.GLOSS_SESSION_HOLDERS, RendererMessages.METRIC_SESSIONS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.GLOSS_MENUS_OPEN, RendererMessages.METRIC_MENUS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.GLOSS_PREVIEWS_OPEN, RendererMessages.METRIC_PREVIEWS, 0, ""),
+        new MetricLine(IntegrationMetricSchema.GLOSS_DISPLAY_ENTITIES, RendererMessages.METRIC_ENTITIES, 0, ""),
+        new MetricLine(IntegrationMetricSchema.GLOSS_DISPLAY_ENTITIES_VISIBLE, RendererMessages.METRIC_VISIBLE, 0, ""),
+        new MetricLine(IntegrationMetricSchema.GLOSS_PACKETS_PER_SECOND, RendererMessages.METRIC_TRAFFIC, 0, " pk/s"),
+        new MetricLine(IntegrationMetricSchema.GLOSS_TICK_MS, RendererMessages.METRIC_TICK, 2, " ms/s")
     );
   }
 }

@@ -79,6 +79,22 @@ final class ModChunkSamples {
         costShares = ChunkCostTally.captureAndDecay(worlds.values());
     }
 
+    /** The chunk with the highest current total score, as the Bukkit observer's worst chunk. */
+    Optional<SampledChunk> worst() {
+        SampledChunk worst = null;
+        double worstScore = 0D;
+        for (Map<Long, SampledChunk> chunks : worlds.values()) {
+            for (SampledChunk chunk : chunks.values()) {
+                double score = chunk.totalScore();
+                if (score > worstScore) {
+                    worst = chunk;
+                    worstScore = score;
+                }
+            }
+        }
+        return Optional.ofNullable(worst);
+    }
+
     RuntimeStatsHost.CostShares costShares() {
         return costShares;
     }

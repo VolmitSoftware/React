@@ -18,8 +18,8 @@ class MapRendererGoldenTest {
   private static final Map<String, String> GOLDEN = orderedGolden(
       "unknown", "84236d2c5216ff1e",
       "unknown-wall", "bbd45b611d56f63a",
-      "sampler", "0dcc83c5d1144a5e",
-      "sampler-wall", "238e71ea37e71834",
+      "sampler", "c55fc483deeb599f",
+      "sampler-wall", "ce7a0b114cfbe216",
       "primitives", "ed7962cb1705d7c6"
   );
 

@@ -19,11 +19,9 @@
 
 package art.arcane.react.api.rendering;
 
-import art.arcane.react.React;
-import art.arcane.react.core.controller.IntegrationController;
-import art.arcane.react.core.integration.RemoteSamplerBridge;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
+import art.arcane.react.platform.IntegrationMetricsHost;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
 import art.arcane.volmlib.util.format.Form;
@@ -33,7 +31,20 @@ import art.arcane.volmlib.util.localization.TextKey;
 import java.util.List;
 import java.util.Locale;
 
-abstract class RendererIntegrationMetricsBase implements ReactRenderer {
+/**
+ * A grid of one integration's published metrics with its health line.
+ */
+public abstract class RendererIntegrationMetricsBase implements ReactRenderer {
+  private final IntegrationMetricsHost host;
+
+  protected RendererIntegrationMetricsBase(IntegrationMetricsHost host) {
+    this.host = host;
+  }
+
+  protected IntegrationMetricsHost host() {
+    return host;
+  }
+
   @Override
   public MegamapGrid.MegamapCapability megamapCapability() {
     return MegamapGrid.MegamapCapability.adaptiveWall();
@@ -46,8 +57,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     dashHeader(ReactLanguage.raw(title()), headerValue(), accentColor());
 
     Region body = RendererLayout.body(this);
-    IntegrationController controller = React.controller(IntegrationController.class);
-    if (controller == null || controller.getRemoteSamplerBridge() == null) {
+    if (!host.available()) {
       RendererLayout.emptyState(
           this,
           body,
@@ -58,16 +68,15 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
       return;
     }
 
-    RemoteSamplerBridge bridge = controller.getRemoteSamplerBridge();
-    IntegrationController.IntegrationStatus status = controller.statusFor(pluginId());
-    String health = status == null ? "MISSING" : status.health().name();
+    IntegrationMetricsHost.Status status = host.status(pluginId());
+    String health = status == null ? "MISSING" : status.health();
 
     Region statusRow = body.topBand(MapTheme.lineHeight(s) + (2 * s));
     panel(statusRow, healthColor(health), null);
     textIn(statusRow, MapTheme.pad(s), s, statusLine(RendererMessages.health(health)), MapTheme.TEXT_STRONG);
 
     Region grid = body.withoutTop(statusRow.height() + MapTheme.gutter(s));
-    long newestSampleMs = drawMetricGrid(bridge, grid, s);
+    long newestSampleMs = drawMetricGrid(grid, s);
 
     String left = status != null && status.message() != null && !status.message().isBlank()
         ? ReactLanguage.raw(RendererMessages.MESSAGE_LINE, MessageArgument.untrusted("message", status.message()))
@@ -81,7 +90,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     RendererLayout.footer(this, left, right, accentColor());
   }
 
-  private long drawMetricGrid(RemoteSamplerBridge bridge, Region grid, int scale) {
+  private long drawMetricGrid(Region grid, int scale) {
     List<MetricLine> metrics = metricLines();
     if (metrics.isEmpty() || grid.isEmpty()) {
       return 0L;
@@ -100,7 +109,7 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
         break;
       }
 
-      IntegrationMetricSample sample = metricSample(bridge, metric);
+      IntegrationMetricSample sample = metricSample(metric);
       newestSampleMs = Math.max(newestSampleMs, sample == null ? 0L : sample.sampledAtMs());
       Region cell = cells[placed / rows].rowAt(placed % rows, cellHeight);
       placed++;
@@ -153,8 +162,8 @@ abstract class RendererIntegrationMetricsBase implements ReactRenderer {
     return null;
   }
 
-  protected IntegrationMetricSample metricSample(RemoteSamplerBridge bridge, MetricLine metric) {
-    return bridge.getSample(pluginId(), metric.key());
+  protected IntegrationMetricSample metricSample(MetricLine metric) {
+    return host.sample(pluginId(), metric.key());
   }
 
   protected String metricLabel(MetricLine metric) {
