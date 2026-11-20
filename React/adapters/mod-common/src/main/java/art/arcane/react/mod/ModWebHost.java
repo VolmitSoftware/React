@@ -111,6 +111,9 @@ final class ModWebHost implements WebHost {
 
     @Override
     public String motd() {
+        if (!server.isDedicatedServer()) {
+            return server.getWorldData().getLevelName();
+        }
         String motd = server.getMotd();
         return motd == null ? "" : motd;
     }
@@ -122,6 +125,9 @@ final class ModWebHost implements WebHost {
 
     @Override
     public String serverAddress() {
+        if (!server.isDedicatedServer() && server.getPort() <= 0) {
+            return "singleplayer";
+        }
         String ip = server.getLocalIp();
         return (ip == null ? "" : ip) + ":" + server.getPort();
     }

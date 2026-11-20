@@ -2,6 +2,7 @@ package art.arcane.react.content.sampler;
 
 import art.arcane.react.api.sampler.SamplerHosts;
 import art.arcane.react.platform.TickStatsHost;
+import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.react.api.sampler.ReactCachedSampler;
 import art.arcane.volmlib.util.format.Form;
 
@@ -11,6 +12,11 @@ public class SamplerBukkitPendingTasks extends ReactCachedSampler {
 
   public SamplerBukkitPendingTasks() {
     super(ID, 2000);
+  }
+
+  @Override
+  public String getName() {
+    return OwnerNoun.pick("Bukkit Pending Tasks", "Pending Tasks");
   }
 
   @Override

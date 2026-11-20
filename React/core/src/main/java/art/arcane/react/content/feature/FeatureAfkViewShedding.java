@@ -19,6 +19,7 @@
 
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.react.api.feature.PressureGate;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.content.sampler.SamplerTickTime;
@@ -105,7 +106,8 @@ public class FeatureAfkViewShedding extends ReactFeature {
       setEnabled(false);
       ReactPlatform platform = ReactPlatforms.getOrNull();
       if (platform != null) {
-        platform.warn("Afk View Shedding disabled: per-player send view distance is not available on this server software. Use Paper/Purpur to enable this feature.");
+        platform.warn(OwnerNoun.pick("Afk View Shedding disabled: per-player send view distance is not available on this server software. Use Paper/Purpur to enable this feature.",
+            "Afk View Shedding disabled: per-player send view distance is not available on this Minecraft version or loader."));
       }
       return;
     }

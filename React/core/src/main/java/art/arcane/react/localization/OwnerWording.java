@@ -6,11 +6,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Rewrites "plugin" wording to "mod" wording for mod loaders. Identifiers such as {@code plugin-api},
+ * Rewrites "plugin" wording to "mod" wording for mod loaders, and Bukkit as the server software to "the server". Identifiers such as {@code plugin-api},
  * {@code plugin.yml} and {@code {plugin}} placeholders keep their spelling.
  */
 public final class OwnerWording {
   private static final Pattern PLUGIN = Pattern.compile("(?<![{<_/.:])(?:(?<=[&\u00A7][0-9a-fk-orA-FK-OR])|(?<!\\w))(plugin|Plugin|PLUGIN)(s|S)?(?![\\w}>\\-_/:]|\\.\\w)");
+  private static final Pattern BUKKIT = Pattern.compile("(?:\\bthe )?\\bBukkit\\b(?![\\w\\-_/:]|\\.\\w)");
   private static final int MAX_CACHED = 4096;
   private static final Map<String, String> CACHE = new ConcurrentHashMap<>();
 
@@ -34,6 +35,10 @@ public final class OwnerWording {
   }
 
   private static String rewrite(String text) {
+    return rewritePlugins(BUKKIT.matcher(text).replaceAll("the server"));
+  }
+
+  private static String rewritePlugins(String text) {
     Matcher matcher = PLUGIN.matcher(text);
     if (!matcher.find()) {
       return text;

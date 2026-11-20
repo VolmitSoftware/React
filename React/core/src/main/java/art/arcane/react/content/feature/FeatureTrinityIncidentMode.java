@@ -1,5 +1,6 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.react.api.action.Action;
 import art.arcane.react.api.sampler.SamplerHosts;
 import art.arcane.react.core.controller.FeatureController;
@@ -118,7 +119,8 @@ public class FeatureTrinityIncidentMode extends ReactCapabilityFeature {
         activeIncidentId = UUID.randomUUID().toString();
         recordEngagement(now, pressure);
         if (verboseTransitions) {
-          SamplerHosts.warn("Trinity incident mode engaged: cross-plugin coordinated mitigation active.");
+          SamplerHosts.warn(OwnerNoun.pick("Trinity incident mode engaged: cross-plugin coordinated mitigation active.",
+              "Trinity incident mode engaged: cross-mod coordinated mitigation active."));
         }
         coordinateMitigation(now);
       }

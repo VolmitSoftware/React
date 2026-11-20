@@ -1,5 +1,6 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.core.controller.HopperItemIndex;
 import art.arcane.react.core.controller.HopperPositionIndex;
@@ -271,7 +272,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements HopperHost.I
             try {
                 needsMore = reconcilePaperChunk(target, workState, generation, budget);
             } catch (Throwable throwable) {
-                reportReconcileFailure("paper chunk reconcile", throwable);
+                reportReconcileFailure(OwnerNoun.pick("paper chunk reconcile", "chunk reconcile"), throwable);
                 needsMore = true;
             }
             if (needsMore && isCurrent(generation) && workState == foliaChunkWorkState) {
@@ -433,7 +434,7 @@ public class FeatureHopperItemIndex extends ReactFeature implements HopperHost.I
             }
         } catch (Throwable throwable) {
             cursor.abortHopperCycle();
-            reportReconcileFailure("paper hopper check", throwable);
+            reportReconcileFailure(OwnerNoun.pick("paper hopper check", "hopper check"), throwable);
             return true;
         }
         return !window.completedCycle();

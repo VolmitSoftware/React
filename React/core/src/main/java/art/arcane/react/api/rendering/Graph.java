@@ -56,6 +56,11 @@ public class Graph {
     latestSource = source;
   }
 
+  /** Drops every graph's history, so a server that starts again in the same process starts with empty graphs. */
+  public static void clearAll() {
+    graphs.clear();
+  }
+
   public static Graph of(Sampler sampler) {
     String id = sampler.getId() == null || sampler.getId().isBlank() ? sampler.getName() : sampler.getId();
     Graph g = graphs.computeIfAbsent(id, (k) -> new Graph());

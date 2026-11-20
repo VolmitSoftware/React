@@ -14,7 +14,8 @@ import java.util.regex.Pattern;
  * the node with its first dot as the namespace separator ({@code react.use} is {@code react:use}). A wildcard node such as
  * {@code react.*} or {@code react.shorthands.*} is the atom with {@code all} in place of the star ({@code react:all},
  * {@code react:shorthands.all}) and grants every node below it, as the wildcards do on Bukkit. Without a grant, the
- * nodes Bukkit gives everyone stay open and the rest need the gamemaster operator level.
+ * nodes Bukkit gives everyone stay open and the rest need the gamemaster operator level. The owner of a singleplayer
+ * world holds every node, with or without cheats, as the owner of a Bukkit server does from its console.
  */
 final class ModPermissions {
     private static final Set<String> EVERYONE = Set.of("react.language.self", "volmit.language.self");
@@ -34,7 +35,7 @@ final class ModPermissions {
                 return true;
             }
         }
-        return VanillaApi.gamemaster(source);
+        return VanillaApi.gamemaster(source) || source.getEntity() instanceof ServerPlayer player && VanillaApi.worldOwner(player);
     }
 
     static boolean has(ServerPlayer player, String node) {
@@ -46,7 +47,7 @@ final class ModPermissions {
                 return true;
             }
         }
-        return VanillaApi.gamemaster(player);
+        return VanillaApi.gamemaster(player) || VanillaApi.worldOwner(player);
     }
 
     /**

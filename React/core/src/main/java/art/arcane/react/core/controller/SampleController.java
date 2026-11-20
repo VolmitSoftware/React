@@ -19,6 +19,7 @@
 
 package art.arcane.react.core.controller;
 
+import art.arcane.react.api.rendering.SamplerRenderer;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.sampler.SamplerHosts;
 import art.arcane.react.platform.SamplerHost;
@@ -90,6 +91,7 @@ public class SampleController implements IController {
       localSamplers.all().forEach(host::detachSampler);
     }
     localSamplers.all().forEach(this::stopSamplerRuntime);
+    localSamplers.all().forEach(SamplerRenderer::forget);
     samplerStates.clear();
     samplerLocks.clear();
     samplers = null;
@@ -137,6 +139,7 @@ public class SampleController implements IController {
     }
 
     stopSamplerRuntime(sampler);
+    SamplerRenderer.forget(sampler);
     samplers.unregister(id);
     samplerStates.remove(id);
     samplerLocks.remove(id);

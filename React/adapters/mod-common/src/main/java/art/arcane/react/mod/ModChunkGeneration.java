@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Whether chunks are generated, as Bukkit's {@code isChunkGenerated} answers it: loaded chunks are, stored chunks are
@@ -21,6 +22,7 @@ final class ModChunkGeneration {
     private static final int MAX_ENTRIES = 65_536;
     private static final Map<Key, Entry> CACHE = new ConcurrentHashMap<>();
     private static final Map<Key, CompletableFuture<Boolean>> READS = new ConcurrentHashMap<>();
+    private static final AtomicInteger GENERATION = new AtomicInteger();
 
     private record Key(ServerLevel level, long chunk) {
     }
@@ -32,6 +34,7 @@ final class ModChunkGeneration {
     }
 
     static void clear() {
+        GENERATION.incrementAndGet();
         CACHE.clear();
         READS.clear();
     }
@@ -74,6 +77,7 @@ final class ModChunkGeneration {
             return pending;
         }
         CompletableFuture<Boolean> created = new CompletableFuture<>();
+        int generation = GENERATION.get();
         pending = READS.putIfAbsent(key, created);
         if (pending != null) {
             return pending;
@@ -82,7 +86,7 @@ final class ModChunkGeneration {
             level.getChunkSource().chunkMap.read(new ChunkPos(chunkX, chunkZ)).whenComplete((Optional<CompoundTag> stored, Throwable failure) -> {
                 boolean generated = failure != null
                         || (stored.isPresent() && FULL_STATUS.equals(VanillaApi.stringOr(stored.get(), "Status", "")));
-                if (failure == null) {
+                if (failure == null && generation == GENERATION.get()) {
                     if (CACHE.size() >= MAX_ENTRIES) {
                         CACHE.clear();
                     }

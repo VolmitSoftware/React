@@ -19,6 +19,7 @@
 
 package art.arcane.react.content.sampler;
 
+import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.react.api.sampler.SamplerHosts;
 import art.arcane.react.platform.WorldStatsHost;
 import art.arcane.react.api.sampler.ReactCachedSampler;
@@ -86,7 +87,8 @@ public class SamplerChunkTickets extends ReactCachedSampler {
       return (double) total;
     } catch (RuntimeException | LinkageError failure) {
       available = false;
-      SamplerHosts.warn("Could not sample plugin chunk tickets. The metric is unavailable until its sampler restarts.", failure);
+      SamplerHosts.warn(OwnerNoun.pick("Could not sample plugin chunk tickets.", "Could not sample mod chunk tickets.")
+          + " The metric is unavailable until its sampler restarts.", failure);
       return 0D;
     }
   }

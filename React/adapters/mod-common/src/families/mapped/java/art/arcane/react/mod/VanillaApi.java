@@ -241,6 +241,12 @@ public final class VanillaApi {
         return player.hasPermissions(GAMEMASTER_LEVEL);
     }
 
+    /** True for the player who owns the singleplayer world this integrated server runs. */
+    static boolean worldOwner(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        return server != null && !server.isDedicatedServer() && server.isSingleplayerOwner(player.getGameProfile());
+    }
+
     // Batch A: mobs
     static CompoundTag saveEntity(Entity entity) {
         return entity.saveWithoutId(new CompoundTag());

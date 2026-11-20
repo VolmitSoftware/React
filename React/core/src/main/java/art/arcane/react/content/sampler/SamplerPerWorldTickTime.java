@@ -45,6 +45,12 @@ public class SamplerPerWorldTickTime extends ReactCachedSampler {
   }
 
   @Override
+  public void stop() {
+    super.stop();
+    SERIES.clear();
+  }
+
+  @Override
   public String getIcon() {
     return "minecraft:recovery_compass";
   }

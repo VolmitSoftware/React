@@ -19,6 +19,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Times Forge EventBus 6 listeners on the game bus by swapping each listener list's flattened cache for an array of
@@ -31,7 +32,7 @@ public final class ForgeEventAttribution implements EventAttribution {
     private final Field registrations;
     private final Field allLists;
     private final Method instance;
-    private final VarHandle cache;
+    private final CacheSlot cache;
     private final Method forceRebuild;
     private final Map<Object, IEventListener[]> installed = new IdentityHashMap<>();
     private final ConcurrentMap<IEventListener, TimedForgeCallback> wrappers = new MapMaker().weakKeys().makeMap();
@@ -49,9 +50,32 @@ public final class ForgeEventAttribution implements EventAttribution {
         instance = ListenerList.class.getDeclaredMethod("getInstance", int.class);
         instance.setAccessible(true);
         Class<?> inst = Class.forName("net.minecraftforge.eventbus.ListenerList$ListenerListInst");
-        cache = MethodHandles.privateLookupIn(inst, MethodHandles.lookup()).findVarHandle(inst, "listeners", IEventListener[].class);
+        cache = cacheSlot(inst);
         forceRebuild = inst.getDeclaredMethod("forceRebuild");
         forceRebuild.setAccessible(true);
+    }
+
+    /**
+     * EventBus 6.0 (Forge 47, Minecraft 1.20.1) keeps the flattened cache in an {@code AtomicReference}; later 6.x
+     * releases keep the array itself in the field.
+     */
+    private static CacheSlot cacheSlot(Class<?> inst) throws ReflectiveOperationException {
+        Field field = inst.getDeclaredField("listeners");
+        if (field.getType() == AtomicReference.class) {
+            accessible(field);
+            return (Object owner, IEventListener[] expected, IEventListener[] replacement) -> {
+                @SuppressWarnings("unchecked")
+                AtomicReference<IEventListener[]> reference = (AtomicReference<IEventListener[]>) field.get(owner);
+                return reference.compareAndSet(expected, replacement);
+            };
+        }
+        VarHandle handle = MethodHandles.privateLookupIn(inst, MethodHandles.lookup()).findVarHandle(inst, "listeners", IEventListener[].class);
+        return (Object owner, IEventListener[] expected, IEventListener[] replacement) -> handle.compareAndSet(owner, expected, replacement);
+    }
+
+    @FunctionalInterface
+    private interface CacheSlot {
+        boolean swap(Object owner, IEventListener[] expected, IEventListener[] replacement) throws ReflectiveOperationException;
     }
 
     private static Field accessible(Field field) {
@@ -79,7 +103,7 @@ public final class ForgeEventAttribution implements EventAttribution {
                 continue;
             }
             IEventListener[] wrapped = wrap(current);
-            if (cache.compareAndSet(inst, current, wrapped)) {
+            if (cache.swap(inst, current, wrapped)) {
                 installed.put(inst, wrapped);
             }
         }

@@ -32,6 +32,15 @@ class OwnerWordingTest {
     return platform;
   }
   @Test
+  void rewritesBukkitAsTheServer() {
+    Assertions.assertEquals("Tasks waiting in the server scheduler across all mods.",
+        OwnerWording.forMods("Tasks waiting in the Bukkit scheduler across all plugins."));
+    Assertions.assertEquals("One tick lets the server finish adding the item entity.",
+        OwnerWording.forMods("One tick lets Bukkit finish adding the item entity."));
+    Assertions.assertEquals("bukkit-pending-tasks", OwnerWording.forMods("bukkit-pending-tasks"));
+  }
+
+  @Test
   void rewritesWordsInEveryCase() {
     Assertions.assertEquals("Manage community Mod API metric packs", OwnerWording.forMods("Manage community Plugin API metric packs"));
     Assertions.assertEquals("&bMod API Packs ({count})&r", OwnerWording.forMods("&bPlugin API Packs ({count})&r"));

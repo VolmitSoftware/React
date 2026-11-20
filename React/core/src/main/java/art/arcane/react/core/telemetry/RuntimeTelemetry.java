@@ -134,6 +134,7 @@ public final class RuntimeTelemetry {
 
     public void stop(SampleController samples) {
         Graph.bindLatest(null);
+        Graph.clearAll();
         try {
             history.stop();
         } catch (RuntimeException failure) {

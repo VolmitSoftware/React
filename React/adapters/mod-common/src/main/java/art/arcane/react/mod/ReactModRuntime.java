@@ -45,8 +45,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * React on a dedicated mod server. Each loader forwards server start, end of server tick, server stop and command
- * registration here. Start binds the mod platform, runs every core sampler with React's telemetry and starts React Web.
+ * React on a mod server, dedicated or the integrated server of a singleplayer world. Each loader forwards server start,
+ * end of server tick, server stop and command registration here. Start binds the mod platform, runs every core sampler
+ * with React's telemetry and starts React Web. Stop releases all of it, so a client can open and close worlds repeatedly.
  */
 public final class ReactModRuntime {
     public static final String ID = "react";
@@ -82,9 +83,9 @@ public final class ReactModRuntime {
         }
 
         void stop() {
-            actions.stop();
-            tweaks.stop();
-            features.stop();
+            quietly("React actions", actions::stop);
+            quietly("React tweaks", tweaks::stop);
+            quietly("React features", features::stop);
         }
     }
 
@@ -101,9 +102,6 @@ public final class ReactModRuntime {
     public void start(MinecraftServer server) {
         if (running != null) {
             throw new IllegalStateException(NAME + " is already running");
-        }
-        if (!server.isDedicatedServer()) {
-            return;
         }
         File dataFolder = configDirectory.resolve(ID).toFile();
         if (!dataFolder.isDirectory() && !dataFolder.mkdirs()) {
@@ -143,25 +141,32 @@ public final class ReactModRuntime {
         ModReactPlatform modPlatform = new ModReactPlatform(platform, server, dataFolder, LOGGER, ticks, async, startupTasks,
                 languageHost, costProbe, () -> samples, () -> web[0], maps, telemetry);
         ReactPlatforms.bind(modPlatform);
+        Components components;
+        List<IController> coreControllers;
         try {
             languageHost.load();
             EntityPriority.bind(languageHost::priority);
-        } catch (IOException failure) {
+            ModWebHost webHost = new ModWebHost(server, dataFolder, platform, metrics, maps, LOGGER::info, () -> samples, telemetry.host(),
+                    languageHost::settings);
+            web[0] = new ReactWebServer(webHost);
+            WebConfigWatcher webConfig = new WebConfigWatcher(new File(dataFolder, "web.toml"), webHost, web[0]);
+            components = new Components(new FeatureController(), new TweakController(), new ActionController());
+            coreControllers = List.of(components.features(), components.tweaks(), components.actions(), samples,
+                    telemetry.jobs(), telemetry.history(), telemetry.jfr());
+            ModSettings settings = new ModSettings(server, dataFolder, languageHost, maps, () -> samples, ticks, coreControllers);
+            ModConfigHotload hotload = new ModConfigHotload(server, dataFolder, languageHost, maps, () -> samples, modPlatform, ticks);
+            running = new Running(modPlatform, ticks, async, samples, web[0], maps, telemetry, components, webConfig, settings, hotload);
+        } catch (IOException | RuntimeException failure) {
+            EntityPriority.bind(null);
             ReactPlatforms.unbind();
+            ticks.close();
             async.shutdownNow();
-            LOGGER.error("{} could not read react.toml and did not start", NAME, failure);
+            LOGGER.error("{} could not load its configuration and did not start", NAME, failure);
             return;
         }
-        ModWebHost webHost = new ModWebHost(server, dataFolder, platform, metrics, maps, LOGGER::info, () -> samples, telemetry.host(),
-                languageHost::settings);
-        web[0] = new ReactWebServer(webHost);
-        WebConfigWatcher webConfig = new WebConfigWatcher(new File(dataFolder, "web.toml"), webHost, web[0]);
-        Components components = new Components(new FeatureController(), new TweakController(), new ActionController());
-        List<IController> coreControllers = List.of(components.features(), components.tweaks(), components.actions(), samples,
-                telemetry.jobs(), telemetry.history(), telemetry.jfr());
-        ModSettings settings = new ModSettings(server, dataFolder, languageHost, maps, () -> samples, ticks, coreControllers);
-        ModConfigHotload hotload = new ModConfigHotload(server, dataFolder, languageHost, maps, () -> samples, modPlatform, ticks);
-        running = new Running(modPlatform, ticks, async, samples, web[0], maps, telemetry, components, webConfig, settings, hotload);
+        WebConfigWatcher webConfig = running.webConfig();
+        ModSettings settings = running.settings();
+        ModConfigHotload hotload = running.hotload();
         costProbe.start(server, ticks::later);
         ticks.every(costProbe::tick);
         try {
@@ -238,23 +243,41 @@ public final class ReactModRuntime {
         if (active == null) {
             return;
         }
-        active.hotload().stop();
-        ModPlayerMonitors.current().ifPresent(ModPlayerMonitors::stop);
-        MonitoringSettings.bind(null);
-        ModSettings.unbind(active.settings());
-        active.platform().components().disable();
         try {
+            quietly("React config hotload", active.hotload()::stop);
+            quietly("React player monitors", () -> ModPlayerMonitors.current().ifPresent(ModPlayerMonitors::stop));
+            MonitoringSettings.bind(null);
+            ModSettings.unbind(active.settings());
+            quietly("React components", active.platform().components()::disable);
             active.components().stop();
-        } catch (RuntimeException failure) {
-            LOGGER.warn("React features did not stop cleanly", failure);
+            quietly("React entity state", active.platform().entityTicker()::stop);
+            EntityPriority.bind(null);
+            quietly("React entity cleanup", active.platform().entityKiller()::stopAll);
+            quietly("React server hooks", ReactModRuntime::clearHosts);
+            quietly("React scheduler", active.platform().modScheduler()::deactivate);
+            quietly("React Web configuration", active.webConfig()::stop);
+            quietly("React owner costs", active.platform().ownerCost()::stop);
+            quietly("React cost probe", costProbe::stop);
+            quietly("React maps", active.maps()::stop);
+            quietly("React Web", active.web()::stop);
+            quietly("React API packs", pluginApis::stop);
+            ModPathfinding.bind(null);
+            quietly("React telemetry", () -> active.telemetry().stop(active.samples()));
+            quietly("Samplers", active.samples()::stop);
+            quietly("React language", ReactLanguage::close);
+            quietly("React ticks", active.ticks()::close);
+        } finally {
+            active.async().shutdownNow();
+            try {
+                active.async().awaitTermination(5, TimeUnit.SECONDS);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            }
+            ReactPlatforms.unbind();
         }
-        try {
-            active.platform().entityTicker().stop();
-        } catch (RuntimeException failure) {
-            LOGGER.warn("React entity state did not stop cleanly", failure);
-        }
-        EntityPriority.bind(null);
-        active.platform().entityKiller().stopAll();
+    }
+
+    private static void clearHosts() {
         ModHopperHost.clear();
         ModChunkGeneration.clear();
         ModDropHost.clear();
@@ -266,48 +289,18 @@ public final class ReactModRuntime {
         ModGrowthHost.clear();
         ModFurnaceHost.clear();
         ModExplosionHost.clear();
-        // Batch A: ai
         ModEntityActivityHost.clear();
-        // Batch A: mobs
         ModMobStackHost.clear();
-        // Batch A: items
         ModItemHost.clear();
         ModEntityEventHost.clear();
-        active.platform().modScheduler().deactivate();
-        active.webConfig().stop();
-        active.platform().ownerCost().stop();
-        costProbe.stop();
+    }
+
+    private static void quietly(String part, Runnable step) {
         try {
-            active.maps().stop();
+            step.run();
         } catch (RuntimeException failure) {
-            LOGGER.warn("React maps did not stop cleanly", failure);
+            LOGGER.warn("{} did not stop cleanly", part, failure);
         }
-        try {
-            active.web().stop();
-        } catch (RuntimeException failure) {
-            LOGGER.warn("React Web did not stop cleanly", failure);
-        }
-        pluginApis.stop();
-        ModPathfinding.bind(null);
-        try {
-            active.telemetry().stop(active.samples());
-        } catch (RuntimeException failure) {
-            LOGGER.warn("React telemetry did not stop cleanly", failure);
-        }
-        try {
-            active.samples().stop();
-        } catch (RuntimeException failure) {
-            LOGGER.warn("Samplers did not stop cleanly", failure);
-        }
-        ReactLanguage.close();
-        active.ticks().close();
-        active.async().shutdownNow();
-        try {
-            active.async().awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-        }
-        ReactPlatforms.unbind();
     }
 
     public void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
