@@ -9,7 +9,6 @@ import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.item.FallingBlockEntity;
@@ -167,7 +166,7 @@ final class ModWorldStatsHost implements WorldStatsHost {
             counts.merge(EntityCategory.ANIMALS, 1, Integer::sum);
         }
         EntityType<?> type = entity.getType();
-        if (type == EntityTypes.VILLAGER || type == EntityTypes.WANDERING_TRADER) {
+        if (VanillaCompat.isTrader(type)) {
             counts.merge(EntityCategory.VILLAGERS, 1, Integer::sum);
         }
         if (entity instanceof Projectile) {

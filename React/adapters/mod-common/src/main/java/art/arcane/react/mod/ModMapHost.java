@@ -21,7 +21,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.Prediction;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.player.Inventory;
@@ -273,7 +272,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
 
     private static void addOrDrop(ServerPlayer player, ItemStack item) {
         if (!player.getInventory().add(item) && !item.isEmpty()) {
-            player.drop(item, false, Prediction.SERVER_ONLY);
+            VanillaCompat.dropFromPlayer(player, item);
         }
     }
 

@@ -1,6 +1,7 @@
 {
   "26.1.2": {
     "javaVersion": 25,
+    "sourceFamily": "pre-prediction",
     "obfuscated": false,
     "dataPackFormat": 101,
     "fabricLoader": "0.19.5",
@@ -17,6 +18,7 @@
   },
   "26.2": {
     "javaVersion": 25,
+    "sourceFamily": "pre-prediction",
     "obfuscated": false,
     "dataPackFormat": 107,
     "fabricLoader": "0.19.5",
