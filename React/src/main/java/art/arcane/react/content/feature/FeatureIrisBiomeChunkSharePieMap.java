@@ -2,21 +2,33 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.api.feature.CapabilityGatedFeature;
+import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.api.rendering.MegamapGrid;
+import art.arcane.react.api.rendering.ReactRenderer;
+import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RendererMessages;
+import art.arcane.react.platform.MapRenderTarget;
+import art.arcane.react.platform.bukkit.BukkitMapTargets;
 import art.arcane.react.util.common.scheduling.J;
-import art.arcane.react.util.data.TinyColor;
-import art.arcane.volmlib.util.localization.TextKey;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
+import org.bukkit.generator.ChunkGenerator;
+
+import java.lang.reflect.Method;
+import java.util.Locale;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -31,8 +43,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @art.arcane.react.util.project.config.ConfigDescription("Configuration for Iris Biome Chunk Share Pie Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
-public class FeatureIrisBiomeChunkSharePieMap extends FeatureIrisChunkSharePieBase implements CapabilityGatedFeature {
-  public static final String ID = "iris-biome-chunk-share-pie-map";
+public class FeatureIrisBiomeChunkSharePieMap extends ReactFeature implements Listener, ReactRenderer, CapabilityGatedFeature {
+  public static final String ID = IrisBiomeSharePieRenderer.ID;
+  private static final Object IRIS_REFLECTION_LOCK = new Object();
+  private static final Map<Class<?>, Method> accessEngineMethods = new ConcurrentHashMap<>();
+  private static final Set<Class<?>> accessEngineMethodMisses = ConcurrentHashMap.newKeySet();
+  private static final Map<Class<?>, Method> engineBiomeMethods = new ConcurrentHashMap<>();
+  private static final Set<Class<?>> engineBiomeMethodMisses = ConcurrentHashMap.newKeySet();
+  private static final Map<Class<?>, Method> biomeNameMethods = new ConcurrentHashMap<>();
+  private static final Set<Class<?>> biomeNameMethodMisses = ConcurrentHashMap.newKeySet();
+  private static final Map<Class<?>, Method> biomeLoadKeyMethods = new ConcurrentHashMap<>();
+  private static final Set<Class<?>> biomeLoadKeyMethodMisses = ConcurrentHashMap.newKeySet();
+  private static volatile boolean irisAccessLookupAttempted = false;
+  private static volatile Method irisAccessMethod = null;
   private static final int SAMPLE_INTERVAL_MS = 1000;
   private static final int MAX_SAMPLES_PER_PASS = 32;
   private static final int MAX_LIFECYCLE_SAMPLES_PER_PASS = 16;
@@ -41,9 +64,26 @@ public class FeatureIrisBiomeChunkSharePieMap extends FeatureIrisChunkSharePieBa
   private static final int MAX_IN_FLIGHT_SAMPLES = 128;
 
   private transient volatile SamplingState samplingState;
+  private final transient IrisBiomeSharePieRenderer pie = new IrisBiomeSharePieRenderer(
+      (MapRenderTarget target) -> collectBuckets(BukkitMapTargets.player(target)),
+      (UUID viewerId) -> {
+        Player viewer = Bukkit.getPlayer(viewerId);
+        return viewer != null && viewer.isOnline();
+      }
+  );
 
   public FeatureIrisBiomeChunkSharePieMap() {
     super(ID);
+  }
+
+  @Override
+  public MegamapGrid.MegamapCapability megamapCapability() {
+    return pie.megamapCapability();
+  }
+
+  @Override
+  public void render() {
+    pie.render();
   }
 
   @Override
@@ -142,18 +182,7 @@ public class FeatureIrisBiomeChunkSharePieMap extends FeatureIrisChunkSharePieBa
     }
   }
 
-  @Override
-  protected TextKey title() {
-    return RendererMessages.TITLE_BIOME_CHUNK_SHARE;
-  }
-
-  @Override
-  protected TinyColor headerColor() {
-    return new TinyColor(66, 138, 94);
-  }
-
-  @Override
-  protected Map<String, Long> collectBuckets(Player viewer) {
+  private Map<String, Long> collectBuckets(Player viewer) {
     Map<String, Long> counts = SharePieRenderer.newCounterMap();
     if (viewer == null) {
       return counts;
@@ -296,6 +325,187 @@ public class FeatureIrisBiomeChunkSharePieMap extends FeatureIrisChunkSharePieBa
   private boolean isCurrent(SamplingState state) {
     return state != null && state.active() && samplingState == state;
   }
+
+  private boolean isLikelyIrisWorld(World world) {
+    if (world == null) {
+      return false;
+    }
+
+    try {
+      ChunkGenerator generator = world.getGenerator();
+      if (generator != null) {
+        String className = generator.getClass().getName().toLowerCase(Locale.ROOT);
+        if (className.contains("iris")) {
+          return true;
+        }
+      }
+    } catch (Throwable ignored) {
+    }
+
+    return WorldIdentity.serialize(world).toLowerCase(Locale.ROOT).contains("iris");
+  }
+
+  private World targetWorld(Player viewer) {
+    try {
+      if (BukkitMapTargets.world(target()) != null) {
+        return BukkitMapTargets.world(target());
+      }
+    } catch (Throwable ignored) {
+    }
+
+    Location anchor = anchorLocation(viewer);
+    if (anchor != null && anchor.getWorld() != null) {
+      return anchor.getWorld();
+    }
+
+    return viewer == null ? null : viewer.getWorld();
+  }
+
+  private Location anchorLocation(Player viewer) {
+    MapController controller = React.controller(MapController.class);
+    if (controller == null) {
+      return viewer == null ? null : viewer.getLocation();
+    }
+
+    return controller.resolveMapAnchor(target());
+  }
+
+  protected String labelForChunkBiome(Chunk chunk, int y) {
+    if (chunk == null || chunk.getWorld() == null) {
+      return ReactLanguage.raw(RendererMessages.PIE_UNKNOWN);
+    }
+
+    World world = chunk.getWorld();
+    if (isLikelyIrisWorld(world)) {
+      String irisBiome = resolveIrisBiomeLabel(world, (chunk.getX() << 4) + 8, y, (chunk.getZ() << 4) + 8);
+      if (irisBiome != null && !irisBiome.isBlank()) {
+        return SharePieRenderer.displayName(irisBiome);
+      }
+    }
+
+    try {
+      return SharePieRenderer.displayName(chunk.getBlock(8, y, 8).getBiome().getKey().getKey());
+    } catch (Throwable ignored) {
+      return ReactLanguage.raw(RendererMessages.PIE_UNKNOWN);
+    }
+  }
+
+  private String resolveIrisBiomeLabel(World world, int x, int y, int z) {
+    Method access = irisAccessMethod();
+    if (access == null || world == null) {
+      return null;
+    }
+
+    try {
+      Object provider = access.invoke(null, world);
+      if (provider == null) {
+        return null;
+      }
+
+      Method getEngine = cachedMethod(accessEngineMethods, accessEngineMethodMisses, provider.getClass(), "getEngine");
+      if (getEngine == null) {
+        return null;
+      }
+
+      Object engine = getEngine.invoke(provider);
+      if (engine == null) {
+        return null;
+      }
+
+      Method getBiome = cachedMethod(engineBiomeMethods, engineBiomeMethodMisses, engine.getClass(), "getBiome", int.class, int.class, int.class);
+      if (getBiome == null) {
+        return null;
+      }
+
+      Object biome = getBiome.invoke(engine, x, y, z);
+      if (biome == null) {
+        return null;
+      }
+
+      Method getName = cachedMethod(biomeNameMethods, biomeNameMethodMisses, biome.getClass(), "getName");
+      Method getLoadKey = cachedMethod(biomeLoadKeyMethods, biomeLoadKeyMethodMisses, biome.getClass(), "getLoadKey");
+      String name = invokeString(biome, getName);
+      if (name != null && !name.isBlank()) {
+        return name;
+      }
+
+      String loadKey = invokeString(biome, getLoadKey);
+      if (loadKey != null && !loadKey.isBlank()) {
+        return loadKey;
+      }
+
+      return null;
+    } catch (Throwable ignored) {
+      return null;
+    }
+  }
+
+  private Method irisAccessMethod() {
+    Method known = irisAccessMethod;
+    if (known != null) {
+      return known;
+    }
+
+    if (irisAccessLookupAttempted) {
+      return null;
+    }
+
+    synchronized (IRIS_REFLECTION_LOCK) {
+      if (!irisAccessLookupAttempted) {
+        irisAccessLookupAttempted = true;
+        try {
+          Class<?> toolbelt = Class.forName("art.arcane.iris.world.IrisToolbelt");
+          Method method = toolbelt.getMethod("access", World.class);
+          method.setAccessible(true);
+          irisAccessMethod = method;
+        } catch (Throwable ignored) {
+          irisAccessMethod = null;
+        }
+      }
+      return irisAccessMethod;
+    }
+  }
+
+  private Method cachedMethod(
+      Map<Class<?>, Method> cache,
+      Set<Class<?>> misses,
+      Class<?> owner,
+      String methodName,
+      Class<?>... params
+  ) {
+    if (owner == null || misses.contains(owner)) {
+      return null;
+    }
+
+    Method cached = cache.get(owner);
+    if (cached != null) {
+      return cached;
+    }
+
+    try {
+      Method method = owner.getMethod(methodName, params);
+      method.setAccessible(true);
+      cache.put(owner, method);
+      return method;
+    } catch (Throwable ignored) {
+      misses.add(owner);
+      return null;
+    }
+  }
+
+  private String invokeString(Object target, Method method) {
+    if (target == null || method == null) {
+      return null;
+    }
+
+    try {
+      Object value = method.invoke(target);
+      return value == null ? null : value.toString();
+    } catch (Throwable ignored) {
+      return null;
+    }
+  }
+
 
   private record ChunkCoordinate(UUID worldId, int chunkX, int chunkZ) {
   }

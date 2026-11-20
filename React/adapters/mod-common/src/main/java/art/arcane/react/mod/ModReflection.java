@@ -1,5 +1,9 @@
 package art.arcane.react.mod;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Map;
@@ -11,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 final class ModReflection {
     private static final Map<String, Method> METHODS = new ConcurrentHashMap<>();
+    private static final Map<String, MethodHandle> STRING_GETTERS = new ConcurrentHashMap<>();
 
     private ModReflection() {
     }
@@ -59,6 +64,30 @@ final class ModReflection {
             return flag ? 1D : 0D;
         }
         throw new NoSuchMethodException(name + " is not numeric");
+    }
+
+    /**
+     * A no-argument String accessor, resolved by exact signature so classes whose other methods name types missing
+     * on this platform (Bukkit types inside a mod jar) still resolve.
+     */
+    static String string(Object target, String name) throws ReflectiveOperationException {
+        if (target == null) {
+            throw new NoSuchMethodException(name + " on null");
+        }
+        Class<?> owner = target.getClass();
+        String key = owner.getName() + '#' + name;
+        MethodHandle handle = STRING_GETTERS.get(key);
+        if (handle == null) {
+            handle = MethodHandles.publicLookup().findVirtual(owner, name, MethodType.methodType(String.class));
+            STRING_GETTERS.put(key, handle);
+        }
+        try {
+            return (String) handle.invoke(target);
+        } catch (RuntimeException | Error failure) {
+            throw failure;
+        } catch (Throwable failure) {
+            throw new InvocationTargetException(failure);
+        }
     }
 
     private static Method method(Class<?> owner, String name, int arity, boolean isStatic) throws NoSuchMethodException {

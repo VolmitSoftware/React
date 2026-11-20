@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-class AdaptAbilityImpactSeriesTest {
+class AdaptAbilityImpactTest {
   @Test
   void ranksAbilitiesByMeasuredExecutionTimingAndReportsCallbackOps() {
     long now = System.currentTimeMillis();
@@ -17,7 +17,7 @@ class AdaptAbilityImpactSeriesTest {
     putAbility(samples, "excavation-spelunker", 80D, 1.5D, 100D, 0.25D, now);
     putAbility(samples, "excavation-seismic-ping", 120D, 4.25D, 150D, 0.75D, now);
 
-    AdaptAbilityImpactSeries.Snapshot snapshot = AdaptAbilityImpactSeries.fromSamples(samples);
+    AdaptAbilityImpact.Snapshot snapshot = AdaptAbilityImpact.fromSamples(samples);
 
     Assertions.assertTrue(snapshot.aggregateAvailable());
     Assertions.assertEquals(250D, snapshot.aggregateGuardChecks());
@@ -40,7 +40,7 @@ class AdaptAbilityImpactSeriesTest {
     putAbility(samples, "lower-throughput", 4D, 2D, 8D, 0.2D, now);
     putAbility(samples, "higher-throughput", 12D, 2D, 18D, 0.3D, now);
 
-    AdaptAbilityImpactSeries.Snapshot snapshot = AdaptAbilityImpactSeries.fromSamples(samples);
+    AdaptAbilityImpact.Snapshot snapshot = AdaptAbilityImpact.fromSamples(samples);
 
     Assertions.assertEquals("higher-throughput", snapshot.entries().get(0).abilityId());
     Assertions.assertEquals("lower-throughput", snapshot.entries().get(1).abilityId());
@@ -59,7 +59,7 @@ class AdaptAbilityImpactSeriesTest {
     putAbility(samples, "inactive", 0D, 0D, 0D, 0D, now);
     samples.put(IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS, sample(IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS, 25D, now));
 
-    AdaptAbilityImpactSeries.Snapshot snapshot = AdaptAbilityImpactSeries.fromSamples(samples);
+    AdaptAbilityImpact.Snapshot snapshot = AdaptAbilityImpact.fromSamples(samples);
 
     Assertions.assertTrue(snapshot.entries().isEmpty());
     Assertions.assertTrue(snapshot.aggregateAvailable());
@@ -72,7 +72,7 @@ class AdaptAbilityImpactSeriesTest {
     Map<String, IntegrationMetricSample> samples = new HashMap<>();
     putAbility(samples, "guard-only", 0D, 0D, 40D, 1.5D, now);
 
-    AdaptAbilityImpactSeries.Snapshot snapshot = AdaptAbilityImpactSeries.fromSamples(samples);
+    AdaptAbilityImpact.Snapshot snapshot = AdaptAbilityImpact.fromSamples(samples);
 
     Assertions.assertTrue(snapshot.entries().isEmpty());
   }
@@ -83,7 +83,7 @@ class AdaptAbilityImpactSeriesTest {
     Map<String, IntegrationMetricSample> samples = new HashMap<>();
     putAbility(samples, "ops-only", 10_000D, 0D, 10_000D, 0D, now);
 
-    AdaptAbilityImpactSeries.Snapshot snapshot = AdaptAbilityImpactSeries.fromSamples(samples);
+    AdaptAbilityImpact.Snapshot snapshot = AdaptAbilityImpact.fromSamples(samples);
 
     Assertions.assertTrue(snapshot.entries().isEmpty());
   }
@@ -99,7 +99,7 @@ class AdaptAbilityImpactSeriesTest {
         now
     );
 
-    AdaptAbilityImpactSeries.Snapshot snapshot = AdaptAbilityImpactSeries.fromSamples(Map.of(mapKey, mismatched));
+    AdaptAbilityImpact.Snapshot snapshot = AdaptAbilityImpact.fromSamples(Map.of(mapKey, mismatched));
 
     Assertions.assertTrue(snapshot.entries().isEmpty());
   }

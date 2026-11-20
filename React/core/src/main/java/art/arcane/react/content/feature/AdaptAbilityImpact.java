@@ -1,8 +1,6 @@
 package art.arcane.react.content.feature;
 
-import art.arcane.react.React;
-import art.arcane.react.core.controller.IntegrationController;
-import art.arcane.react.core.integration.RemoteSamplerBridge;
+import art.arcane.react.platform.IntegrationMetricsHost;
 import art.arcane.volmlib.integration.IntegrationMetricSample;
 import art.arcane.volmlib.integration.IntegrationMetricSchema;
 
@@ -12,21 +10,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-final class AdaptAbilityImpactSeries {
-  private AdaptAbilityImpactSeries() {
+/**
+ * Adapt abilities ranked by execution cost, from the per-ability detail metrics Adapt publishes.
+ */
+public final class AdaptAbilityImpact {
+  private AdaptAbilityImpact() {
   }
 
-  static Snapshot snapshot() {
-    IntegrationController controller = React.controller(IntegrationController.class);
-    if (controller == null || controller.getRemoteSamplerBridge() == null) {
-      return Snapshot.empty();
-    }
-
-    RemoteSamplerBridge bridge = controller.getRemoteSamplerBridge();
-    return fromSamples(bridge.snapshot("adapt"));
+  public static Snapshot snapshot(IntegrationMetricsHost host) {
+    return host.available() ? fromSamples(host.samples("adapt")) : Snapshot.empty();
   }
 
-  static Snapshot fromSamples(Map<String, IntegrationMetricSample> samples) {
+  public static Snapshot fromSamples(Map<String, IntegrationMetricSample> samples) {
     if (samples == null || samples.isEmpty()) {
       return Snapshot.empty();
     }
@@ -127,7 +122,7 @@ final class AdaptAbilityImpactSeries {
     return display.isEmpty() ? abilityId : display.toString();
   }
 
-  record Entry(
+  public record Entry(
       String abilityId,
       String displayName,
       double executionOps,
@@ -135,12 +130,12 @@ final class AdaptAbilityImpactSeries {
       double guardChecks,
       double guardTimingMs
   ) {
-    boolean hasActivity() {
+    public boolean hasActivity() {
       return executionTimingMs > 0D;
     }
   }
 
-  record Snapshot(
+  public record Snapshot(
       List<Entry> entries,
       double aggregateGuardChecks,
       double detailedExecutionOps,

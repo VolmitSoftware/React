@@ -9,10 +9,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AdaptRuntimePressureTest {
   @Test
   void overlayAddsPressureOnlyFromMeasuredTimingAndSessionLoad() {
-    double baseOnly = FeatureAdaptRuntimePressureOverlay.pressureScore(100D, 0D, 0D);
+    double baseOnly = AdaptPressureHeatmap.pressureScore(100D, 0D, 0D);
     assertEquals(35D, baseOnly, 0.0001D);
-    assertTrue(FeatureAdaptRuntimePressureOverlay.pressureScore(100D, 0D, 100D) > baseOnly);
-    assertTrue(FeatureAdaptRuntimePressureOverlay.pressureScore(100D, 70D, 0D) > baseOnly);
+    assertTrue(AdaptPressureHeatmap.pressureScore(100D, 0D, 100D) > baseOnly);
+    assertTrue(AdaptPressureHeatmap.pressureScore(100D, 70D, 0D) > baseOnly);
   }
 
   @Test

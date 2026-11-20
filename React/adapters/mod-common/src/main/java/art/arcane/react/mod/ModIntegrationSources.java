@@ -220,7 +220,7 @@ final class ModIntegrationSources {
     }
 
     /**
-     * Adapt's session load and ability check rates. World policy latency is never recorded by the mod build, so it
+     * Adapt's session load, ability check rates and per-ability cost. World policy latency is never recorded by the mod build, so it
      * stays unavailable.
      */
     static final class Adapt implements ModIntegrationMetrics.Source {
@@ -233,7 +233,7 @@ final class ModIntegrationSources {
         public Set<String> keys() {
             return Set.of(IntegrationMetricSchema.ADAPT_SESSION_LOAD, IntegrationMetricSchema.ADAPT_ABILITY_OPS,
                     IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS, IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS_TICK,
-                    IntegrationMetricSchema.ADAPT_WORLD_POLICY_LATENCY);
+                    IntegrationMetricSchema.ADAPT_WORLD_POLICY_LATENCY, IntegrationMetricSchema.ADAPT_ABILITY_TIMING_BUDGET);
         }
 
         @Override
@@ -243,12 +243,33 @@ final class ModIntegrationSources {
             values.put(IntegrationMetricSchema.ADAPT_ABILITY_OPS, ((Number) ModReflection.callStatic(checks, "successfulChecksPerMinute", nowMs)).doubleValue());
             values.put(IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS, ((Number) ModReflection.callStatic(checks, "checksPerMinute", nowMs)).doubleValue());
             values.put(IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS_TICK, ((Number) ModReflection.callStatic(checks, "checksPerTick", nowMs)).doubleValue());
+            values.put(IntegrationMetricSchema.ADAPT_ABILITY_TIMING_BUDGET, ((Number) ModReflection.callStatic(checks, "timingBudgetPercent", nowMs)).doubleValue());
+            Map<?, ?> abilities = (Map<?, ?>) ModReflection.callStatic(checks, "abilitySnapshots", nowMs);
+            for (Map.Entry<?, ?> ability : abilities.entrySet()) {
+                putAbility(values, String.valueOf(ability.getKey()), ability.getValue());
+            }
             Object core = ModReflection.callStatic(ModReflection.require(ADAPT_CORE), "current");
             Object ticker = core == null ? null : ModReflection.call(core, "getTicker");
             if (ticker != null) {
                 values.put(IntegrationMetricSchema.ADAPT_SESSION_LOAD, ModReflection.number(ticker, "getWindowLoadPercent"));
             }
             return new ModIntegrationMetrics.Reading(values, List.of());
+        }
+
+        /** The four per-ability detail metrics the Bukkit integration publishes for the ability-impact map. */
+        private static void putAbility(Map<String, Double> values, String abilityId, Object snapshot) throws ReflectiveOperationException {
+            for (String key : IntegrationMetricSchema.adaptAbilityDetailKeys(abilityId)) {
+                String accessor = switch (IntegrationMetricSchema.adaptAbilitySignal(key)) {
+                    case IntegrationMetricSchema.ADAPT_ABILITY_DETAIL_EXECUTION_OPS -> "executionOps";
+                    case IntegrationMetricSchema.ADAPT_ABILITY_DETAIL_EXECUTION_TIMING_MS -> "executionTimingMillis";
+                    case IntegrationMetricSchema.ADAPT_ABILITY_DETAIL_GUARD_CHECKS -> "guardChecks";
+                    case IntegrationMetricSchema.ADAPT_ABILITY_DETAIL_GUARD_TIMING_MS -> "guardTimingMillis";
+                    default -> null;
+                };
+                if (accessor != null) {
+                    values.put(key, ModReflection.number(snapshot, accessor));
+                }
+            }
         }
     }
 

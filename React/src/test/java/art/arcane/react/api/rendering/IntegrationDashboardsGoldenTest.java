@@ -8,6 +8,8 @@ import art.arcane.react.api.metric.ReactMetric;
 import art.arcane.react.api.metric.internal.PublishedMetricStore;
 import art.arcane.react.content.feature.FeatureAnimusCostSharePieMap;
 import art.arcane.react.content.feature.FeatureAnimusNetworkListMap;
+import art.arcane.react.content.feature.FeatureAdaptAbilityImpactListMap;
+import art.arcane.react.content.feature.FeatureIrisWorldChunkSharePieMap;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.platform.MapRenderTarget;
 import art.arcane.react.platform.bukkit.BukkitIntegrationMetricsHost;
@@ -52,7 +54,11 @@ public class IntegrationDashboardsGoldenTest {
       "animus-cost-share-pie-map", "58c52507836c36f5",
       "animus-network-list-map", "bdda241553a80fd4",
       "animus-network-list-map-wall", "a4b3edc7110b66ca",
-      "animus-network-list-map-undeclared", "d2866a5a67abf1c0"
+      "animus-network-list-map-undeclared", "d2866a5a67abf1c0",
+      "adapt-ability-impact-list-map", "32e402d945db665f",
+      "adapt-ability-impact-list-map-wall", "c35b22ebd479c26d",
+      "adapt-ability-impact-list-map-guard-only", "2398c29681a4d6a0",
+      "iris-world-chunk-share-pie-map", "b10ff2b350c60e33"
   );
 
   private React previous;
@@ -122,6 +128,18 @@ public class IntegrationDashboardsGoldenTest {
       actual.put("gloss-metrics", hash(new RendererGlossMetrics(BukkitIntegrationMetricsHost.INSTANCE), held, null));
       react.when(() -> React.controller(IntegrationController.class)).thenReturn(null);
       actual.put("iris-metrics-offline", hash(iris.get(0), held, null));
+      react.when(() -> React.controller(IntegrationController.class)).thenReturn(controller);
+
+      Mockito.when(bridge.snapshot("adapt")).thenReturn(adaptSamples(true));
+      actual.put("adapt-ability-impact-list-map", hash(new FeatureAdaptAbilityImpactListMap(), held, null));
+      actual.put("adapt-ability-impact-list-map-wall", hash(new FeatureAdaptAbilityImpactListMap(), held, new MegamapGrid.MegamapTile(4, 2, 1, 0)));
+      Mockito.when(bridge.snapshot("adapt")).thenReturn(adaptSamples(false));
+      actual.put("adapt-ability-impact-list-map-guard-only", hash(new FeatureAdaptAbilityImpactListMap(), held, null));
+      Mockito.when(bridge.groups("iris", "world")).thenReturn(List.of(group("minecraft:overworld"),
+          new IntegrationMetricGroup("world", "minecraft:the_nether", "iris_nether", Map.of(), Map.of(
+              IntegrationMetricSchema.IRIS_LOADED_CHUNKS, IntegrationMetricSample.available(
+                  IntegrationMetricSchema.descriptor(IntegrationMetricSchema.IRIS_LOADED_CHUNKS), 57D, SAMPLED_AT)))));
+      actual.put("iris-world-chunk-share-pie-map", hash(new FeatureIrisWorldChunkSharePieMap(), held, null));
 
       react.when(() -> React.controller(IntegrationController.class)).thenReturn(controller);
       ThirdPartyMetricRegistry metrics = Mockito.mock(ThirdPartyMetricRegistry.class);
@@ -176,6 +194,29 @@ public class IntegrationDashboardsGoldenTest {
     java.lang.reflect.Method empty = Class.forName("art.arcane.react.content.feature.AnimusMetrics$Snapshot").getDeclaredMethod("empty");
     empty.setAccessible(true);
     cached.set(null, constructor.newInstance(empty.invoke(null), 0L));
+  }
+
+  private static Map<String, IntegrationMetricSample> adaptSamples(boolean detailed) {
+    Map<String, IntegrationMetricSample> samples = new LinkedHashMap<>();
+    samples.put(IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS, IntegrationMetricSample.available(
+        IntegrationMetricSchema.descriptor(IntegrationMetricSchema.ADAPT_ABILITY_CHECK_OPS), 420D, SAMPLED_AT));
+    if (!detailed) {
+      return samples;
+    }
+    double[][] abilities = {{12, 3.5, 40, 0.25}, {80, 1.25, 90, 0.5}, {4, 0.75, 4, 0.01}};
+    String[] ids = {"pickaxe-veinminer", "agility_wall_jump", "tamingHealthBoost"};
+    for (int i = 0; i < ids.length; i++) {
+      for (String key : IntegrationMetricSchema.adaptAbilityDetailKeys(ids[i])) {
+        double value = switch (IntegrationMetricSchema.adaptAbilitySignal(key)) {
+          case IntegrationMetricSchema.ADAPT_ABILITY_DETAIL_EXECUTION_OPS -> abilities[i][0];
+          case IntegrationMetricSchema.ADAPT_ABILITY_DETAIL_EXECUTION_TIMING_MS -> abilities[i][1];
+          case IntegrationMetricSchema.ADAPT_ABILITY_DETAIL_GUARD_CHECKS -> abilities[i][2];
+          default -> abilities[i][3];
+        };
+        samples.put(key, IntegrationMetricSample.available(IntegrationMetricSchema.descriptor(key), value, SAMPLED_AT));
+      }
+    }
+    return samples;
   }
 
   private static IntegrationMetricGroup group(String scope) {

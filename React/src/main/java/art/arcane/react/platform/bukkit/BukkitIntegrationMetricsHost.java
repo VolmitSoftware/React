@@ -11,6 +11,9 @@ import art.arcane.volmlib.util.bukkit.WorldIdentity;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Integration metrics from the providers {@link IntegrationController} discovers through the services manager.
  */
@@ -36,6 +39,18 @@ public final class BukkitIntegrationMetricsHost implements IntegrationMetricsHos
   public IntegrationMetricSample sample(String integrationId, String key) {
     RemoteSamplerBridge bridge = bridge();
     return bridge == null ? null : bridge.getSample(integrationId, key);
+  }
+
+  @Override
+  public Map<String, IntegrationMetricSample> samples(String integrationId) {
+    RemoteSamplerBridge bridge = bridge();
+    return bridge == null ? Map.of() : bridge.snapshot(integrationId);
+  }
+
+  @Override
+  public List<IntegrationMetricGroup> groups(String integrationId, String scopeKind) {
+    RemoteSamplerBridge bridge = bridge();
+    return bridge == null ? List.of() : bridge.groups(integrationId, scopeKind);
   }
 
   @Override

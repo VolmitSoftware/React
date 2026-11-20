@@ -12,7 +12,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +48,8 @@ final class ModIntegrationMetrics implements IntegrationMetricsHost {
     record WorldGroup(Set<String> scopes, String label, Map<String, Double> values) {
     }
 
-    private record Published(Status status, Map<String, IntegrationMetricSample> samples, Map<String, IntegrationMetricGroup> worlds) {
+    private record Published(Status status, Map<String, IntegrationMetricSample> samples, Map<String, IntegrationMetricGroup> worlds,
+                             List<IntegrationMetricGroup> worldList) {
     }
 
     ModIntegrationMetrics(MinecraftServer server, List<Source> sources) {
@@ -71,19 +75,23 @@ final class ModIntegrationMetrics implements IntegrationMetricsHost {
             try {
                 Reading reading = source.read(server, now);
                 Map<String, IntegrationMetricGroup> worlds = new HashMap<>();
+                List<IntegrationMetricGroup> worldList = new ArrayList<>();
                 for (WorldGroup world : reading.worlds()) {
+                    Map<String, IntegrationMetricSample> worldSamples = samples(world.values().keySet(), world.values(), now, "world-metric-not-published");
                     for (String scope : world.scopes()) {
-                        IntegrationMetricGroup group = new IntegrationMetricGroup("world", scope, world.label(), Map.of(),
-                                samples(world.values().keySet(), world.values(), now, "world-metric-not-published"));
-                        worlds.put(scope, group);
+                        worlds.put(scope, new IntegrationMetricGroup("world", scope, world.label(), Map.of(), worldSamples));
                     }
+                    worldList.add(worlds.get(world.scopes().iterator().next()));
                 }
+                worldList.sort(Comparator.comparing(IntegrationMetricGroup::scopeId));
+                Set<String> keys = new LinkedHashSet<>(source.keys());
+                keys.addAll(reading.values().keySet());
                 next.put(source.id(), new Published(new Status("HEALTHY", ""),
-                        samples(source.keys(), reading.values(), now, "not-published-on-mods"), Map.copyOf(worlds)));
+                        samples(keys, reading.values(), now, "not-published-on-mods"), Map.copyOf(worlds), List.copyOf(worldList)));
             } catch (ReflectiveOperationException | RuntimeException | LinkageError failure) {
                 String reason = failure.getClass().getSimpleName() + ": " + failure.getMessage();
                 next.put(source.id(), new Published(new Status("DEGRADED", reason),
-                        samples(source.keys(), Map.of(), now, "read-failed"), Map.of()));
+                        samples(source.keys(), Map.of(), now, "read-failed"), Map.of(), List.of()));
             }
         }
         published = Map.copyOf(next);
@@ -119,6 +127,18 @@ final class ModIntegrationMetrics implements IntegrationMetricsHost {
     public IntegrationMetricSample sample(String integrationId, String key) {
         Published current = published.get(integrationId);
         return current == null ? null : current.samples().get(key);
+    }
+
+    @Override
+    public Map<String, IntegrationMetricSample> samples(String integrationId) {
+        Published current = published.get(integrationId);
+        return current == null ? Map.of() : current.samples();
+    }
+
+    @Override
+    public List<IntegrationMetricGroup> groups(String integrationId, String scopeKind) {
+        Published current = published.get(integrationId);
+        return current == null || !"world".equals(scopeKind) ? List.of() : current.worldList();
     }
 
     @Override

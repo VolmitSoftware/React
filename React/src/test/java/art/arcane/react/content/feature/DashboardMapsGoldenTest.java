@@ -16,7 +16,11 @@ import art.arcane.react.content.sampler.SamplerTicksPerSecond;
 import art.arcane.react.api.rendering.IntegrationDashboardsGoldenTest;
 import art.arcane.react.core.controller.EventController;
 import art.arcane.react.core.controller.IntegrationController;
+import art.arcane.react.core.integration.RemoteSamplerBridge;
 import art.arcane.react.core.integration.ThirdPartyMetricRegistry;
+import art.arcane.volmlib.integration.IntegrationMetricGroup;
+import art.arcane.volmlib.integration.IntegrationMetricSample;
+import art.arcane.volmlib.integration.IntegrationMetricSchema;
 import art.arcane.react.core.controller.LoadedChunkCoordinate;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
@@ -71,7 +75,10 @@ class DashboardMapsGoldenTest {
       "plugin-event-impact-pie-map-wall", "ab4af14f3df8b033",
       "tick-spike-origin-replay-map", "0f60933dcf71e485",
       "tick-spike-origin-replay-map-wall", "536f40c7b91bbcbc",
-      "animus-runtime-pressure-overlay", "9c32007fb7620a3c"
+      "animus-runtime-pressure-overlay", "9c32007fb7620a3c",
+      "adapt-runtime-pressure-overlay", "d45a6fdcc6c8d4fc",
+      "iris-generation-pressure-overlay", "6d462d65f9a79675",
+      "iris-generation-pressure-overlay-unmanaged", "4447730387f75218"
   );
 
   private React previous;
@@ -160,6 +167,20 @@ class DashboardMapsGoldenTest {
       IntegrationDashboardsGoldenTest.resetAnimusCache();
       actual.put("animus-runtime-pressure-overlay", hash(new FeatureAnimusRuntimePressureOverlay(), held, null));
       IntegrationDashboardsGoldenTest.resetAnimusCache();
+      RemoteSamplerBridge bridge = Mockito.mock(RemoteSamplerBridge.class);
+      Mockito.when(integration.getRemoteSamplerBridge()).thenReturn(bridge);
+      Mockito.when(bridge.valueOr("adapt", IntegrationMetricSchema.ADAPT_SESSION_LOAD, 0D)).thenReturn(37.5D);
+      Mockito.when(bridge.valueOr("adapt", IntegrationMetricSchema.ADAPT_ABILITY_TIMING_BUDGET, 0D)).thenReturn(12D);
+      Mockito.when(bridge.getSample("adapt", IntegrationMetricSchema.ADAPT_SESSION_LOAD)).thenReturn(IntegrationMetricSample.available(
+          IntegrationMetricSchema.descriptor(IntegrationMetricSchema.ADAPT_SESSION_LOAD), 37.5D, 0L));
+      Mockito.when(bridge.getSample("adapt", IntegrationMetricSchema.ADAPT_ABILITY_TIMING_BUDGET)).thenReturn(IntegrationMetricSample.available(
+          IntegrationMetricSchema.descriptor(IntegrationMetricSchema.ADAPT_ABILITY_TIMING_BUDGET), 12D, 0L));
+      actual.put("adapt-runtime-pressure-overlay", hash(new FeatureAdaptRuntimePressureOverlay(), held, null));
+      Mockito.when(bridge.getGroup("iris", "world", WORLD_KEY)).thenReturn(
+          new IntegrationMetricGroup("world", WORLD_KEY, "Overworld", Map.of(), Map.of()));
+      actual.put("iris-generation-pressure-overlay", hash(new FeatureIrisGenerationPressureOverlay(), held, null));
+      Mockito.when(bridge.getGroup("iris", "world", WORLD_KEY)).thenReturn(null);
+      actual.put("iris-generation-pressure-overlay-unmanaged", hash(new FeatureIrisGenerationPressureOverlay(), held, null));
       FeatureTickSpikeOriginReplayMap replay = seededReplay(worldId);
       actual.put("tick-spike-origin-replay-map", hash(replay, held, null));
       actual.put("tick-spike-origin-replay-map-wall", hash(replay, held, new MegamapGrid.MegamapTile(2, 2, 0, 1)));
