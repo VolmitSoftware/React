@@ -1,5 +1,6 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.GameEntity;
 import art.arcane.react.React;
 import art.arcane.react.util.project.world.CustomMobChecker;
 import io.papermc.paper.registry.RegistryAccess;
@@ -175,7 +176,7 @@ class FeatureMobStackingHostileStateTest {
     Mockito.verify(target).setExplosionRadius(5);
     Mockito.verify(target).setFuseTicks(0);
     Mockito.verify(target).setIgnited(false);
-    Mockito.verify(feature).setStackCount(target, 2);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(target), 2);
   }
 
   @Test
@@ -190,7 +191,7 @@ class FeatureMobStackingHostileStateTest {
     FeatureMobStacking feature = deathReplacement(source, target, EntityType.ENDERMAN);
 
     Mockito.verify(target).setCarriedBlock(copied);
-    Mockito.verify(feature).setStackCount(target, 2);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(target), 2);
   }
 
   @Test
@@ -200,15 +201,15 @@ class FeatureMobStackingHostileStateTest {
     FeatureMobStacking feature = prepareReplacement(source, replacement, EntityType.CREEPER);
     CreeperPowerEvent event = new CreeperPowerEvent(source, CreeperPowerEvent.PowerCause.SET_ON);
     event.setCancelled(true);
-    feature.onCreeperPower(event);
-    feature.onCreeperPower(new CreeperPowerEvent(source, CreeperPowerEvent.PowerCause.SET_OFF));
+    MobStacks.events(feature).onCreeperPower(event);
+    MobStacks.events(feature).onCreeperPower(new CreeperPowerEvent(source, CreeperPowerEvent.PowerCause.SET_OFF));
     Mockito.verify(source.getWorld(), Mockito.never()).spawnEntity(Mockito.any(Location.class), Mockito.any(EntityType.class));
 
     event.setCancelled(false);
-    feature.onCreeperPower(event);
+    MobStacks.events(feature).onCreeperPower(event);
 
-    Mockito.verify(feature).setStackCount(replacement, 2);
-    Mockito.verify(feature).setStackCount(source, 1);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(replacement), 2);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(source), 1);
     Mockito.verify(replacement).setPowered(false);
     Mockito.verify(source, Mockito.never()).setPowered(Mockito.anyBoolean());
   }
@@ -220,14 +221,14 @@ class FeatureMobStackingHostileStateTest {
     FeatureMobStacking feature = prepareReplacement(source, replacement, EntityType.ENDERMAN);
     EntityChangeBlockEvent event = new EntityChangeBlockEvent(source, Mockito.mock(Block.class), block("minecraft:air"));
     event.setCancelled(true);
-    feature.onEndermanChangeBlock(event);
+    MobStacks.events(feature).onEndermanChangeBlock(event);
     Mockito.verify(source.getWorld(), Mockito.never()).spawnEntity(Mockito.any(Location.class), Mockito.any(EntityType.class));
 
     event.setCancelled(false);
-    feature.onEndermanChangeBlock(event);
+    MobStacks.events(feature).onEndermanChangeBlock(event);
 
-    Mockito.verify(feature).setStackCount(replacement, 2);
-    Mockito.verify(feature).setStackCount(source, 1);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(replacement), 2);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(source), 1);
     Mockito.verify(replacement).setCarriedBlock(null);
     Mockito.verify(source, Mockito.never()).setCarriedBlock(Mockito.any());
   }
@@ -242,10 +243,10 @@ class FeatureMobStackingHostileStateTest {
     Mockito.when(source.getCarriedBlock()).thenReturn(original);
     FeatureMobStacking feature = prepareReplacement(source, replacement, EntityType.ENDERMAN);
 
-    feature.onEndermanChangeBlock(new EntityChangeBlockEvent(source, Mockito.mock(Block.class), original));
+    MobStacks.events(feature).onEndermanChangeBlock(new EntityChangeBlockEvent(source, Mockito.mock(Block.class), original));
 
-    Mockito.verify(feature).setStackCount(replacement, 2);
-    Mockito.verify(feature).setStackCount(source, 1);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(replacement), 2);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(source), 1);
     Mockito.verify(replacement).setCarriedBlock(copied);
     Mockito.verify(source, Mockito.never()).setCarriedBlock(Mockito.any());
   }
@@ -258,12 +259,12 @@ class FeatureMobStackingHostileStateTest {
     Mockito.when(source.isIgnited()).thenReturn(true);
     Mockito.when(source.getFuseTicks()).thenReturn(30);
     FeatureMobStacking feature = prepareReplacement(source, replacement, EntityType.CREEPER);
-    feature.on(new EntityRemoveEvent(source, EntityRemoveEvent.Cause.DEATH));
+    MobStacks.events(feature).onEntityRemove(new EntityRemoveEvent(source, EntityRemoveEvent.Cause.DEATH));
     Mockito.verify(source.getWorld(), Mockito.never()).spawnEntity(Mockito.any(Location.class), Mockito.any(EntityType.class));
 
-    feature.on(new EntityRemoveEvent(source, EntityRemoveEvent.Cause.EXPLODE));
+    MobStacks.events(feature).onEntityRemove(new EntityRemoveEvent(source, EntityRemoveEvent.Cause.EXPLODE));
 
-    Mockito.verify(feature).setStackCount(replacement, 2);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(replacement), 2);
     Mockito.verify(replacement).setPowered(true);
     Mockito.verify(replacement).setFuseTicks(0);
     Mockito.verify(replacement).setIgnited(false);
@@ -277,10 +278,10 @@ class FeatureMobStackingHostileStateTest {
     Mockito.when(replacement.isValid()).thenReturn(false);
     CreeperPowerEvent event = new CreeperPowerEvent(source, CreeperPowerEvent.PowerCause.SET_ON);
 
-    feature.onCreeperPower(event);
+    MobStacks.events(feature).onCreeperPower(event);
 
     assertTrue(event.isCancelled());
-    Mockito.verify(feature, Mockito.never()).setStackCount(source, 1);
+    Mockito.verify(feature, Mockito.never()).setStackCount(MobStacks.entity(source), 1);
   }
 
   @Test
@@ -291,10 +292,10 @@ class FeatureMobStackingHostileStateTest {
     Mockito.when(replacement.isValid()).thenReturn(false);
     EntityChangeBlockEvent event = new EntityChangeBlockEvent(source, Mockito.mock(Block.class), block("minecraft:air"));
 
-    feature.onEndermanChangeBlock(event);
+    MobStacks.events(feature).onEndermanChangeBlock(event);
 
     assertTrue(event.isCancelled());
-    Mockito.verify(feature, Mockito.never()).setStackCount(source, 1);
+    Mockito.verify(feature, Mockito.never()).setStackCount(MobStacks.entity(source), 1);
   }
 
   @Test
@@ -306,12 +307,12 @@ class FeatureMobStackingHostileStateTest {
     FeatureMobStacking feature = prepareReplacement(source, replacement, EntityType.CREEPER);
     CreeperPowerEvent event = new CreeperPowerEvent(source, CreeperPowerEvent.PowerCause.SET_OFF);
 
-    feature.onCreeperPower(event);
+    MobStacks.events(feature).onCreeperPower(event);
 
     assertTrue(event.isCancelled());
     Mockito.verify(replacement).remove();
-    Mockito.verify(feature, Mockito.never()).setStackCount(source, 1);
-    Mockito.verify(feature, Mockito.never()).setStackCount(replacement, 2);
+    Mockito.verify(feature, Mockito.never()).setStackCount(MobStacks.entity(source), 1);
+    Mockito.verify(feature, Mockito.never()).setStackCount(MobStacks.entity(replacement), 2);
   }
 
   @Test
@@ -332,8 +333,8 @@ class FeatureMobStackingHostileStateTest {
     Mockito.verify(replacement).setFuseTicks(0);
     Mockito.verify(replacement).setIgnited(false);
     Mockito.verify(source, Mockito.never()).setIgnited(Mockito.anyBoolean());
-    Mockito.verify(feature).setStackCount(replacement, 1);
-    Mockito.verify(feature).setStackCount(source, 2);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(replacement), 1);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(source), 2);
   }
 
   @Test
@@ -348,8 +349,8 @@ class FeatureMobStackingHostileStateTest {
     FeatureMobStacking feature = manualSplit(source, replacement, EntityType.ENDERMAN);
 
     Mockito.verify(replacement).setCarriedBlock(copied);
-    Mockito.verify(feature).setStackCount(replacement, 1);
-    Mockito.verify(feature).setStackCount(source, 2);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(replacement), 1);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(source), 2);
   }
 
   @Test
@@ -366,9 +367,9 @@ class FeatureMobStackingHostileStateTest {
       Player player = Mockito.mock(Player.class);
       Mockito.when(player.isSneaking()).thenReturn(true);
 
-      feature.onPlayerInteractEntity(new PlayerInteractEntityEvent(player, source, EquipmentSlot.HAND));
+      MobStacks.events(feature).onPlayerInteractEntity(new PlayerInteractEntityEvent(player, source, EquipmentSlot.HAND));
 
-      Mockito.verify(feature, Mockito.never()).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+      Mockito.verify(feature, Mockito.never()).setStackCount(Mockito.any(GameEntity.class), Mockito.anyInt());
       Mockito.verify(replacement).remove();
     } finally {
       React.instance = previousPlugin;
@@ -382,15 +383,15 @@ class FeatureMobStackingHostileStateTest {
       FeatureMobStacking feature = prepareReplacement(source, replacement, type);
       Location location = source.getLocation();
       Mockito.when(location.add(0D, 0.5D, 0D)).thenReturn(location);
-      Mockito.doNothing().when(feature).updateEntityCustomName(Mockito.any(Entity.class));
+      Mockito.doNothing().when(feature).updateEntityCustomName(Mockito.any(GameEntity.class));
       Player player = Mockito.mock(Player.class);
       Mockito.when(player.isSneaking()).thenReturn(true);
       PlayerInteractEntityEvent event = new PlayerInteractEntityEvent(player, source, EquipmentSlot.HAND);
       event.setCancelled(true);
-      feature.onPlayerInteractEntity(event);
+      MobStacks.events(feature).onPlayerInteractEntity(event);
       Mockito.verify(source.getWorld(), Mockito.never()).spawnEntity(Mockito.any(Location.class), Mockito.any(EntityType.class));
       event.setCancelled(false);
-      feature.onPlayerInteractEntity(event);
+      MobStacks.events(feature).onPlayerInteractEntity(event);
       return feature;
     } finally {
       React.instance = previousPlugin;
@@ -431,7 +432,7 @@ class FeatureMobStackingHostileStateTest {
     FeatureMobStacking feature = prepareReplacement(source, target, type);
     EntityDeathEvent event = Mockito.mock(EntityDeathEvent.class);
     Mockito.when(event.getEntity()).thenReturn(source);
-    feature.onEntityDeath(event);
+    MobStacks.events(feature).onEntityDeath(event);
     return feature;
   }
 
@@ -446,8 +447,8 @@ class FeatureMobStackingHostileStateTest {
     Mockito.when(source.isValid()).thenReturn(true);
     Mockito.when(target.isValid()).thenReturn(true);
     Mockito.when(world.spawnEntity(location, type)).thenReturn(target);
-    Mockito.doReturn(3).when(feature).getStackCount(source);
-    Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+    Mockito.doReturn(3).when(feature).getStackCount(MobStacks.entity(source));
+    Mockito.doNothing().when(feature).setStackCount(Mockito.any(GameEntity.class), Mockito.anyInt());
     return feature;
   }
 
@@ -465,7 +466,7 @@ class FeatureMobStackingHostileStateTest {
     Mockito.when(target.getType()).thenReturn(type);
     Mockito.doReturn(1).when(feature).getStackCount(Mockito.any());
     try (MockedStatic<CustomMobChecker> customMobs = Mockito.mockStatic(CustomMobChecker.class)) {
-      return feature.canMerge(source, target);
+      return feature.canMerge(MobStacks.entity(source), MobStacks.entity(target));
     }
   }
 }

@@ -76,14 +76,6 @@ public interface CommandHost {
     unavailable(sender, "monitoring-only");
   }
 
-  default void purgeEntities(VolmitSender sender, int radius, String world) {
-    unavailable(sender, "action purge-entities");
-  }
-
-  default void trimEntitiesByAgePriority(VolmitSender sender, int maxEntities, int minAgeSeconds, String world) {
-    unavailable(sender, "action trim-entities-by-age-priority");
-  }
-
   default void hopperNetworkNormalize(VolmitSender sender, int maxChunks, double minHopperUpdates, String world) {
     unavailable(sender, "action hopper-network-normalize");
   }

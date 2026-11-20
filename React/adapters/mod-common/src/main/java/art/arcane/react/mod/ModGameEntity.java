@@ -4,8 +4,12 @@ import art.arcane.react.platform.GameEntity;
 import art.arcane.react.platform.GameLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Monster;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -67,5 +71,55 @@ public record ModGameEntity(Entity entity) implements GameEntity {
     @Override
     public Object handle() {
         return entity;
+    }
+
+    @Override
+    public boolean isLiving() {
+        return entity instanceof LivingEntity;
+    }
+
+    @Override
+    public boolean isMob() {
+        return entity instanceof Mob;
+    }
+
+    @Override
+    public boolean isMonster() {
+        return entity instanceof Monster;
+    }
+
+    @Override
+    public double speed() {
+        return entity.getDeltaMovement().length();
+    }
+
+    @Override
+    public double health() {
+        return entity instanceof LivingEntity living ? living.getHealth() : 0D;
+    }
+
+    @Override
+    public double maxHealth() {
+        return entity instanceof LivingEntity living ? living.getMaxHealth() : Double.NaN;
+    }
+
+    @Override
+    public boolean isTameable() {
+        return VanillaApi.isTameable(entity);
+    }
+
+    @Override
+    public boolean isTamed() {
+        return VanillaApi.isTamed(entity);
+    }
+
+    @Override
+    public boolean isBreedable() {
+        return entity instanceof AgeableMob;
+    }
+
+    @Override
+    public boolean isAdult() {
+        return !(entity instanceof AgeableMob ageable) || !ageable.isBaby();
     }
 }

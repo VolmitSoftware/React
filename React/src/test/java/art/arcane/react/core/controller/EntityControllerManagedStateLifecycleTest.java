@@ -1,5 +1,6 @@
 package art.arcane.react.core.controller;
 
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.React;
 import art.arcane.react.api.protect.internal.ProtectionGuards;
 import art.arcane.react.model.ReactEntity;
@@ -54,7 +55,7 @@ class EntityControllerManagedStateLifecycleTest {
 
       protection.verify(() -> ProtectionGuards.hydrate(entity));
       killers.verify(() -> EntityKiller.reconcile(entity));
-      managed.verify(() -> ReactEntity.reconcileManagedState(entity));
+      managed.verify(() -> ReactEntity.reconcileManagedState(new BukkitGameEntity(entity)));
     }
   }
 
@@ -70,7 +71,7 @@ class EntityControllerManagedStateLifecycleTest {
 
       new EntityController().on(event);
 
-      managed.verify(() -> ReactEntity.releaseManagedState(entity));
+      managed.verify(() -> ReactEntity.releaseManagedState(new BukkitGameEntity(entity)));
       scheduling.verifyNoInteractions();
     }
   }
@@ -182,8 +183,8 @@ class EntityControllerManagedStateLifecycleTest {
 
       killers.verify(() -> EntityKiller.reconcile(player));
       killers.verify(() -> EntityKiller.reconcile(nearby));
-      managed.verify(() -> ReactEntity.reconcileManagedState(player));
-      managed.verify(() -> ReactEntity.reconcileManagedState(nearby));
+      managed.verify(() -> ReactEntity.reconcileManagedState(new BukkitGameEntity(player)));
+      managed.verify(() -> ReactEntity.reconcileManagedState(new BukkitGameEntity(nearby)));
     }
   }
 }

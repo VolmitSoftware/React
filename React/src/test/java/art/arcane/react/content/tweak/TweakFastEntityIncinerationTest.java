@@ -7,6 +7,8 @@ import org.bukkit.Location;
 import org.bukkit.entity.Monster;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.junit.jupiter.api.Test;
+import art.arcane.react.platform.ReactPlatforms;
+import art.arcane.react.platform.bukkit.BukkitEntityEventHost;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -28,7 +30,13 @@ public class TweakFastEntityIncinerationTest {
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.hasNearbyPlayer(location, 32D)).thenReturn(true);
 
-      tweak.on(event);
+      BukkitEntityEventHost host = (BukkitEntityEventHost) ReactPlatforms.get().entityEventHost().orElseThrow();
+      tweak.onActivate();
+      try {
+        host.on(event);
+      } finally {
+        tweak.onDeactivate();
+      }
 
       scheduling.verifyNoInteractions();
     }
@@ -51,7 +59,13 @@ public class TweakFastEntityIncinerationTest {
       react.when(() -> React.hasNearbyPlayer(location, 32D)).thenReturn(false);
       scheduling.when(() -> J.runEntity(Mockito.eq(monster), Mockito.any(Runnable.class), Mockito.anyInt())).thenReturn(true);
 
-      tweak.on(event);
+      BukkitEntityEventHost host = (BukkitEntityEventHost) ReactPlatforms.get().entityEventHost().orElseThrow();
+      tweak.onActivate();
+      try {
+        host.on(event);
+      } finally {
+        tweak.onDeactivate();
+      }
 
       scheduling.verify(() -> J.runEntity(
           Mockito.eq(monster),

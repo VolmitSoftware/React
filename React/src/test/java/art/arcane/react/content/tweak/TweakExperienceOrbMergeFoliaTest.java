@@ -1,9 +1,9 @@
 package art.arcane.react.content.tweak;
 
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ExperienceOrb;
-import org.bukkit.event.entity.EntitySpawnEvent;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -21,10 +21,8 @@ class TweakExperienceOrbMergeFoliaTest {
     setInt(tweak, "maxExperiencePerOrb", 10);
     ExperienceOrb collector = Mockito.mock(ExperienceOrb.class);
     ExperienceOrb source = Mockito.mock(ExperienceOrb.class);
-    EntitySpawnEvent event = Mockito.mock(EntitySpawnEvent.class);
     AtomicInteger collectorExperience = experience(collector, 8);
     AtomicInteger sourceExperience = experience(source, 7);
-    Mockito.when(event.getEntity()).thenReturn(collector);
     Mockito.when(collector.isDead()).thenReturn(false);
     Mockito.when(collector.getUniqueId()).thenReturn(UUID.randomUUID());
     Mockito.when(collector.getNearbyEntities(2.75D, 2.75D, 2.75D)).thenReturn(List.of(source));
@@ -33,7 +31,12 @@ class TweakExperienceOrbMergeFoliaTest {
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       scheduling.when(J::isFoliaThreading).thenReturn(false);
-      tweak.on(event);
+      tweak.onActivate();
+      try {
+        tweak.on(new BukkitGameEntity(collector));
+      } finally {
+        tweak.onDeactivate();
+      }
 
       Assertions.assertEquals(10, collectorExperience.get());
       Assertions.assertEquals(5, sourceExperience.get());
@@ -48,10 +51,8 @@ class TweakExperienceOrbMergeFoliaTest {
     setInt(tweak, "maxExperiencePerOrb", 10);
     ExperienceOrb collector = Mockito.mock(ExperienceOrb.class);
     ExperienceOrb foreign = Mockito.mock(ExperienceOrb.class);
-    EntitySpawnEvent event = Mockito.mock(EntitySpawnEvent.class);
     AtomicInteger collectorExperience = experience(collector, 8);
     AtomicInteger foreignExperience = experience(foreign, 7);
-    Mockito.when(event.getEntity()).thenReturn(collector);
     Mockito.when(collector.isDead()).thenReturn(false);
     Mockito.when(collector.getUniqueId()).thenReturn(UUID.randomUUID());
     Mockito.when(collector.getNearbyEntities(2.75D, 2.75D, 2.75D)).thenReturn(List.of(foreign));
@@ -64,8 +65,12 @@ class TweakExperienceOrbMergeFoliaTest {
       scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Entity.class))).thenAnswer(
           invocation -> invocation.getArgument(0) == collector
       );
-
-      tweak.on(event);
+      tweak.onActivate();
+      try {
+        tweak.on(new BukkitGameEntity(collector));
+      } finally {
+        tweak.onDeactivate();
+      }
 
       Assertions.assertEquals(8, collectorExperience.get());
       Assertions.assertEquals(7, foreignExperience.get());

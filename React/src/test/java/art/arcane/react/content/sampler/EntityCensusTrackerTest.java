@@ -1,5 +1,6 @@
 package art.arcane.react.content.sampler;
 
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.model.ReactEntity;
@@ -279,11 +280,11 @@ class EntityCensusTrackerTest {
     EntityCensusTracker.observe(mob);
     Assertions.assertEquals(1, EntityCensusTracker.activeAi());
 
-    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestPause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
 
     Assertions.assertEquals(0, EntityCensusTracker.activeAi());
 
-    ReactEntity.releasePause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.releasePause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
 
     Assertions.assertEquals(1, EntityCensusTracker.activeAi());
   }
@@ -293,13 +294,13 @@ class EntityCensusTrackerTest {
     AtomicBoolean valid = new AtomicBoolean(true);
     Zombie mob = pausableMob(Zombie.class, valid);
     EntityCensusTracker.observe(mob);
-    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
+    ReactEntity.requestPause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
     Assertions.assertEquals(1, EntityCensusTracker.hostile());
     Assertions.assertEquals(0, EntityCensusTracker.activeAi());
 
     EntityCensusTracker.forget(mob);
     valid.set(false);
-    ReactEntity.releasePause(mob, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
+    ReactEntity.releasePause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
 
     Assertions.assertEquals(0, EntityCensusTracker.hostile());
     Assertions.assertEquals(0, EntityCensusTracker.activeAi());

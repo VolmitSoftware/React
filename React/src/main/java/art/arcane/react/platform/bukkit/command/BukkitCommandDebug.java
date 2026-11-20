@@ -3,6 +3,7 @@ package art.arcane.react.platform.bukkit.command;
 import art.arcane.react.React;
 import art.arcane.react.content.directorcommand.EntityDataCommands;
 import art.arcane.react.model.ReactEntity;
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.platform.bukkit.BukkitCommandSender;
 import art.arcane.react.util.plugin.VolmitSender;
@@ -32,8 +33,8 @@ public final class BukkitCommandDebug {
         if (j instanceof LivingEntity living) {
           J.runEntity(living, () -> living.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 20, 0, false, false)));
         }
-        EntityDataCommands.send(BukkitCommandSender.player(sender), ReactEntity.getPriority(j), ReactEntity.getCrowding(j),
-            ReactEntity.getNearestPlayer(j), ReactEntity.getStaleness(j));
+        EntityDataCommands.send(BukkitCommandSender.player(sender), ReactEntity.getPriority(new BukkitGameEntity(j)), ReactEntity.getCrowding(new BukkitGameEntity(j)),
+            ReactEntity.getNearestPlayer(new BukkitGameEntity(j)), ReactEntity.getStaleness(new BukkitGameEntity(j)));
         break ray;
       }
     }

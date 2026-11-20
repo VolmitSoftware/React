@@ -1,5 +1,7 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.MobStateAccess;
+import art.arcane.react.platform.GameEntity;
 import art.arcane.react.core.integration.GlossEntityOverlayIntegration;
 import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
@@ -25,11 +27,11 @@ class FeatureMobStackingPresentationTest {
   @Test
   void glossReceivesCountAndRemovesOnlyReactLabel() {
     GlossEntityOverlayIntegration integration = Mockito.mock(GlossEntityOverlayIntegration.class);
-    FeatureMobStacking feature = new FeatureMobStacking(integration, MobStateAccess.detect());
+    FeatureMobStacking feature = MobStacks.feature(integration, MobStateAccess.detect());
     LivingEntity entity = entity(STACK_NAME);
     Mockito.when(integration.refresh(entity, 3)).thenReturn(true);
 
-    feature.refreshStackPresentation(entity, 3);
+    feature.refreshStackPresentation(MobStacks.entity(entity), 3);
 
     Mockito.verify(integration).refresh(entity, 3);
     Mockito.verify(entity).setCustomName(null);
@@ -39,22 +41,22 @@ class FeatureMobStackingPresentationTest {
   @Test
   void glossKeepsUserRenameEvenWhenOldReactLabelIsRecorded() {
     GlossEntityOverlayIntegration integration = Mockito.mock(GlossEntityOverlayIntegration.class);
-    FeatureMobStacking feature = new FeatureMobStacking(integration, MobStateAccess.detect());
+    FeatureMobStacking feature = MobStacks.feature(integration, MobStateAccess.detect());
     LivingEntity entity = entity("Sentinel");
     Mockito.when(entity.getPersistentDataContainer().get(STACK_LABEL_KEY, PersistentDataType.STRING)).thenReturn(STACK_NAME);
     Mockito.when(integration.refresh(entity, 3)).thenReturn(true);
 
-    feature.refreshStackPresentation(entity, 3);
+    feature.refreshStackPresentation(MobStacks.entity(entity), 3);
 
     Mockito.verify(entity, Mockito.never()).setCustomName(Mockito.any());
   }
 
   @Test
   void absentOrDisabledGlossUsesNativeStackLabel() {
-    FeatureMobStacking feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
+    FeatureMobStacking feature = MobStacks.feature(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
     LivingEntity entity = entity(null);
 
-    feature.refreshStackPresentation(entity, 3);
+    feature.refreshStackPresentation(MobStacks.entity(entity), 3);
 
     Mockito.verify(entity).setCustomName(STACK_NAME);
     Mockito.verify(entity.getPersistentDataContainer()).set(STACK_LABEL_KEY, PersistentDataType.STRING, STACK_NAME);
@@ -62,10 +64,10 @@ class FeatureMobStackingPresentationTest {
 
   @Test
   void standaloneStackNeverOverwritesUserName() {
-    FeatureMobStacking feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
+    FeatureMobStacking feature = MobStacks.feature(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
     LivingEntity entity = entity("Sentinel");
 
-    feature.refreshStackPresentation(entity, 3);
+    feature.refreshStackPresentation(MobStacks.entity(entity), 3);
 
     Mockito.verify(entity, Mockito.never()).setCustomName(Mockito.any());
   }
@@ -73,13 +75,13 @@ class FeatureMobStackingPresentationTest {
   @Test
   void disablingNativeNamesStillPublishesCountToGloss() throws ReflectiveOperationException {
     GlossEntityOverlayIntegration integration = Mockito.mock(GlossEntityOverlayIntegration.class);
-    FeatureMobStacking feature = new FeatureMobStacking(integration, MobStateAccess.detect());
+    FeatureMobStacking feature = MobStacks.feature(integration, MobStateAccess.detect());
     LivingEntity entity = entity(STACK_NAME);
     Field customNames = FeatureMobStacking.class.getDeclaredField("customNames");
     customNames.setAccessible(true);
     customNames.setBoolean(feature, false);
 
-    feature.refreshStackPresentation(entity, 3);
+    feature.refreshStackPresentation(MobStacks.entity(entity), 3);
 
     Mockito.verify(integration).refresh(entity, 3);
     Mockito.verify(entity).setCustomName(null);
@@ -87,18 +89,18 @@ class FeatureMobStackingPresentationTest {
 
   @Test
   void shrinkingToOneRemovesRecordedNativeLabel() {
-    FeatureMobStacking feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
+    FeatureMobStacking feature = MobStacks.feature(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
     LivingEntity entity = entity(STACK_NAME);
     Mockito.when(entity.getPersistentDataContainer().get(STACK_LABEL_KEY, PersistentDataType.STRING)).thenReturn(STACK_NAME);
 
-    feature.refreshStackPresentation(entity, 1);
+    feature.refreshStackPresentation(MobStacks.entity(entity), 1);
 
     Mockito.verify(entity).setCustomName(null);
   }
 
   @Test
   void deathReplacementDoesNotInheritCanonicalizedStackName() {
-    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect()));
+    FeatureMobStacking feature = Mockito.spy(MobStacks.feature(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect()));
     LivingEntity source = entity(ChatColor.BOLD + "3x " + ChatColor.GRAY + "Zombie");
     LivingEntity replacement = entity(null);
     World world = Mockito.mock(World.class);
@@ -110,13 +112,13 @@ class FeatureMobStackingPresentationTest {
     Mockito.when(world.spawnEntity(location, EntityType.ZOMBIE)).thenReturn(replacement);
     Mockito.when(replacement.isValid()).thenReturn(true);
     Mockito.when(event.getEntity()).thenReturn(source);
-    Mockito.doReturn(3).when(feature).getStackCount(source);
-    Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+    Mockito.doReturn(3).when(feature).getStackCount(MobStacks.entity(source));
+    Mockito.doNothing().when(feature).setStackCount(Mockito.any(GameEntity.class), Mockito.anyInt());
 
-    feature.onEntityDeath(event);
+    MobStacks.events(feature).onEntityDeath(event);
 
     Mockito.verify(replacement, Mockito.never()).setCustomName(Mockito.anyString());
-    Mockito.verify(feature).setStackCount(replacement, 2);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(replacement), 2);
   }
 
   private LivingEntity entity(String name) {

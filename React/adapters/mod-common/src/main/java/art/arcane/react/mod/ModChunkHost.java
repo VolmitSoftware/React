@@ -5,6 +5,7 @@ import art.arcane.react.model.SampledChunk;
 import art.arcane.react.mod.mixin.ChunkMapAccess;
 import art.arcane.react.platform.ChunkHost;
 import art.arcane.react.platform.ChunkRef;
+import art.arcane.react.platform.PlatformLog;
 import art.arcane.react.platform.ReactWorld;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import net.minecraft.server.MinecraftServer;
@@ -187,7 +188,31 @@ final class ModChunkHost implements ChunkHost {
 
     @Override
     public List<SampledChunk> sampledChunks() {
+        if (!samples.entityCountsFresh(System.currentTimeMillis())) {
+            countEntities();
+        }
         return samples.chunks();
+    }
+
+    /** Fills the per-chunk entity counts on the server thread, as Bukkit's observer always has them. */
+    private void countEntities() {
+        Runnable count = () -> {
+            long now = System.currentTimeMillis();
+            for (ServerLevel level : server.getAllLevels()) {
+                samples.countEntities(level, now);
+            }
+        };
+        if (server.isSameThread()) {
+            count.run();
+            return;
+        }
+        try {
+            server.submit(count).get(SERVER_WAIT_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException | TimeoutException failure) {
+            PlatformLog.warn("React could not count chunk entities: " + failure.getMessage());
+        }
     }
 
     @Override

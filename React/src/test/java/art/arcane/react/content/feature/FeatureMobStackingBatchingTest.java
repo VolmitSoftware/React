@@ -1,5 +1,8 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.BukkitReactWorld;
+import art.arcane.react.platform.ReactWorld;
+import art.arcane.react.platform.GameEntity;
 import art.arcane.react.React;
 import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.react.util.common.scheduling.J;
@@ -111,12 +114,12 @@ class FeatureMobStackingBatchingTest {
     Mockito.when(entity.getUniqueId()).thenReturn(entityId);
     Mockito.when(entity.getLocation()).thenReturn(first, first, moved);
 
-    feature.onTick(entity);
+    feature.onTick(MobStacks.entity(entity));
     Object initial = indexedEntities(feature).get(entityId);
-    feature.onTick(entity);
+    feature.onTick(MobStacks.entity(entity));
     Assertions.assertSame(initial, indexedEntities(feature).get(entityId));
 
-    feature.onTick(entity);
+    feature.onTick(MobStacks.entity(entity));
     Assertions.assertNotSame(initial, indexedEntities(feature).get(entityId));
   }
 
@@ -232,10 +235,10 @@ class FeatureMobStackingBatchingTest {
     Mockito.doAnswer(invocation -> {
       comparisons.incrementAndGet();
       return false;
-    }).when(feature).merge(Mockito.any(Entity.class), Mockito.any(Entity.class));
+    }).when(feature).merge(Mockito.any(GameEntity.class), Mockito.any(GameEntity.class));
     Method stackChunk = FeatureMobStacking.class.getDeclaredMethod(
         "stackChunk",
-        World.class,
+        ReactWorld.class,
         int.class,
         int.class
     );
@@ -249,7 +252,7 @@ class FeatureMobStackingBatchingTest {
       while (!completed && callbacks < 64) {
         int locationsBefore = entityLocations.get();
         int comparisonsBefore = comparisons.get();
-        completed = (boolean) stackChunk.invoke(feature, world, 0, 0);
+        completed = (boolean) stackChunk.invoke(feature, new BukkitReactWorld(world), 0, 0);
         callbacks++;
 
         Assertions.assertTrue(
@@ -290,13 +293,13 @@ class FeatureMobStackingBatchingTest {
     Mockito.when(adjacent.getType()).thenReturn(EntityType.ZOMBIE);
     Mockito.when(adjacent.isDead()).thenReturn(false);
     Mockito.when(adjacent.getLocation()).thenReturn(adjacentLocation);
-    Mockito.doReturn(1).when(feature).getStackCount(adjacent);
-    Mockito.doReturn(true).when(feature).merge(adjacent, anchor);
-    feature.onTick(adjacent);
+    Mockito.doReturn(1).when(feature).getStackCount(MobStacks.entity(adjacent));
+    Mockito.doReturn(true).when(feature).merge(MobStacks.entity(adjacent), MobStacks.entity(anchor));
+    feature.onTick(MobStacks.entity(adjacent));
 
     Method stackChunk = FeatureMobStacking.class.getDeclaredMethod(
         "stackChunk",
-        World.class,
+        ReactWorld.class,
         int.class,
         int.class
     );
@@ -307,10 +310,10 @@ class FeatureMobStackingBatchingTest {
       scheduling.when(() -> J.isOwnedByCurrentRegion(anchor)).thenReturn(true);
       scheduling.when(() -> J.isOwnedByCurrentRegion(adjacent)).thenReturn(true);
 
-      Assertions.assertTrue((boolean) stackChunk.invoke(feature, world, 0, 0));
+      Assertions.assertTrue((boolean) stackChunk.invoke(feature, new BukkitReactWorld(world), 0, 0));
     }
 
-    Mockito.verify(feature).merge(adjacent, anchor);
+    Mockito.verify(feature).merge(MobStacks.entity(adjacent), MobStacks.entity(anchor));
     Mockito.verify(world, Mockito.never()).getChunkAt(1, 0);
   }
 

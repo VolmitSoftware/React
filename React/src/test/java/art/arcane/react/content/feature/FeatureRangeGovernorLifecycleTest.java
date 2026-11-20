@@ -1,6 +1,8 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.api.sampler.SamplerHosts;
+import art.arcane.react.platform.bukkit.BukkitEntityActivityHost;
 import art.arcane.volmlib.nativelib.NativeAdapters;
 import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
 import art.arcane.volmlib.nativelib.monitor.EntityRangeSettings;
@@ -30,12 +32,12 @@ class FeatureRangeGovernorLifecycleTest {
     FeatureActivationRangeGovernor activation = new FeatureActivationRangeGovernor();
     FeatureTrackerRangeGovernor tracker = new FeatureTrackerRangeGovernor();
 
-    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+    try (MockedStatic<SamplerHosts> samplers = Mockito.mockStatic(SamplerHosts.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       activation.onTick();
       tracker.onTick();
 
-      react.verify(() -> React.sampler(SamplerTickTime.ID), Mockito.never());
+      samplers.verify(() -> SamplerHosts.sampler(SamplerTickTime.ID), Mockito.never());
       scheduling.verifyNoInteractions();
     }
   }
@@ -44,7 +46,7 @@ class FeatureRangeGovernorLifecycleTest {
   void activationGovernorReleasesSynchronouslyOnPrimaryThread() throws ReflectiveOperationException {
     ActivationConfig config = new ActivationConfig();
     World world = world(config);
-    FeatureActivationRangeGovernor feature = new FeatureActivationRangeGovernor();
+    FeatureActivationRangeGovernor feature = withFreshHost(new FeatureActivationRangeGovernor());
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
@@ -68,7 +70,7 @@ class FeatureRangeGovernorLifecycleTest {
   void trackerGovernorReleasesSynchronouslyOnPrimaryThread() throws ReflectiveOperationException {
     TrackerConfig config = new TrackerConfig();
     World world = world(config);
-    FeatureTrackerRangeGovernor feature = new FeatureTrackerRangeGovernor();
+    FeatureTrackerRangeGovernor feature = withFreshHost(new FeatureTrackerRangeGovernor());
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
@@ -90,7 +92,7 @@ class FeatureRangeGovernorLifecycleTest {
   void staleActivationGovernorEngageCannotCrossReload() throws ReflectiveOperationException {
     ActivationConfig config = new ActivationConfig();
     World world = world(config);
-    FeatureActivationRangeGovernor feature = new FeatureActivationRangeGovernor();
+    FeatureActivationRangeGovernor feature = withFreshHost(new FeatureActivationRangeGovernor());
     AtomicBoolean primary = new AtomicBoolean(false);
     List<Runnable> queued = new ArrayList<>();
 
@@ -121,7 +123,7 @@ class FeatureRangeGovernorLifecycleTest {
   void staleTrackerGovernorEngageCannotCrossReload() throws ReflectiveOperationException {
     TrackerConfig config = new TrackerConfig();
     World world = world(config);
-    FeatureTrackerRangeGovernor feature = new FeatureTrackerRangeGovernor();
+    FeatureTrackerRangeGovernor feature = withFreshHost(new FeatureTrackerRangeGovernor());
     AtomicBoolean primary = new AtomicBoolean(false);
     List<Runnable> queued = new ArrayList<>();
 
@@ -151,7 +153,7 @@ class FeatureRangeGovernorLifecycleTest {
   void queuedActivationGovernorReleaseSurvivesReload() throws ReflectiveOperationException {
     ActivationConfig config = new ActivationConfig();
     World world = world(config);
-    FeatureActivationRangeGovernor feature = new FeatureActivationRangeGovernor();
+    FeatureActivationRangeGovernor feature = withFreshHost(new FeatureActivationRangeGovernor());
     AtomicBoolean primary = new AtomicBoolean(true);
     List<Runnable> queued = new ArrayList<>();
 
@@ -183,7 +185,7 @@ class FeatureRangeGovernorLifecycleTest {
   void queuedTrackerGovernorReleaseSurvivesReload() throws ReflectiveOperationException {
     TrackerConfig config = new TrackerConfig();
     World world = world(config);
-    FeatureTrackerRangeGovernor feature = new FeatureTrackerRangeGovernor();
+    FeatureTrackerRangeGovernor feature = withFreshHost(new FeatureTrackerRangeGovernor());
     AtomicBoolean primary = new AtomicBoolean(true);
     List<Runnable> queued = new ArrayList<>();
 
@@ -215,7 +217,7 @@ class FeatureRangeGovernorLifecycleTest {
       throws ReflectiveOperationException {
     ActivationConfig config = new ActivationConfig();
     World world = world(config);
-    FeatureActivationRangeGovernor feature = new FeatureActivationRangeGovernor();
+    FeatureActivationRangeGovernor feature = withFreshHost(new FeatureActivationRangeGovernor());
     AtomicBoolean primary = new AtomicBoolean(true);
     List<Runnable> queued = new ArrayList<>();
 
@@ -256,7 +258,7 @@ class FeatureRangeGovernorLifecycleTest {
       throws ReflectiveOperationException {
     TrackerConfig config = new TrackerConfig();
     World world = world(config);
-    FeatureTrackerRangeGovernor feature = new FeatureTrackerRangeGovernor();
+    FeatureTrackerRangeGovernor feature = withFreshHost(new FeatureTrackerRangeGovernor());
     AtomicBoolean primary = new AtomicBoolean(true);
     List<Runnable> queued = new ArrayList<>();
 
@@ -286,6 +288,13 @@ class FeatureRangeGovernorLifecycleTest {
       feature.onDeactivate();
       Assertions.assertEquals(64, config.itemTrackingRange);
     }
+  }
+
+  private static <T> T withFreshHost(T governor) throws ReflectiveOperationException {
+    Field field = governor.getClass().getDeclaredField("activity");
+    field.setAccessible(true);
+    field.set(governor, new BukkitEntityActivityHost());
+    return governor;
   }
 
   private static void requestWorldState(Object governor, boolean engaged) throws ReflectiveOperationException {

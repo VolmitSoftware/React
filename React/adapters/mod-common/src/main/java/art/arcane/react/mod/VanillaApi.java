@@ -4,6 +4,7 @@ import art.arcane.react.platform.GameLocation;
 import net.minecraft.SharedConstants;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ColorParticleOption;
 import net.minecraft.core.particles.ExplosionParticleInfo;
 import net.minecraft.core.particles.ItemParticleOption;
@@ -24,32 +25,55 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionSet;
 import net.minecraft.server.permissions.Permissions;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.util.random.WeightedList;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.util.random.WeightedList;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityReference;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.OwnableEntity;
+import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.animal.equine.AbstractHorse;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.vehicle.boat.AbstractBoat;
+import net.minecraft.world.entity.vehicle.minecart.AbstractMinecart;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.component.DyedItemColor;
+import net.minecraft.world.item.crafting.AbstractCookingRecipe;
+import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.crafting.ShapelessRecipe;
+import net.minecraft.world.item.crafting.SingleItemRecipe;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
+import net.minecraft.world.item.crafting.StonecutterRecipe;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.portal.TeleportTransition;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.Vec3;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-
-import java.net.URI;
-import java.util.Locale;
+import java.util.UUID;
 
 /** Vanilla calls whose names or shapes changed after 1.21.1; the mapped source family carries the older forms. */
 public final class VanillaApi {
@@ -232,6 +256,126 @@ public final class VanillaApi {
     private static boolean granted(PermissionSet permissions, String atom) {
         Identifier key = atom == null ? null : Identifier.tryParse(atom);
         return key != null && permissions.hasPermission(Permission.Atom.create(key));
+    }
+
+    // Batch A: mobs
+    static CompoundTag saveEntity(Entity entity) {
+        TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, entity.registryAccess());
+        entity.saveWithoutId(output);
+        return output.buildResult();
+    }
+
+    static void loadEntity(Entity entity, CompoundTag tag) {
+        entity.load(TagValueInput.create(ProblemReporter.DISCARDING, entity.registryAccess(), tag));
+    }
+
+    static Entity createEntity(EntityType<?> type, ServerLevel level) {
+        return type.create(level, EntitySpawnReason.MOB_SUMMONED);
+    }
+
+    static void place(Entity entity, double x, double y, double z, float yRot, float xRot) {
+        entity.snapTo(x, y, z, yRot, xRot);
+    }
+
+    static UUID ownerId(Entity entity) {
+        if (!(entity instanceof OwnableEntity ownable)) {
+            return null;
+        }
+        EntityReference<LivingEntity> owner = ownable.getOwnerReference();
+        return owner == null ? null : owner.getUUID();
+    }
+
+    static boolean isTameable(Entity entity) {
+        return entity instanceof TamableAnimal || entity instanceof AbstractHorse;
+    }
+
+    static boolean isTamed(Entity entity) {
+        if (entity instanceof TamableAnimal tamable) {
+            return tamable.isTame();
+        }
+        return entity instanceof AbstractHorse horse && horse.isTamed();
+    }
+
+    static List<ModItemValue.Recipe> recipes(MinecraftServer server) {
+        List<ModItemValue.Recipe> recipes = new ArrayList<>();
+        for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
+            try {
+                ModItemValue.Recipe recipe = recipe(holder.value());
+                if (recipe != null) {
+                    recipes.add(recipe);
+                }
+            } catch (RuntimeException ignored) {
+            }
+        }
+        return recipes;
+    }
+
+    private static ModItemValue.Recipe recipe(Recipe<?> recipe) {
+        if (recipe instanceof ShapedRecipe shaped) {
+            return ModItemValue.shaped(shaped.assemble(CraftingInput.EMPTY), firstItems(shaped.placementInfo().ingredients()));
+        }
+        if (recipe instanceof ShapelessRecipe shapeless) {
+            return ModItemValue.shapeless(shapeless.assemble(CraftingInput.EMPTY), firstItems(shapeless.placementInfo().ingredients()));
+        }
+        if (recipe instanceof AbstractCookingRecipe || recipe instanceof StonecutterRecipe) {
+            SingleItemRecipe single = (SingleItemRecipe) recipe;
+            List<Item> input = new ArrayList<>(1);
+            input.add(firstItem(single.input()));
+            return ModItemValue.shapeless(single.assemble(new SingleRecipeInput(ItemStack.EMPTY)), input);
+        }
+        return null;
+    }
+
+    private static List<Item> firstItems(List<Ingredient> ingredients) {
+        List<Item> items = new ArrayList<>(ingredients.size());
+        for (Ingredient ingredient : ingredients) {
+            items.add(firstItem(ingredient));
+        }
+        return items;
+    }
+
+    private static Item firstItem(Ingredient ingredient) {
+        Optional<Holder<Item>> first = ingredient.items().findFirst();
+        return first.isPresent() ? first.get().value() : null;
+    }
+
+    // Batch A: items
+    static String itemNamespace(Item item) {
+        return BuiltInRegistries.ITEM.getKey(item).getNamespace();
+    }
+
+    static String itemPath(Item item) {
+        return BuiltInRegistries.ITEM.getKey(item).getPath();
+    }
+
+    static List<ItemStack> bundleItems(BundleContents contents) {
+        List<ItemStack> items = new ArrayList<>();
+        for (ItemStackTemplate template : contents.items()) {
+            items.add(template.create());
+        }
+        return items;
+    }
+
+    static BundleContents bundleContents(List<ItemStack> items) {
+        List<ItemStackTemplate> templates = new ArrayList<>(items.size());
+        for (ItemStack item : items) {
+            if (!item.isEmpty()) {
+                templates.add(ItemStackTemplate.fromNonEmptyStack(item));
+            }
+        }
+        return new BundleContents(templates);
+    }
+
+    static ParticleOptions itemParticle(ItemStack item) {
+        return new ItemParticleOption(ParticleTypes.ITEM, ItemStackTemplate.fromNonEmptyStack(item));
+    }
+
+    static boolean isMinecart(Entity entity) {
+        return entity instanceof AbstractMinecart;
+    }
+
+    static boolean isBoat(Entity entity) {
+        return entity instanceof AbstractBoat;
     }
 
     /** Where a portal transition leads, or null for a transition React cannot read. */

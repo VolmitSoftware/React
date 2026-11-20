@@ -4,6 +4,10 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.feature.perworld.ReactScopedPressure;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.platform.GameEntity;
+import art.arcane.react.platform.bukkit.BukkitEntityActivityHost;
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
@@ -96,7 +100,7 @@ class FeaturePathfinderBudgetLifecycleTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       react.when(() -> React.hasNearbyPlayer(Mockito.any(), Mockito.anyDouble())).thenReturn(false);
       scheduling.when(J::isFoliaThreading).thenReturn(false);
       scheduling.when(J::isPrimaryThread).thenReturn(true);
@@ -246,12 +250,12 @@ class FeaturePathfinderBudgetLifecycleTest {
       scheduling.when(J::isFoliaThreading).thenReturn(false);
 
       manage(feature, mob, 1L);
-      feature.on(unload);
+      feature.onEntitiesUnload(wrap(unload.getEntities()));
       Assertions.assertFalse(marker.get());
       Assertions.assertTrue(trackedClaims(feature).isEmpty());
 
       marker.set(true);
-      feature.on(load);
+      feature.onEntitiesLoad(wrap(load.getEntities()));
       Assertions.assertFalse(marker.get());
       Assertions.assertEquals(2, navigation.reset.get());
     }
@@ -276,7 +280,7 @@ class FeaturePathfinderBudgetLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runEntity(
           Mockito.any(Mob.class),
@@ -317,7 +321,7 @@ class FeaturePathfinderBudgetLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runEntity(
           Mockito.any(Mob.class),
@@ -359,7 +363,7 @@ class FeaturePathfinderBudgetLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       react.when(() -> React.hasNearbyPlayer(Mockito.any(), Mockito.anyDouble())).thenReturn(false);
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runEntity(
@@ -419,7 +423,7 @@ class FeaturePathfinderBudgetLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       react.when(() -> React.hasNearbyPlayer(Mockito.any(), Mockito.anyDouble())).thenReturn(false);
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runEntity(
@@ -548,7 +552,7 @@ class FeaturePathfinderBudgetLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runEntity(
           Mockito.eq(mob),
@@ -598,7 +602,7 @@ class FeaturePathfinderBudgetLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runEntity(
           Mockito.any(Mob.class),
@@ -635,7 +639,10 @@ class FeaturePathfinderBudgetLifecycleTest {
       navigation.reset(NAVIGATION);
       return null;
     }).when(access).resetNavigationBudget(Mockito.any(Mob.class));
-    setField(feature, "nativeAccess", access);
+    BukkitEntityActivityHost host = new BukkitEntityActivityHost();
+    setField(host, "nativeAccess", access);
+    setBoolean(host, "nativeResolved", true);
+    setField(feature, "activity", host);
     setBoolean(feature, "bridgesAvailable", true);
     setBoolean(feature, "active", true);
     setDouble(feature, "lastTickMs", 100D);
@@ -670,17 +677,32 @@ class FeaturePathfinderBudgetLifecycleTest {
   }
 
   private void manage(FeaturePathfinderBudget feature, Mob mob, long generation) throws Throwable {
-    Method method = FeaturePathfinderBudget.class.getDeclaredMethod("manageEntity", Entity.class, long.class);
+    Method method = FeaturePathfinderBudget.class.getDeclaredMethod("manageEntity", GameEntity.class, long.class);
     method.setAccessible(true);
-    method.invoke(feature, mob, generation);
+    method.invoke(feature, new BukkitGameEntity(mob), generation);
   }
 
   private void indexMob(FeaturePathfinderBudget feature, Mob mob) throws Exception {
     // The feature indexes mobs through weak references, so the test keeps them alive until it ends.
     indexedMobs.add(mob);
-    Method method = FeaturePathfinderBudget.class.getDeclaredMethod("indexMob", Entity.class);
+    Method method = FeaturePathfinderBudget.class.getDeclaredMethod("indexMob", GameEntity.class);
     method.setAccessible(true);
-    method.invoke(feature, mob);
+    method.invoke(feature, new BukkitGameEntity(mob));
+  }
+
+  private static List<GameEntity> wrap(List<Entity> entities) {
+    List<GameEntity> wrapped = new ArrayList<>();
+    for (Entity entity : entities) {
+      wrapped.add(new BukkitGameEntity(entity));
+    }
+    return wrapped;
+  }
+
+  private static SampleController samples(Sampler sampler) {
+    return Mockito.mock(SampleController.class, invocation ->
+        "getSampler".equals(invocation.getMethod().getName()) && SamplerTickTime.ID.equals(invocation.getArgument(0))
+            ? sampler
+            : Mockito.RETURNS_DEFAULTS.answer(invocation));
   }
 
   private AtomicLong lifecycle(FeaturePathfinderBudget feature) throws Exception {

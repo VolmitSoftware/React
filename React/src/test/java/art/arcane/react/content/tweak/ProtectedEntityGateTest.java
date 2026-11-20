@@ -1,5 +1,6 @@
 package art.arcane.react.content.tweak;
 
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.React;
 import art.arcane.react.api.protect.ReactOperation;
 import art.arcane.react.api.protect.ReactOperations;
@@ -15,6 +16,8 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import art.arcane.react.platform.ReactPlatforms;
+import art.arcane.react.platform.bukkit.BukkitEntityEventHost;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -106,7 +109,13 @@ class ProtectedEntityGateTest {
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       react.when(() -> React.hasNearbyPlayer(location, 32D)).thenReturn(false);
 
-      tweak.on(event);
+      BukkitEntityEventHost host = (BukkitEntityEventHost) ReactPlatforms.get().entityEventHost().orElseThrow();
+      tweak.onActivate();
+      try {
+        host.on(event);
+      } finally {
+        tweak.onDeactivate();
+      }
 
       scheduling.verifyNoInteractions();
       react.verify(() -> React.hasNearbyPlayer(Mockito.any(Location.class), Mockito.anyDouble()),
@@ -131,7 +140,13 @@ class ProtectedEntityGateTest {
       scheduling.when(() -> J.runEntity(Mockito.eq(monster), Mockito.any(Runnable.class), Mockito.anyInt()))
           .thenReturn(true);
 
-      tweak.on(event);
+      BukkitEntityEventHost host = (BukkitEntityEventHost) ReactPlatforms.get().entityEventHost().orElseThrow();
+      tweak.onActivate();
+      try {
+        host.on(event);
+      } finally {
+        tweak.onDeactivate();
+      }
 
       scheduling.verify(() -> J.runEntity(Mockito.eq(monster), Mockito.any(Runnable.class), Mockito.anyInt()));
     }
@@ -144,9 +159,9 @@ class ProtectedEntityGateTest {
     Entity cow = Mockito.mock(Entity.class);
 
     try (MockedStatic<ReactEntity> entities = Mockito.mockStatic(ReactEntity.class)) {
-      tweak.onCrowdCheck(cow);
+      tweak.onCrowdCheck(new BukkitGameEntity(cow));
 
-      entities.verify(() -> ReactEntity.getCrowding(cow), Mockito.never());
+      entities.verify(() -> ReactEntity.getCrowding(new BukkitGameEntity(cow)), Mockito.never());
     }
   }
 
@@ -158,9 +173,9 @@ class ProtectedEntityGateTest {
     Mockito.when(cow.getCustomName()).thenReturn("Betsy");
 
     try (MockedStatic<ReactEntity> entities = Mockito.mockStatic(ReactEntity.class)) {
-      tweak.onCrowdCheck(cow);
+      tweak.onCrowdCheck(new BukkitGameEntity(cow));
 
-      entities.verify(() -> ReactEntity.getCrowding(cow), Mockito.never());
+      entities.verify(() -> ReactEntity.getCrowding(new BukkitGameEntity(cow)), Mockito.never());
     }
   }
 
@@ -171,11 +186,11 @@ class ProtectedEntityGateTest {
     Entity cow = Mockito.mock(Entity.class);
 
     try (MockedStatic<ReactEntity> entities = Mockito.mockStatic(ReactEntity.class)) {
-      entities.when(() -> ReactEntity.getCrowding(cow)).thenReturn(1D);
+      entities.when(() -> ReactEntity.getCrowding(new BukkitGameEntity(cow))).thenReturn(1D);
 
-      tweak.onCrowdCheck(cow);
+      tweak.onCrowdCheck(new BukkitGameEntity(cow));
 
-      entities.verify(() -> ReactEntity.getCrowding(cow));
+      entities.verify(() -> ReactEntity.getCrowding(new BukkitGameEntity(cow)));
     }
   }
 
@@ -185,7 +200,7 @@ class ProtectedEntityGateTest {
     TweakEntityBubbler tweak = new TweakEntityBubbler();
     Entity fish = Mockito.mock(Entity.class);
 
-    tweak.onCrowdCheck(fish);
+    tweak.onCrowdCheck(new BukkitGameEntity(fish));
 
     Mockito.verify(fish, Mockito.never()).getLocation();
   }
@@ -197,11 +212,11 @@ class ProtectedEntityGateTest {
     Entity cow = Mockito.mock(Entity.class);
 
     try (MockedStatic<ReactEntity> entities = Mockito.mockStatic(ReactEntity.class)) {
-      entities.when(() -> ReactEntity.getCrowding(cow)).thenReturn(1D);
+      entities.when(() -> ReactEntity.getCrowding(new BukkitGameEntity(cow))).thenReturn(1D);
 
-      tweak.onCrowdCheck(cow);
+      tweak.onCrowdCheck(new BukkitGameEntity(cow));
 
-      entities.verify(() -> ReactEntity.getCrowding(cow));
+      entities.verify(() -> ReactEntity.getCrowding(new BukkitGameEntity(cow)));
     }
   }
 }

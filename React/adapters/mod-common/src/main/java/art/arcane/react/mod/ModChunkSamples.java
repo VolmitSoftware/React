@@ -1,16 +1,19 @@
 package art.arcane.react.mod;
 
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.model.ChunkCostTally;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.platform.HopperHost;
 import art.arcane.react.platform.RuntimeStatsHost;
 import com.google.common.util.concurrent.AtomicDouble;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunk;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,8 +26,11 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 final class ModChunkSamples {
     private static final long DECAY_INTERVAL_MS = 1_000L;
+    static final long ENTITY_COUNT_FRESH_MS = 1_000L;
+    static final long ENTITY_COUNT_KEEP_MS = 10_000L;
     private final Map<String, Map<Long, SampledChunk>> worlds = new ConcurrentHashMap<>();
     private final AtomicLong nextDecayMs = new AtomicLong();
+    private volatile long entityCountsMs;
     private volatile RuntimeStatsHost.CostShares costShares = ChunkCostTally.EMPTY;
 
     AtomicDouble counter(Object subject, Sampler sampler) {
@@ -98,7 +104,42 @@ final class ModChunkSamples {
         if (nowMs < due || !nextDecayMs.compareAndSet(due, nowMs + DECAY_INTERVAL_MS)) {
             return;
         }
+        long counted = entityCountsMs;
+        if (counted != 0L && entityCountsExpired(counted, nowMs)) {
+            entityCountsMs = 0L;
+            for (Map<Long, SampledChunk> chunks : worlds.values()) {
+                for (SampledChunk chunk : chunks.values()) {
+                    chunk.getValues().remove(SamplerEntities.ID);
+                }
+            }
+        }
         costShares = ChunkCostTally.captureAndDecay(worlds.values());
+    }
+
+    /**
+     * Server thread. Counts every entity of the level into its chunk's entity gauge, the per-chunk count Bukkit's
+     * observer keeps all the time.
+     */
+    void countEntities(ServerLevel level, long nowMs) {
+        Map<Long, Integer> entities = new HashMap<>();
+        for (Entity entity : level.getAllEntities()) {
+            entities.merge(VanillaApi.pack(entity.chunkPosition()), 1, Integer::sum);
+        }
+        replaceGauge(level, SamplerEntities.ID, entities);
+        entityCountsMs = nowMs;
+    }
+
+    boolean entityCountsFresh(long nowMs) {
+        return entityCountsFresh(entityCountsMs, nowMs);
+    }
+
+    static boolean entityCountsFresh(long countedMs, long nowMs) {
+        return countedMs != 0L && nowMs - countedMs >= 0L && nowMs - countedMs < ENTITY_COUNT_FRESH_MS;
+    }
+
+    /** Counts nobody refreshed for a while are dropped, so they cannot linger in chunk scores. */
+    static boolean entityCountsExpired(long countedMs, long nowMs) {
+        return nowMs - countedMs > ENTITY_COUNT_KEEP_MS;
     }
 
     /** The chunk with the highest current total score, as the Bukkit observer's worst chunk. */

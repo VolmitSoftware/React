@@ -1,5 +1,6 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.MobStateAccess;
 import art.arcane.react.React;
 import art.arcane.react.core.integration.GlossEntityOverlayIntegration;
 import org.bukkit.entity.EntityType;
@@ -25,10 +26,10 @@ class FeatureMobStackingMergeOrderTest {
     FeatureMobStacking feature = feature();
     LivingEntity source = zombie(1);
     LivingEntity target = zombie(2);
-    Mockito.doReturn(6).when(feature).getStackCount(source);
-    Mockito.doReturn(6).when(feature).getStackCount(target);
+    Mockito.doReturn(6).when(feature).getStackCount(MobStacks.entity(source));
+    Mockito.doReturn(6).when(feature).getStackCount(MobStacks.entity(target));
 
-    Assertions.assertFalse(feature.canMerge(source, target));
+    Assertions.assertFalse(feature.canMerge(MobStacks.entity(source), MobStacks.entity(target)));
 
     assertMergeStateUntouched(source);
     assertMergeStateUntouched(target);
@@ -42,7 +43,7 @@ class FeatureMobStackingMergeOrderTest {
     Mockito.doReturn(1).when(feature).getStackCount(Mockito.any());
     Mockito.when(target.hasMetadata("DoNotStack")).thenReturn(true);
 
-    Assertions.assertFalse(feature.canMerge(source, target));
+    Assertions.assertFalse(feature.canMerge(MobStacks.entity(source), MobStacks.entity(target)));
 
     assertMergeStateUntouched(source);
     assertMergeStateUntouched(target);
@@ -58,7 +59,7 @@ class FeatureMobStackingMergeOrderTest {
     LivingEntity target = zombie(2);
     Mockito.doReturn(1).when(feature).getStackCount(Mockito.any());
 
-    Assertions.assertFalse(feature.canMerge(source, target));
+    Assertions.assertFalse(feature.canMerge(MobStacks.entity(source), MobStacks.entity(target)));
 
     assertMergeStateUntouched(source);
     assertMergeStateUntouched(target);
@@ -73,8 +74,8 @@ class FeatureMobStackingMergeOrderTest {
   }
 
   private static FeatureMobStacking feature() {
-    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect()));
-    Mockito.doReturn(true).when(feature).isStackableType(EntityType.ZOMBIE);
+    FeatureMobStacking feature = Mockito.spy(MobStacks.feature(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect()));
+    Mockito.doReturn(true).when(feature).isStackableType("ZOMBIE");
     return feature;
   }
 

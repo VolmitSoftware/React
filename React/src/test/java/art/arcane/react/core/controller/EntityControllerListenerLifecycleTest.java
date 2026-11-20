@@ -1,5 +1,6 @@
 package art.arcane.react.core.controller;
 
+import art.arcane.react.platform.GameEntity;
 import art.arcane.volmlib.util.scheduling.ChronoLatch;
 import art.arcane.react.React;
 import art.arcane.react.api.entity.EntityPriority;
@@ -155,7 +156,7 @@ class EntityControllerListenerLifecycleTest {
         return true;
       });
       killer.when(() -> EntityKiller.stopAll(Mockito.anyLong())).thenReturn(true);
-      managed.when(() -> ReactEntity.tick(Mockito.any(Entity.class), Mockito.same(priority))).thenReturn(true);
+      managed.when(() -> ReactEntity.tick(Mockito.any(GameEntity.class), Mockito.same(priority))).thenReturn(true);
       managed.when(() -> ReactEntity.awaitManagedCleanup(Mockito.anyLong())).thenReturn(true);
 
       controller.onTick();

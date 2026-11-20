@@ -124,6 +124,29 @@ public interface ReactPlatform {
     return Optional.empty();
   }
 
+  // Batch A: items
+  default Optional<ItemHost> itemHost() {
+    return Optional.empty();
+  }
+
+  default Optional<VehicleHost> vehicleHost() {
+    return Optional.empty();
+  }
+
+  default Optional<EntityEventHost> entityEventHost() {
+    return Optional.empty();
+  }
+
+  // Batch A: ai
+  default Optional<EntityActivityHost> entityActivityHost() {
+    return Optional.empty();
+  }
+
+  // Batch A: mobs
+  default Optional<MobStackHost> mobStackHost() {
+    return Optional.empty();
+  }
+
   // Chunks, players, world rules and maps
 
   default Optional<ChunkHost> chunkHost() {

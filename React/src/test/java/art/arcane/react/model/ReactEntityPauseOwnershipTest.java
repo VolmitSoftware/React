@@ -1,5 +1,6 @@
 package art.arcane.react.model;
 
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.React;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.NamespacedKey;
@@ -62,14 +63,14 @@ class ReactEntityPauseOwnershipTest {
     AtomicReference<Byte> marker = new AtomicReference<>();
     LivingEntity entity = livingEntity(ai, marker);
 
-    ReactEntity.requestPause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-    ReactEntity.requestPause(entity, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
-    ReactEntity.releasePause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestPause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestPause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
+    ReactEntity.releasePause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
 
     Assertions.assertFalse(ai.get());
-    Assertions.assertTrue(ReactEntity.isPausedBy(entity, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE));
+    Assertions.assertTrue(ReactEntity.isPausedBy(new BukkitGameEntity(entity), ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE));
 
-    ReactEntity.releasePause(entity, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
+    ReactEntity.releasePause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
 
     Assertions.assertTrue(ai.get());
     Assertions.assertNull(marker.get());
@@ -81,8 +82,8 @@ class ReactEntityPauseOwnershipTest {
     AtomicReference<Byte> marker = new AtomicReference<>();
     LivingEntity entity = livingEntity(ai, marker);
 
-    ReactEntity.requestPause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-    ReactEntity.releasePause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestPause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.releasePause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
 
     Assertions.assertFalse(ai.get());
     Assertions.assertNull(marker.get());
@@ -102,10 +103,10 @@ class ReactEntityPauseOwnershipTest {
       return null;
     }).when(mob).setAware(Mockito.anyBoolean());
 
-    ReactEntity.requestDoze(mob);
+    ReactEntity.requestDoze(new BukkitGameEntity(mob));
     Assertions.assertFalse(aware.get());
 
-    ReactEntity.releaseDoze(mob);
+    ReactEntity.releaseDoze(new BukkitGameEntity(mob));
     Assertions.assertTrue(aware.get());
     Assertions.assertNull(marker.get());
   }
@@ -117,16 +118,16 @@ class ReactEntityPauseOwnershipTest {
     Map<NamespacedKey, Byte> markers = new ConcurrentHashMap<>();
     Mob mob = managedMob(UUID.randomUUID(), ai, aware, markers);
 
-    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
-    ReactEntity.requestDoze(mob);
-    ReactEntity.releaseManagedState(mob);
+    ReactEntity.requestPause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestPause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
+    ReactEntity.requestDoze(new BukkitGameEntity(mob));
+    ReactEntity.releaseManagedState(new BukkitGameEntity(mob));
 
     Assertions.assertTrue(ai.get());
     Assertions.assertTrue(aware.get());
     Assertions.assertTrue(markers.isEmpty());
-    Assertions.assertFalse(ReactEntity.isPausedBy(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
-    Assertions.assertFalse(ReactEntity.isPausedBy(mob, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE));
+    Assertions.assertFalse(ReactEntity.isPausedBy(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
+    Assertions.assertFalse(ReactEntity.isPausedBy(new BukkitGameEntity(mob), ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE));
   }
 
   @Test
@@ -136,9 +137,9 @@ class ReactEntityPauseOwnershipTest {
     Map<NamespacedKey, Byte> markers = new ConcurrentHashMap<>();
     Mob mob = managedMob(UUID.randomUUID(), ai, aware, markers);
 
-    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-    ReactEntity.requestDoze(mob);
-    ReactEntity.releaseManagedState(mob);
+    ReactEntity.requestPause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestDoze(new BukkitGameEntity(mob));
+    ReactEntity.releaseManagedState(new BukkitGameEntity(mob));
 
     Assertions.assertFalse(ai.get());
     Assertions.assertFalse(aware.get());
@@ -156,7 +157,7 @@ class ReactEntityPauseOwnershipTest {
     markers.put(new NamespacedKey("react", "react-dozing"), (byte) 1);
     Mob mob = managedMob(UUID.randomUUID(), ai, aware, markers);
 
-    ReactEntity.releaseManagedState(mob);
+    ReactEntity.releaseManagedState(new BukkitGameEntity(mob));
 
     Assertions.assertTrue(ai.get());
     Assertions.assertTrue(aware.get());
@@ -171,23 +172,23 @@ class ReactEntityPauseOwnershipTest {
     Map<NamespacedKey, Byte> markers = new ConcurrentHashMap<>();
     Mob mob = managedMob(entityId, ai, aware, markers);
     ArrayList<Runnable> queued = new ArrayList<>();
-    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-    ReactEntity.requestDoze(mob);
+    ReactEntity.requestPause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestDoze(new BukkitGameEntity(mob));
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       queueOwnedCleanup(scheduling, mob, queued, true);
       ReactEntity.releaseAllManagedState();
-      ReactEntity.releaseManagedState(mob);
+      ReactEntity.releaseManagedState(new BukkitGameEntity(mob));
       Mob reloaded = managedMob(entityId, ai, aware, markers);
-      ReactEntity.requestPause(reloaded, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-      ReactEntity.requestDoze(reloaded);
+      ReactEntity.requestPause(new BukkitGameEntity(reloaded), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+      ReactEntity.requestDoze(new BukkitGameEntity(reloaded));
       queued.forEach(Runnable::run);
 
       Assertions.assertFalse(ai.get());
       Assertions.assertFalse(aware.get());
-      Assertions.assertTrue(ReactEntity.isPausedBy(reloaded, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
-      Assertions.assertTrue(ReactEntity.isDozing(reloaded));
-      ReactEntity.releaseManagedState(reloaded);
+      Assertions.assertTrue(ReactEntity.isPausedBy(new BukkitGameEntity(reloaded), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
+      Assertions.assertTrue(ReactEntity.isDozing(new BukkitGameEntity(reloaded)));
+      ReactEntity.releaseManagedState(new BukkitGameEntity(reloaded));
     }
   }
 
@@ -198,22 +199,22 @@ class ReactEntityPauseOwnershipTest {
     LivingEntity entity = livingEntity(ai, marker);
     ArrayList<Runnable> queued = new ArrayList<>();
 
-    ReactEntity.requestPause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestPause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       queueOwnedCleanup(scheduling, entity, queued, true);
 
       ReactEntity.releasePauseOwner(ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
       Assertions.assertEquals(1, queued.size());
 
-      ReactEntity.requestPause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+      ReactEntity.requestPause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
       queued.getFirst().run();
     }
 
     Assertions.assertFalse(ai.get());
     Assertions.assertEquals((byte) 1, marker.get());
-    Assertions.assertTrue(ReactEntity.isPausedBy(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
+    Assertions.assertTrue(ReactEntity.isPausedBy(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
 
-    ReactEntity.releasePause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.releasePause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
     Assertions.assertTrue(ai.get());
   }
 
@@ -225,26 +226,26 @@ class ReactEntityPauseOwnershipTest {
     Mob mob = managedMob(UUID.randomUUID(), ai, aware, markers);
     ArrayList<Runnable> queued = new ArrayList<>();
 
-    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-    ReactEntity.requestDoze(mob);
+    ReactEntity.requestPause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestDoze(new BukkitGameEntity(mob));
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       queueOwnedCleanup(scheduling, mob, queued, true);
 
       ReactEntity.releaseAllManagedState();
       Assertions.assertEquals(2, queued.size());
 
-      ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-      ReactEntity.requestDoze(mob);
+      ReactEntity.requestPause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+      ReactEntity.requestDoze(new BukkitGameEntity(mob));
       queued.forEach(Runnable::run);
     }
 
     Assertions.assertFalse(ai.get());
     Assertions.assertFalse(aware.get());
-    Assertions.assertTrue(ReactEntity.isPausedBy(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
-    Assertions.assertTrue(ReactEntity.isDozing(mob));
+    Assertions.assertTrue(ReactEntity.isPausedBy(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
+    Assertions.assertTrue(ReactEntity.isDozing(new BukkitGameEntity(mob)));
 
-    ReactEntity.releasePause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-    ReactEntity.releaseDoze(mob);
+    ReactEntity.releasePause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.releaseDoze(new BukkitGameEntity(mob));
     Assertions.assertTrue(ai.get());
     Assertions.assertTrue(aware.get());
   }
@@ -258,8 +259,8 @@ class ReactEntityPauseOwnershipTest {
     Map<NamespacedKey, Byte> markers = new ConcurrentHashMap<>();
     Mob mob = managedMob(entityId, ai, aware, markers);
 
-    ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-    ReactEntity.requestDoze(mob);
+    ReactEntity.requestPause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestDoze(new BukkitGameEntity(mob));
     Map<UUID, Object> pauses = managedStates("pauseByEntity");
     Map<UUID, Object> dozes = managedStates("dozeByEntity");
     clearEntityReference(pauses.get(entityId));
@@ -269,11 +270,11 @@ class ReactEntityPauseOwnershipTest {
 
     Assertions.assertFalse(pauses.containsKey(entityId));
     Assertions.assertFalse(dozes.containsKey(entityId));
-    ReactEntity.reconcileManagedState(mob);
+    ReactEntity.reconcileManagedState(new BukkitGameEntity(mob));
     Assertions.assertTrue(ai.get());
     Assertions.assertTrue(aware.get());
-    Assertions.assertFalse(ReactEntity.isPaused(mob));
-    Assertions.assertFalse(ReactEntity.isDozing(mob));
+    Assertions.assertFalse(ReactEntity.isPaused(new BukkitGameEntity(mob)));
+    Assertions.assertFalse(ReactEntity.isDozing(new BukkitGameEntity(mob)));
   }
 
   @Test
@@ -283,16 +284,16 @@ class ReactEntityPauseOwnershipTest {
     LivingEntity entity = livingEntity(ai, marker);
     ArrayList<Runnable> queued = new ArrayList<>();
 
-    ReactEntity.requestPause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestPause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       queueOwnedCleanup(scheduling, entity, queued, false);
       ReactEntity.releaseAllManagedState();
     }
 
     Assertions.assertTrue(queued.isEmpty());
-    Assertions.assertFalse(ReactEntity.isPausedBy(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
+    Assertions.assertFalse(ReactEntity.isPausedBy(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
     Assertions.assertFalse(ai.get());
-    ReactEntity.reconcileManagedState(entity);
+    ReactEntity.reconcileManagedState(new BukkitGameEntity(entity));
     Assertions.assertTrue(ai.get());
     Assertions.assertNull(marker.get());
   }
@@ -303,7 +304,7 @@ class ReactEntityPauseOwnershipTest {
     for (int i = 0; i < 300; i++) {
       LivingEntity entity = livingEntity(new AtomicBoolean(true), new AtomicReference<>());
       entities.add(entity);
-      ReactEntity.requestPause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+      ReactEntity.requestPause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
     }
     ArrayList<Runnable> operations = new ArrayList<>();
 
@@ -336,7 +337,7 @@ class ReactEntityPauseOwnershipTest {
     AtomicBoolean ai = new AtomicBoolean(true);
     AtomicReference<Byte> marker = new AtomicReference<>();
     LivingEntity entity = livingEntity(ai, marker);
-    ReactEntity.requestPause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestPause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       scheduling.when(J::isFoliaThreading).thenReturn(true);
@@ -357,9 +358,9 @@ class ReactEntityPauseOwnershipTest {
       Assertions.assertTrue(ReactEntity.awaitManagedCleanup(0L));
     }
 
-    Assertions.assertFalse(ReactEntity.isPausedBy(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
+    Assertions.assertFalse(ReactEntity.isPausedBy(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
     Assertions.assertFalse(ai.get());
-    ReactEntity.reconcileManagedState(entity);
+    ReactEntity.reconcileManagedState(new BukkitGameEntity(entity));
     Assertions.assertTrue(ai.get());
   }
 
@@ -369,7 +370,7 @@ class ReactEntityPauseOwnershipTest {
     AtomicReference<Byte> marker = new AtomicReference<>();
     LivingEntity entity = livingEntity(ai, marker);
     ArrayList<Runnable> stranded = new ArrayList<>();
-    ReactEntity.requestPause(entity, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+    ReactEntity.requestPause(new BukkitGameEntity(entity), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
     Assertions.assertFalse(ai.get());
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {

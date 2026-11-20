@@ -17,6 +17,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import art.arcane.react.platform.GameEntity;
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -251,9 +253,9 @@ class FeatureItemBackpressureLifecycleTest {
   }
 
   private boolean removeOwnedItem(FeatureItemBackpressure feature, Item item, long generation) throws Exception {
-    Method method = FeatureItemBackpressure.class.getDeclaredMethod("removeOwnedItem", Item.class, long.class);
+    Method method = FeatureItemBackpressure.class.getDeclaredMethod("removeOwnedItem", GameEntity.class, long.class);
     method.setAccessible(true);
-    return (boolean) method.invoke(feature, item, generation);
+    return (boolean) method.invoke(feature, new BukkitGameEntity(item), generation);
   }
 
   private AtomicLong lifecycle(FeatureItemBackpressure feature) throws ReflectiveOperationException {

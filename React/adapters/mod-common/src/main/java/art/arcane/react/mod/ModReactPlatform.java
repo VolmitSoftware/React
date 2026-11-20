@@ -13,8 +13,12 @@ import art.arcane.react.platform.PortalHost;
 import art.arcane.react.platform.ExplosionHost;
 import art.arcane.react.platform.FurnaceHost;
 import art.arcane.react.platform.ComponentHost;
+import art.arcane.react.platform.EntityEventHost;
 import art.arcane.react.platform.EntityHost;
+import art.arcane.react.platform.EntityActivityHost;
 import art.arcane.react.platform.HopperHost;
+import art.arcane.react.platform.MobStackHost;
+import art.arcane.react.platform.ItemHost;
 import art.arcane.react.platform.LanguageHost;
 import art.arcane.react.platform.PlatformCapability;
 import art.arcane.react.platform.PlatformKind;
@@ -28,6 +32,7 @@ import art.arcane.react.platform.RegistryHost;
 import art.arcane.react.platform.RuntimeStatsHost;
 import art.arcane.react.platform.SamplerHost;
 import art.arcane.react.platform.TickStatsHost;
+import art.arcane.react.platform.VehicleHost;
 import art.arcane.react.platform.ViewDistanceHost;
 import art.arcane.react.platform.ChunkHeatmapHost;
 import art.arcane.react.platform.ChunkHost;
@@ -77,6 +82,7 @@ public final class ModReactPlatform implements ReactPlatform {
     private final Supplier<ReactWebServer> webServer;
     private final ModComponentHost componentHost;
     private final ModEntityKiller entityKiller = new ModEntityKiller();
+    private final ModEntityTicker entityTicker;
     private final WorldHost worldHost;
     private final EntityHost entityHost;
     private final HopperHost hopperHost;
@@ -88,6 +94,14 @@ public final class ModReactPlatform implements ReactPlatform {
     private final ModDropHost dropHost;
     private final ModShorthandHost shorthandHost;
     private final ModMapData mapData;
+    // Batch A: items
+    private final ItemHost itemHost = new ModItemHost();
+    private final VehicleHost vehicleHost;
+    private final EntityEventHost entityEventHost;
+    // Batch A: ai
+    private final EntityActivityHost entityActivityHost = new ModEntityActivityHost();
+    // Batch A: mobs
+    private final MobStackHost mobStackHost;
 
     private final BlockHost blockHost;
     private final GrowthHost growthHost;
@@ -123,8 +137,14 @@ public final class ModReactPlatform implements ReactPlatform {
         this.componentHost = new ModComponentHost(ticks, async, telemetry.jobs(), scheduler::isReady, logger, registryHost, mapData::isInstalled,
                 () -> languageHost instanceof ModLanguageHost && ((ModLanguageHost) languageHost).integrationSecretsEnabled());
         this.worldHost = new ModWorldHost(server);
-        this.entityHost = new ModEntityHost(server, entityKiller);
+        this.entityTicker = new ModEntityTicker(server, logger);
+        this.entityHost = new ModEntityHost(server, entityKiller, entityTicker);
         this.viewDistanceHost = new ModViewDistanceHost(server);
+        // Batch A: items
+        this.vehicleHost = new ModVehicleHost(server);
+        this.entityEventHost = new ModEntityEventHost((ModWorldHost) worldHost, entityKiller);
+        // Batch A: mobs
+        this.mobStackHost = new ModMobStackHost(server);
         this.chunkHost = new ModChunkHost(server, modSamplerHost.chunks());
         this.playerHost = new ModPlayerHost(server);
         this.incidentHost = new ModIncidentHost();
@@ -144,6 +164,10 @@ public final class ModReactPlatform implements ReactPlatform {
 
     ModEntityKiller entityKiller() {
         return entityKiller;
+    }
+
+    ModEntityTicker entityTicker() {
+        return entityTicker;
     }
 
     Optional<ModIntegrationMetrics> integrations() {
@@ -332,6 +356,34 @@ public final class ModReactPlatform implements ReactPlatform {
     @Override
     public Optional<ViewDistanceHost> viewDistanceHost() {
         return Optional.of(viewDistanceHost);
+    }
+
+    // Batch A: items
+    @Override
+    public Optional<ItemHost> itemHost() {
+        return Optional.of(itemHost);
+    }
+
+    @Override
+    public Optional<VehicleHost> vehicleHost() {
+        return Optional.of(vehicleHost);
+    }
+
+    @Override
+    public Optional<EntityEventHost> entityEventHost() {
+        return Optional.of(entityEventHost);
+    }
+
+    // Batch A: ai
+    @Override
+    public Optional<EntityActivityHost> entityActivityHost() {
+        return Optional.of(entityActivityHost);
+    }
+
+    // Batch A: mobs
+    @Override
+    public Optional<MobStackHost> mobStackHost() {
+        return Optional.of(mobStackHost);
     }
 
     // Chunks, players, world rules and maps

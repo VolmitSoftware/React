@@ -1,8 +1,12 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.GameEntity;
 import art.arcane.react.React;
-import art.arcane.react.api.feature.FeatureIntegrityListener;
-import art.arcane.react.core.controller.EntityController;
+import art.arcane.react.api.feature.FeatureIntegrity;
+import art.arcane.react.platform.EntityHost;
+import art.arcane.react.platform.Subscription;
+import java.lang.reflect.Field;
+import java.util.Collection;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
@@ -24,24 +28,26 @@ import java.util.function.Consumer;
 
 class FeatureMobStackingLifecycleTest {
   @Test
-  void everyEntityTypeUsesOneRemovableSubscriptionIdentity() {
+  void everyEntityTypeUsesOneRemovableSubscriptionIdentity() throws ReflectiveOperationException {
     FeatureMobStacking feature = new FeatureMobStacking();
-    EntityController controller = Mockito.mock(EntityController.class);
-    ArgumentCaptor<Consumer<Entity>> listeners = ArgumentCaptor.forClass(Consumer.class);
+    EntityHost entities = Mockito.mock(EntityHost.class);
+    Subscription subscription = Mockito.mock(Subscription.class);
+    ArgumentCaptor<Consumer<GameEntity>> listeners = ArgumentCaptor.forClass(Consumer.class);
+    ArgumentCaptor<Collection<String>> types = ArgumentCaptor.forClass(Collection.class);
+    Mockito.when(entities.onTick(types.capture(), listeners.capture())).thenReturn(subscription);
+    Field host = FeatureMobStacking.class.getDeclaredField("entities");
+    host.setAccessible(true);
+    host.set(feature, entities);
 
-    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
-      react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
-      feature.onActivate();
-      feature.onDeactivate();
-    }
+    feature.onActivate();
+    feature.onDeactivate();
 
-    Mockito.verify(controller, Mockito.atLeastOnce())
-        .registerEntityTickListener(Mockito.any(EntityType.class), listeners.capture());
-    List<Consumer<Entity>> registrations = listeners.getAllValues();
-    Set<Consumer<Entity>> identities = Collections.newSetFromMap(new IdentityHashMap<>());
-    identities.addAll(registrations);
+    Mockito.verify(entities, Mockito.times(1)).onTick(Mockito.anyCollection(), Mockito.any());
+    Assertions.assertTrue(types.getValue().contains(EntityType.ZOMBIE.name()));
+    Set<Consumer<GameEntity>> identities = Collections.newSetFromMap(new IdentityHashMap<>());
+    identities.addAll(listeners.getAllValues());
     Assertions.assertEquals(1, identities.size());
-    Mockito.verify(controller).unregisterEntityTickListener(Mockito.same(registrations.getFirst()));
+    Mockito.verify(subscription).cancel();
   }
 
   @Test
@@ -50,8 +56,8 @@ class FeatureMobStackingLifecycleTest {
     Entity source = Mockito.mock(Entity.class);
     Entity target = Mockito.mock(Entity.class);
 
-    Assertions.assertInstanceOf(FeatureIntegrityListener.class, feature);
-    Assertions.assertFalse(feature.merge(source, target));
+    Assertions.assertInstanceOf(FeatureIntegrity.class, feature);
+    Assertions.assertFalse(feature.merge(MobStacks.entity(source), MobStacks.entity(target)));
     Mockito.verifyNoInteractions(source, target);
   }
 
@@ -69,12 +75,12 @@ class FeatureMobStackingLifecycleTest {
     Mockito.when(source.getType()).thenReturn(EntityType.ZOMBIE);
     Mockito.when(world.spawnEntity(location, EntityType.ZOMBIE)).thenReturn(replacement);
     Mockito.when(replacement.isValid()).thenReturn(true);
-    Mockito.doReturn(3).when(feature).getStackCount(source);
-    Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+    Mockito.doReturn(3).when(feature).getStackCount(MobStacks.entity(source));
+    Mockito.doNothing().when(feature).setStackCount(Mockito.any(GameEntity.class), Mockito.anyInt());
 
-    feature.onEntityDeath(event);
+    MobStacks.events(feature).onEntityDeath(event);
 
-    Mockito.verify(feature).setStackCount(replacement, 2);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(replacement), 2);
     Mockito.verify(source, Mockito.never()).setCustomName(Mockito.any());
   }
 
@@ -94,10 +100,10 @@ class FeatureMobStackingLifecycleTest {
     Mockito.when(source.getPersistentDataContainer()).thenReturn(Mockito.mock(PersistentDataContainer.class));
     Mockito.when(world.spawnEntity(location, EntityType.ZOMBIE)).thenReturn(replacement);
     Mockito.when(replacement.isValid()).thenReturn(true);
-    Mockito.doReturn(3).when(feature).getStackCount(source);
-    Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+    Mockito.doReturn(3).when(feature).getStackCount(MobStacks.entity(source));
+    Mockito.doNothing().when(feature).setStackCount(Mockito.any(GameEntity.class), Mockito.anyInt());
 
-    feature.onEntityDeath(event);
+    MobStacks.events(feature).onEntityDeath(event);
 
     Mockito.verify(replacement).setCustomName("Sentinel");
     Mockito.verify(source, Mockito.never()).setCustomName(Mockito.any());

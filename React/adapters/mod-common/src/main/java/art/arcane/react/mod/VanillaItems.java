@@ -7,11 +7,13 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundMapItemDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -40,6 +42,20 @@ final class VanillaItems {
     static List<Component> lore(ItemStack item) {
         ItemLore lore = item.get(DataComponents.LORE);
         return lore == null ? List.of() : lore.lines();
+    }
+
+    static boolean sameItem(ItemStack first, ItemStack second) {
+        return ItemStack.isSameItemSameComponents(first, second);
+    }
+
+    /** The stacks inside a bundle; a copy that changes nothing when edited. */
+    static List<ItemStack> bundleItems(ItemStack bundle) {
+        BundleContents contents = bundle.get(DataComponents.BUNDLE_CONTENTS);
+        return contents == null ? new ArrayList<>() : VanillaApi.bundleItems(contents);
+    }
+
+    static void bundleItems(ItemStack bundle, List<ItemStack> items) {
+        bundle.set(DataComponents.BUNDLE_CONTENTS, VanillaApi.bundleContents(items));
     }
 
     static void dyedColor(ItemStack item, int rgb) {

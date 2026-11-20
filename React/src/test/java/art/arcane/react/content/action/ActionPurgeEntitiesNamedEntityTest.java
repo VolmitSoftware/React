@@ -1,5 +1,6 @@
 package art.arcane.react.content.action;
 
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.junit.jupiter.api.Assertions;
@@ -14,7 +15,7 @@ class ActionPurgeEntitiesNamedEntityTest {
     Entity entity = entity("Betsy");
 
     Assertions.assertTrue(params.isProtectNamedEntities());
-    Assertions.assertFalse(action.canPurge(entity, params));
+    Assertions.assertFalse(action.canPurge(new BukkitGameEntity(entity), params));
   }
 
   @Test
@@ -22,7 +23,7 @@ class ActionPurgeEntitiesNamedEntityTest {
     ActionPurgeEntities action = new ActionPurgeEntities();
     ActionPurgeEntities.Params params = action.getDefaultParams().setProtectNamedEntities(false);
 
-    Assertions.assertTrue(action.canPurge(entity("Betsy"), params));
+    Assertions.assertTrue(action.canPurge(new BukkitGameEntity(entity("Betsy")), params));
   }
 
   private Entity entity(String customName) {

@@ -1,5 +1,7 @@
 package art.arcane.react.api.entity;
 
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
+import art.arcane.react.platform.GameEntity;
 import art.arcane.react.React;
 import art.arcane.react.model.ReactEntity;
 import art.arcane.react.util.common.scheduling.J;
@@ -68,15 +70,15 @@ class EntityPriorityCrowdTest {
     EntityPriority reference = new EntityPriority();
 
     for (Entity entity : cluster) {
-      Assertions.assertTrue(ReactEntity.tick(entity, priority));
+      Assertions.assertTrue(ReactEntity.tick(new BukkitGameEntity(entity), priority));
     }
 
     double maxCrowding = 1;
     for (Entity entity : cluster) {
       double expectedCrowding = uncachedCrowding(reference, entity, cluster);
-      double expectedPriority = reference.getPriorityWithCrowd(entity, reference.getPriority(entity), expectedCrowding);
-      Assertions.assertEquals(expectedCrowding, ReactEntity.getCrowding(entity), TOLERANCE);
-      Assertions.assertEquals(expectedPriority, ReactEntity.getPriority(entity), TOLERANCE);
+      double expectedPriority = reference.getPriorityWithCrowd(new BukkitGameEntity(entity), reference.getPriority(new BukkitGameEntity(entity)), expectedCrowding);
+      Assertions.assertEquals(expectedCrowding, ReactEntity.getCrowding(new BukkitGameEntity(entity)), TOLERANCE);
+      Assertions.assertEquals(expectedPriority, ReactEntity.getPriority(new BukkitGameEntity(entity)), TOLERANCE);
       maxCrowding = Math.max(maxCrowding, expectedCrowding);
     }
     Assertions.assertTrue(maxCrowding > 2);
@@ -89,16 +91,16 @@ class EntityPriorityCrowdTest {
     CountingPriority priority = new CountingPriority();
 
     for (Entity entity : cluster) {
-      ReactEntity.tick(entity, priority);
+      ReactEntity.tick(new BukkitGameEntity(entity), priority);
     }
     Assertions.assertEquals(2 * size - 1, priority.calls);
 
     priority.calls = 0;
     for (Entity entity : cluster) {
-      ReactEntity.setLastTick(entity, 0L);
+      ReactEntity.setLastTick(new BukkitGameEntity(entity), 0L);
     }
     for (Entity entity : cluster) {
-      Assertions.assertTrue(ReactEntity.tick(entity, priority));
+      Assertions.assertTrue(ReactEntity.tick(new BukkitGameEntity(entity), priority));
     }
     Assertions.assertEquals(size, priority.calls);
   }
@@ -112,15 +114,15 @@ class EntityPriorityCrowdTest {
     EntityPriority reference = new EntityPriority();
     long now = System.currentTimeMillis();
     for (Entity entity : cluster) {
-      ReactEntity.setRawPriority(entity, reference.getPriority(entity), now);
+      ReactEntity.setRawPriority(new BukkitGameEntity(entity), reference.getPriority(new BukkitGameEntity(entity)), now);
     }
-    ReactEntity.setRawPriority(neighbour, 1_000_000D, now - 20_000L);
+    ReactEntity.setRawPriority(new BukkitGameEntity(neighbour), 1_000_000D, now - 20_000L);
 
-    priority.updateCrowd(source, reference.getPriority(source), now);
+    priority.updateCrowd(new BukkitGameEntity(source), reference.getPriority(new BukkitGameEntity(source)), now);
 
     Assertions.assertEquals(1, priority.calls);
-    Assertions.assertEquals(uncachedCrowding(reference, source, cluster), ReactEntity.getCrowding(source), TOLERANCE);
-    Assertions.assertEquals(reference.getPriority(neighbour), ReactEntity.getRawPriority(neighbour, now), TOLERANCE);
+    Assertions.assertEquals(uncachedCrowding(reference, source, cluster), ReactEntity.getCrowding(new BukkitGameEntity(source)), TOLERANCE);
+    Assertions.assertEquals(reference.getPriority(new BukkitGameEntity(neighbour)), ReactEntity.getRawPriority(new BukkitGameEntity(neighbour), now), TOLERANCE);
   }
 
   @Test
@@ -128,17 +130,17 @@ class EntityPriorityCrowdTest {
     Entity entity = cluster(1).get(0);
     long now = System.currentTimeMillis();
 
-    Assertions.assertTrue(Double.isNaN(ReactEntity.getRawPriority(entity, now)));
+    Assertions.assertTrue(Double.isNaN(ReactEntity.getRawPriority(new BukkitGameEntity(entity), now)));
 
-    ReactEntity.setRawPriority(entity, 42D, now);
+    ReactEntity.setRawPriority(new BukkitGameEntity(entity), 42D, now);
 
-    Assertions.assertEquals(42D, ReactEntity.getRawPriority(entity, now + 10_000L));
-    Assertions.assertTrue(Double.isNaN(ReactEntity.getRawPriority(entity, now + 10_001L)));
-    Assertions.assertTrue(Double.isNaN(ReactEntity.getRawPriority(entity, now - 1L)));
+    Assertions.assertEquals(42D, ReactEntity.getRawPriority(new BukkitGameEntity(entity), now + 10_000L));
+    Assertions.assertTrue(Double.isNaN(ReactEntity.getRawPriority(new BukkitGameEntity(entity), now + 10_001L)));
+    Assertions.assertTrue(Double.isNaN(ReactEntity.getRawPriority(new BukkitGameEntity(entity), now - 1L)));
   }
 
   private static double uncachedCrowding(EntityPriority priority, Entity source, List<Entity> cluster) {
-    double sourcePriority = priority.getPriority(source);
+    double sourcePriority = priority.getPriority(new BukkitGameEntity(source));
     double minPriority = sourcePriority * 0.25;
     double maxPriority = sourcePriority * 1.15;
     double count = 1;
@@ -147,7 +149,7 @@ class EntityPriorityCrowdTest {
         continue;
       }
 
-      double otherPriority = priority.getPriority(other);
+      double otherPriority = priority.getPriority(new BukkitGameEntity(other));
       if (otherPriority < minPriority || otherPriority > maxPriority) {
         continue;
       }
@@ -178,7 +180,7 @@ class EntityPriorityCrowdTest {
     private int calls;
 
     @Override
-    public double getPriority(Entity e) {
+    public double getPriority(GameEntity e) {
       calls++;
       return super.getPriority(e);
     }

@@ -1,5 +1,9 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.BukkitMobStackHost;
+import art.arcane.react.platform.bukkit.PaperMobStateAccess;
+import art.arcane.react.platform.bukkit.SpigotMobStateAccess;
+import art.arcane.react.platform.bukkit.MobStateAccess;
 import art.arcane.react.core.integration.GlossEntityOverlayIntegration;
 import art.arcane.react.util.project.world.CustomMobChecker;
 import io.papermc.paper.registry.RegistryAccess;
@@ -211,7 +215,7 @@ class FeatureMobStackingSpigotStateTest {
   }
 
   private static FeatureMobStacking spigotFeature() {
-    return new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), new SpigotMobStateAccess());
+    return MobStacks.feature(Mockito.mock(GlossEntityOverlayIntegration.class), new SpigotMobStateAccess());
   }
 
   private static boolean canMerge(LivingEntity source, LivingEntity target, EntityType type) {
@@ -228,14 +232,14 @@ class FeatureMobStackingSpigotStateTest {
     Mockito.when(target.getType()).thenReturn(type);
     Mockito.doReturn(1).when(feature).getStackCount(Mockito.any());
     try (MockedStatic<CustomMobChecker> customMobs = Mockito.mockStatic(CustomMobChecker.class)) {
-      return feature.canMerge(source, target);
+      return feature.canMerge(MobStacks.entity(source), MobStacks.entity(target));
     }
   }
 
   private static void copyState(LivingEntity source, LivingEntity target) throws ReflectiveOperationException {
-    Method method = FeatureMobStacking.class.getDeclaredMethod("copyState", LivingEntity.class, LivingEntity.class);
+    Method method = BukkitMobStackHost.class.getDeclaredMethod("copyState", LivingEntity.class, LivingEntity.class, boolean.class);
     method.setAccessible(true);
-    method.invoke(spigotFeature(), source, target);
+    method.invoke(new BukkitMobStackHost(Mockito.mock(GlossEntityOverlayIntegration.class), new SpigotMobStateAccess()), source, target, false);
   }
 
   private static Object registry(Object key) {

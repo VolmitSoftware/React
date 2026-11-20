@@ -248,6 +248,11 @@ public class BukkitSpawnHost implements SpawnHost {
 
   private record BukkitEntitySpawn(EntitySpawnEvent event) implements EntitySpawn {
     @Override
+    public GameEntity entity() {
+      return new BukkitGameEntity(event.getEntity());
+    }
+
+    @Override
     public GameLocation location() {
       return at(event.getEntity().getLocation());
     }

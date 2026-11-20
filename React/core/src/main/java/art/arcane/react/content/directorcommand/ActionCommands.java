@@ -6,24 +6,29 @@ import art.arcane.react.content.action.ActionCollectGarbage;
 import art.arcane.react.content.action.ActionIncidentPlaybook;
 import art.arcane.react.content.action.ActionPrewarmCriticalChunks;
 import art.arcane.react.content.action.ActionPurgeChunks;
+import art.arcane.react.content.action.ActionPurgeEntities;
 import art.arcane.react.content.action.ActionQuarantineHotChunks;
+import art.arcane.react.content.action.ActionTrimEntitiesByAgePriority;
 import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.ReactComponents;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.platform.ChunkHost;
+import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.platform.ReactWorld;
+import art.arcane.react.platform.WorldHost;
 import art.arcane.react.util.plugin.VolmitSender;
 import art.arcane.react.util.project.config.ConfigLocalization;
 import art.arcane.volmlib.util.localization.MessageArgument;
 
 import java.util.Comparator;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 /**
- * The {@code /react action} commands that need nothing from the world.
+ * The {@code /react action} commands that run the same on every platform.
  */
 final class ActionCommands {
   private ActionCommands() {
@@ -149,5 +154,53 @@ final class ActionCommands {
               MessageArgument.untrusted("summary", summary)
           );
         });
+  }
+
+  static void purgeEntities(VolmitSender sender, int radius, String world) {
+    Action<ActionPurgeEntities.Params> action = ReactComponents.action(ActionPurgeEntities.ID);
+    if (action == null) {
+      ReactLanguage.sendPrefixed(sender, CommandMessages.ACTION_CONTROLLER_UNAVAILABLE);
+      return;
+    }
+    ActionPurgeEntities.Params params = action.getDefaultParams();
+
+    if (!world.equals("ALL")) {
+      params.withWorld(worldKey(world));
+    }
+
+    if (sender.isPlayer() && radius > 0) {
+      WorldHost worlds = worldHost();
+      Optional<GameLocation> location = worlds == null ? Optional.empty() : worlds.location(sender.player());
+      Optional<ReactWorld> playerWorld = location.flatMap((GameLocation at) -> worlds.world(at.worldId()));
+      if (location.isPresent() && playerWorld.isPresent()) {
+        int chunkX = ((int) Math.floor(location.get().x())) >> 4;
+        int chunkZ = ((int) Math.floor(location.get().z())) >> 4;
+        params.addRadius(playerWorld.get(), chunkX, chunkZ, Math.min(radius, 10));
+      }
+    }
+
+    action.create(params, sender).queue();
+  }
+
+  static void trimEntitiesByAgePriority(VolmitSender sender, int maxEntities, int minAgeSeconds, String world) {
+    Action<ActionTrimEntitiesByAgePriority.Params> action = ReactComponents.action(ActionTrimEntitiesByAgePriority.ID);
+    if (action == null) {
+      ReactLanguage.sendPrefixed(sender, CommandMessages.ACTION_CONTROLLER_UNAVAILABLE);
+      return;
+    }
+    ActionTrimEntitiesByAgePriority.Params params = action.getDefaultParams()
+        .setMaxTrim(Math.max(1, Math.min(maxEntities, 10_000)))
+        .setMinEntityAgeTicks(Math.max(1, minAgeSeconds) * 20);
+
+    if (!world.equals("ALL")) {
+      params.withWorld(worldKey(world));
+    }
+
+    action.create(params, sender).queue();
+  }
+
+  private static WorldHost worldHost() {
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    return platform == null ? null : platform.worldHost().orElse(null);
   }
 }

@@ -32,6 +32,8 @@ public interface SpawnHost {
    * An entity other than a creature joining the world, such as an item, an armor stand or a vehicle.
    */
   interface EntitySpawn extends HostEvent {
+    GameEntity entity();
+
     GameLocation location();
 
     String type();

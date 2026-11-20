@@ -50,7 +50,7 @@ final class ModEntityKiller {
         if (entity == null || entity.isRemoved()) {
             return;
         }
-        active.putIfAbsent(entity.getUUID(), new Countdown(entity, seconds));
+        active.putIfAbsent(entity.getUUID(), new Countdown(entity, Math.max(1, seconds)));
     }
 
     boolean isCountingDown(Entity entity) {

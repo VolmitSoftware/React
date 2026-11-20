@@ -14,6 +14,8 @@ import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -29,14 +31,29 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.OwnableEntity;
+import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.vehicle.AbstractMinecart;
+import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.AbstractCookingRecipe;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.crafting.ShapelessRecipe;
+import net.minecraft.world.item.crafting.StonecutterRecipe;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.phys.Vec3;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 /** The 1.20.1 forms of the vanilla calls whose names or shapes changed later. */
 public final class VanillaApi {
@@ -228,6 +245,93 @@ public final class VanillaApi {
     /** Sends the entity along a portal trip captured earlier; false when the trip failed. */
     static boolean travel(Entity entity, Object transition) {
         return transition instanceof PortalTrip trip && trip.entity() == entity && trip.resume();
+    }
+
+    // Batch A: base
+    static boolean isTameable(Entity entity) {
+        return entity instanceof TamableAnimal || entity instanceof AbstractHorse;
+    }
+
+    static boolean isTamed(Entity entity) {
+        if (entity instanceof TamableAnimal tamable) {
+            return tamable.isTame();
+        }
+        return entity instanceof AbstractHorse horse && horse.isTamed();
+    }
+
+    static List<ModItemValue.Recipe> recipes(MinecraftServer server) {
+        List<ModItemValue.Recipe> recipes = new ArrayList<>();
+        for (Recipe<?> recipe : server.getRecipeManager().getRecipes()) {
+            try {
+                ModItemValue.Recipe converted = recipe(recipe, server.registryAccess());
+                if (converted != null) {
+                    recipes.add(converted);
+                }
+            } catch (RuntimeException ignored) {
+            }
+        }
+        return recipes;
+    }
+
+    private static ModItemValue.Recipe recipe(Recipe<?> recipe, RegistryAccess registries) {
+        if (recipe instanceof ShapedRecipe) {
+            return ModItemValue.shaped(recipe.getResultItem(registries), firstItems(recipe.getIngredients()));
+        }
+        if (recipe instanceof ShapelessRecipe || recipe instanceof AbstractCookingRecipe || recipe instanceof StonecutterRecipe) {
+            return ModItemValue.shapeless(recipe.getResultItem(registries), firstItems(recipe.getIngredients()));
+        }
+        return null;
+    }
+
+    private static List<Item> firstItems(List<Ingredient> ingredients) {
+        List<Item> items = new ArrayList<>(ingredients.size());
+        for (Ingredient ingredient : ingredients) {
+            ItemStack[] options = ingredient.getItems();
+            items.add(options.length == 0 || options[0].isEmpty() ? null : options[0].getItem());
+        }
+        return items;
+    }
+
+    // Batch A: mobs
+    static CompoundTag saveEntity(Entity entity) {
+        return entity.saveWithoutId(new CompoundTag());
+    }
+
+    static void loadEntity(Entity entity, CompoundTag tag) {
+        entity.load(tag);
+    }
+
+    static Entity createEntity(EntityType<?> type, ServerLevel level) {
+        return type.create(level);
+    }
+
+    static void place(Entity entity, double x, double y, double z, float yRot, float xRot) {
+        entity.moveTo(x, y, z, yRot, xRot);
+    }
+
+    static UUID ownerId(Entity entity) {
+        return entity instanceof OwnableEntity ownable ? ownable.getOwnerUUID() : null;
+    }
+
+    // Batch A: items
+    static String itemNamespace(Item item) {
+        return BuiltInRegistries.ITEM.getKey(item).getNamespace();
+    }
+
+    static String itemPath(Item item) {
+        return BuiltInRegistries.ITEM.getKey(item).getPath();
+    }
+
+    static ParticleOptions itemParticle(ItemStack item) {
+        return new ItemParticleOption(ParticleTypes.ITEM, item);
+    }
+
+    static boolean isMinecart(Entity entity) {
+        return entity instanceof AbstractMinecart;
+    }
+
+    static boolean isBoat(Entity entity) {
+        return entity instanceof Boat;
     }
 
     /** How far the player reaches blocks. */

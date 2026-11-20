@@ -25,5 +25,67 @@ public interface GameEntity {
 
   boolean isPlayer();
 
+  /**
+   * True for living entities: mobs, players, armor stands.
+   */
+  default boolean isLiving() {
+    return false;
+  }
+
+  /**
+   * True for entities driven by AI goals or brains, the ones React can pause and doze.
+   */
+  default boolean isMob() {
+    return false;
+  }
+
+  /**
+   * True for hostile monsters, Bukkit's {@code Monster}.
+   */
+  default boolean isMonster() {
+    return false;
+  }
+
+  /**
+   * Length of the entity's velocity in blocks per tick.
+   */
+  default double speed() {
+    return 0D;
+  }
+
+  default double health() {
+    return 0D;
+  }
+
+  /**
+   * The max health attribute, or NaN when the entity has none.
+   */
+  default double maxHealth() {
+    return Double.NaN;
+  }
+
+  default boolean isTameable() {
+    return false;
+  }
+
+  default boolean isTamed() {
+    return false;
+  }
+
+  /**
+   * True for entities with a baby and an adult stage.
+   */
+  default boolean isBreedable() {
+    return false;
+  }
+
+  default boolean isAdult() {
+    return true;
+  }
+
+  default boolean isAgeLocked() {
+    return false;
+  }
+
   Object handle();
 }

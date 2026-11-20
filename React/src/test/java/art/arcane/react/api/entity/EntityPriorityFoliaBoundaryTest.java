@@ -1,5 +1,6 @@
 package art.arcane.react.api.entity;
 
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.model.ReactEntity;
@@ -48,11 +49,11 @@ class EntityPriorityFoliaBoundaryTest {
       scheduling.when(() -> J.isOwnedByCurrentRegion(entity)).thenReturn(true);
       react.when(() -> React.controller(NearbyPlayerIndexController.class)).thenReturn(playerIndex);
 
-      new EntityPriority().updateDistanceToPlayer(entity);
+      new EntityPriority().updateDistanceToPlayer(new BukkitGameEntity(entity));
 
       Mockito.verify(entity, Mockito.never()).getWorld();
       Mockito.verify(playerIndex).nearestDistanceSquared(location, 64D);
-      managed.verify(() -> ReactEntity.setNearestPlayer(entity, 1.590625D));
+      managed.verify(() -> ReactEntity.setNearestPlayer(new BukkitGameEntity(entity), 1.590625D));
     }
   }
 
@@ -73,11 +74,11 @@ class EntityPriorityFoliaBoundaryTest {
           invocation -> invocation.getArgument(0) == source
       );
 
-      priority.updateCrowd(source, 100D, 0L);
+      priority.updateCrowd(new BukkitGameEntity(source), 100D, 0L);
 
       Mockito.verify(foreignTarget, Mockito.never()).getUniqueId();
       Mockito.verify(foreignTarget, Mockito.never()).getType();
-      managed.verify(() -> ReactEntity.setCrowding(source, 1D));
+      managed.verify(() -> ReactEntity.setCrowding(new BukkitGameEntity(source), 1D));
     }
   }
 
@@ -91,7 +92,7 @@ class EntityPriorityFoliaBoundaryTest {
       scheduling.when(() -> J.isOwnedByCurrentRegion(entity)).thenReturn(false);
       scheduling.when(() -> J.runEntity(Mockito.eq(entity), Mockito.any(Runnable.class))).thenReturn(true);
 
-      new EntityPriority().updateDistanceToPlayer(entity);
+      new EntityPriority().updateDistanceToPlayer(new BukkitGameEntity(entity));
 
       Mockito.verify(entity, Mockito.never()).getLocation();
       scheduling.verify(() -> J.runEntity(Mockito.eq(entity), Mockito.any(Runnable.class)));

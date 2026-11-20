@@ -438,7 +438,7 @@ public final class BukkitCommandDev {
     }
 
     if (ActionTrimEntitiesByAgePriority.ID.equals(actionId) && params instanceof ActionTrimEntitiesByAgePriority.Params trimParams) {
-      trimParams.withWorld(world);
+      trimParams.withWorld(WorldIdentity.serialize(world));
       trimParams.setMaxTrim(Math.min(trimParams.getMaxTrim(), 128));
       trimParams.setMaxTrimPerChunk(Math.min(trimParams.getMaxTrimPerChunk(), 4));
       return trimParams;

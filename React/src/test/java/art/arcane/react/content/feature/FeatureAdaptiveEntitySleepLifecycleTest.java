@@ -1,17 +1,21 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.GameEntity;
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.EntityController;
+import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.model.ReactEntity;
+import art.arcane.react.platform.GameEntity;
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.NearbyEntitySampler;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.junit.jupiter.api.Assertions;
@@ -33,6 +37,13 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
     }
   }
 
+  private static SampleController samples(Sampler sampler) {
+    return Mockito.mock(SampleController.class, invocation ->
+        "getSampler".equals(invocation.getMethod().getName()) && SamplerTickTime.ID.equals(invocation.getArgument(0))
+            ? sampler
+            : Mockito.RETURNS_DEFAULTS.answer(invocation));
+  }
+
   @Test
   void staleMainScanCannotRunOrClearTheReloadedGenerationQueue() {
     FeatureAdaptiveEntitySleep feature = new FeatureAdaptiveEntitySleep();
@@ -44,7 +55,7 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
          MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       scheduling.when(J::isFoliaThreading).thenReturn(false);
       scheduling.when(() -> J.s(Mockito.any(Runnable.class))).thenAnswer(invocation -> {
         queued.add(invocation.getArgument(0));
@@ -64,10 +75,10 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
 
       Assertions.assertEquals(2, queued.size());
       managed.verify(() -> ReactEntity.requestPause(
-          Mockito.any(Entity.class),
+          Mockito.any(GameEntity.class),
           Mockito.eq(ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP)
       ), Mockito.never());
-      managed.verify(() -> ReactEntity.requestDoze(Mockito.any(Mob.class)), Mockito.never());
+      managed.verify(() -> ReactEntity.requestDoze(Mockito.any(GameEntity.class)), Mockito.never());
       feature.onDeactivate();
     }
   }
@@ -91,7 +102,7 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runEntity(
@@ -115,10 +126,10 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
 
       Mockito.verifyNoInteractions(player);
       managed.verify(() -> ReactEntity.requestPause(
-          Mockito.any(Entity.class),
+          Mockito.any(GameEntity.class),
           Mockito.eq(ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP)
       ), Mockito.never());
-      managed.verify(() -> ReactEntity.requestDoze(Mockito.any(Mob.class)), Mockito.never());
+      managed.verify(() -> ReactEntity.requestDoze(Mockito.any(GameEntity.class)), Mockito.never());
     }
   }
 
@@ -137,7 +148,7 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runEntity(
@@ -186,7 +197,7 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runEntity(
@@ -235,7 +246,7 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Entity.class)))
@@ -266,10 +277,10 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
 
       Mockito.verifyNoInteractions(entity);
       managed.verify(() -> ReactEntity.requestPause(
-          Mockito.any(Entity.class),
+          Mockito.any(GameEntity.class),
           Mockito.eq(ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP)
       ), Mockito.never());
-      managed.verify(() -> ReactEntity.requestDoze(Mockito.any(Mob.class)), Mockito.never());
+      managed.verify(() -> ReactEntity.requestDoze(Mockito.any(GameEntity.class)), Mockito.never());
     }
   }
 
@@ -296,11 +307,14 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
             targetTasks.add(invocation.getArgument(1));
             return true;
           });
-      managed.when(() -> ReactEntity.isPausedBy(target, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP))
+      managed.when(() -> ReactEntity.isPausedBy(new BukkitGameEntity(target), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP))
           .thenReturn(true);
 
       feature.onActivate();
-      feature.on(event);
+      feature.onTarget(
+          event.getEntity() == null ? null : new BukkitGameEntity(event.getEntity()),
+          event.getTarget() == null ? null : new BukkitGameEntity(event.getTarget())
+      );
 
       Assertions.assertEquals(1, targetTasks.size());
       Mockito.verifyNoInteractions(target);
@@ -308,7 +322,7 @@ class FeatureAdaptiveEntitySleepLifecycleTest {
 
       Mockito.verify(target).isDead();
       managed.verify(() -> ReactEntity.releasePause(
-          target,
+          new BukkitGameEntity(target),
           ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP
       ));
       feature.onDeactivate();

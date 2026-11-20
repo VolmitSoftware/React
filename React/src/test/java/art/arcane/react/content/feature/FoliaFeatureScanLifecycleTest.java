@@ -1,5 +1,7 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.GameEntity;
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.React;
 import art.arcane.react.api.protect.ReactOperation;
 import art.arcane.react.api.protect.ReactProtection;
@@ -7,7 +9,9 @@ import art.arcane.react.api.protect.internal.ProtectionGuards;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerTickTime;
 import art.arcane.react.core.controller.EntityController;
+import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.model.ReactEntity;
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.NearbyEntitySampler;
 import org.bukkit.Bukkit;
@@ -44,6 +48,13 @@ class FoliaFeatureScanLifecycleTest {
     }
   }
 
+  private static SampleController samples(Sampler sampler) {
+    return Mockito.mock(SampleController.class, invocation ->
+        "getSampler".equals(invocation.getMethod().getName()) && SamplerTickTime.ID.equals(invocation.getArgument(0))
+            ? sampler
+            : Mockito.RETURNS_DEFAULTS.answer(invocation));
+  }
+
   @Test
   void dynamicRangeUsesCapturedRotatingAnchorsAndWaitsForEveryRegionTask() throws Exception {
     FeatureDynamicActivationRange feature = new FeatureDynamicActivationRange();
@@ -61,7 +72,7 @@ class FoliaFeatureScanLifecycleTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runEntity(
@@ -113,7 +124,7 @@ class FoliaFeatureScanLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runEntity(
@@ -184,7 +195,7 @@ class FoliaFeatureScanLifecycleTest {
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runEntity(
@@ -237,11 +248,11 @@ class FoliaFeatureScanLifecycleTest {
             targetTasks.add(invocation.getArgument(1));
             return true;
           });
-      managed.when(() -> ReactEntity.isPausedBy(target, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE))
+      managed.when(() -> ReactEntity.isPausedBy(new BukkitGameEntity(target), ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE))
           .thenReturn(true);
 
       feature.onActivate();
-      feature.on(event);
+      feature.onTarget(new BukkitGameEntity(event.getEntity()), new BukkitGameEntity(event.getTarget()));
 
       Assertions.assertEquals(1, targetTasks.size());
       Mockito.verifyNoInteractions(target);
@@ -249,7 +260,7 @@ class FoliaFeatureScanLifecycleTest {
 
       Mockito.verify(target).isDead();
       managed.verify(() -> ReactEntity.releasePause(
-          target,
+          new BukkitGameEntity(target),
           ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE
       ));
       feature.onDeactivate();
@@ -285,7 +296,7 @@ class FoliaFeatureScanLifecycleTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class)) {
-      react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Entity.class)))
@@ -316,7 +327,7 @@ class FoliaFeatureScanLifecycleTest {
       Mockito.verify(candidate).getUniqueId();
       Mockito.verify(candidate).isDead();
       managed.verify(() -> ReactEntity.releasePause(
-          candidate,
+          new BukkitGameEntity(candidate),
           ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE
       ));
       feature.onDeactivate();
@@ -461,7 +472,7 @@ class FoliaFeatureScanLifecycleTest {
             }
             return true;
           });
-      entityState.when(() -> ReactEntity.getPriority(Mockito.any(Entity.class))).thenReturn(0D);
+      entityState.when(() -> ReactEntity.getPriority(Mockito.any(GameEntity.class))).thenReturn(0D);
       protection.when(() -> ReactProtection.isProtected(Mockito.any(Entity.class), Mockito.eq(ReactOperation.TRIM)))
           .thenReturn(false);
       guards.when(() -> ProtectionGuards.allows(Mockito.any(Entity.class), Mockito.eq(ReactOperation.TRIM)))
@@ -473,7 +484,7 @@ class FoliaFeatureScanLifecycleTest {
 
       for (int i = 0; i < entities.size(); i++) {
         Entity entity = entities.get(i);
-        entityState.verify(() -> ReactEntity.getPriority(entity), Mockito.times(1));
+        entityState.verify(() -> ReactEntity.getPriority(new BukkitGameEntity(entity)), Mockito.times(1));
       }
       Assertions.assertEquals(1, delayedKills.size());
 
@@ -560,7 +571,7 @@ class FoliaFeatureScanLifecycleTest {
             }
             return true;
           });
-      entityState.when(() -> ReactEntity.getPriority(Mockito.any(Entity.class))).thenReturn(0D);
+      entityState.when(() -> ReactEntity.getPriority(Mockito.any(GameEntity.class))).thenReturn(0D);
       protection.when(() -> ReactProtection.isProtected(Mockito.any(Entity.class), Mockito.eq(ReactOperation.TRIM)))
           .thenReturn(false);
 

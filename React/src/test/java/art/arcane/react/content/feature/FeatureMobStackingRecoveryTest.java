@@ -1,5 +1,7 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.MobStateAccess;
+import art.arcane.react.platform.GameEntity;
 import art.arcane.react.React;
 import art.arcane.react.core.integration.GlossEntityOverlayIntegration;
 import art.arcane.react.model.ReactEntity;
@@ -45,14 +47,14 @@ class FeatureMobStackingRecoveryTest {
     Mockito.when(plugin.isReady()).thenReturn(true);
     React.instance = plugin;
     world = Mockito.mock(World.class);
-    feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
+    feature = MobStacks.feature(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
     feature.setEnabled(false);
     state = Mockito.mockStatic(ReactEntity.class);
-    state.when(() -> ReactEntity.getStackCount(Mockito.any(Entity.class)))
-        .thenAnswer(invocation -> counts.getOrDefault(invocation.getArgument(0), 1));
-    state.when(() -> ReactEntity.setStackCount(Mockito.any(Entity.class), Mockito.anyInt()))
+    state.when(() -> ReactEntity.getStackCount(Mockito.any(GameEntity.class)))
+        .thenAnswer(invocation -> counts.getOrDefault((Entity) invocation.<GameEntity>getArgument(0).handle(), 1));
+    state.when(() -> ReactEntity.setStackCount(Mockito.any(GameEntity.class), Mockito.anyInt()))
         .thenAnswer(invocation -> {
-          counts.put(invocation.getArgument(0), invocation.getArgument(1));
+          counts.put((Entity) invocation.<GameEntity>getArgument(0).handle(), invocation.getArgument(1));
           return null;
         });
     Mockito.when(world.spawnEntity(Mockito.any(Location.class), Mockito.eq(EntityType.ZOMBIE)))
@@ -72,9 +74,9 @@ class FeatureMobStackingRecoveryTest {
   @Test
   void disabledFeatureRestoresCountAndCurrentHealthWithoutStackLabels() {
     LivingEntity source = stack(5);
-    feature.updateEntityCustomName(source);
+    feature.updateEntityCustomName(MobStacks.entity(source));
 
-    Assertions.assertEquals(4, feature.restoreStack(source, 16, 0L));
+    Assertions.assertEquals(4, feature.restoreStack(MobStacks.entity(source), 16, 0L));
 
     Assertions.assertEquals(1, counts.get(source));
     Assertions.assertNull(source.getCustomName());
@@ -92,9 +94,9 @@ class FeatureMobStackingRecoveryTest {
   void largeStackContinuesFromItsRemainingCountWithinSpawnBudget() {
     LivingEntity source = stack(30);
 
-    Assertions.assertEquals(16, feature.restoreStack(source, 16, 0L));
+    Assertions.assertEquals(16, feature.restoreStack(MobStacks.entity(source), 16, 0L));
     Assertions.assertEquals(14, counts.get(source));
-    Assertions.assertEquals(13, feature.restoreStack(source, 16, 0L));
+    Assertions.assertEquals(13, feature.restoreStack(MobStacks.entity(source), 16, 0L));
 
     Assertions.assertEquals(1, counts.get(source));
     Assertions.assertEquals(29, replacements.size());
@@ -111,7 +113,7 @@ class FeatureMobStackingRecoveryTest {
         .thenReturn(successful, rejected);
 
     try (MockedStatic<React> logging = Mockito.mockStatic(React.class)) {
-      Assertions.assertEquals(1, feature.restoreStack(source, 16, 0L));
+      Assertions.assertEquals(1, feature.restoreStack(MobStacks.entity(source), 16, 0L));
     }
 
     Assertions.assertEquals(4, counts.get(source));
@@ -130,7 +132,7 @@ class FeatureMobStackingRecoveryTest {
         .thenReturn(replacement);
 
     Assertions.assertSame(failure, Assertions.assertThrows(RuntimeException.class,
-        () -> feature.restoreStack(source, 16, 0L)));
+        () -> feature.restoreStack(MobStacks.entity(source), 16, 0L)));
 
     Assertions.assertEquals(3, counts.get(source));
     Mockito.verify(replacement).remove();
@@ -139,11 +141,11 @@ class FeatureMobStackingRecoveryTest {
   @Test
   void failedCountWriteRemovesTheReplacement() {
     LivingEntity source = stack(2);
-    state.when(() -> ReactEntity.setStackCount(source, 1))
+    state.when(() -> ReactEntity.setStackCount(MobStacks.entity(source), 1))
         .thenThrow(new IllegalStateException("write failed"));
     counts.put(source, 2);
 
-    Assertions.assertThrows(IllegalStateException.class, () -> feature.restoreStack(source, 16, 0L));
+    Assertions.assertThrows(IllegalStateException.class, () -> feature.restoreStack(MobStacks.entity(source), 16, 0L));
 
     Assertions.assertEquals(2, counts.get(source));
     Mockito.verify(replacements.getFirst()).remove();
@@ -159,7 +161,7 @@ class FeatureMobStackingRecoveryTest {
           return replacement;
         });
 
-    Assertions.assertEquals(0, feature.restoreStack(source, 16, 0L));
+    Assertions.assertEquals(0, feature.restoreStack(MobStacks.entity(source), 16, 0L));
 
     Assertions.assertEquals(3, counts.get(source));
     Mockito.verify(replacement).remove();
@@ -169,13 +171,13 @@ class FeatureMobStackingRecoveryTest {
   void enabledFeatureShutdownAndStaleGenerationNeverSpawn() {
     LivingEntity source = stack(3);
     feature.setEnabled(true);
-    Assertions.assertEquals(0, feature.restoreStack(source, 16, 0L));
+    Assertions.assertEquals(0, feature.restoreStack(MobStacks.entity(source), 16, 0L));
     feature.setEnabled(false);
     Mockito.when(plugin.isReady()).thenReturn(false);
-    Assertions.assertEquals(0, feature.restoreStack(source, 16, 0L));
+    Assertions.assertEquals(0, feature.restoreStack(MobStacks.entity(source), 16, 0L));
     Mockito.when(plugin.isReady()).thenReturn(true);
-    Assertions.assertEquals(0, feature.restoreStack(source, 16, 1L));
-    Assertions.assertEquals(0, feature.restoreStack(source, 0, 0L));
+    Assertions.assertEquals(0, feature.restoreStack(MobStacks.entity(source), 16, 1L));
+    Assertions.assertEquals(0, feature.restoreStack(MobStacks.entity(source), 0, 0L));
 
     Assertions.assertTrue(replacements.isEmpty());
     Assertions.assertEquals(3, counts.get(source));
@@ -186,7 +188,7 @@ class FeatureMobStackingRecoveryTest {
     LivingEntity source = stack(3);
     source.setCustomName("Sentinel");
 
-    Assertions.assertEquals(2, feature.restoreStack(source, 16, 0L));
+    Assertions.assertEquals(2, feature.restoreStack(MobStacks.entity(source), 16, 0L));
 
     Assertions.assertEquals("Sentinel", source.getCustomName());
     for (LivingEntity replacement : replacements) {

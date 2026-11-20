@@ -3,6 +3,7 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.junit.jupiter.api.Assertions;
@@ -104,6 +105,7 @@ class RecurringScanSingleFlightTest {
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
       react.when(() -> React.sampler(SamplerTickTime.ID)).thenReturn(sampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples(sampler));
       captureQueuedJobs(scheduling, queued);
       bukkit.when(Bukkit::getWorlds).thenReturn(List.of());
 
@@ -115,6 +117,13 @@ class RecurringScanSingleFlightTest {
       tick.run();
       Assertions.assertEquals(2, queued.size());
     }
+  }
+
+  private static SampleController samples(Sampler sampler) {
+    return Mockito.mock(SampleController.class, invocation ->
+        "getSampler".equals(invocation.getMethod().getName()) && SamplerTickTime.ID.equals(invocation.getArgument(0))
+            ? sampler
+            : Mockito.RETURNS_DEFAULTS.answer(invocation));
   }
 
   private static void captureQueuedJobs(MockedStatic<J> scheduling, List<Runnable> queued) {

@@ -306,6 +306,11 @@ public final class ModSpawnHost implements SpawnHost {
         }
 
         @Override
+        public GameEntity entity() {
+            return new ModGameEntity(entity);
+        }
+
+        @Override
         public GameLocation location() {
             return at(entity);
         }

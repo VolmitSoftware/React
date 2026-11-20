@@ -1,5 +1,8 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.MobStateAccess;
+import art.arcane.react.core.integration.GlossEntityOverlayIntegration;
+import art.arcane.react.platform.bukkit.BukkitMobStackHost;
 import art.arcane.react.util.project.world.CustomMobChecker;
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
@@ -225,7 +228,7 @@ class FeatureMobStackingFarmStateTest {
     Mockito.when(target.getType()).thenReturn(type);
     Mockito.doReturn(1).when(feature).getStackCount(Mockito.any());
     try (MockedStatic<CustomMobChecker> customMobs = Mockito.mockStatic(CustomMobChecker.class)) {
-      return feature.canMerge(source, target);
+      return feature.canMerge(MobStacks.entity(source), MobStacks.entity(target));
     }
   }
 
@@ -255,14 +258,14 @@ class FeatureMobStackingFarmStateTest {
   }
 
   private static boolean matches(LivingEntity source, LivingEntity target) throws ReflectiveOperationException {
-    Method method = FeatureMobStacking.class.getDeclaredMethod("hasMatchingFarmState", LivingEntity.class, LivingEntity.class);
+    Method method = BukkitMobStackHost.class.getDeclaredMethod("hasMatchingFarmState", LivingEntity.class, LivingEntity.class);
     method.setAccessible(true);
-    return (boolean) method.invoke(new FeatureMobStacking(), source, target);
+    return (boolean) method.invoke(new BukkitMobStackHost(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect()), source, target);
   }
 
   private static void copyState(LivingEntity source, LivingEntity target) throws ReflectiveOperationException {
-    Method method = FeatureMobStacking.class.getDeclaredMethod("copyState", LivingEntity.class, LivingEntity.class);
+    Method method = BukkitMobStackHost.class.getDeclaredMethod("copyState", LivingEntity.class, LivingEntity.class, boolean.class);
     method.setAccessible(true);
-    method.invoke(new FeatureMobStacking(), source, target);
+    method.invoke(new BukkitMobStackHost(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect()), source, target, false);
   }
 }

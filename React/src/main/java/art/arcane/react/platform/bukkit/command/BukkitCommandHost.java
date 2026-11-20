@@ -112,16 +112,6 @@ public final class BukkitCommandHost implements CommandHost {
   }
 
   @Override
-  public void purgeEntities(VolmitSender sender, int radius, String world) {
-    action.purgeEntities(sender, radius, world);
-  }
-
-  @Override
-  public void trimEntitiesByAgePriority(VolmitSender sender, int maxEntities, int minAgeSeconds, String world) {
-    action.trimEntitiesByAgePriority(sender, maxEntities, minAgeSeconds, world);
-  }
-
-  @Override
   public void hopperNetworkNormalize(VolmitSender sender, int maxChunks, double minHopperUpdates, String world) {
     action.hopperNetworkNormalize(sender, maxChunks, minHopperUpdates, world);
   }

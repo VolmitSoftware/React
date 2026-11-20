@@ -3,6 +3,8 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.core.integration.GlossDropNameIntegration;
+import art.arcane.react.platform.GameEntity;
+import art.arcane.react.platform.bukkit.BukkitItemHost;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -28,6 +30,7 @@ class FeatureItemSuperStackerAnchorTest {
   private World world;
   private Location location;
   private FeatureItemSuperStacker feature;
+  private BukkitItemHost host;
 
   @BeforeEach
   void setUp() {
@@ -43,8 +46,9 @@ class FeatureItemSuperStackerAnchorTest {
     world = Mockito.mock(World.class);
     Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
     location = new Location(world, 8.5D, 64D, 8.5D);
-    feature = Mockito.spy(new FeatureItemSuperStacker(Mockito.mock(GlossDropNameIntegration.class)));
-    Mockito.doNothing().when(feature).effectMerge(Mockito.any(Item.class), Mockito.any(Item.class));
+    host = new BukkitItemHost(Mockito.mock(GlossDropNameIntegration.class));
+    feature = Mockito.spy(new FeatureItemSuperStacker(host));
+    Mockito.doNothing().when(feature).effectMerge(Mockito.any(GameEntity.class), Mockito.any(GameEntity.class));
     feature.onActivate();
   }
 
@@ -68,7 +72,7 @@ class FeatureItemSuperStackerAnchorTest {
     Item first = item(2L, firstStack);
     Item second = item(3L, secondStack);
 
-    feature.on(loaded(full, first, second));
+    host.on(loaded(full, first, second));
     feature.onTick();
 
     Item removed = Mockito.mockingDetails(first).getInvocations().stream()
@@ -86,9 +90,9 @@ class FeatureItemSuperStackerAnchorTest {
     Item full = item(1L, bundle(fullContents));
     Item loose = item(2L, cobble(new AtomicInteger(10)));
 
-    feature.on(loaded(full, loose));
+    host.on(loaded(full, loose));
     for (int pass = 0; pass < 3; pass++) {
-      feature.on(loaded(full, loose));
+      host.on(loaded(full, loose));
       feature.onTick();
     }
 

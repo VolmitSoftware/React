@@ -4,6 +4,7 @@ import art.arcane.react.React;
 import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.model.ReactEntity;
+import art.arcane.react.platform.bukkit.BukkitEntityActivityHost;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.project.world.WorldEntitySnapshots;
 import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
@@ -88,7 +89,9 @@ class ScanJobBatchingTest {
     List<Entity> mobs = new ArrayList<>(countingEntities(Mob.class, 240, managed));
     List<Runnable> jobs = new ArrayList<>();
     FeaturePathfinderBudget feature = new FeaturePathfinderBudget();
-    set(feature, "nativeAccess", Mockito.mock(NativeWorldAccess.class));
+    BukkitEntityActivityHost host = new BukkitEntityActivityHost();
+    set(host, "nativeAccess", Mockito.mock(NativeWorldAccess.class));
+    set(feature, "activity", host);
     set(feature, "bridgesAvailable", true);
     set(feature, "active", true);
     ((AtomicLong) get(feature, "lifecycleGeneration")).set(1L);

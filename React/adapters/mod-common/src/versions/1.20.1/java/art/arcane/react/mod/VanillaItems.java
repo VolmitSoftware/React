@@ -23,6 +23,7 @@ final class VanillaItems {
     private static final String MAP = "map";
     private static final String ENCHANTMENTS = "Enchantments";
     private static final String HIDE_FLAGS = "HideFlags";
+    private static final String BUNDLE_ITEMS = "Items";
 
     private VanillaItems() {
     }
@@ -65,6 +66,37 @@ final class VanillaItems {
             }
         }
         return lines;
+    }
+
+    static boolean sameItem(ItemStack first, ItemStack second) {
+        return ItemStack.isSameItemSameTags(first, second);
+    }
+
+    /** The stacks inside a bundle's {@code Items} list; a copy that changes nothing when edited. */
+    static List<ItemStack> bundleItems(ItemStack bundle) {
+        CompoundTag tag = bundle.getTag();
+        List<ItemStack> items = new ArrayList<>();
+        if (tag == null || !tag.contains(BUNDLE_ITEMS, Tag.TAG_LIST)) {
+            return items;
+        }
+        ListTag list = tag.getList(BUNDLE_ITEMS, Tag.TAG_COMPOUND);
+        for (int index = 0; index < list.size(); index++) {
+            ItemStack item = ItemStack.of(list.getCompound(index));
+            if (!item.isEmpty()) {
+                items.add(item);
+            }
+        }
+        return items;
+    }
+
+    static void bundleItems(ItemStack bundle, List<ItemStack> items) {
+        ListTag list = new ListTag();
+        for (ItemStack item : items) {
+            if (!item.isEmpty()) {
+                list.add(item.save(new CompoundTag()));
+            }
+        }
+        bundle.getOrCreateTag().put(BUNDLE_ITEMS, list);
     }
 
     // An enchantment list with one empty entry shines without naming an enchantment, and hides from the tooltip.

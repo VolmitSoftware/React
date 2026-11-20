@@ -1,6 +1,9 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
+import art.arcane.react.platform.GameEntity;
+import art.arcane.react.platform.bukkit.BukkitEntityActivityHost;
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.volmlib.nativelib.NativeAdapters;
 import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
@@ -20,6 +23,7 @@ import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,8 +48,9 @@ class FeaturePathfinderBudgetBridgeCacheTest {
   }
 
   @Test
-  void unavailableBridgesAreResolvedOnceAcrossChunkLoadsAndUnloads() {
+  void unavailableBridgesAreResolvedOnceAcrossChunkLoadsAndUnloads() throws ReflectiveOperationException {
     FeaturePathfinderBudget feature = new FeaturePathfinderBudget();
+    setActivity(feature, new BukkitEntityActivityHost());
     List<Entity> mobs = List.of(mob(), mob(), mob());
     EntitiesLoadEvent load = Mockito.mock(EntitiesLoadEvent.class);
     EntitiesUnloadEvent unload = Mockito.mock(EntitiesUnloadEvent.class);
@@ -57,10 +62,10 @@ class FeaturePathfinderBudgetBridgeCacheTest {
       adapters.when(() -> NativeAdapters.find(NativeWorldAccess.class)).thenReturn(Optional.empty());
       scheduling.when(J::isFoliaThreading).thenReturn(false);
 
-      feature.on(load);
-      feature.on(unload);
-      feature.on(load);
-      feature.on(unload);
+      feature.onEntitiesLoad(wrap(load.getEntities()));
+      feature.onEntitiesUnload(wrap(unload.getEntities()));
+      feature.onEntitiesLoad(wrap(load.getEntities()));
+      feature.onEntitiesUnload(wrap(unload.getEntities()));
 
       adapters.verify(() -> NativeAdapters.find(NativeWorldAccess.class), Mockito.times(1));
     }
@@ -69,9 +74,11 @@ class FeaturePathfinderBudgetBridgeCacheTest {
   @Test
   void resolvedBridgesAreReadWithoutTheFeatureMonitor() throws Exception {
     FeaturePathfinderBudget feature = new FeaturePathfinderBudget();
-    Field access = FeaturePathfinderBudget.class.getDeclaredField("nativeAccess");
+    BukkitEntityActivityHost host = new BukkitEntityActivityHost();
+    Field access = BukkitEntityActivityHost.class.getDeclaredField("nativeAccess");
     access.setAccessible(true);
-    access.set(feature, Mockito.mock(NativeWorldAccess.class));
+    access.set(host, Mockito.mock(NativeWorldAccess.class));
+    setActivity(feature, host);
     EntitiesLoadEvent load = Mockito.mock(EntitiesLoadEvent.class);
     List<Entity> loaded = List.of(mob());
     Mockito.when(load.getEntities()).thenReturn(loaded);
@@ -93,7 +100,7 @@ class FeaturePathfinderBudgetBridgeCacheTest {
     Thread worker = new Thread(() -> {
       try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
         scheduling.when(J::isFoliaThreading).thenReturn(false);
-        feature.on(load);
+        feature.onEntitiesLoad(wrap(load.getEntities()));
       }
     });
     try {
@@ -105,6 +112,20 @@ class FeaturePathfinderBudgetBridgeCacheTest {
       holder.join(5_000L);
       worker.join(5_000L);
     }
+  }
+
+  private static void setActivity(FeaturePathfinderBudget feature, BukkitEntityActivityHost host) throws ReflectiveOperationException {
+    Field field = FeaturePathfinderBudget.class.getDeclaredField("activity");
+    field.setAccessible(true);
+    field.set(feature, host);
+  }
+
+  private static List<GameEntity> wrap(List<Entity> entities) {
+    List<GameEntity> wrapped = new ArrayList<>();
+    for (Entity entity : entities) {
+      wrapped.add(new BukkitGameEntity(entity));
+    }
+    return wrapped;
   }
 
   private static Mob mob() {

@@ -1,5 +1,6 @@
 package art.arcane.react.test;
 
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.model.ReactEntity;
 import com.google.gson.Gson;
 import org.bukkit.Bukkit;
@@ -93,9 +94,9 @@ public final class EntityLifecycleFixture implements Listener {
     }
 
     private void pause(Mob mob) {
-        ReactEntity.requestPause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
-        ReactEntity.requestPause(mob, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
-        ReactEntity.requestDoze(mob);
+        ReactEntity.requestPause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP);
+        ReactEntity.requestPause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE);
+        ReactEntity.requestDoze(new BukkitGameEntity(mob));
     }
 
     private void record(Entity entity, Map<String, Map<String, Object>> destination) {
@@ -106,8 +107,8 @@ public final class EntityLifecycleFixture implements Listener {
         Map<String, Object> state = new LinkedHashMap<>();
         state.put("ai", mob.hasAI());
         state.put("aware", mob.isAware());
-        state.put("paused", ReactEntity.isPaused(mob));
-        state.put("dozing", ReactEntity.isDozing(mob));
+        state.put("paused", ReactEntity.isPaused(new BukkitGameEntity(mob)));
+        state.put("dozing", ReactEntity.isDozing(new BukkitGameEntity(mob)));
         destination.put(tag, Map.copyOf(state));
     }
 

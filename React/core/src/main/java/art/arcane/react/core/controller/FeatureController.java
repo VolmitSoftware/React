@@ -257,8 +257,9 @@ public class FeatureController implements IController {
           continue;
         }
 
-        if (f instanceof FeatureIntegrity && host != null) {
+        if (f instanceof FeatureIntegrity integrity && host != null) {
           host.attach(f);
+          integrity.onAttach();
         }
 
         if (shouldActivateFeature(f)) {
@@ -297,11 +298,12 @@ public class FeatureController implements IController {
 
       if (features != null && host != null) {
         for (Feature feature : features.all()) {
-          if (!(feature instanceof FeatureIntegrity)) {
+          if (!(feature instanceof FeatureIntegrity integrity)) {
             continue;
           }
 
           try {
+            integrity.onDetach();
             host.detach(feature);
           } catch (Throwable failure) {
             reportFeatureLifecycleFailure("stop integrity listener", feature.getClass().getSimpleName(), failure);

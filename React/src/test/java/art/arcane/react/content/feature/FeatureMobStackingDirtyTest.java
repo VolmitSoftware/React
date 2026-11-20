@@ -1,5 +1,8 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.BukkitReactWorld;
+import art.arcane.react.platform.ReactWorld;
+import art.arcane.react.platform.bukkit.MobStateAccess;
 import art.arcane.react.React;
 import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.react.core.integration.GlossEntityOverlayIntegration;
@@ -45,16 +48,16 @@ class FeatureMobStackingDirtyTest {
     World world = world();
     LivingEntity zombie = zombie(world, 4D, 4D);
     AtomicInteger stack = new AtomicInteger(1);
-    Mockito.doAnswer(invocation -> stack.get()).when(feature).getStackCount(zombie);
+    Mockito.doAnswer(invocation -> stack.get()).when(feature).getStackCount(MobStacks.entity(zombie));
     long key = FeatureMobStacking.packChunkKey(0, 0);
 
-    feature.onTick(zombie);
+    feature.onTick(MobStacks.entity(zombie));
     Assertions.assertTrue(dirty(feature, world).contains(key));
     completeQuietPass(feature, world, zombie);
     dirty(feature, world).clear();
 
-    feature.onTick(zombie);
-    feature.onTick(zombie);
+    feature.onTick(MobStacks.entity(zombie));
+    feature.onTick(MobStacks.entity(zombie));
 
     Assertions.assertFalse(dirty(feature, world).contains(key));
   }
@@ -65,14 +68,14 @@ class FeatureMobStackingDirtyTest {
     World world = world();
     LivingEntity zombie = zombie(world, 4D, 4D);
     AtomicInteger stack = new AtomicInteger(1);
-    Mockito.doAnswer(invocation -> stack.get()).when(feature).getStackCount(zombie);
+    Mockito.doAnswer(invocation -> stack.get()).when(feature).getStackCount(MobStacks.entity(zombie));
     long key = FeatureMobStacking.packChunkKey(0, 0);
-    feature.onTick(zombie);
+    feature.onTick(MobStacks.entity(zombie));
     completeQuietPass(feature, world, zombie);
     dirty(feature, world).clear();
 
     stack.set(2);
-    feature.onTick(zombie);
+    feature.onTick(MobStacks.entity(zombie));
 
     Assertions.assertTrue(dirty(feature, world).contains(key));
   }
@@ -85,14 +88,14 @@ class FeatureMobStackingDirtyTest {
     Location moved = new Location(world, 20D, 64D, 4D);
     LivingEntity zombie = zombie(world, 4D, 4D);
     Mockito.when(zombie.getLocation()).thenReturn(first, first, moved);
-    Mockito.doReturn(1).when(feature).getStackCount(zombie);
-    feature.onTick(zombie);
+    Mockito.doReturn(1).when(feature).getStackCount(MobStacks.entity(zombie));
+    feature.onTick(MobStacks.entity(zombie));
     completeQuietPass(feature, world, zombie);
     dirty(feature, world).clear();
 
-    feature.onTick(zombie);
+    feature.onTick(MobStacks.entity(zombie));
     Assertions.assertTrue(dirty(feature, world).isEmpty());
-    feature.onTick(zombie);
+    feature.onTick(MobStacks.entity(zombie));
 
     Assertions.assertTrue(dirty(feature, world).contains(FeatureMobStacking.packChunkKey(1, 0)));
   }
@@ -124,7 +127,7 @@ class FeatureMobStackingDirtyTest {
 
   @Test
   void removingAnUnindexedEntitySkipsTheIndexMonitor() throws Exception {
-    FeatureMobStacking feature = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
+    FeatureMobStacking feature = MobStacks.feature(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
     Entity arrow = Mockito.mock(Entity.class);
     Mockito.when(arrow.getUniqueId()).thenReturn(UUID.randomUUID());
     EntityRemoveEvent event = new EntityRemoveEvent(arrow, EntityRemoveEvent.Cause.DESPAWN);
@@ -142,7 +145,7 @@ class FeatureMobStackingDirtyTest {
     });
     holder.start();
     Assertions.assertTrue(held.await(5L, TimeUnit.SECONDS));
-    Thread worker = new Thread(() -> feature.on(event));
+    Thread worker = new Thread(() -> feature.onRemove(MobStacks.entity(arrow), event.getCause() == EntityRemoveEvent.Cause.EXPLODE));
     try {
       worker.start();
       worker.join(2_000L);
@@ -160,17 +163,17 @@ class FeatureMobStackingDirtyTest {
     Mockito.when(world.isChunkLoaded(Mockito.anyInt(), Mockito.anyInt())).thenReturn(true);
     Mockito.when(world.getChunkAt(Mockito.anyInt(), Mockito.anyInt())).thenReturn(chunk);
     Mockito.when(chunk.getEntities()).thenReturn(new Entity[]{only});
-    Method stackChunk = FeatureMobStacking.class.getDeclaredMethod("stackChunk", World.class, int.class, int.class);
+    Method stackChunk = FeatureMobStacking.class.getDeclaredMethod("stackChunk", ReactWorld.class, int.class, int.class);
     stackChunk.setAccessible(true);
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
          MockedStatic<ReactProtection> protection = Mockito.mockStatic(ReactProtection.class)) {
       scheduling.when(J::isFoliaThreading).thenReturn(false);
-      Assertions.assertTrue((boolean) stackChunk.invoke(feature, world, 0, 0));
+      Assertions.assertTrue((boolean) stackChunk.invoke(feature, new BukkitReactWorld(world), 0, 0));
     }
   }
 
   private FeatureMobStacking activeFeature() throws ReflectiveOperationException {
-    FeatureMobStacking feature = Mockito.spy(new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect()));
+    FeatureMobStacking feature = Mockito.spy(MobStacks.feature(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect()));
     Field active = FeatureMobStacking.class.getDeclaredField("active");
     active.setAccessible(true);
     active.setBoolean(feature, true);

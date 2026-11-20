@@ -25,6 +25,7 @@ import art.arcane.react.api.entity.EntityPriority;
 import art.arcane.react.api.protect.internal.ProtectionGuards;
 import art.arcane.react.model.ReactConfiguration;
 import art.arcane.react.model.ReactEntity;
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.value.MaterialValue;
@@ -162,6 +163,7 @@ public class EntityController implements IController, Listener {
     entityTickListeners = new ConcurrentHashMap<>();
     EntityKiller.startAccepting();
     ReactEntity.resumeManagedCleanup();
+    EntityPriority.bind(() -> ReactConfiguration.get().getPriority());
     ReactConfiguration.get().getPriority().rebuildPriority();
     looper = new Looper("React Entity Controller") {
       @Override
@@ -199,7 +201,7 @@ public class EntityController implements IController, Listener {
       return;
     }
 
-    if (!ReactEntity.tick(e, priority)) {
+    if (!ReactEntity.tick(new BukkitGameEntity(e), priority)) {
       return;
     }
 
@@ -301,7 +303,7 @@ public class EntityController implements IController, Listener {
     for (Entity entity : e.getEntities()) {
       ProtectionGuards.hydrate(entity);
       EntityKiller.reconcile(entity);
-      ReactEntity.reconcileManagedState(entity);
+      ReactEntity.reconcileManagedState(new BukkitGameEntity(entity));
     }
   }
 
@@ -309,7 +311,7 @@ public class EntityController implements IController, Listener {
   public void on(EntitiesUnloadEvent event) {
     for (Entity entity : event.getEntities()) {
       try {
-        ReactEntity.releaseManagedState(entity);
+        ReactEntity.releaseManagedState(new BukkitGameEntity(entity));
       } catch (RuntimeException exception) {
         React.reportError(exception);
       }
@@ -569,7 +571,7 @@ public class EntityController implements IController, Listener {
       }
       try {
         EntityKiller.reconcile(entity);
-        ReactEntity.reconcileManagedState(entity);
+        ReactEntity.reconcileManagedState(new BukkitGameEntity(entity));
       } catch (Throwable throwable) {
         React.reportError(throwable);
       }
@@ -582,7 +584,7 @@ public class EntityController implements IController, Listener {
     }
 
     EntityKiller.reconcile(player);
-    ReactEntity.reconcileManagedState(player);
+    ReactEntity.reconcileManagedState(new BukkitGameEntity(player));
     for (Entity entity : player.getNearbyEntities(48, 32, 48)) {
       if (entity == null) {
         continue;
@@ -590,11 +592,11 @@ public class EntityController implements IController, Listener {
 
       if (J.isOwnedByCurrentRegion(entity)) {
         EntityKiller.reconcile(entity);
-        ReactEntity.reconcileManagedState(entity);
+        ReactEntity.reconcileManagedState(new BukkitGameEntity(entity));
       } else {
         J.runEntity(entity, () -> {
           EntityKiller.reconcile(entity);
-          ReactEntity.reconcileManagedState(entity);
+          ReactEntity.reconcileManagedState(new BukkitGameEntity(entity));
         });
       }
     }

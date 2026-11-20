@@ -14,7 +14,14 @@ import art.arcane.react.platform.PortalHost;
 import art.arcane.react.platform.ExplosionHost;
 import art.arcane.react.platform.FurnaceHost;
 import art.arcane.react.platform.ComponentHost;
+import art.arcane.react.platform.EntityActivityHost;
 import art.arcane.react.platform.EntityHost;
+import art.arcane.react.platform.MobStackHost;
+import art.arcane.react.core.integration.GlossEntityOverlayIntegration;
+import art.arcane.react.platform.EntityEventHost;
+import art.arcane.react.platform.EntityHost;
+import art.arcane.react.platform.ItemHost;
+import art.arcane.react.platform.VehicleHost;
 import art.arcane.react.platform.HopperHost;
 import art.arcane.react.platform.ViewDistanceHost;
 import art.arcane.react.platform.ChunkHeatmapHost;
@@ -75,6 +82,14 @@ public final class BukkitReactPlatform implements ReactPlatform {
   private final EntityHost entityHost = new BukkitEntityHost();
   private final HopperHost hopperHost = new BukkitHopperHost();
   private final ViewDistanceHost viewDistanceHost = new BukkitViewDistanceHost();
+  // Batch A: items
+  private final ItemHost itemHost = new BukkitItemHost();
+  private final VehicleHost vehicleHost = new BukkitVehicleHost();
+  private final EntityEventHost entityEventHost = new BukkitEntityEventHost();
+  // Batch A: ai
+  private final EntityActivityHost entityActivityHost = new BukkitEntityActivityHost();
+  // Batch A: mobs
+  private volatile MobStackHost mobStackHost;
   private final ChunkHost chunkHost = new BukkitChunkHost();
   private final PlayerHost playerHost = new BukkitPlayerHost();
   private final IncidentHost incidentHost = new BukkitIncidentHost();
@@ -295,6 +310,44 @@ public final class BukkitReactPlatform implements ReactPlatform {
   @Override
   public Optional<ViewDistanceHost> viewDistanceHost() {
     return Optional.of(viewDistanceHost);
+  }
+
+  // Batch A: items
+  @Override
+  public Optional<ItemHost> itemHost() {
+    return Optional.of(itemHost);
+  }
+
+  @Override
+  public Optional<VehicleHost> vehicleHost() {
+    return Optional.of(vehicleHost);
+  }
+
+  @Override
+  public Optional<EntityEventHost> entityEventHost() {
+    return Optional.of(entityEventHost);
+  }
+
+  // Batch A: ai
+  @Override
+  public Optional<EntityActivityHost> entityActivityHost() {
+    return Optional.of(entityActivityHost);
+  }
+
+  // Batch A: mobs
+  @Override
+  public Optional<MobStackHost> mobStackHost() {
+    MobStackHost host = mobStackHost;
+    if (host == null) {
+      synchronized (this) {
+        host = mobStackHost;
+        if (host == null) {
+          host = new BukkitMobStackHost(new GlossEntityOverlayIntegration(), MobStateAccess.detect());
+          mobStackHost = host;
+        }
+      }
+    }
+    return Optional.of(host);
   }
 
   // Chunks, players, world rules and maps

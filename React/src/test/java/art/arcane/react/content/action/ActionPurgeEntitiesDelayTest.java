@@ -1,5 +1,7 @@
 package art.arcane.react.content.action;
 
+import art.arcane.react.platform.GameEntity;
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.React;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.entity.Entity;
@@ -22,7 +24,7 @@ class ActionPurgeEntitiesDelayTest {
     seconds.setAccessible(true);
     seconds.setInt(action, 60);
     ActionPurgeEntities.Params params = action.getDefaultParams();
-    Method purge = ActionPurgeEntities.class.getDeclaredMethod("purge", Entity.class, ActionPurgeEntities.Params.class);
+    Method purge = ActionPurgeEntities.class.getDeclaredMethod("purge", GameEntity.class, ActionPurgeEntities.Params.class);
     purge.setAccessible(true);
     Entity entity = Mockito.mock(Entity.class);
     Mockito.when(entity.getType()).thenReturn(EntityType.ZOMBIE);
@@ -33,7 +35,7 @@ class ActionPurgeEntitiesDelayTest {
           .thenReturn(false);
 
       for (int attempt = 0; attempt < 32; attempt++) {
-        purge.invoke(action, entity, params);
+        purge.invoke(action, new BukkitGameEntity(entity), params);
       }
 
       ArgumentCaptor<Integer> delays = ArgumentCaptor.forClass(Integer.class);

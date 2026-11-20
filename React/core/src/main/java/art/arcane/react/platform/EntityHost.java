@@ -5,6 +5,7 @@ import art.arcane.react.api.protect.ReactOperation;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * Entity lookups and removals for features and actions. Calls that read or change entities run on the thread that
@@ -72,6 +73,71 @@ public interface EntityHost {
    * Removes the entity the way React always does, with its drop and death rules.
    */
   void remove(GameEntity entity);
+
+  /**
+   * Calls the listener when React's entity ticker refreshes an entity's priority: entities are sampled a few per world
+   * each server tick and refreshed at most every ten seconds, on the thread that owns them. An empty collection means
+   * every type; types use the naming of {@link GameEntity#type()}.
+   */
+  Subscription onTick(Collection<String> types, Consumer<GameEntity> listener);
+
+  /**
+   * Wraps a platform entity object, as {@link GameEntity#handle()} returns it.
+   */
+  GameEntity wrap(Object handle);
+
+  /**
+   * Entities in a cube of half-size {@code radius} around the entity, excluding it.
+   */
+  List<GameEntity> nearbyEntities(GameEntity entity, double radius);
+
+  /**
+   * Squared distance to the closest player in the entity's world, or positive infinity when none is within
+   * {@code maxDistance}.
+   */
+  double nearestPlayerDistanceSquared(GameEntity entity, double maxDistance);
+
+  /**
+   * React's material value of a dropped item's stack times its amount; zero for other entities.
+   */
+  double itemValue(GameEntity entity);
+
+  /**
+   * An integer React stored on the entity under its own key; it survives saves and reloads.
+   */
+  int persistentInt(GameEntity entity, String key, int fallback);
+
+  void setPersistentInt(GameEntity entity, String key, int value);
+
+  /**
+   * A flag React stored on the entity under its own key; it survives saves and reloads.
+   */
+  boolean persistentFlag(GameEntity entity, String key);
+
+  /**
+   * Sets the flag, or removes it when {@code value} is false.
+   */
+  void setPersistentFlag(GameEntity entity, String key, boolean value);
+
+  /**
+   * True when the mob's AI runs; false for entities without AI.
+   */
+  boolean hasAi(GameEntity entity);
+
+  /**
+   * Turns the mob's AI on or off; with it off the mob neither thinks nor moves on its own.
+   */
+  void setAi(GameEntity entity, boolean ai);
+
+  /**
+   * True when the mob is aware, which is Bukkit's {@code Mob#isAware}.
+   */
+  boolean isAware(GameEntity entity);
+
+  /**
+   * An unaware mob keeps its physics but skips its goals, brain and pathfinding.
+   */
+  void setAware(GameEntity entity, boolean aware);
 
   // Chunk quarantine culling
 

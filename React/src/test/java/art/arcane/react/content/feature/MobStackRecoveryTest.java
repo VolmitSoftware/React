@@ -1,5 +1,7 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.MobStateAccess;
+import art.arcane.react.platform.GameEntity;
 import art.arcane.react.React;
 import art.arcane.react.core.integration.GlossEntityOverlayIntegration;
 import art.arcane.react.core.controller.ObserverController;
@@ -65,8 +67,8 @@ class MobStackRecoveryTest {
     Mockito.when(world.getChunkAt(7, -4, false)).thenReturn(chunk);
     Mockito.when(chunk.isEntitiesLoaded()).thenReturn(true);
     Mockito.when(chunk.getEntities()).thenReturn(new Entity[0]);
-    Mockito.doReturn(0).when(feature).restoreStack(Mockito.any(LivingEntity.class), Mockito.anyInt(), Mockito.anyLong());
-    Mockito.doReturn(1).when(feature).getStackCount(Mockito.any(Entity.class));
+    Mockito.doReturn(0).when(feature).restoreStack(Mockito.any(GameEntity.class), Mockito.anyInt(), Mockito.anyLong());
+    Mockito.doReturn(1).when(feature).getStackCount(Mockito.any(GameEntity.class));
     react = Mockito.mockStatic(React.class);
     bukkit = Mockito.mockStatic(Bukkit.class);
     scheduling = Mockito.mockStatic(J.class);
@@ -100,7 +102,7 @@ class MobStackRecoveryTest {
     Mockito.verify(source, Mockito.never()).isValid();
     tasks.getFirst().run();
 
-    Mockito.verify(feature).restoreStack(source, MobStackRecovery.MAX_SPAWNS_PER_BATCH, 0L);
+    Mockito.verify(feature).restoreStack(MobStacks.entity(source), MobStackRecovery.MAX_SPAWNS_PER_BATCH, 0L);
     Mockito.verify(feature, Mockito.never()).onActivate();
     bukkit.verify(Bukkit::getOnlinePlayers, Mockito.never());
     Mockito.verify(world, Mockito.never()).getPlayers();
@@ -125,19 +127,19 @@ class MobStackRecoveryTest {
     LivingEntity second = livingEntity();
     LivingEntity third = livingEntity();
     Mockito.when(chunk.getEntities()).thenReturn(new Entity[]{first, second, third});
-    Mockito.doReturn(7).when(feature).restoreStack(first, 16, 0L);
-    Mockito.doReturn(9).when(feature).restoreStack(second, 9, 0L);
+    Mockito.doReturn(7).when(feature).restoreStack(MobStacks.entity(first), 16, 0L);
+    Mockito.doReturn(9).when(feature).restoreStack(MobStacks.entity(second), 9, 0L);
 
     recovery.tick(0L);
     tasks.getFirst().run();
 
-    Mockito.verify(feature).restoreStack(first, 16, 0L);
-    Mockito.verify(feature).restoreStack(second, 9, 0L);
-    Mockito.verify(feature, Mockito.never()).restoreStack(Mockito.eq(third), Mockito.anyInt(), Mockito.anyLong());
+    Mockito.verify(feature).restoreStack(MobStacks.entity(first), 16, 0L);
+    Mockito.verify(feature).restoreStack(MobStacks.entity(second), 9, 0L);
+    Mockito.verify(feature, Mockito.never()).restoreStack(Mockito.eq(MobStacks.entity(third)), Mockito.anyInt(), Mockito.anyLong());
     recovery.tick(0L);
     tasks.getLast().run();
 
-    Mockito.verify(feature).restoreStack(third, 16, 0L);
+    Mockito.verify(feature).restoreStack(MobStacks.entity(third), 16, 0L);
     Mockito.verify(chunk).getEntities();
   }
 
@@ -146,17 +148,17 @@ class MobStackRecoveryTest {
     LivingEntity source = livingEntity();
     LivingEntity next = livingEntity();
     Mockito.when(chunk.getEntities()).thenReturn(new Entity[]{source, next});
-    Mockito.doReturn(16, 1).when(feature).restoreStack(source, 16, 0L);
-    Mockito.doReturn(2).when(feature).getStackCount(source);
+    Mockito.doReturn(16, 1).when(feature).restoreStack(MobStacks.entity(source), 16, 0L);
+    Mockito.doReturn(2).when(feature).getStackCount(MobStacks.entity(source));
 
     recovery.tick(0L);
     tasks.getFirst().run();
-    Mockito.verify(feature, Mockito.never()).restoreStack(Mockito.eq(next), Mockito.anyInt(), Mockito.anyLong());
+    Mockito.verify(feature, Mockito.never()).restoreStack(Mockito.eq(MobStacks.entity(next)), Mockito.anyInt(), Mockito.anyLong());
     recovery.tick(0L);
     tasks.getLast().run();
 
-    Mockito.verify(feature, Mockito.times(2)).restoreStack(source, 16, 0L);
-    Mockito.verify(feature).restoreStack(next, 15, 0L);
+    Mockito.verify(feature, Mockito.times(2)).restoreStack(MobStacks.entity(source), 16, 0L);
+    Mockito.verify(feature).restoreStack(MobStacks.entity(next), 15, 0L);
   }
 
   @Test
@@ -170,11 +172,11 @@ class MobStackRecoveryTest {
     tasks.getFirst().run();
 
     Mockito.verify(feature, Mockito.times(MobStackRecovery.MAX_ENTITIES_PER_BATCH))
-        .restoreStack(source, 16, 0L);
+        .restoreStack(MobStacks.entity(source), 16, 0L);
     recovery.tick(0L);
     tasks.getLast().run();
 
-    Mockito.verify(feature, Mockito.times(entities.length)).restoreStack(source, 16, 0L);
+    Mockito.verify(feature, Mockito.times(entities.length)).restoreStack(MobStacks.entity(source), 16, 0L);
     Mockito.verify(chunk).getEntities();
   }
 
@@ -185,7 +187,7 @@ class MobStackRecoveryTest {
     tasks.getFirst().run();
 
     Mockito.verify(world, Mockito.never()).getChunkAt(Mockito.anyInt(), Mockito.anyInt(), Mockito.anyBoolean());
-    Mockito.verify(feature, Mockito.never()).restoreStack(Mockito.any(LivingEntity.class), Mockito.anyInt(), Mockito.anyLong());
+    Mockito.verify(feature, Mockito.never()).restoreStack(Mockito.any(GameEntity.class), Mockito.anyInt(), Mockito.anyLong());
   }
 
   @Test
@@ -202,8 +204,8 @@ class MobStackRecoveryTest {
     tasks.getLast().run();
 
     Mockito.verify(observer, Mockito.times(2)).openLoadedChunkCursor();
-    Mockito.verify(feature).restoreStack(source, 16, 1L);
-    Mockito.verify(feature, Mockito.never()).restoreStack(Mockito.any(LivingEntity.class), Mockito.anyInt(), Mockito.eq(0L));
+    Mockito.verify(feature).restoreStack(MobStacks.entity(source), 16, 1L);
+    Mockito.verify(feature, Mockito.never()).restoreStack(Mockito.any(GameEntity.class), Mockito.anyInt(), Mockito.eq(0L));
   }
 
   @Test
@@ -236,7 +238,7 @@ class MobStackRecoveryTest {
     recovery.tick(0L);
     tasks.getFirst().run();
 
-    Mockito.verify(feature, Mockito.never()).restoreStack(Mockito.any(LivingEntity.class), Mockito.anyInt(), Mockito.anyLong());
+    Mockito.verify(feature, Mockito.never()).restoreStack(Mockito.any(GameEntity.class), Mockito.anyInt(), Mockito.anyLong());
     Mockito.verify(source, Mockito.never()).isValid();
     Mockito.verify(source, Mockito.never()).isDead();
   }
@@ -285,7 +287,7 @@ class MobStackRecoveryTest {
   void sweepThatRestoredAStackIsNotDormant() throws ReflectiveOperationException {
     LivingEntity source = livingEntity();
     Mockito.when(chunk.getEntities()).thenReturn(new Entity[]{source});
-    Mockito.doReturn(1).when(feature).restoreStack(source, 16, 0L);
+    Mockito.doReturn(1).when(feature).restoreStack(MobStacks.entity(source), 16, 0L);
     recovery.tick(0L);
     tasks.getFirst().run();
     recovery.tick(0L);
@@ -303,7 +305,7 @@ class MobStackRecoveryTest {
   void stackThatCouldNotBeRestoredKeepsTheSweepArmed() throws ReflectiveOperationException {
     LivingEntity source = livingEntity();
     Mockito.when(chunk.getEntities()).thenReturn(new Entity[]{source});
-    Mockito.doReturn(3).when(feature).getStackCount(source);
+    Mockito.doReturn(3).when(feature).getStackCount(MobStacks.entity(source));
 
     recovery.tick(0L);
     tasks.getFirst().run();
@@ -339,16 +341,16 @@ class MobStackRecoveryTest {
     EntitiesLoadEvent load = Mockito.mock(EntitiesLoadEvent.class);
     Mockito.when(load.getEntities()).thenReturn(List.of(stacked));
 
-    feature.on(load);
+    MobStacks.events(feature).onEntitiesLoad(load);
 
-    Mockito.verify(feature, Mockito.never()).getStackCount(Mockito.any(Entity.class));
+    Mockito.verify(feature, Mockito.never()).getStackCount(Mockito.any(GameEntity.class));
   }
 
   @Test
   void loadedStackRearmsTheDisabledFeatureRecovery() throws ReflectiveOperationException {
     Mockito.when(React.instance.getName()).thenReturn("React");
     Mockito.when(React.instance.namespace()).thenReturn("react");
-    FeatureMobStacking disabled = new FeatureMobStacking(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
+    FeatureMobStacking disabled = MobStacks.feature(Mockito.mock(GlossEntityOverlayIntegration.class), MobStateAccess.detect());
     disabled.setEnabled(false);
     LivingEntity stacked = livingEntity();
     EntitiesLoadEvent load = Mockito.mock(EntitiesLoadEvent.class);
@@ -356,7 +358,7 @@ class MobStackRecoveryTest {
     Mockito.when(cursor.next(1)).thenReturn(List.of(new LoadedChunkTarget(worldId, 7, -4)), List.of());
 
     try (MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class)) {
-      managed.when(() -> ReactEntity.getStackCount(stacked)).thenReturn(3);
+      managed.when(() -> ReactEntity.getStackCount(MobStacks.entity(stacked))).thenReturn(3);
       disabled.onIntegrityTick();
       tasks.getFirst().run();
       disabled.onIntegrityTick();
@@ -364,7 +366,7 @@ class MobStackRecoveryTest {
       Mockito.verify(observer, Mockito.times(1)).openLoadedChunkCursor();
 
       Mockito.when(cursor.next(1)).thenReturn(List.of(new LoadedChunkTarget(worldId, 7, -4)));
-      disabled.on(load);
+      MobStacks.events(disabled).onEntitiesLoad(load);
       disabled.onIntegrityTick();
     }
 

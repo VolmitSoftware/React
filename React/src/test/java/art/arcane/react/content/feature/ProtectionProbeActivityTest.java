@@ -92,12 +92,12 @@ class ProtectionProbeActivityTest {
     when(horse.getWorld()).thenReturn(world);
     when(horse.getLocation()).thenReturn(new Location(world, 0, 64, 0));
     when(world.spawnEntity(any(Location.class), any(EntityType.class))).thenReturn(replacement);
-    when(feature.isStackableType(EntityType.HORSE)).thenReturn(true);
-    when(feature.getStackCount(horse)).thenReturn(4);
-    doCallRealMethod().when(feature).onPlayerInteractEntity(any());
+    when(feature.isStackableType("HORSE")).thenReturn(true);
+    when(feature.getStackCount(MobStacks.entity(horse))).thenReturn(4);
+    doCallRealMethod().when(feature).onSneakInteract(any());
 
     try (MockedStatic<React> react = mockStatic(React.class)) {
-      feature.onPlayerInteractEntity(ProtectionProbe.entityInteract(player, horse));
+      MobStacks.events(feature).onPlayerInteractEntity(ProtectionProbe.entityInteract(player, horse));
     }
 
     verify(world, never()).spawnEntity(any(Location.class), any(EntityType.class));

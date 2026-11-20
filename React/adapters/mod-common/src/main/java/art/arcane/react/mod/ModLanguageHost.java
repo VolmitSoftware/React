@@ -1,5 +1,6 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.entity.EntityPriority;
 import art.arcane.react.api.monitor.MonitoringSettings;
 import art.arcane.react.api.rendering.MapSettings;
 import art.arcane.react.api.web.WebConfiguration;
@@ -20,6 +21,8 @@ import java.util.logging.Logger;
 /**
  * The server language lives in {@code react.toml} under {@code language}, as on Bukkit. The file is read only after the
  * platform is bound, so the language catalog already holds the config documentation that its comments are written from.
+ * The entity priority model lives there too, under {@code priority} with Bukkit's keys, as it does in Bukkit's
+ * {@code react.toml}.
  */
 final class ModLanguageHost implements LanguageHost {
     static final String SOURCE_TAG = "main-config";
@@ -33,6 +36,10 @@ final class ModLanguageHost implements LanguageHost {
     static final class Settings {
         @ConfigDoc(value = "Locale used for React player and operator interfaces.", impact = "Code-owned English remains the fallback; editable TOML catalogs are loaded from languages.")
         String language = "en_US";
+
+        @ConfigDoc(value = "Entity priority model used by multiple React subsystems.", impact = "Changing these weights can alter culling, queueing, and visibility behavior.")
+        EntityPriority priority = new EntityPriority();
+
         @ConfigDoc(value = "Enables plugin-gated secret integration features.", impact = "Disabled by default. Enable to allow Iris/Adapt secret bundles when dependencies are present.")
         boolean integrationSecretsEnabled = false;
 
@@ -45,7 +52,19 @@ final class ModLanguageHost implements LanguageHost {
     }
 
     void load() throws IOException {
-        settings = TomlFiles.load(settingsFile, Settings.class, new Settings(), SOURCE_TAG, true, LOGGER::info);
+        settings = loaded(TomlFiles.load(settingsFile, Settings.class, new Settings(), SOURCE_TAG, true, LOGGER::info));
+    }
+
+    EntityPriority priority() {
+        return settings.priority;
+    }
+
+    private static Settings loaded(Settings loaded) {
+        if (loaded.priority == null) {
+            loaded.priority = new EntityPriority();
+        }
+        loaded.priority.rebuildPriority();
+        return loaded;
     }
 
     /**
@@ -53,7 +72,7 @@ final class ModLanguageHost implements LanguageHost {
      */
     boolean reload() {
         try {
-            settings = TomlFiles.load(settingsFile, Settings.class, settings, SOURCE_TAG, false, LOGGER::info);
+            settings = loaded(TomlFiles.load(settingsFile, Settings.class, settings, SOURCE_TAG, false, LOGGER::info));
             return true;
         } catch (IOException | RuntimeException failure) {
             LOGGER.warning("Kept the current React settings; react.toml could not be read: " + failure.getMessage());
@@ -85,7 +104,7 @@ final class ModLanguageHost implements LanguageHost {
 
     @Override
     public void persistServerLanguage(String locale) throws Exception {
-        Settings next = TomlFiles.load(settingsFile, Settings.class, new Settings(), SOURCE_TAG, true, LOGGER::info);
+        Settings next = loaded(TomlFiles.load(settingsFile, Settings.class, new Settings(), SOURCE_TAG, true, LOGGER::info));
         next.language = locale;
         TomlFiles.save(settingsFile, next, SOURCE_TAG);
         settings = next;

@@ -1,0 +1,419 @@
+/*
+ *  Copyright (c) 2016-2025 Arcane Arts (Volmit Software)
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *
+ */
+
+package art.arcane.react.content.feature;
+
+import art.arcane.react.api.feature.PressureGate;
+import art.arcane.react.api.feature.ReactFeature;
+import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.util.common.scheduling.J;
+import art.arcane.react.platform.EntityActivityHost;
+import art.arcane.react.platform.EntityRange;
+import art.arcane.react.platform.EntityRanges;
+import art.arcane.react.platform.ReactPlatform;
+import art.arcane.react.platform.ReactPlatforms;
+import art.arcane.react.platform.ReactWorld;
+import art.arcane.react.platform.WorldHost;
+
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
+@art.arcane.react.util.project.config.ConfigDescription("Configuration for Tracker Range Governor feature. Temporarily scales down per-world entity tracking ranges (items, misc, displays, animals, monsters) while the server is under sustained pressure, shrinking entity-tracker and packet fanout. Changes apply to entities as they become tracked, so fast-churning entities like items react within seconds; ranges are restored once the server recovers.")
+public class FeatureTrackerRangeGovernor extends ReactFeature {
+  static int scaledRange(int base, double factor, int minimumRangeBlocks) {
+    return Math.max(Math.max(1, minimumRangeBlocks), (int) Math.round(base * factor));
+  }
+
+  public static final String ID = "tracker-range-governor";
+  private static final Set<EntityRange> GOVERNED_RANGES = EnumSet.of(
+      EntityRange.TRACKING_ITEM,
+      EntityRange.TRACKING_MISC,
+      EntityRange.TRACKING_DISPLAY,
+      EntityRange.TRACKING_ANIMAL,
+      EntityRange.TRACKING_MONSTER,
+      EntityRange.TRACKING_OTHER);
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Main evaluation interval for tracker range governor in milliseconds.", impact = "Lower values react faster but consume more CPU; higher values reduce overhead but react later.")
+  private int tickIntervalMS = 2000;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Average tick milliseconds required before the governor engages.", impact = "Lower values shrink tracking ranges earlier; higher values reserve it for heavier load.")
+  private double engageTickTimeMs = 55;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Average tick milliseconds the server must stay below before the governor releases.", impact = "Lower values hold the reduction longer for stability; higher values restore full ranges sooner.")
+  private double releaseTickTimeMs = 42;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Sustained pressure duration required before engaging (milliseconds).", impact = "Higher values ignore short spikes; lower values engage faster.")
+  private long sustainEngageMs = 6000;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Sustained recovery duration required before releasing (milliseconds).", impact = "Higher values avoid flapping between states; lower values restore ranges sooner.")
+  private long sustainReleaseMs = 30_000;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Scale factor applied to item tracking range while engaged.", impact = "Lower values cut more item tracker/packet fanout; players see dropped items from closer only.")
+  private double itemRangeFactor = 0.5;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Scale factor applied to misc tracking range (item frames, paintings, xp orbs) while engaged.", impact = "Lower values cut more tracker/packet fanout for decorative and ambient entities.")
+  private double miscRangeFactor = 0.5;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Scale factor applied to display entity tracking range while engaged.", impact = "Lower values cut display-entity fanout; holograms render from closer only while engaged.")
+  private double displayRangeFactor = 0.6;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Scale factor applied to animal tracking range while engaged.", impact = "Lower values cut animal tracker fanout; distant animals appear later while engaged.")
+  private double animalRangeFactor = 0.75;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Scale factor applied to monster tracking range while engaged.", impact = "Lower values cut monster tracker fanout; distant monsters appear later while engaged.")
+  private double monsterRangeFactor = 0.75;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Scale factor applied to other-entity tracking range while engaged.", impact = "Lower values cut fanout for uncategorized entities like projectiles and vehicles.")
+  private double otherRangeFactor = 0.75;
+  @art.arcane.react.util.project.config.ConfigDoc(value = "Minimum tracking range in blocks after scaling.", impact = "Higher values cap how aggressively ranges shrink; lower values allow deeper cuts.")
+  private int minimumRangeBlocks = 16;
+  private transient EntityActivityHost activity;
+  private transient WorldHost worlds;
+  private transient Set<EntityRange> rangeTypes;
+  private transient Map<UUID, Map<EntityRange, Integer>> baselinesByWorld;
+  private transient boolean resolved;
+  private transient boolean supported;
+  private transient final PressureGate gate = new PressureGate();
+  private transient final Object worldMutationLock = new Object();
+  private transient final Deque<RetiredWorldState> pendingReleases = new ArrayDeque<>();
+  private transient volatile AtomicInteger mutationRequests = new AtomicInteger(0);
+  private transient final AtomicLong lifecycleGeneration = new AtomicLong(0L);
+  private transient volatile boolean requestedEngaged;
+  private transient volatile boolean active;
+
+  public FeatureTrackerRangeGovernor() {
+    super(ID);
+  }
+
+  @Override
+  public void onActivate() {
+    synchronized (worldMutationLock) {
+      active = false;
+      lifecycleGeneration.incrementAndGet();
+      baselinesByWorld = new ConcurrentHashMap<>();
+      resolved = false;
+      supported = false;
+      gate.reset();
+      mutationRequests = new AtomicInteger(0);
+      requestedEngaged = false;
+      active = true;
+    }
+  }
+
+  @Override
+  public void onDeactivate() {
+    Map<UUID, Map<EntityRange, Integer>> retiredBaselines;
+    RetiredWorldState retiredState;
+    synchronized (worldMutationLock) {
+      active = false;
+      lifecycleGeneration.incrementAndGet();
+      gate.reset();
+      requestedEngaged = false;
+      mutationRequests = new AtomicInteger(0);
+      retiredBaselines = baselinesByWorld;
+      retiredState = new RetiredWorldState(retiredBaselines);
+      if (retiredState.hasState()) {
+        pendingReleases.addLast(retiredState);
+      }
+    }
+
+    if (!retiredState.hasState()) {
+      return;
+    }
+
+    if (J.isPrimaryThread()) {
+      releaseRetiredState(retiredState);
+      return;
+    }
+
+    J.sync(() -> releaseRetiredState(retiredState));
+  }
+
+  @Override
+  public int getTickInterval() {
+    return Math.max(1000, tickIntervalMS);
+  }
+
+  @Override
+  public void onTick() {
+    long generation = lifecycleGeneration.get();
+    if (!isActive(generation)) {
+      return;
+    }
+
+    double tickMs = sample(SamplerTickTime.ID);
+    if (!isActive(generation)) {
+      return;
+    }
+    boolean pressure = !(tickMs < engageTickTimeMs);
+    boolean calm = !(tickMs > releaseTickTimeMs);
+    long now = System.currentTimeMillis();
+    boolean wasEngaged;
+    boolean nowEngaged;
+    synchronized (worldMutationLock) {
+      if (!isActive(generation)) {
+        return;
+      }
+      wasEngaged = gate.isEngaged();
+      nowEngaged = gate.update(now, pressure, calm, sustainEngageMs, sustainReleaseMs);
+    }
+
+    if (!wasEngaged && nowEngaged) {
+      requestWorldState(true, generation);
+    } else if (wasEngaged && !nowEngaged) {
+      requestWorldState(false, generation);
+    }
+  }
+
+  private void requestWorldState(boolean engaged, long generation) {
+    AtomicInteger requests;
+    synchronized (worldMutationLock) {
+      if (!isActive(generation)) {
+        return;
+      }
+      requestedEngaged = engaged;
+      requests = mutationRequests;
+    }
+
+    if (J.isPrimaryThread()) {
+      applyRequestedWorldState(generation);
+      return;
+    }
+    if (requests.getAndIncrement() != 0) {
+      return;
+    }
+
+    J.sync(() -> {
+      if (isActive(generation)) {
+        drainWorldStateRequests(requests, generation);
+      }
+    });
+  }
+
+  private void drainWorldStateRequests(AtomicInteger requests, long generation) {
+    int completed = 1;
+    while (true) {
+      if (!isActive(generation)) {
+        requests.set(0);
+        return;
+      }
+      applyRequestedWorldState(generation);
+      int remaining = requests.addAndGet(-completed);
+      if (remaining == 0) {
+        return;
+      }
+      completed = remaining;
+    }
+  }
+
+  private void applyRequestedWorldState(long generation) {
+    synchronized (worldMutationLock) {
+      if (!isActive(generation)) {
+        return;
+      }
+      releasePendingState();
+      if (!isActive(generation)) {
+        return;
+      }
+      if (requestedEngaged) {
+        engage();
+      } else {
+        release(baselinesByWorld);
+      }
+    }
+  }
+
+  private void engage() {
+    if (!resolveSupport()) {
+      return;
+    }
+
+    int governed = 0;
+    for (ReactWorld world : worlds.worlds()) {
+      try {
+        EntityRanges config = activity.entityRanges(world).orElse(null);
+        if (config == null) {
+          continue;
+        }
+
+        Map<EntityRange, Integer> baselines = new HashMap<>();
+        for (EntityRange type : rangeTypes) {
+          int base = config.range(type);
+          if (base <= 0) {
+            continue;
+          }
+
+          int target = scaledRange(base, factorFor(type), minimumRangeBlocks);
+          if (target >= base) {
+            continue;
+          }
+
+          baselines.put(type, base);
+          config.range(type, target);
+          governed++;
+        }
+
+        if (!baselines.isEmpty()) {
+          baselinesByWorld.put(world.id(), baselines);
+        }
+      } catch (Throwable e) {
+        failRuntime(e);
+        return;
+      }
+    }
+
+    if (governed > 0) {
+      verbose("Tracker range governor engaged: scaled " + governed + " tracking ranges across " + baselinesByWorld.size() + " worlds");
+    }
+  }
+
+  private void release(Map<UUID, Map<EntityRange, Integer>> rangeBaselines) {
+    if (rangeBaselines == null || rangeBaselines.isEmpty()) {
+      return;
+    }
+
+    int restored = 0;
+    for (Map.Entry<UUID, Map<EntityRange, Integer>> worldEntry : rangeBaselines.entrySet()) {
+      ReactWorld world = worlds.world(worldEntry.getKey()).orElse(null);
+      if (world == null) {
+        continue;
+      }
+
+      try {
+        EntityRanges config = activity.entityRanges(world).orElse(null);
+        if (config == null) {
+          continue;
+        }
+
+        for (Map.Entry<EntityRange, Integer> entry : worldEntry.getValue().entrySet()) {
+          config.range(entry.getKey(), entry.getValue());
+          restored++;
+        }
+      } catch (Throwable e) {
+        failRuntime(e);
+        return;
+      }
+    }
+
+    rangeBaselines.clear();
+    if (restored > 0) {
+      verbose("Tracker range governor released: restored " + restored + " tracking ranges");
+    }
+  }
+
+  private void releaseRetiredState(RetiredWorldState retiredState) {
+    synchronized (worldMutationLock) {
+      if (!pendingReleases.remove(retiredState)) {
+        return;
+      }
+      release(retiredState.rangeBaselines);
+    }
+  }
+
+  private void releasePendingState() {
+    RetiredWorldState retiredState;
+    while ((retiredState = pendingReleases.pollFirst()) != null) {
+      release(retiredState.rangeBaselines);
+    }
+  }
+
+  private boolean isActive(long generation) {
+    return active && generation == lifecycleGeneration.get();
+  }
+
+  private double factorFor(EntityRange type) {
+    return switch (type) {
+      case TRACKING_ITEM -> itemRangeFactor;
+      case TRACKING_MISC -> miscRangeFactor;
+      case TRACKING_DISPLAY -> displayRangeFactor;
+      case TRACKING_ANIMAL -> animalRangeFactor;
+      case TRACKING_MONSTER -> monsterRangeFactor;
+      default -> otherRangeFactor;
+    };
+  }
+
+  private boolean resolveSupport() {
+    if (resolved) {
+      return supported;
+    }
+
+    resolved = true;
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    WorldHost worldHost = worlds != null ? worlds : platform == null ? null : platform.worldHost().orElse(null);
+    List<ReactWorld> loaded = worldHost == null ? List.of() : worldHost.worlds();
+    if (loaded.isEmpty()) {
+      resolved = false;
+      return false;
+    }
+
+    try {
+      EntityActivityHost host = activity != null ? activity : platform == null ? null : platform.entityActivityHost().orElse(null);
+      EntityRanges first = host == null ? null : host.entityRanges(loaded.get(0)).orElse(null);
+      if (first == null) {
+        warn("Tracker Range Governor disabled: native world settings are unavailable.");
+        setEnabled(false);
+        return false;
+      }
+      activity = host;
+      worlds = worldHost;
+      rangeTypes = EnumSet.copyOf(GOVERNED_RANGES);
+      rangeTypes.retainAll(first.supportedRanges());
+      supported = true;
+      return true;
+    } catch (Throwable e) {
+      failRuntime(e);
+      return false;
+    }
+  }
+
+  private static void warn(String message) {
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    if (platform != null) {
+      platform.warn(message);
+    }
+  }
+
+  private static void verbose(String message) {
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    if (platform != null) {
+      platform.verbose(message);
+    }
+  }
+
+  private void failRuntime(Throwable e) {
+    supported = false;
+    setEnabled(false);
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    if (platform == null) {
+      return;
+    }
+    platform.reportError("Tracker Range Governor disabled due to runtime incompatibility: "
+        + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
+  }
+
+  private static final class RetiredWorldState {
+    private final Map<UUID, Map<EntityRange, Integer>> rangeBaselines;
+
+    private RetiredWorldState(Map<UUID, Map<EntityRange, Integer>> rangeBaselines) {
+      this.rangeBaselines = rangeBaselines;
+    }
+
+    private boolean hasState() {
+      return rangeBaselines != null && !rangeBaselines.isEmpty();
+    }
+  }
+}

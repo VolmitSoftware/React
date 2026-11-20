@@ -1,5 +1,9 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.BukkitReactWorld;
+import art.arcane.react.platform.ReactWorld;
+import art.arcane.react.platform.bukkit.BukkitMobStackHost;
+import art.arcane.react.platform.GameEntity;
 import art.arcane.react.React;
 import art.arcane.react.api.protect.ReactProtection;
 import art.arcane.react.content.sampler.BukkitEntityTracker;
@@ -159,7 +163,7 @@ class MobStackMergeTest {
     Mockito.when(owned.getType()).thenReturn(EntityType.ZOMBIE);
     Mockito.when(owned.isDead()).thenReturn(false);
     Mockito.clearInvocations(owned, foreign);
-    Method stackChunk = FeatureMobStacking.class.getDeclaredMethod("stackChunk", World.class, int.class, int.class);
+    Method stackChunk = FeatureMobStacking.class.getDeclaredMethod("stackChunk", ReactWorld.class, int.class, int.class);
     stackChunk.setAccessible(true);
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
@@ -167,7 +171,7 @@ class MobStackMergeTest {
       scheduling.when(() -> J.isOwnedByCurrentRegion(owned)).thenReturn(true);
       scheduling.when(() -> J.isOwnedByCurrentRegion(foreign)).thenReturn(false);
 
-      stackChunk.invoke(feature, world, 4, -3);
+      stackChunk.invoke(feature, new BukkitReactWorld(world), 4, -3);
     }
 
     Mockito.verify(chunk).getEntities();
@@ -206,10 +210,10 @@ class MobStackMergeTest {
     Mockito.when(spawn.getEntity()).thenReturn(source);
     Mockito.when(spawn.getLocation()).thenReturn(location);
     Mockito.doReturn(chunkCount).when(owner).getChunkCounter(chunk);
-    Mockito.doReturn(true).when(feature).canMerge(source, target);
-    Mockito.doReturn(1).when(feature).getStackCount(source);
-    Mockito.doReturn(1).when(feature).getStackCount(target);
-    Mockito.doNothing().when(feature).setStackCount(Mockito.eq(target), Mockito.eq(2));
+    Mockito.doReturn(true).when(feature).canMerge(MobStacks.entity(source), MobStacks.entity(target));
+    Mockito.doReturn(1).when(feature).getStackCount(MobStacks.entity(source));
+    Mockito.doReturn(1).when(feature).getStackCount(MobStacks.entity(target));
+    Mockito.doNothing().when(feature).setStackCount(Mockito.eq(MobStacks.entity(target)), Mockito.eq(2));
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<ReactProtection> protection = Mockito.mockStatic(ReactProtection.class);
@@ -219,7 +223,7 @@ class MobStackMergeTest {
       sampler.begin();
       sampler.on(spawn);
 
-      Assertions.assertTrue(feature.merge(source, target));
+      Assertions.assertTrue(feature.merge(MobStacks.entity(source), MobStacks.entity(target)));
       sampler.on(new EntityRemoveEvent(source, EntityRemoveEvent.Cause.PLUGIN));
       sampler.end();
     }
@@ -256,8 +260,8 @@ class MobStackMergeTest {
     Mockito.when(sameSize.getSize()).thenReturn(4);
     Mockito.when(differentSize.getSize()).thenReturn(2);
 
-    Assertions.assertFalse(feature.canMerge(source, differentSize));
-    Assertions.assertTrue(FeatureMobStacking.sameCubeSize(source, sameSize));
+    Assertions.assertFalse(feature.canMerge(MobStacks.entity(source), MobStacks.entity(differentSize)));
+    Assertions.assertTrue(BukkitMobStackHost.sameCubeSize(source, sameSize));
   }
 
   @Test
@@ -267,7 +271,7 @@ class MobStackMergeTest {
     Mockito.when(source.getSize()).thenReturn(3);
     Mockito.when(target.getSize()).thenReturn(1);
 
-    Assertions.assertFalse(FeatureMobStacking.sameCubeSize(source, target));
+    Assertions.assertFalse(BukkitMobStackHost.sameCubeSize(source, target));
   }
 
   @Test
@@ -278,7 +282,7 @@ class MobStackMergeTest {
     stubMergeIdentity(source, target, EntityType.WOLF);
     Mockito.when(source.isTamed()).thenReturn(true);
 
-    Assertions.assertFalse(feature.canMerge(source, target));
+    Assertions.assertFalse(feature.canMerge(MobStacks.entity(source), MobStacks.entity(target)));
   }
 
   @Test
@@ -289,7 +293,7 @@ class MobStackMergeTest {
     stubMergeIdentity(source, target, EntityType.CAT);
     Mockito.when(target.isTamed()).thenReturn(true);
 
-    Assertions.assertFalse(feature.canMerge(source, target));
+    Assertions.assertFalse(feature.canMerge(MobStacks.entity(source), MobStacks.entity(target)));
   }
 
   @Test
@@ -297,7 +301,7 @@ class MobStackMergeTest {
     Wolf wolf = Mockito.mock(Wolf.class);
     Mockito.when(wolf.isTamed()).thenReturn(false);
 
-    Assertions.assertFalse(FeatureMobStacking.isTamedPet(wolf));
+    Assertions.assertFalse(BukkitMobStackHost.isTamedPet(wolf));
   }
 
   @Test
@@ -308,14 +312,14 @@ class MobStackMergeTest {
     EntityEquipment equipment = Mockito.mock(EntityEquipment.class);
     ItemStack sword = Mockito.mock(ItemStack.class);
     stubMergeIdentity(source, target, EntityType.ZOMBIE);
-    Mockito.doReturn(true).when(feature).isStackableType(EntityType.ZOMBIE);
+    Mockito.doReturn(true).when(feature).isStackableType("ZOMBIE");
     Mockito.doReturn(1).when(feature).getStackCount(Mockito.any());
     Mockito.when(source.getEquipment()).thenReturn(equipment);
     Mockito.when(equipment.getItemInMainHand()).thenReturn(sword);
     Mockito.when(sword.getType()).thenReturn(Material.IRON_SWORD);
     Mockito.when(sword.getAmount()).thenReturn(1);
 
-    Assertions.assertFalse(feature.canMerge(source, target));
+    Assertions.assertFalse(feature.canMerge(MobStacks.entity(source), MobStacks.entity(target)));
     Mockito.verify(source, Mockito.never()).remove();
     Mockito.verify(target, Mockito.never()).remove();
   }
@@ -345,16 +349,16 @@ class MobStackMergeTest {
     Mockito.when(mainHand.clone()).thenReturn(mainHandCopy);
     Mockito.when(source.getActivePotionEffects()).thenReturn(List.of());
     Mockito.when(source.getMaxHealth()).thenReturn(40D);
-    Mockito.doReturn(2).when(feature).getStackCount(source);
-    Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+    Mockito.doReturn(2).when(feature).getStackCount(MobStacks.entity(source));
+    Mockito.doNothing().when(feature).setStackCount(Mockito.any(GameEntity.class), Mockito.anyInt());
 
-    feature.onEntityDeath(event);
+    MobStacks.events(feature).onEntityDeath(event);
 
     Mockito.verify(targetEquipment).setItemInMainHand(mainHandCopy);
     Mockito.verify(replacement).addPotionEffects(List.of());
     Mockito.verify(replacement).setMaxHealth(40D);
     Mockito.verify(replacement).setHealth(40D);
-    Mockito.verify(feature).setStackCount(replacement, 1);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(replacement), 1);
   }
 
   @Test
@@ -373,10 +377,10 @@ class MobStackMergeTest {
     Wolf pet = Mockito.mock(Wolf.class);
     EntityTameEvent event = Mockito.mock(EntityTameEvent.class);
     Mockito.when(event.getEntity()).thenReturn(pet);
-    Mockito.doReturn(1).when(feature).getStackCount(pet);
+    Mockito.doReturn(1).when(feature).getStackCount(MobStacks.entity(pet));
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      feature.onEntityTame(event);
+      MobStacks.events(feature).onEntityTame(event);
       scheduling.verifyNoInteractions();
     }
   }
@@ -393,8 +397,8 @@ class MobStackMergeTest {
     Mockito.when(owner.getUniqueId()).thenReturn(UUID.randomUUID());
     Mockito.when(pet.isValid()).thenReturn(true);
     Mockito.when(pet.isTamed()).thenReturn(false);
-    Mockito.doReturn(5).when(feature).getStackCount(pet);
-    Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+    Mockito.doReturn(5).when(feature).getStackCount(MobStacks.entity(pet));
+    Mockito.doNothing().when(feature).setStackCount(Mockito.any(GameEntity.class), Mockito.anyInt());
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       scheduling.when(() -> J.runEntity(Mockito.eq(pet), Mockito.any(Runnable.class), Mockito.eq(1)))
@@ -402,12 +406,12 @@ class MobStackMergeTest {
             scheduled.set(invocation.getArgument(1));
             return true;
           });
-      feature.onEntityTame(event);
+      MobStacks.events(feature).onEntityTame(event);
     }
 
     Assertions.assertNotNull(scheduled.get());
     scheduled.get().run();
-    Mockito.verify(feature, Mockito.never()).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+    Mockito.verify(feature, Mockito.never()).setStackCount(Mockito.any(GameEntity.class), Mockito.anyInt());
   }
 
   @Test
@@ -423,13 +427,13 @@ class MobStackMergeTest {
     Mockito.when(pet.getType()).thenReturn(EntityType.WOLF);
     Mockito.when(world.spawnEntity(location, EntityType.WOLF)).thenReturn(remainder);
     Mockito.when(remainder.isValid()).thenReturn(true);
-    Mockito.doReturn(3).when(feature).getStackCount(pet);
-    Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+    Mockito.doReturn(3).when(feature).getStackCount(MobStacks.entity(pet));
+    Mockito.doNothing().when(feature).setStackCount(Mockito.any(GameEntity.class), Mockito.anyInt());
 
-    feature.onTick(pet);
+    feature.onTick(MobStacks.entity(pet));
 
-    Mockito.verify(feature).setStackCount(remainder, 2);
-    Mockito.verify(feature).setStackCount(pet, 1);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(remainder), 2);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(pet), 1);
   }
 
   @Test
@@ -444,13 +448,13 @@ class MobStackMergeTest {
     Mockito.when(pet.getLocation()).thenReturn(location);
     Mockito.when(pet.getType()).thenReturn(EntityType.WOLF);
     Mockito.when(world.spawnEntity(location, EntityType.WOLF)).thenReturn(invalidRemainder);
-    Mockito.doReturn(3).when(feature).getStackCount(pet);
-    Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+    Mockito.doReturn(3).when(feature).getStackCount(MobStacks.entity(pet));
+    Mockito.doNothing().when(feature).setStackCount(Mockito.any(GameEntity.class), Mockito.anyInt());
 
-    feature.onTick(pet);
+    feature.onTick(MobStacks.entity(pet));
 
     Mockito.verify(invalidRemainder).remove();
-    Mockito.verify(feature, Mockito.never()).setStackCount(pet, 1);
+    Mockito.verify(feature, Mockito.never()).setStackCount(MobStacks.entity(pet), 1);
   }
 
   @Property(tries = 200)
@@ -495,8 +499,8 @@ class MobStackMergeTest {
     Mockito.when(pet.getType()).thenReturn(type);
     Mockito.when(world.spawnEntity(location, type)).thenReturn(remainder);
     Mockito.when(remainder.isValid()).thenReturn(true);
-    Mockito.doReturn(5).when(feature).getStackCount(pet);
-    Mockito.doNothing().when(feature).setStackCount(Mockito.any(Entity.class), Mockito.anyInt());
+    Mockito.doReturn(5).when(feature).getStackCount(MobStacks.entity(pet));
+    Mockito.doNothing().when(feature).setStackCount(Mockito.any(GameEntity.class), Mockito.anyInt());
 
     try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
       scheduling.when(() -> J.runEntity(Mockito.eq(pet), Mockito.any(Runnable.class), Mockito.eq(1)))
@@ -504,13 +508,13 @@ class MobStackMergeTest {
             scheduled.set(invocation.getArgument(1));
             return true;
           });
-      feature.onEntityTame(event);
+      MobStacks.events(feature).onEntityTame(event);
     }
 
     Assertions.assertNotNull(scheduled.get());
     scheduled.get().run();
-    Mockito.verify(feature).setStackCount(remainder, 4);
-    Mockito.verify(feature).setStackCount(pet, 1);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(remainder), 4);
+    Mockito.verify(feature).setStackCount(MobStacks.entity(pet), 1);
     Mockito.verify(tameableRemainder).setOwner(null);
     Mockito.verify(tameableRemainder).setTamed(false);
   }

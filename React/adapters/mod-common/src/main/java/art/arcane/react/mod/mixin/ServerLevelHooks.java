@@ -1,5 +1,7 @@
 package art.arcane.react.mod.mixin;
 
+import art.arcane.react.mod.ModEntityEventHost;
+import art.arcane.react.mod.ModItemHost;
 import art.arcane.react.mod.ModReactWorld;
 import art.arcane.react.mod.ModSpawnHost;
 import art.arcane.react.platform.SamplerEventCounters;
@@ -44,5 +46,20 @@ public abstract class ServerLevelHooks {
     @Inject(method = "addFreshEntity", at = @At("HEAD"), require = 0)
     private void react$spawning(Entity entity, CallbackInfoReturnable<Boolean> callback) {
         SamplerEventCounters.get().count(Counter.ENTITY_SPAWN, entity);
+    }
+
+    // Batch A: items
+    @Inject(method = "addFreshEntity", at = @At("HEAD"), cancellable = true, require = 0)
+    private void react$adding(Entity entity, CallbackInfoReturnable<Boolean> callback) {
+        if (!ModEntityEventHost.allowLaunch(entity)) {
+            callback.setReturnValue(false);
+            return;
+        }
+        ModItemHost.adding(entity);
+    }
+
+    @Inject(method = "addFreshEntity", at = @At("RETURN"), require = 0)
+    private void react$added(Entity entity, CallbackInfoReturnable<Boolean> callback) {
+        ModItemHost.added(entity);
     }
 }

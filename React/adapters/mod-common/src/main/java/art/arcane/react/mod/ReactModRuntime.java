@@ -1,5 +1,6 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.entity.EntityPriority;
 import art.arcane.react.api.monitor.MonitoringSettings;
 import art.arcane.react.api.web.HistoryWebMetricsSource;
 import art.arcane.react.api.web.MetricsSerializer;
@@ -121,6 +122,7 @@ public final class ReactModRuntime {
         ReactPlatforms.bind(modPlatform);
         try {
             languageHost.load();
+            EntityPriority.bind(languageHost::priority);
         } catch (IOException failure) {
             ReactPlatforms.unbind();
             async.shutdownNow();
@@ -145,6 +147,8 @@ public final class ReactModRuntime {
             }
             telemetry.startJobs();
             samples.start();
+            modPlatform.entityTicker().start();
+            ticks.every(modPlatform.entityTicker()::tick);
             components.start();
             for (Runnable task : startupTasks) {
                 task.run();
@@ -219,6 +223,12 @@ public final class ReactModRuntime {
         } catch (RuntimeException failure) {
             LOGGER.warn("React features did not stop cleanly", failure);
         }
+        try {
+            active.platform().entityTicker().stop();
+        } catch (RuntimeException failure) {
+            LOGGER.warn("React entity state did not stop cleanly", failure);
+        }
+        EntityPriority.bind(null);
         active.platform().entityKiller().stopAll();
         ModHopperHost.clear();
         ModChunkGeneration.clear();
@@ -231,6 +241,13 @@ public final class ReactModRuntime {
         ModGrowthHost.clear();
         ModFurnaceHost.clear();
         ModExplosionHost.clear();
+        // Batch A: ai
+        ModEntityActivityHost.clear();
+        // Batch A: mobs
+        ModMobStackHost.clear();
+        // Batch A: items
+        ModItemHost.clear();
+        ModEntityEventHost.clear();
         active.platform().modScheduler().deactivate();
         active.webConfig().stop();
         active.platform().ownerCost().stop();

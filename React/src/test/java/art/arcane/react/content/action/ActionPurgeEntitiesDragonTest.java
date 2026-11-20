@@ -1,5 +1,6 @@
 package art.arcane.react.content.action;
 
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.model.FilterParams;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -13,46 +14,46 @@ class ActionPurgeEntitiesDragonTest {
     ActionPurgeEntities action = new ActionPurgeEntities();
     ActionPurgeEntities.Params params = action.getDefaultParams();
 
-    Assertions.assertFalse(params.getEntityFilter().allows(EntityType.ENDER_DRAGON));
-    Assertions.assertFalse(action.canPurge(entity(EntityType.ENDER_DRAGON), params));
+    Assertions.assertFalse(params.getEntityFilter().allows("ENDER_DRAGON"));
+    Assertions.assertFalse(action.canPurge(new BukkitGameEntity(entity(EntityType.ENDER_DRAGON)), params));
   }
 
   @Test
   void emptyBlacklistStillProtectsEnderDragons() {
     ActionPurgeEntities action = new ActionPurgeEntities();
     ActionPurgeEntities.Params params = action.getDefaultParams().setEntityFilter(
-        FilterParams.<EntityType>builder().blacklist(true).build());
+        FilterParams.<String>builder().blacklist(true).build());
 
-    Assertions.assertTrue(params.getEntityFilter().allows(EntityType.ENDER_DRAGON));
-    Assertions.assertFalse(action.canPurge(entity(EntityType.ENDER_DRAGON), params));
+    Assertions.assertTrue(params.getEntityFilter().allows("ENDER_DRAGON"));
+    Assertions.assertFalse(action.canPurge(new BukkitGameEntity(entity(EntityType.ENDER_DRAGON)), params));
   }
 
   @Test
   void blacklistWithoutEnderDragonsStillProtectsThem() {
     ActionPurgeEntities action = new ActionPurgeEntities();
     ActionPurgeEntities.Params params = action.getDefaultParams().setEntityFilter(
-        FilterParams.<EntityType>builder().type(EntityType.PLAYER).blacklist(true).build());
+        FilterParams.<String>builder().type("PLAYER").blacklist(true).build());
 
-    Assertions.assertTrue(params.getEntityFilter().allows(EntityType.ENDER_DRAGON));
-    Assertions.assertFalse(action.canPurge(entity(EntityType.ENDER_DRAGON), params));
+    Assertions.assertTrue(params.getEntityFilter().allows("ENDER_DRAGON"));
+    Assertions.assertFalse(action.canPurge(new BukkitGameEntity(entity(EntityType.ENDER_DRAGON)), params));
   }
 
   @Test
   void explicitWhitelistCannotOverrideEnderDragonProtection() {
     ActionPurgeEntities action = new ActionPurgeEntities();
     ActionPurgeEntities.Params params = action.getDefaultParams()
-        .setEntityFilter(FilterParams.<EntityType>builder().type(EntityType.ENDER_DRAGON).blacklist(false).build())
+        .setEntityFilter(FilterParams.<String>builder().type("ENDER_DRAGON").blacklist(false).build())
         .setProtectNamedEntities(false);
 
-    Assertions.assertTrue(params.getEntityFilter().allows(EntityType.ENDER_DRAGON));
-    Assertions.assertFalse(action.canPurge(entity(EntityType.ENDER_DRAGON), params));
+    Assertions.assertTrue(params.getEntityFilter().allows("ENDER_DRAGON"));
+    Assertions.assertFalse(action.canPurge(new BukkitGameEntity(entity(EntityType.ENDER_DRAGON)), params));
   }
 
   @Test
   void defaultParametersStillAllowOrdinaryMobs() {
     ActionPurgeEntities action = new ActionPurgeEntities();
 
-    Assertions.assertTrue(action.canPurge(entity(EntityType.ZOMBIE), action.getDefaultParams()));
+    Assertions.assertTrue(action.canPurge(new BukkitGameEntity(entity(EntityType.ZOMBIE)), action.getDefaultParams()));
   }
 
   private Entity entity(EntityType type) {

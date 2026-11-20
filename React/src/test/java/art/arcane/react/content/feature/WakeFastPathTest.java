@@ -1,12 +1,11 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.React;
 import art.arcane.react.model.ReactEntity;
+import art.arcane.react.platform.bukkit.BukkitGameEntity;
 import art.arcane.react.util.common.scheduling.J;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Mob;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityTargetEvent;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -45,7 +44,7 @@ class WakeFastPathTest {
             lock.writeLock().unlock();
           }
         },
-        () -> feature.on(damage(mob))
+        () -> feature.onDamage(new BukkitGameEntity(mob))
     );
 
     Assertions.assertTrue(completed, "damage wake waited on the lifecycle lock");
@@ -69,7 +68,7 @@ class WakeFastPathTest {
             lock.writeLock().unlock();
           }
         },
-        () -> feature.on(target(attacker, target))
+        () -> feature.onTarget(new BukkitGameEntity(attacker), new BukkitGameEntity(target))
     );
 
     Assertions.assertTrue(completed, "target wake waited on the lifecycle lock");
@@ -83,13 +82,13 @@ class WakeFastPathTest {
 
     try (MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      managed.when(() -> ReactEntity.isPausedBy(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP)).thenReturn(true);
+      managed.when(() -> ReactEntity.isPausedBy(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP)).thenReturn(true);
       scheduling.when(J::isFoliaThreading).thenReturn(false);
       feature.onActivate();
 
-      feature.on(damage(mob));
+      feature.onDamage(new BukkitGameEntity(mob));
 
-      managed.verify(() -> ReactEntity.releasePause(mob, ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
+      managed.verify(() -> ReactEntity.releasePause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.ADAPTIVE_ENTITY_SLEEP));
       feature.onDeactivate();
     }
   }
@@ -107,7 +106,7 @@ class WakeFastPathTest {
             release.run();
           }
         },
-        () -> feature.on(damage(mob))
+        () -> feature.onDamage(new BukkitGameEntity(mob))
     );
 
     Assertions.assertTrue(completed, "damage wake waited on the lifecycle monitor");
@@ -120,13 +119,13 @@ class WakeFastPathTest {
 
     try (MockedStatic<ReactEntity> managed = Mockito.mockStatic(ReactEntity.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
-      managed.when(() -> ReactEntity.isPausedBy(mob, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE)).thenReturn(true);
+      managed.when(() -> ReactEntity.isPausedBy(new BukkitGameEntity(mob), ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE)).thenReturn(true);
       scheduling.when(J::isFoliaThreading).thenReturn(false);
       feature.onActivate();
 
-      feature.on(damage(mob));
+      feature.onDamage(new BukkitGameEntity(mob));
 
-      managed.verify(() -> ReactEntity.releasePause(mob, ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE));
+      managed.verify(() -> ReactEntity.releasePause(new BukkitGameEntity(mob), ReactEntity.PauseOwner.DYNAMIC_ACTIVATION_RANGE));
     }
   }
 
@@ -166,19 +165,6 @@ class WakeFastPathTest {
     Mockito.when(mob.getUniqueId()).thenReturn(UUID.randomUUID());
     Mockito.when(mob.isAware()).thenReturn(true);
     return mob;
-  }
-
-  private static EntityDamageEvent damage(Entity entity) {
-    EntityDamageEvent event = Mockito.mock(EntityDamageEvent.class);
-    Mockito.when(event.getEntity()).thenReturn(entity);
-    return event;
-  }
-
-  private static EntityTargetEvent target(Entity entity, Entity target) {
-    EntityTargetEvent event = Mockito.mock(EntityTargetEvent.class);
-    Mockito.when(event.getEntity()).thenReturn(entity);
-    Mockito.when(event.getTarget()).thenReturn(target);
-    return event;
   }
 
   private static Object field(Object owner, String name) throws ReflectiveOperationException {

@@ -15,7 +15,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.border.WorldBorder;
 
@@ -69,11 +68,7 @@ final class ModChunkHeatmapHost implements ChunkHeatmapHost, HeatmapChunkSampler
                     loaded.add(VanillaApi.pack(holder.getPos()));
                 }
             }
-            Map<Long, Integer> entities = new HashMap<>();
-            for (Entity entity : level.getAllEntities()) {
-                entities.merge(VanillaApi.pack(entity.chunkPosition()), 1, Integer::sum);
-            }
-            samples.replaceGauge(level, SamplerEntities.ID, entities);
+            samples.countEntities(level, System.currentTimeMillis());
             List<PlayerPosition> players = new ArrayList<>();
             for (ServerPlayer player : level.players()) {
                 players.add(new PlayerPosition(player.getUUID(), player.getScoreboardName(), player.getX(), player.getZ(),

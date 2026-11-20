@@ -76,7 +76,7 @@ public class CommandAction implements DirectorExecutor {
       )
       String world
   ) {
-    host().purgeEntities(sender(), radius, world);
+    ActionCommands.purgeEntities(sender(), radius, world);
   }
 
   @Director(
@@ -182,7 +182,7 @@ public class CommandAction implements DirectorExecutor {
       )
       String world
   ) {
-    host().trimEntitiesByAgePriority(sender(), maxEntities, minAgeSeconds, world);
+    ActionCommands.trimEntitiesByAgePriority(sender(), maxEntities, minAgeSeconds, world);
   }
 
   @Director(

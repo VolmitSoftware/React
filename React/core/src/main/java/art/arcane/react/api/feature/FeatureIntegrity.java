@@ -5,6 +5,15 @@ package art.arcane.react.api.feature;
  * attaches it for the whole run and calls {@link #onIntegrityTick()} every controller tick.
  */
 public interface FeatureIntegrity {
+  /**
+   * Called once when the controller attaches the feature; open hooks that must outlive activation here.
+   */
+  default void onAttach() {
+  }
+
+  default void onDetach() {
+  }
+
   default void onIntegrityTick() {
   }
 }
