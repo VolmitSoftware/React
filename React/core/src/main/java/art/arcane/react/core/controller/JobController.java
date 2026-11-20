@@ -21,14 +21,12 @@ package art.arcane.react.core.controller;
 
 import art.arcane.volmlib.util.scheduling.ChronoLatch;
 import art.arcane.volmlib.util.scheduling.PrecisionStopwatch;
-import art.arcane.react.React;
-import art.arcane.react.api.event.layer.ServerTickEvent;
+import art.arcane.react.platform.PlatformLog;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.util.plugin.IController;
 import art.arcane.volmlib.util.math.M;
 import art.arcane.volmlib.util.math.RollingSequence;
 import lombok.Data;
-import org.bukkit.Bukkit;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,7 +46,8 @@ public class JobController implements IController {
   private transient double currentComputeTarget = MIN_COMPUTE_TARGET_MS;
   private double highUtilizationThresholdPercent = DEFAULT_HIGH_UTILIZATION;
   private double lowUtilizationThresholdPercent = DEFAULT_LOW_UTILIZATION;
-  private transient ServerTickEvent ste = new ServerTickEvent();
+  private transient volatile Runnable tickListener = () -> {
+  };
   private transient RollingSequence usage = new RollingSequence(20);
   private transient double costPerJob = 0.1;
   private transient ChronoLatch spikeLatch;
@@ -114,7 +113,7 @@ public class JobController implements IController {
   }
 
   public void execute() {
-    Bukkit.getPluginManager().callEvent(ste);
+    tickListener.run();
     if (overBudget > maxComputeTime || getQueueSize() <= 0) {
       overBudget = Math.max(0D, overBudget - maxComputeTime);
       usage.put(0);
@@ -134,7 +133,7 @@ public class JobController implements IController {
       try {
         job.run();
       } catch (Throwable e) {
-        React.reportError("React scheduler job failed", e);
+        PlatformLog.reportError("React scheduler job failed", e);
       }
 
       executed++;

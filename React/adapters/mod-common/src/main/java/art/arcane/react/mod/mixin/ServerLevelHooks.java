@@ -28,6 +28,11 @@ public abstract class ServerLevelHooks {
         }
     }
 
+    @Inject(method = "close", at = @At("HEAD"), require = 0)
+    private void react$closing(CallbackInfo callback) {
+        SamplerEventCounters.get().count(Counter.WORLD_UNLOAD, (ServerLevel) (Object) this);
+    }
+
     @Inject(method = "addFreshEntity", at = @At("HEAD"), require = 0)
     private void react$spawning(Entity entity, CallbackInfoReturnable<Boolean> callback) {
         SamplerEventCounters.get().count(Counter.ENTITY_SPAWN, entity);

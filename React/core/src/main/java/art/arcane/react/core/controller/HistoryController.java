@@ -1,6 +1,8 @@
 package art.arcane.react.core.controller;
 
-import art.arcane.react.React;
+import art.arcane.react.api.sampler.SamplerHosts;
+import art.arcane.react.platform.PlatformLog;
+import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.core.history.ChartHistory;
 import art.arcane.react.core.history.ChartRange;
@@ -190,7 +192,7 @@ public class HistoryController implements IController {
       try {
         localWriter.execute(this::closeStorage);
       } catch (RejectedExecutionException failure) {
-        React.warn("React history writer rejected its shutdown flush", failure);
+        PlatformLog.warn("React history writer rejected its shutdown flush", failure);
       }
       localWriter.shutdown();
       await(localWriter, 30L, "history writer");
@@ -326,7 +328,7 @@ public class HistoryController implements IController {
   }
 
   private void initializeStorage() {
-    File root = React.instance.getDataFile("history");
+    File root = new File(ReactPlatforms.get().dataFolder(), "history");
     HistoryStore store = new HistoryStore(root.toPath(), effectiveCompressionLevel());
     try {
       store.initialize();
@@ -340,14 +342,14 @@ public class HistoryController implements IController {
         store.prune(System.currentTimeMillis(), retentionByTier());
         storageOperational = true;
         if (recovery.truncated()) {
-          React.warn("Recovered React history through the last valid journal frame after an incomplete or corrupt tail.");
+          PlatformLog.warn("Recovered React history through the last valid journal frame after an incomplete or corrupt tail.");
         }
       }
       queryEngine = new HistoryQueryEngine(store, this::activePoints);
     } catch (Throwable failure) {
       storageFailure = failure;
       storageOperational = false;
-      React.reportError("Failed to initialize React metric history storage", failure);
+      PlatformLog.reportError("Failed to initialize React metric history storage", failure);
       closeWal();
     }
   }
@@ -433,7 +435,7 @@ public class HistoryController implements IController {
         seeds.put(range, points);
       }
     } catch (Throwable failure) {
-      React.warn("Failed to load stored history into the web chart ranges; they fill from live samples instead.", failure);
+      PlatformLog.warn("Failed to load stored history into the web chart ranges; they fill from live samples instead.", failure);
       return;
     }
     ChartHistory chart = chartHistory;
@@ -465,14 +467,14 @@ public class HistoryController implements IController {
         enqueue(snapshot);
       }
     } catch (Throwable failure) {
-      React.reportError("React metric history capture failed", failure);
+      PlatformLog.reportError("React metric history capture failed", failure);
     } finally {
       lastCaptureDurationNanos.set(System.nanoTime() - captureStartedNanos);
     }
   }
 
   private MetricSnapshot captureSnapshot() {
-    SampleController sampleController = React.controller(SampleController.class);
+    SampleController sampleController = SamplerHosts.sampleController();
     Registry<Sampler> registry = sampleController == null ? null : sampleController.getSamplers();
     return captureSnapshot(registry == null ? List.of() : registry.all(), System.currentTimeMillis());
   }
@@ -574,7 +576,7 @@ public class HistoryController implements IController {
       long nowMs = System.currentTimeMillis();
       if (nowMs - lastQueueFailureLogMs >= FAILURE_LOG_INTERVAL_MS) {
         lastQueueFailureLogMs = nowMs;
-        React.warn("React history writer queue is saturated; the affected sample is recorded as a gap.", failure);
+        PlatformLog.warn("React history writer queue is saturated; the affected sample is recorded as a gap.", failure);
       }
       return false;
     }
@@ -591,7 +593,7 @@ public class HistoryController implements IController {
       long nowMs = System.currentTimeMillis();
       if (nowMs - lastWriterFailureLogMs >= FAILURE_LOG_INTERVAL_MS) {
         lastWriterFailureLogMs = nowMs;
-        React.reportError("Failed to persist React metric history", failure);
+        PlatformLog.reportError("Failed to persist React metric history", failure);
       }
     } finally {
       lastWriteDurationNanos.set(System.nanoTime() - writeStartedNanos);
@@ -685,7 +687,7 @@ public class HistoryController implements IController {
         localWal.reset();
       }
     } catch (Throwable failure) {
-      React.reportError("Failed to flush React metric history during shutdown", failure);
+      PlatformLog.reportError("Failed to flush React metric history during shutdown", failure);
     } finally {
       closeWal();
     }
@@ -700,7 +702,7 @@ public class HistoryController implements IController {
     try {
       localWal.close();
     } catch (Throwable failure) {
-      React.reportError("Failed to close React metric history journal", failure);
+      PlatformLog.reportError("Failed to close React metric history journal", failure);
     }
   }
 
@@ -739,7 +741,7 @@ public class HistoryController implements IController {
       return;
     }
     samplerFailureLogMs.put(id, nowMs);
-    React.reportError("Sampler " + id + " failed during the authoritative history snapshot", failure);
+    PlatformLog.reportError("Sampler " + id + " failed during the authoritative history snapshot", failure);
   }
 
   private ThreadPoolExecutor createWriterExecutor() {
@@ -767,11 +769,11 @@ public class HistoryController implements IController {
   private void await(ExecutorService executor, long timeoutSeconds, String label) {
     try {
       if (!executor.awaitTermination(timeoutSeconds, TimeUnit.SECONDS)) {
-        React.warn("Timed out waiting for React " + label + " to stop.");
+        PlatformLog.warn("Timed out waiting for React " + label + " to stop.");
       }
     } catch (InterruptedException failure) {
       Thread.currentThread().interrupt();
-      React.warn("Interrupted while waiting for React " + label + " to stop.", failure);
+      PlatformLog.warn("Interrupted while waiting for React " + label + " to stop.", failure);
     }
   }
 

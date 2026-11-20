@@ -1,6 +1,6 @@
 package art.arcane.react.core.history;
 
-import art.arcane.react.React;
+import art.arcane.react.platform.PlatformLog;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -75,7 +75,7 @@ public final class HistoryStore {
             }
             files.put(header.startMs(), candidate);
           } catch (Throwable failure) {
-            React.warn("Ignoring unreadable React history segment " + candidate + ": " + failure.getMessage(), failure);
+            PlatformLog.warn("Ignoring unreadable React history segment " + candidate + ": " + failure.getMessage(), failure);
           }
         }
       }
@@ -489,7 +489,7 @@ public final class HistoryStore {
             rebuilt.merge(series.id(), descriptor, MetricDescriptor::merge);
           }
         } catch (Throwable failure) {
-          React.warn("Failed to index React history segment " + path + ": " + failure.getMessage(), failure);
+          PlatformLog.warn("Failed to index React history segment " + path + ": " + failure.getMessage(), failure);
         }
       }
     }

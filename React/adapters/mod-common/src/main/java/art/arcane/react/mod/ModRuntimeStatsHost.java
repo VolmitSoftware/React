@@ -7,13 +7,18 @@ import art.arcane.react.platform.RuntimeStatsHost;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
-/** Event time is per-mod cost; React's job queue, ticker, chunk cost observer and features do not run on mod servers yet. */
+/**
+ * Event time is per-mod cost and chunk cost comes from the chunk samples. React's async ticker has no work on mod servers
+ * and Bukkit's optimisation features do not run here.
+ */
 final class ModRuntimeStatsHost implements RuntimeStatsHost {
-    private final ModTicks ticks;
+    private final ModTelemetry telemetry;
+    private final ModChunkSamples chunks;
     private final EventMeasurement ownerCost;
 
-    ModRuntimeStatsHost(ModTicks ticks, EventMeasurement ownerCost) {
-        this.ticks = ticks;
+    ModRuntimeStatsHost(ModTelemetry telemetry, ModChunkSamples chunks, EventMeasurement ownerCost) {
+        this.telemetry = telemetry;
+        this.chunks = chunks;
         this.ownerCost = ownerCost;
     }
 
@@ -24,27 +29,27 @@ final class ModRuntimeStatsHost implements RuntimeStatsHost {
 
     @Override
     public double reactSyncTickTimeMs() {
-        return 0D;
+        return telemetry.jobs().getUsage().getAverage();
     }
 
     @Override
     public double jobOverBudgetMs() {
-        return 0D;
+        return telemetry.jobs().getOverBudget();
     }
 
     @Override
     public double jobQueuedComputeTimeMs() {
-        return 0D;
+        return telemetry.jobs().getQueuedComputeTime();
     }
 
     @Override
     public int jobQueueSize() {
-        return ticks.pending();
+        return telemetry.jobs().getQueueSize();
     }
 
     @Override
     public HostTelemetrySnapshot hostTelemetry() {
-        return HostTelemetrySnapshot.empty();
+        return telemetry.host().snapshot();
     }
 
     @Override
@@ -54,7 +59,7 @@ final class ModRuntimeStatsHost implements RuntimeStatsHost {
 
     @Override
     public Optional<CostShares> costShares() {
-        return Optional.empty();
+        return Optional.of(chunks.costShares());
     }
 
     @Override

@@ -1,5 +1,9 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.web.heatmap.ChunkGridExporter;
+import art.arcane.react.api.web.heatmap.HeatmapChunkSampler;
+import art.arcane.react.api.web.heatmap.HeatmapGridScanner;
+import art.arcane.react.api.web.heatmap.HeatmapScan;
 import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.content.sampler.SamplerEntities;
 import art.arcane.react.core.controller.LoadedChunkCoordinate;
@@ -23,18 +27,24 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Heatmap data on a mod server. Loaded chunks, per-chunk entity counts and player positions are captured on the
  * server thread once a second while a heatmap was drawn in the last {@value #DEMAND_WINDOW_MS} ms; render threads
- * read the latest capture. Event counts come from {@link ModChunkSamples}.
+ * read the latest capture. Event counts come from {@link ModChunkSamples}. React Web scans the same capture, taking a
+ * fresh one first when no heatmap was read recently.
  */
-final class ModChunkHeatmapHost implements ChunkHeatmapHost {
+final class ModChunkHeatmapHost implements ChunkHeatmapHost, HeatmapChunkSampler {
     static final int REFRESH_TICKS = 20;
     private static final long DEMAND_WINDOW_MS = 10_000L;
+    private static final long CAPTURE_WAIT_MS = 2_000L;
     private final MinecraftServer server;
     private final ModChunkSamples samples;
     private volatile Map<UUID, WorldCapture> worlds = Map.of();
+    private final HeatmapGridScanner scanner = new HeatmapGridScanner();
     private volatile long lastReadMs;
 
     private record WorldCapture(HeatmapWorldRef ref, Set<Long> loaded, List<PlayerPosition> players) {
@@ -80,6 +90,49 @@ final class ModChunkHeatmapHost implements ChunkHeatmapHost {
     void release() {
         for (ServerLevel level : server.getAllLevels()) {
             samples.replaceGauge(level, SamplerEntities.ID, Map.of());
+        }
+    }
+
+    @Override
+    public HeatmapScan scan(ChunkGridExporter exporter, String requestedWorld, Integer centerX, Integer centerZ, int radius) {
+        boolean fresh = demanded();
+        lastReadMs = System.currentTimeMillis();
+        if (!fresh) {
+            captureNow();
+        }
+        Optional<HeatmapWorldRef> world = heatmapWorld(requestedWorld);
+        return world.map((HeatmapWorldRef ref) -> scanner.scan(exporter, ref, centerX, centerZ, radius, this::loadedChunks)).orElse(null);
+    }
+
+    /** A world by dimension id, name or UUID; blank picks the world with the most loaded chunks, as on Bukkit. */
+    Optional<HeatmapWorldRef> heatmapWorld(String requested) {
+        Map<UUID, WorldCapture> captured = worlds;
+        WorldCapture best = null;
+        String wanted = requested == null ? "" : requested.trim();
+        for (WorldCapture world : captured.values()) {
+            HeatmapWorldRef ref = world.ref();
+            if (wanted.isEmpty()) {
+                if (best == null || world.loaded().size() > best.loaded().size()) {
+                    best = world;
+                }
+            } else if (wanted.equals(ref.worldKey()) || wanted.equals(ref.worldName()) || wanted.equals(ref.worldId().toString())) {
+                return Optional.of(ref);
+            }
+        }
+        return best == null ? Optional.empty() : Optional.of(best.ref());
+    }
+
+    private void captureNow() {
+        if (server.isSameThread()) {
+            refresh();
+            return;
+        }
+        try {
+            server.submit(this::refresh).get(CAPTURE_WAIT_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException | TimeoutException ignored) {
+            // The previous capture stands.
         }
     }
 

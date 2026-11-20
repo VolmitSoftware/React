@@ -1,5 +1,7 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.web.heatmap.ChunkGridExporter;
+import art.arcane.react.api.web.heatmap.HeatmapChunkSampler;
 import art.arcane.react.api.rendering.MapRendererRegistry;
 import art.arcane.react.api.rendering.MapRuntime;
 import art.arcane.react.api.rendering.ReactRenderer;
@@ -16,6 +18,7 @@ import art.arcane.react.content.feature.RedstoneActivityHeatmap;
 import art.arcane.react.platform.PlatformScheduler;
 import net.minecraft.server.MinecraftServer;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntFunction;
 
@@ -55,6 +58,20 @@ public final class ModDashboardMaps {
 
     public List<ReactRenderer> renderers() {
         return renderers;
+    }
+
+    List<ChunkGridExporter> heatmapExporters() {
+        List<ChunkGridExporter> exporters = new ArrayList<>();
+        for (ReactRenderer renderer : renderers) {
+            if (renderer instanceof ChunkGridExporter exporter) {
+                exporters.add(exporter);
+            }
+        }
+        return exporters;
+    }
+
+    HeatmapChunkSampler heatmapSampler() {
+        return heatmaps;
     }
 
     public void registerInto(MapRendererRegistry registry) {

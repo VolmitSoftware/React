@@ -17,10 +17,13 @@
     "LevelAccess",
     "LevelChunkHooks",
     "MapItemSavedDataHooks",
+    "MinecraftServerHooks",
     "PistonResolverHooks",
     "RedstoneWireHooks",
     "ServerLevelHooks",
-    "ServerLevelMixin"
+    "ServerLevelMixin",
+    "SpawnerHooks",
+    "TrialSpawnerHooks"
   ],
   "client": [],
   "injectors": {

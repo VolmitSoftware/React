@@ -36,6 +36,7 @@ import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.JobController;
+import art.arcane.react.api.event.layer.ServerTickEvent;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.core.controller.PdcWriteBatcher;
 import art.arcane.react.core.controller.PlayerController;
@@ -515,6 +516,8 @@ public class React extends VolmitPlugin implements ReloadAware {
     NMS.reset();
     attachConfiguredBytecodeAgent(ReactConfiguration.get().isUnsafeBytecode());
     controllerRegistry = new Registry<>(IController.class, "art.arcane.react.core.controller");
+    ServerTickEvent serverTick = new ServerTickEvent();
+    controller(JobController.class).setTickListener(() -> Bukkit.getPluginManager().callEvent(serverTick));
 
     for (Runnable i : startupTasks) {
       i.run();

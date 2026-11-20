@@ -56,7 +56,7 @@ public final class ModReactPlatform implements ReactPlatform {
 
     ModReactPlatform(String loader, MinecraftServer server, File dataFolder, Logger logger, ModTicks ticks, ExecutorService async,
                      List<Runnable> startupTasks, LanguageHost languageHost, OwnerCostProbe costProbe, Supplier<SampleController> samples,
-                     Supplier<ReactWebServer> webServer, ModMaps maps) {
+                     Supplier<ReactWebServer> webServer, ModMaps maps, ModTelemetry telemetry) {
         this.loader = loader;
         this.server = server;
         this.dataFolder = dataFolder;
@@ -67,14 +67,19 @@ public final class ModReactPlatform implements ReactPlatform {
         this.languageHost = languageHost;
         this.costProbe = costProbe;
         this.commandHost = new ModCommandHost(server, maps, new ModLanguageCommand(ticks::later));
-        this.scheduler = new ModPlatformScheduler(server, ticks, async);
-        this.samplerHost = new ModSamplerHost(samples);
+        this.scheduler = new ModPlatformScheduler(server, ticks, async, telemetry.jobs());
+        ModSamplerHost modSamplerHost = new ModSamplerHost(samples);
+        this.samplerHost = modSamplerHost;
         this.registryHost = new ModRegistryHost(dataFolder, startupTasks, this::verbose, this::warn);
         this.tickStatsHost = new ModTickStatsHost(server, ticks);
         this.worldStatsHost = new ModWorldStatsHost(server);
         this.playerStatsHost = new ModPlayerStatsHost(server);
         this.ownerCost = new ModOwnerCost(costProbe, samples);
-        this.runtimeStatsHost = new ModRuntimeStatsHost(ticks, ownerCost);
+        this.runtimeStatsHost = new ModRuntimeStatsHost(telemetry, modSamplerHost.chunks(), ownerCost);
+    }
+
+    ModChunkSamples chunkSamples() {
+        return ((ModSamplerHost) samplerHost).chunks();
     }
 
     ModOwnerCost ownerCost() {

@@ -1,5 +1,7 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.web.heatmap.ChunkGridExporter;
+import art.arcane.react.api.web.heatmap.HeatmapChunkSampler;
 import art.arcane.react.api.rendering.MapHubModel;
 import art.arcane.react.api.rendering.MapRendererRegistry;
 import art.arcane.react.api.rendering.MapRuntime;
@@ -26,6 +28,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -53,6 +56,7 @@ final class ModMaps implements MapRuntimeConfig {
     private final Supplier<SampleController> samples;
     private volatile MapRendererRegistry registry;
     private volatile MapRuntime<ItemStack> runtime;
+    private volatile ModDashboardMaps dashboards;
 
     ModMaps(MinecraftServer server, File dataFolder, ModTicks ticks, Supplier<SampleController> samples) {
         this.server = server;
@@ -77,11 +81,24 @@ final class ModMaps implements MapRuntimeConfig {
         registry = created;
         runtime = started;
         started.start();
-        ModDashboardMaps.create(server, platform, started::frameAnchor).registerInto(created);
+        ModDashboardMaps createdDashboards = ModDashboardMaps.create(server, platform, started::frameAnchor);
+        createdDashboards.registerInto(created);
+        dashboards = createdDashboards;
         for (ReactRenderer renderer : samplerRenderers("", "")) {
             created.register(renderer);
         }
         started.seedOnlineState();
+    }
+
+    /** The dashboard heatmaps React Web lists, empty while maps are stopped. */
+    List<ChunkGridExporter> heatmapExporters() {
+        ModDashboardMaps active = dashboards;
+        return active == null ? List.of() : active.heatmapExporters();
+    }
+
+    Optional<HeatmapChunkSampler> heatmapSampler() {
+        ModDashboardMaps active = dashboards;
+        return active == null ? Optional.empty() : Optional.of(active.heatmapSampler());
     }
 
     void tick() {
@@ -129,6 +146,7 @@ final class ModMaps implements MapRuntimeConfig {
         runtime = null;
         registry = null;
         activePlatform = null;
+        dashboards = null;
         if (active != null) {
             active.stop();
         }

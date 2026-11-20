@@ -1,5 +1,6 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.core.controller.JobController;
 import art.arcane.react.platform.PlatformScheduler;
 import art.arcane.react.platform.ReactWorld;
 import net.minecraft.server.MinecraftServer;
@@ -13,13 +14,15 @@ final class ModPlatformScheduler implements PlatformScheduler {
     private final MinecraftServer server;
     private final ModTicks ticks;
     private final ExecutorService async;
+    private final JobController jobs;
     private volatile boolean active = true;
     private volatile boolean ready;
 
-    ModPlatformScheduler(MinecraftServer server, ModTicks ticks, ExecutorService async) {
+    ModPlatformScheduler(MinecraftServer server, ModTicks ticks, ExecutorService async, JobController jobs) {
         this.server = server;
         this.ticks = ticks;
         this.async = async;
+        this.jobs = jobs;
     }
 
     void markReady() {
@@ -58,7 +61,7 @@ final class ModPlatformScheduler implements PlatformScheduler {
 
     @Override
     public void queue(Runnable task) {
-        ticks.later(task);
+        jobs.queue(task);
     }
 
     @Override

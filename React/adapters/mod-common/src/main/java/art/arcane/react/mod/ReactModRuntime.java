@@ -1,5 +1,7 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.web.HistoryWebMetricsSource;
+import art.arcane.react.api.web.MetricsSerializer;
 import art.arcane.react.api.web.ReactWebServer;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.localization.ReactLanguage;
@@ -34,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * React on a dedicated mod server. Each loader forwards server start, end of server tick, server stop and command
- * registration here. Start binds the mod platform, runs every core sampler and starts React Web.
+ * registration here. Start binds the mod platform, runs every core sampler with React's telemetry and starts React Web.
  */
 public final class ReactModRuntime {
     public static final String ID = "react";
@@ -46,10 +48,11 @@ public final class ReactModRuntime {
     private final Path configDirectory;
     private final ModCostProbe costProbe;
     private final ReactDirector director = new ReactDirector();
+    private static volatile ModTicks pausedTicks;
     private volatile Running running;
 
     private record Running(ModReactPlatform platform, ModTicks ticks, ExecutorService async, SampleController samples,
-                           ReactWebServer web, ModMaps maps) {
+                           ReactWebServer web, ModMaps maps, ModTelemetry telemetry) {
     }
 
     public ReactModRuntime(String platform, Path configDirectory, ModCostProbe costProbe) {
@@ -79,11 +82,12 @@ public final class ReactModRuntime {
         ExecutorService async = Executors.newCachedThreadPool(daemonThreads());
         List<Runnable> startupTasks = new ArrayList<>();
         SampleController samples = new SampleController();
-        ModWebMetricsSource metrics = new ModWebMetricsSource(() -> samples);
+        ModTelemetry telemetry = new ModTelemetry(dataFolder, LOGGER);
+        HistoryWebMetricsSource metrics = new HistoryWebMetricsSource(() -> samples, telemetry::history, new MetricsSerializer());
         ReactWebServer[] web = new ReactWebServer[1];
         ModMaps maps = new ModMaps(server, dataFolder, ticks, () -> samples);
         ModReactPlatform modPlatform = new ModReactPlatform(platform, server, dataFolder, LOGGER, ticks, async, startupTasks,
-                languageHost, costProbe, () -> samples, () -> web[0], maps);
+                languageHost, costProbe, () -> samples, () -> web[0], maps, telemetry);
         ReactPlatforms.bind(modPlatform);
         try {
             languageHost.load();
@@ -93,18 +97,20 @@ public final class ReactModRuntime {
             LOGGER.error("{} could not read react.toml and did not start", NAME, failure);
             return;
         }
-        web[0] = new ReactWebServer(new ModWebHost(server, dataFolder, platform, metrics, LOGGER::info));
-        running = new Running(modPlatform, ticks, async, samples, web[0], maps);
+        web[0] = new ReactWebServer(new ModWebHost(server, dataFolder, platform, metrics, maps, LOGGER::info));
+        running = new Running(modPlatform, ticks, async, samples, web[0], maps, telemetry);
         costProbe.start(server, ticks::later);
         ticks.every(costProbe::tick);
         try {
             ReactLanguage.initialize();
+            telemetry.startJobs();
             samples.start();
             for (Runnable task : startupTasks) {
                 task.run();
             }
             startupTasks.clear();
             samples.postStart();
+            telemetry.start(samples);
             maps.start(modPlatform);
             ticks.every(maps::tick);
             modPlatform.ownerCost().start();
@@ -116,7 +122,7 @@ public final class ReactModRuntime {
                 if (--untilCapture[0] <= 0) {
                     untilCapture[0] = CAPTURE_INTERVAL_TICKS;
                     modPlatform.ownerCost().publish();
-                    async.execute(metrics::capture);
+                    modPlatform.chunkSamples().decayIfDue(System.currentTimeMillis());
                 }
             });
         } catch (RuntimeException failure) {
@@ -124,6 +130,7 @@ public final class ReactModRuntime {
             stop();
             return;
         }
+        pausedTicks = ticks;
         LOGGER.info("{} started on {} with {} samplers; configuration in {}", NAME, platform, samples.getSamplers().size(), dataFolder);
     }
 
@@ -135,9 +142,18 @@ public final class ReactModRuntime {
         }
     }
 
+    /** Runs React's queued server-thread work while an empty server is paused. */
+    public static void tickWhilePaused() {
+        ModTicks ticks = pausedTicks;
+        if (ticks != null) {
+            ticks.tick();
+        }
+    }
+
     public void stop() {
         Running active = running;
         running = null;
+        pausedTicks = null;
         if (active == null) {
             return;
         }
@@ -153,6 +169,11 @@ public final class ReactModRuntime {
             active.web().stop();
         } catch (RuntimeException failure) {
             LOGGER.warn("React Web did not stop cleanly", failure);
+        }
+        try {
+            active.telemetry().stop(active.samples());
+        } catch (RuntimeException failure) {
+            LOGGER.warn("React telemetry did not stop cleanly", failure);
         }
         try {
             active.samples().stop();

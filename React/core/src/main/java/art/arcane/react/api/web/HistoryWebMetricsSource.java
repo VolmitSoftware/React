@@ -24,13 +24,13 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /** Sampler values from {@link HistoryController}'s latest capture, or from the sampler registry before the first one. */
-public final class BukkitWebMetricsSource implements WebMetricsSource {
+public final class HistoryWebMetricsSource implements WebMetricsSource {
     private final Supplier<SampleController> samplers;
     private final Supplier<HistoryController> history;
     private final MetricsSerializer serializer;
     private volatile Converted converted;
 
-    public BukkitWebMetricsSource(Supplier<SampleController> samplers, Supplier<HistoryController> history, MetricsSerializer serializer) {
+    public HistoryWebMetricsSource(Supplier<SampleController> samplers, Supplier<HistoryController> history, MetricsSerializer serializer) {
         this.samplers = samplers;
         this.history = history;
         this.serializer = serializer;

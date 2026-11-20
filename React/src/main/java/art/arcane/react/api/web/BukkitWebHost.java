@@ -58,7 +58,7 @@ public final class BukkitWebHost implements WebHost {
 
   public BukkitWebHost(WebController controller) {
     this.controller = controller;
-    this.metrics = new BukkitWebMetricsSource(controller::getSampleController, controller::getHistoryController, new MetricsSerializer());
+    this.metrics = new HistoryWebMetricsSource(controller::getSampleController, controller::getHistoryController, new MetricsSerializer());
   }
 
   @Override

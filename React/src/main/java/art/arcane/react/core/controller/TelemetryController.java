@@ -7,9 +7,7 @@ import art.arcane.react.api.web.ws.CoalescingWsChannel;
 import art.arcane.react.core.integration.ThirdPartyMetricRegistry;
 import art.arcane.react.core.telemetry.CounterRate;
 import art.arcane.react.content.sampler.GCStatsTracker;
-import art.arcane.react.core.telemetry.HostTelemetryProvider;
-import art.arcane.react.core.telemetry.HostMetric;
-import art.arcane.react.core.telemetry.HostMetricSampler;
+import art.arcane.react.core.telemetry.HostTelemetryFeed;
 import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
 import art.arcane.react.core.telemetry.PlayerActivityTracker;
 import art.arcane.react.core.telemetry.TelemetrySampler;
@@ -22,14 +20,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.LongSupplier;
@@ -39,23 +35,20 @@ public final class TelemetryController implements IController, Listener {
   private static final long HISTORY_SIZE_REFRESH_MS = 30_000L;
   private static final long FAILURE_LOG_INTERVAL_MS = 10_000L;
 
-  private final transient AtomicReference<HostTelemetrySnapshot> hostSnapshot;
   private final transient PlayerActivityTracker playerActivity;
   private final transient CounterRate historyDropRateTracker;
   private final transient List<String> registeredSamplerIds;
   private transient ScheduledExecutorService refreshExecutor;
-  private transient HostTelemetryProvider hostProvider;
+  private transient HostTelemetryFeed hostFeed;
   private transient volatile double historyDropsPerMinute;
   private transient volatile long historyDiskBytes;
   private transient volatile long historyWalBytes;
   private transient volatile long historyRateSampledAtMs;
   private transient volatile long historySizeSampledAtMs;
   private transient long nextHistorySizeRefreshMs;
-  private transient long lastHostFailureLogMs;
   private transient long lastHistorySizeFailureLogMs;
 
   public TelemetryController() {
-    hostSnapshot = new AtomicReference<>(HostTelemetrySnapshot.empty());
     playerActivity = new PlayerActivityTracker();
     historyDropRateTracker = new CounterRate();
     registeredSamplerIds = new ArrayList<>();
@@ -78,18 +71,16 @@ public final class TelemetryController implements IController, Listener {
 
   @Override
   public void start() {
-    hostSnapshot.set(HostTelemetrySnapshot.empty());
     playerActivity.clear();
     historyDropRateTracker.reset();
     registeredSamplerIds.clear();
-    hostProvider = null;
+    hostFeed = null;
     historyDropsPerMinute = 0D;
     historyDiskBytes = 0L;
     historyWalBytes = 0L;
     historyRateSampledAtMs = 0L;
     historySizeSampledAtMs = 0L;
     nextHistorySizeRefreshMs = 0L;
-    lastHostFailureLogMs = 0L;
     lastHistorySizeFailureLogMs = 0L;
   }
 
@@ -100,11 +91,12 @@ public final class TelemetryController implements IController, Listener {
       playerActivity.recordActive(player.getUniqueId(), nowMs);
     }
     GCStatsTracker.acquire();
+    HostTelemetryFeed feed = HostTelemetryFeed.forDataFolder(React.instance.getDataFolder().toPath());
+    hostFeed = feed;
     registerSamplers();
-    Path dataPath = React.instance.getDataFolder().toPath();
     refreshExecutor = Executors.newSingleThreadScheduledExecutor(daemonFactory());
     refreshExecutor.scheduleWithFixedDelay(
-        () -> refresh(dataPath),
+        () -> refresh(feed),
         0L,
         REFRESH_INTERVAL_MS,
         TimeUnit.MILLISECONDS
@@ -134,12 +126,13 @@ public final class TelemetryController implements IController, Listener {
     }
     registeredSamplerIds.clear();
     playerActivity.clear();
-    hostProvider = null;
+    hostFeed = null;
     GCStatsTracker.release();
   }
 
   public HostTelemetrySnapshot hostSnapshot() {
-    return hostSnapshot.get();
+    HostTelemetryFeed feed = hostFeed;
+    return feed == null ? HostTelemetrySnapshot.empty() : feed.snapshot();
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
@@ -152,26 +145,10 @@ public final class TelemetryController implements IController, Listener {
     playerActivity.recordQuit(event.getPlayer().getUniqueId(), System.currentTimeMillis());
   }
 
-  private void refresh(Path dataPath) {
+  private void refresh(HostTelemetryFeed feed) {
     long nowMs = System.currentTimeMillis();
-    refreshHost(dataPath, nowMs);
+    feed.refresh(nowMs);
     refreshHistory(nowMs);
-  }
-
-  private void refreshHost(Path dataPath, long nowMs) {
-    try {
-      HostTelemetryProvider provider = hostProvider;
-      if (provider == null) {
-        provider = new HostTelemetryProvider(dataPath);
-        hostProvider = provider;
-      }
-      hostSnapshot.set(provider.capture());
-    } catch (Throwable failure) {
-      if (nowMs - lastHostFailureLogMs >= FAILURE_LOG_INTERVAL_MS) {
-        lastHostFailureLogMs = nowMs;
-        React.reportError("Failed to refresh cached React host telemetry", failure);
-      }
-    }
   }
 
   private void refreshHistory(long nowMs) {
@@ -282,12 +259,13 @@ public final class TelemetryController implements IController, Listener {
   }
 
   private void registerHostSamplers(SampleController sampleController) {
-    for (HostMetric metric : HostMetric.values()) {
-      if (metric.definition().registered()) {
-        HostMetricSampler sampler = new HostMetricSampler(metric, this::hostSnapshot);
-        if (sampleController.registerSampler(sampler)) {
-          registeredSamplerIds.add(sampler.getId());
-        }
+    HostTelemetryFeed feed = hostFeed;
+    if (feed == null) {
+      return;
+    }
+    for (Sampler sampler : feed.samplers()) {
+      if (sampleController.registerSampler(sampler)) {
+        registeredSamplerIds.add(sampler.getId());
       }
     }
   }

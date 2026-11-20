@@ -1,6 +1,6 @@
 package art.arcane.react.core.telemetry;
 
-import art.arcane.react.React;
+import art.arcane.react.platform.PlatformLog;
 import art.arcane.react.api.web.dto.EnvironmentDto;
 import art.arcane.react.content.sampler.GCStatsTracker;
 import art.arcane.volmlib.util.format.Form;
@@ -159,7 +159,7 @@ public final class HostTelemetryProvider {
       unavailable(source, "sampling-failed");
       if (nowMs - lastFailure.getOrDefault(source, 0L) >= FAILURE_LOG_INTERVAL_MS) {
         lastFailure.put(source, nowMs);
-        React.reportError("Failed to refresh React " + source.name().toLowerCase(Locale.ROOT) + " telemetry", failure);
+        PlatformLog.reportError("Failed to refresh React " + source.name().toLowerCase(Locale.ROOT) + " telemetry", failure);
       }
     }
   }
