@@ -73,6 +73,7 @@ public final class GCStatsTracker {
       collecting = true;
       collectionTime.clear();
       startListeners();
+      seedMemory(ManagementFactory.getRuntimeMXBean().getStartTime() + ManagementFactory.getRuntimeMXBean().getUptime(), lastCollectionUsage());
     }
   }
 
@@ -129,6 +130,34 @@ public final class GCStatsTracker {
         memoryAtMs = timestampMs;
       }
     }
+  }
+
+  static void seedMemory(long timestampMs, List<MemoryUsage> lastCollection) {
+    long usedAfter = 0L;
+    for (MemoryUsage usage : lastCollection) {
+      if (usage != null) {
+        usedAfter += usage.getUsed();
+      }
+    }
+    if (usedAfter <= 0L) {
+      return;
+    }
+    synchronized (LOCK) {
+      if (heapAfterBytes < 0L) {
+        heapAfterBytes = usedAfter;
+        memoryAtMs = timestampMs;
+      }
+    }
+  }
+
+  private static List<MemoryUsage> lastCollectionUsage() {
+    List<MemoryUsage> usages = new ArrayList<>();
+    for (MemoryPoolMXBean pool : ManagementFactory.getMemoryPoolMXBeans()) {
+      if (pool.getType() == MemoryType.HEAP) {
+        usages.add(pool.getCollectionUsage());
+      }
+    }
+    return usages;
   }
 
   static boolean hasPauseSamples() {

@@ -8,6 +8,7 @@ import org.mockito.Mockito;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.MemoryUsage;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,6 +26,39 @@ class GCStatsTrackerTest {
   void clearAfter() {
     GCStatsTracker.acquire();
     GCStatsTracker.release();
+  }
+
+  @Test
+  void lastCollectionUsageSeedsHeapAfterBeforeTheFirstNotification() {
+    GCStatsTracker.seedMemory(5_000L, List.of(usage(64L), usage(192L)));
+
+    GCStatsTracker.Snapshot snapshot = GCStatsTracker.snapshot(5_000L);
+
+    Assertions.assertEquals(256L, snapshot.heapAfterBytes());
+    Assertions.assertEquals(-1L, snapshot.reclaimedBytes());
+    Assertions.assertEquals(5_000L, snapshot.memoryAtMs());
+  }
+
+  @Test
+  void seedIsSkippedWhenNoCollectionHasRunYet() {
+    List<MemoryUsage> empty = new ArrayList<>();
+    empty.add(null);
+    empty.add(usage(0L));
+    GCStatsTracker.seedMemory(5_000L, empty);
+
+    Assertions.assertEquals(-1L, GCStatsTracker.snapshot(5_000L).heapAfterBytes());
+  }
+
+  @Test
+  void seedNeverReplacesAMeasuredCollection() {
+    GCStatsTracker.recordMemory(9_000L, Map.of("old", usage(900L)), Map.of("old", usage(300L)), Set.of("old"));
+    GCStatsTracker.seedMemory(9_500L, List.of(usage(50L)));
+
+    Assertions.assertEquals(300L, GCStatsTracker.snapshot(9_500L).heapAfterBytes());
+  }
+
+  private static MemoryUsage usage(long used) {
+    return new MemoryUsage(0L, used, Math.max(used, 1L), -1L);
   }
 
   @Test
