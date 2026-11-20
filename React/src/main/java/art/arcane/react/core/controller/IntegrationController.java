@@ -3,6 +3,7 @@ package art.arcane.react.core.controller;
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.react.core.integration.BukkitMetricSources;
 import art.arcane.react.core.integration.IntegrationMetricKeySelector;
 import art.arcane.react.core.integration.IrisPregenPressure;
 import art.arcane.react.core.integration.ReactIntegrationService;
@@ -86,7 +87,7 @@ public class IntegrationController extends TickedObject implements IController {
   @Override
   public void start() {
     remoteSamplerBridge = new RemoteSamplerBridge();
-    thirdPartyMetrics = new ThirdPartyMetricRegistry();
+    thirdPartyMetrics = new ThirdPartyMetricRegistry(BukkitMetricSources::registrations);
     thirdPartyMetrics.install();
     localService = new ReactIntegrationService();
     localService.register();

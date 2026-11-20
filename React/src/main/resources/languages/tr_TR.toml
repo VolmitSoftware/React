@@ -363,6 +363,11 @@ server = "&f{name}&7 {address}&r | {status} | {players} oyuncu | ping {duration}
 server_no_react = "&7React yok&r"
 server_react = "TPS {average}, MSPT {tick}, bellek {used}"
 
+[command.runtime.mod_api]
+header = "&bMod API Paketleri ({count})&r"
+not_ready = "&cMod API paketleri hazır değil.&r"
+reload_queued = "&aMod API paketlerini yeniden tarama işlemi kuyruğa alındı.&r"
+
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 durum=&f{state}&7 hedef=&f{target}&7 metrikler=&f{metrics}&7 ayrıntı=&f{detail}&r"
 error_entry = "&7- &f{file}&7: &c{detail}&r"
@@ -3239,18 +3244,18 @@ summary = "Tarif/değer analizi için kullanılan malzeme değeri ayarı."
 impact = "Sorun gidermek için yararlıdır ama çok fazla günlük gürültüsü oluşturabilir."
 summary = "React iç işleyişi için ayrıntılı konsol çıktısını etkinleştirir."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings]
 description = "Varsayılan oyuncu monitör panosu yapılandırması."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarheaderslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarheaderslots]
 impact = "Yüksek değerler yatay sayfalamayı azaltır ancak etiketler uzunsa girdileri okumayı zorlaştırabilir."
 summary = "Eylem çubuğunda aynı anda gösterilen azami monitör grubu sayısı."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarsamplerslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarsamplerslots]
 impact = "Yüksek değerler bir grup içindeki sayfalamayı azaltır ancak küçük ekranlarda okunabilirliği sıkıştırabilir."
 summary = "Odaklanılan eylem çubuğu satırında aynı anda gösterilen azami örnekleyici sayısı."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.monitorconfiguration]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.monitorconfiguration]
 impact = "Bunu değiştirmek yeni ayarlar için temel monitör paneli yapısını değiştirir."
 summary = "Oyunculara gösterilen varsayılan monitör grupları ve örnekleyiciler."
 

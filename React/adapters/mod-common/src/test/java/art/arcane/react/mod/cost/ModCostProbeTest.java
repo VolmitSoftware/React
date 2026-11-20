@@ -29,6 +29,11 @@ class ModCostProbeTest {
         public String displayName(String ownerId) {
             return ownerId.toUpperCase();
         }
+
+        @Override
+        public List<LoadedMod> loadedMods() {
+            return List.of();
+        }
     }, null, "not under test");
 
     @BeforeEach

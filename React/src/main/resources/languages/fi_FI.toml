@@ -363,6 +363,11 @@ server = "&f{name}&7 {address}&r | {status} | {players} pelaajaa | ping {duratio
 server_no_react = "&7ei Reactia&r"
 server_react = "TPS {average}, MSPT {tick}, muisti {used}"
 
+[command.runtime.mod_api]
+header = "&bModirajapinnan paketit ({count})&r"
+not_ready = "&cModirajapinnan paketit eivät ole vielä valmiita.&r"
+reload_queued = "&aModirajapinnan pakettien uudelleenluku lisättiin jonoon.&r"
+
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 tila=&f{state}&7 kohde=&f{target}&7 mittarit=&f{metrics}&7 tiedot=&f{detail}&r"
 error_entry = "&7- &f{file}&7: &c{detail}&r"
@@ -3239,18 +3244,18 @@ summary = "Resepti- ja arvoanalyysissä käytettävä materiaaliarvojen säätö
 impact = "Hyödyllinen vianmäärityksessä mutta voi tuottaa paljon lokikohinaa."
 summary = "Ottaa käyttöön yksityiskohtaisen konsolitulosteen Reactin sisäisistä toiminnoista."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings]
 description = "Oletuspelaajamonitorin näkymän asetukset."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarheaderslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarheaderslots]
 impact = "Suuremmat arvot vähentävät vaakasuuntaista sivutusta, mutta voivat vaikeuttaa merkintöjen lukemista, jos nimiöt ovat pitkiä."
 summary = "Toimintopalkissa kerrallaan näytettävien monitoriryhmien enimmäismäärä."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarsamplerslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarsamplerslots]
 impact = "Suuremmat arvot vähentävät sivutusta ryhmän sisällä, mutta voivat heikentää luettavuutta pienillä näytöillä."
 summary = "Toimintopalkin kohdistetulla rivillä kerrallaan näytettävien mittaajien enimmäismäärä."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.monitorconfiguration]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.monitorconfiguration]
 impact = "Tämän muuttaminen muuttaa perustason monitoripaneelin rakennetta uusille asetuksille."
 summary = "Pelaajille näytettävät oletusmonitoriryhmät ja mittaajat."
 

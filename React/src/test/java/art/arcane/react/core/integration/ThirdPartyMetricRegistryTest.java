@@ -1,14 +1,17 @@
 package art.arcane.react.core.integration;
 
-import art.arcane.react.React;
 import art.arcane.react.api.metric.ReactMetrics;
 import art.arcane.react.api.metric.internal.MetricInstaller;
 import art.arcane.react.api.sampler.Sampler;
+import art.arcane.react.api.sampler.SamplerHosts;
+import art.arcane.react.core.controller.SampleController;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+
+import java.util.List;
 
 class ThirdPartyMetricRegistryTest {
 
@@ -24,9 +27,12 @@ class ThirdPartyMetricRegistryTest {
     Mockito.when(absent.isSampleAvailable()).thenReturn(false);
     Mockito.when(absent.sample()).thenReturn(0D);
 
-    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
-      react.when(() -> React.sampler("adapt-xp-rate")).thenReturn(absent);
-      new ThirdPartyMetricRegistry().install();
+    SampleController samples = Mockito.mock(SampleController.class);
+    Mockito.when(samples.getSampler("adapt-xp-rate")).thenReturn(absent);
+
+    try (MockedStatic<SamplerHosts> hosts = Mockito.mockStatic(SamplerHosts.class)) {
+      hosts.when(SamplerHosts::sampleController).thenReturn(samples);
+      new ThirdPartyMetricRegistry(List::of).install();
 
       Assertions.assertTrue(Double.isNaN(ReactMetrics.readHostMetric("adapt-xp-rate")));
       Assertions.assertFalse(ReactMetrics.hostMetricAvailable("adapt-xp-rate"));
@@ -39,9 +45,12 @@ class ThirdPartyMetricRegistryTest {
     Mockito.when(present.isSampleAvailable()).thenReturn(true);
     Mockito.when(present.sample()).thenReturn(12.5D);
 
-    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
-      react.when(() -> React.sampler("players")).thenReturn(present);
-      new ThirdPartyMetricRegistry().install();
+    SampleController samples = Mockito.mock(SampleController.class);
+    Mockito.when(samples.getSampler("players")).thenReturn(present);
+
+    try (MockedStatic<SamplerHosts> hosts = Mockito.mockStatic(SamplerHosts.class)) {
+      hosts.when(SamplerHosts::sampleController).thenReturn(samples);
+      new ThirdPartyMetricRegistry(List::of).install();
 
       Assertions.assertEquals(12.5D, ReactMetrics.readHostMetric("players"), 1.0E-9D);
       Assertions.assertTrue(ReactMetrics.hostMetricAvailable("players"));

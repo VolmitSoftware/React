@@ -3,7 +3,11 @@ package art.arcane.react.fabric.cost;
 import art.arcane.react.mod.cost.ModOwners;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
+import net.fabricmc.loader.api.metadata.ModMetadata;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
 public final class FabricModOwners implements ModOwners {
@@ -47,5 +51,16 @@ public final class FabricModOwners implements ModOwners {
         }
         Optional<ModContainer> container = FabricLoader.getInstance().getModContainer(ownerId);
         return container.isPresent() ? container.get().getMetadata().getName() : ownerId;
+    }
+
+    @Override
+    public List<LoadedMod> loadedMods() {
+        List<LoadedMod> mods = new ArrayList<>();
+        for (ModContainer container : FabricLoader.getInstance().getAllMods()) {
+            ModMetadata metadata = container.getMetadata();
+            mods.add(new LoadedMod(metadata.getId(), metadata.getName(), metadata.getVersion().getFriendlyString()));
+        }
+        mods.sort(Comparator.comparing(LoadedMod::id));
+        return mods;
     }
 }

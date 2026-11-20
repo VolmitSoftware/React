@@ -363,6 +363,11 @@ server = "&f{name}&7 {address}&r | {status} | {players} người chơi | ping {d
 server_no_react = "&7không có React&r"
 server_react = "TPS {average}, MSPT {tick}, bộ nhớ {used}"
 
+[command.runtime.mod_api]
+header = "&bGói API mod ({count})&r"
+not_ready = "&cCác gói API mod chưa sẵn sàng.&r"
+reload_queued = "&aĐã đưa yêu cầu quét lại các gói API mod vào hàng đợi.&r"
+
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 trạng thái=&f{state}&7 đích=&f{target}&7 chỉ số=&f{metrics}&7 chi tiết=&f{detail}&r"
 error_entry = "&7- &f{file}&7: &c{detail}&r"
@@ -3239,18 +3244,18 @@ summary = "Tinh chỉnh giá trị vật liệu dùng cho phân tích công th�
 impact = "Hữu ích khi khắc phục sự cố nhưng có thể tạo ra rất nhiều nhiễu nhật ký."
 summary = "Bật đầu ra bảng điều khiển chi tiết cho nội bộ React."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings]
 description = "Cấu hình bảng điều khiển giám sát mặc định của người chơi."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarheaderslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarheaderslots]
 impact = "Giá trị cao hơn giảm việc phân trang ngang, nhưng có thể khiến các mục khó đọc hơn nếu nhãn dài."
 summary = "Số nhóm màn hình tối đa được hiển thị trong thanh hành động cùng một lúc."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarsamplerslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarsamplerslots]
 impact = "Giá trị cao hơn giảm việc phân trang trong một nhóm, nhưng có thể làm giảm khả năng đọc trên màn hình nhỏ."
 summary = "Số bộ lấy mẫu tối đa hiển thị cùng lúc trong hàng thanh hành động đang được chọn."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.monitorconfiguration]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.monitorconfiguration]
 impact = "Thay đổi này làm thay đổi cấu trúc bảng giám sát cơ sở cho các thiết lập mới."
 summary = "Các nhóm giám sát mặc định và bộ lấy mẫu hiển thị cho người chơi."
 

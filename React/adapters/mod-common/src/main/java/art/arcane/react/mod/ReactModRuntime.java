@@ -1,5 +1,6 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.monitor.MonitoringSettings;
 import art.arcane.react.api.web.HistoryWebMetricsSource;
 import art.arcane.react.api.web.MetricsSerializer;
 import art.arcane.react.api.web.ReactWebServer;
@@ -10,6 +11,7 @@ import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.core.telemetry.RuntimeTelemetry;
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.util.plugin.IController;
 import art.arcane.react.mod.cost.ModCostProbe;
 import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.platform.SamplerEventCounters;
@@ -53,6 +55,7 @@ public final class ReactModRuntime {
     private final Path configDirectory;
     private final ModCostProbe costProbe;
     private final ReactDirector director = new ReactDirector();
+    private final ModPluginApis pluginApis = new ModPluginApis();
     private static volatile ModTicks pausedTicks;
     private volatile Running running;
 
@@ -128,13 +131,18 @@ public final class ReactModRuntime {
         web[0] = new ReactWebServer(webHost);
         WebConfigWatcher webConfig = new WebConfigWatcher(new File(dataFolder, "web.toml"), webHost, web[0]);
         Components components = new Components(new FeatureController(), new TweakController(), new ActionController());
-        ModSettings settings = new ModSettings(server, dataFolder, languageHost, maps, () -> samples, ticks);
+        List<IController> coreControllers = List.of(components.features(), components.tweaks(), components.actions(), samples,
+                telemetry.jobs(), telemetry.history());
+        ModSettings settings = new ModSettings(server, dataFolder, languageHost, maps, () -> samples, ticks, coreControllers);
         ModConfigHotload hotload = new ModConfigHotload(server, dataFolder, languageHost, maps, () -> samples, modPlatform, ticks);
         running = new Running(modPlatform, ticks, async, samples, web[0], maps, telemetry, components, webConfig, settings, hotload);
         costProbe.start(server, ticks::later);
         ticks.every(costProbe::tick);
         try {
             ReactLanguage.initialize();
+            for (IController controller : coreControllers) {
+                controller.loadConfiguration();
+            }
             telemetry.startJobs();
             samples.start();
             components.start();
@@ -149,6 +157,10 @@ public final class ReactModRuntime {
             maps.start(modPlatform);
             ticks.every(maps::tick);
             ModSettings.bind(settings);
+            MonitoringSettings.bind(languageHost::monitoring);
+            ModPlayerMonitors monitors = new ModPlayerMonitors(server, new ModMonitorDisplay(server, ticks, modPlatform.components()));
+            ModPlayerMonitors.bind(monitors);
+            ticks.every(monitors::tick);
             hotload.start();
             ticks.every(hotload::tick);
             modPlatform.ownerCost().start();
@@ -156,6 +168,7 @@ public final class ReactModRuntime {
             web[0].start();
             web[0].postStart();
             webConfig.start();
+            pluginApis.start(modPlatform, dataFolder, ticks);
             int[] untilCapture = {CAPTURE_INTERVAL_TICKS};
             ticks.every(() -> {
                 if (--untilCapture[0] <= 0) {
@@ -197,6 +210,8 @@ public final class ReactModRuntime {
             return;
         }
         active.hotload().stop();
+        ModPlayerMonitors.current().ifPresent(ModPlayerMonitors::stop);
+        MonitoringSettings.bind(null);
         ModSettings.unbind(active.settings());
         active.platform().components().disable();
         try {
@@ -222,6 +237,7 @@ public final class ReactModRuntime {
         } catch (RuntimeException failure) {
             LOGGER.warn("React Web did not stop cleanly", failure);
         }
+        pluginApis.stop();
         try {
             active.telemetry().stop(active.samples());
         } catch (RuntimeException failure) {

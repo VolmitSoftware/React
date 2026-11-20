@@ -1,5 +1,7 @@
 package art.arcane.react.mod.cost;
 
+import java.util.List;
+
 /** Maps classes and registry namespaces to the loaded mod that owns them. */
 public interface ModOwners {
     String UNKNOWN = "unknown";
@@ -11,6 +13,12 @@ public interface ModOwners {
     String ownerOfNamespace(String namespace);
 
     String displayName(String ownerId);
+
+    /** Every mod the loader lists, sorted by id. */
+    List<LoadedMod> loadedMods();
+
+    record LoadedMod(String id, String name, String version) {
+    }
 
     static Class<?> declaringClass(Class<?> type) {
         Class<?> current = type.isHidden() ? type.getNestHost() : type;

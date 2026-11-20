@@ -1,5 +1,6 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.monitor.MonitoringSettings;
 import art.arcane.react.api.rendering.MapSettings;
 import art.arcane.react.api.web.WebConfiguration;
 import art.arcane.react.localization.ReactLanguage;
@@ -23,7 +24,7 @@ import java.util.logging.Logger;
 final class ModLanguageHost implements LanguageHost {
     static final String SOURCE_TAG = "main-config";
     private static final Logger LOGGER = Logger.getLogger(ReactModRuntime.NAME);
-    private static final List<Class<?>> DOCUMENTED_TYPES = List.of(MapSettings.class, WebConfiguration.class);
+    private static final List<Class<?>> DOCUMENTED_TYPES = List.of(MapSettings.class, WebConfiguration.class, MonitoringSettings.class);
     private final File settingsFile;
     private volatile Settings settings = new Settings();
     private volatile BiConsumer<File, String> selfWrites;
@@ -34,6 +35,9 @@ final class ModLanguageHost implements LanguageHost {
         String language = "en_US";
         @ConfigDoc(value = "Enables plugin-gated secret integration features.", impact = "Disabled by default. Enable to allow Iris/Adapt secret bundles when dependencies are present.")
         boolean integrationSecretsEnabled = false;
+
+        @ConfigDoc(value = "Default monitor layout shown to players.", impact = "Changes affect the baseline monitoring dashboard composition and sampler grouping.")
+        MonitoringSettings monitoring = new MonitoringSettings();
     }
 
     ModLanguageHost(File dataFolder) {
@@ -55,6 +59,11 @@ final class ModLanguageHost implements LanguageHost {
             LOGGER.warning("Kept the current React settings; react.toml could not be read: " + failure.getMessage());
             return false;
         }
+    }
+
+    MonitoringSettings monitoring() {
+        MonitoringSettings monitoring = settings.monitoring;
+        return monitoring == null ? new MonitoringSettings() : monitoring;
     }
 
     Settings settings() {

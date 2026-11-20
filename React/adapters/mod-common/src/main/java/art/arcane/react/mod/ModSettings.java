@@ -1,16 +1,19 @@
 package art.arcane.react.mod;
 
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.core.gui.MonitorConfigMenu;
 import art.arcane.react.core.gui.ReactSettingsMenu;
 import art.arcane.react.core.gui.SettingsInputSessions;
 import art.arcane.react.core.gui.SettingsSource;
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.util.plugin.IController;
 import art.arcane.react.util.project.config.TomlFiles;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,19 +32,24 @@ public final class ModSettings implements SettingsSource {
     private final ModLanguageHost language;
     private final ModMaps maps;
     private final Supplier<SampleController> samples;
+    private final List<IController> controllers;
     private final ModLanguageCommand languageCommand;
     private final SettingsInputSessions inputs;
     private final ReactSettingsMenu menu;
+    private final MonitorConfigMenu monitor;
 
     ModSettings(MinecraftServer server, File dataFolder, ModLanguageHost language, ModMaps maps, Supplier<SampleController> samples,
-                ModTicks ticks) {
+                ModTicks ticks, List<IController> controllers) {
+        this.controllers = List.copyOf(controllers);
         this.server = server;
         this.dataFolder = dataFolder;
         this.language = language;
         this.maps = maps;
         this.samples = samples;
         this.languageCommand = new ModLanguageCommand(ticks::later);
-        this.menu = new ReactSettingsMenu(this, new ModSettingsScreenHost(server, ticks));
+        ModSettingsScreenHost screens = new ModSettingsScreenHost(server, ticks);
+        this.menu = new ReactSettingsMenu(this, screens);
+        this.monitor = new MonitorConfigMenu(screens, (sampler) -> true);
         this.inputs = new SettingsInputSessions(() -> menu, () -> INPUT_TIMEOUT_SECONDS);
     }
 
@@ -54,6 +62,7 @@ public final class ModSettings implements SettingsSource {
             current = null;
         }
         settings.inputs.clear();
+        settings.monitor.clear();
     }
 
     static Optional<ModSettings> current() {
@@ -64,16 +73,22 @@ public final class ModSettings implements SettingsSource {
         menu.open(player.getUUID());
     }
 
-    /** True when the chat message answered a settings prompt and must not reach chat. Called on the network thread. */
+    MonitorConfigMenu monitorMenu() {
+        return monitor;
+    }
+
+    /** True when the chat message answered a settings or monitor prompt and must not reach chat. Called on the network thread. */
     public static boolean onChat(ServerPlayer player, String message) {
         ModSettings settings = current;
-        return settings != null && player != null && settings.inputs.onChat(player.getUUID(), message);
+        return settings != null && player != null
+                && (settings.inputs.onChat(player.getUUID(), message) || settings.monitor.prompts().onChat(player.getUUID(), message));
     }
 
     public static void forget(ServerPlayer player) {
         ModSettings settings = current;
         if (settings != null && player != null) {
             settings.inputs.forget(player.getUUID());
+            settings.monitor.forget(player.getUUID());
         }
     }
 
@@ -95,17 +110,41 @@ public final class ModSettings implements SettingsSource {
 
     @Override
     public boolean reloadMain() {
-        return language.reload() && ReactLanguage.reload();
+        if (!language.reload() || !ReactLanguage.reload()) {
+            return false;
+        }
+        ModPlayerMonitors.current().ifPresent(ModPlayerMonitors::updateMonitors);
+        return true;
     }
 
     @Override
     public List<CoreSection> coreSections() {
-        return List.of(new CoreSection("map", "Map", "minecraft:slime_ball", maps.settings()));
+        List<CoreSection> sections = new ArrayList<>();
+        sections.add(new CoreSection("map", "Map", "minecraft:slime_ball", maps.settings()));
+        for (IController controller : controllers) {
+            sections.add(new CoreSection(controller.getId(), controller.getName(), controller.getIcon(), controller));
+        }
+        return sections;
+    }
+
+    /** The core controller with a {@code core/<id>.toml} on mods, other than the map settings. */
+    Optional<IController> controller(String id) {
+        for (IController controller : controllers) {
+            if (controller.getId().equals(id)) {
+                return Optional.of(controller);
+            }
+        }
+        return Optional.empty();
     }
 
     @Override
     public boolean reloadCore(String id) {
-        return "map".equals(id) && maps.reloadSettings();
+        if ("map".equals(id)) {
+            return maps.reloadSettings();
+        }
+        Optional<IController> controller = controller(id);
+        controller.ifPresent(IController::loadConfiguration);
+        return controller.isPresent();
     }
 
     @Override

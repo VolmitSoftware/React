@@ -3,7 +3,7 @@ package art.arcane.react.content.feature;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.CapabilityGatedFeature;
 import art.arcane.react.api.feature.Feature;
-import art.arcane.react.api.metric.ReactMetric;
+import art.arcane.react.api.metric.ReactModMetric;
 import art.arcane.react.api.metric.internal.MetricInstaller;
 import art.arcane.react.api.metric.internal.PublishedMetricStore;
 import art.arcane.react.core.controller.FeatureController;
@@ -60,7 +60,7 @@ class FeatureAnimusMapsTest {
       }
       Assertions.assertFalse(IntegrationCapabilitySupport.isCapabilityPresent(null, "animus"));
 
-      store.declare("animus", List.of(ReactMetric.millis("animus.cost.navigation_ms", "Navigation")));
+      store.declare("animus", List.of(ReactModMetric.millis("animus.cost.navigation_ms", "Navigation")));
       for (Feature feature : features()) {
         Assertions.assertTrue(controller.shouldActivateFeature(feature), feature.getId());
       }

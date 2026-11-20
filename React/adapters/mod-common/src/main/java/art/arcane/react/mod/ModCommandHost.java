@@ -1,14 +1,20 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.monitor.configuration.MonitorConfiguration;
 import art.arcane.react.api.benchmark.BenchmarkRunner;
 import art.arcane.react.api.benchmark.BenchmarkTarget;
 import art.arcane.react.content.directorcommand.BridgeCommands;
 import art.arcane.react.content.directorcommand.ChunkCommands;
+import art.arcane.react.content.directorcommand.DebugDump;
 import art.arcane.react.content.directorcommand.DistanceCommands;
 import art.arcane.react.content.directorcommand.EnvironmentCommands;
 import art.arcane.react.content.directorcommand.IntegrationCommands;
 import art.arcane.react.core.bridge.BridgeHealthReport;
+import art.arcane.react.core.pluginapi.PluginApiCommands;
+import art.arcane.react.core.pluginapi.PluginApiPacks;
+import art.arcane.react.core.controller.ReactComponents;
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.localization.catalog.EnvironmentMessages;
 import art.arcane.react.model.SampledChunk;
@@ -42,17 +48,19 @@ import java.util.Set;
 
 /**
  * The React subcommands a mod server can run. Leaves backed by Bukkit-only systems keep the unavailable reply:
- * monitor, config monitor, monitoring-only, the world actions, debug dump and entity-data, dev, test and plugin-api.
+ * monitor, config monitor, monitoring-only, the world actions, dev and test.
  */
 final class ModCommandHost implements CommandHost {
     private final MinecraftServer server;
     private final ModMaps maps;
     private final ModLanguageCommand language;
+    private final DebugDump debugDump;
 
     ModCommandHost(MinecraftServer server, ModMaps maps, ModLanguageCommand language) {
         this.server = server;
         this.maps = maps;
         this.language = language;
+        this.debugDump = new DebugDump(ReactModRuntime.NAME, reactVersion(), new ModDebugDump(server));
     }
 
     @Override
@@ -76,6 +84,43 @@ final class ModCommandHost implements CommandHost {
         if (player != null && player.handle() instanceof ServerPlayer serverPlayer) {
             maps.map(serverPlayer, rendererId);
         }
+    }
+
+    @Override
+    public void monitor(VolmitSender sender) {
+        ServerPlayer player = serverPlayer(sender);
+        Optional<ModPlayerMonitors> monitors = ModPlayerMonitors.current();
+        if (player == null || monitors.isEmpty()) {
+            return;
+        }
+        Boolean enabled = monitors.get().toggle(player);
+        if (enabled != null) {
+            ReactLanguage.sendPrefixed(sender, enabled ? RuntimeMessages.MONITOR_ENABLED : RuntimeMessages.MONITOR_DISABLED);
+        }
+    }
+
+    @Override
+    public void configMonitor(VolmitSender sender) {
+        ServerPlayer player = serverPlayer(sender);
+        ModPlayerMonitors.Session session = player == null ? null
+                : ModPlayerMonitors.current().map((ModPlayerMonitors monitors) -> monitors.session(player)).orElse(null);
+        if (session != null) {
+            ModMonitorConfigScreens.open(player, session.getSettings().getMonitorConfiguration(),
+                    (MonitorConfiguration configuration) -> session.save());
+        }
+    }
+
+    @Override
+    public void monitoringOnly(VolmitSender sender) {
+        if (!(ReactPlatforms.getOrNull() instanceof ModReactPlatform platform)
+                || ReactComponents.features() == null || ReactComponents.features().getFeatures() == null
+                || ReactComponents.tweaks() == null || ReactComponents.tweaks().getTweaks() == null) {
+            ReactLanguage.sendPrefixed(sender, CommandMessages.MONITORING_ONLY_UNAVAILABLE);
+            return;
+        }
+        boolean monitoringOnly = !platform.components().isMonitoringOnly();
+        platform.components().setMonitoringOnly(monitoringOnly);
+        ReactLanguage.sendPrefixed(sender, monitoringOnly ? CommandMessages.MONITORING_ONLY_ENABLED : CommandMessages.MONITORING_ONLY_DISABLED);
     }
 
     @Override
@@ -238,6 +283,29 @@ final class ModCommandHost implements CommandHost {
     }
 
     @Override
+    public void debugDump(VolmitSender sender, boolean upload) {
+        debugDump.request(sender.getS(), upload);
+    }
+
+    @Override
+    public void debugEntityData(VolmitSender sender) {
+        ServerPlayer player = serverPlayer(sender);
+        if (player != null) {
+            ModDebugDump.entityData(player, sender);
+        }
+    }
+
+    @Override
+    public void pluginApiStatus(VolmitSender sender) {
+        PluginApiCommands.status(sender, PluginApiPacks.active());
+    }
+
+    @Override
+    public void pluginApiReload(VolmitSender sender) {
+        PluginApiCommands.reload(sender, PluginApiPacks.active());
+    }
+
+    @Override
     public void integrationStatus(VolmitSender sender) {
         Optional<ModIntegrationMetrics> metrics = platform().integrations();
         if (metrics.isEmpty()) {
@@ -273,7 +341,7 @@ final class ModCommandHost implements CommandHost {
         ReactPlatforms.get().scheduler().global(() -> LanguageAudience.run(sender.getS().playerId().orElse(null), delivery), 0);
     }
 
-    private static String reactVersion() {
+    static String reactVersion() {
         try (InputStream input = ModCommandHost.class.getResourceAsStream("react-mod.properties")) {
             if (input == null) {
                 return "unknown";

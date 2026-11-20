@@ -22,4 +22,10 @@ public sealed interface SettingsAction {
 
   record NullSection() implements SettingsAction {
   }
+
+  /**
+   * An action only the menu that built the screen understands, named by {@code kind}.
+   */
+  record Custom(String kind, String value) implements SettingsAction {
+  }
 }

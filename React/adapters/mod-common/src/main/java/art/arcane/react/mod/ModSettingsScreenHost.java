@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 
 final class ModSettingsScreenHost implements SettingsScreenHost {
-    private static final int WIDTH = 9;
     private final MinecraftServer server;
     private final ModTicks ticks;
 
@@ -39,21 +38,35 @@ final class ModSettingsScreenHost implements SettingsScreenHost {
         if (player == null || screen == null) {
             return;
         }
-        int rows = Math.max(1, Math.min(6, screen.rows()));
+        int columns = screen.columns();
+        int rows = screen.dropper() ? 3 : Math.max(1, Math.min(6, screen.rows()));
+        int size = rows * columns;
         String title = screen.title() == null ? "" : screen.title();
         Map<Integer, SettingsTile> tiles = new HashMap<>();
         for (SettingsTile tile : screen.tiles()) {
-            int slot = tile.slot();
-            if (slot >= 0 && slot < rows * WIDTH) {
+            int slot = tile.slot(columns);
+            if (slot >= 0 && slot < size) {
                 tiles.put(slot, tile);
             }
         }
         ItemStack background = new ItemStack(item(screen.background(), "black_stained_glass_pane"));
         VanillaItems.name(background, Component.literal(" "));
-        List<ItemStack> items = new ArrayList<>(rows * WIDTH);
-        for (int slot = 0; slot < rows * WIDTH; slot++) {
+        List<ItemStack> items = new ArrayList<>(size);
+        for (int slot = 0; slot < size; slot++) {
             SettingsTile tile = tiles.get(slot);
             items.add(tile == null ? background.copy() : stack(tile));
+        }
+        if (screen.dropper()) {
+            if (player.containerMenu instanceof ModSettingsDropperMenu current && current.reusableFor(title)) {
+                current.show(tiles, handler, items);
+                return;
+            }
+            player.openMenu(new SimpleMenuProvider((int id, Inventory inventory, Player opener) -> {
+                ModSettingsDropperMenu menu = new ModSettingsDropperMenu(id, inventory, player, ticks, title);
+                menu.show(tiles, handler, items);
+                return menu;
+            }, ModLegacyText.component(title)));
+            return;
         }
         if (player.containerMenu instanceof ModSettingsMenu current && current.reusableFor(rows, title)) {
             current.show(tiles, handler, items);
@@ -80,6 +93,9 @@ final class ModSettingsScreenHost implements SettingsScreenHost {
         }
         if (tile.enchanted()) {
             VanillaItems.glint(stack);
+        }
+        if (tile.dyeColor() != null) {
+            VanillaItems.dyedColor(stack, tile.dyeColor());
         }
         return stack;
     }

@@ -20,5 +20,12 @@ public interface SettingsScreenHost {
   @FunctionalInterface
   interface ClickHandler {
     void onClick(UUID viewerId, SettingsTile tile, SettingsClick click, SettingsAction action);
+
+    /**
+     * The screen this handler was opened with went away: the viewer closed it or left, React closed it, or a screen
+     * with another size or title replaced it. A screen shown in its place reports nothing.
+     */
+    default void onClosed(UUID viewerId) {
+    }
   }
 }

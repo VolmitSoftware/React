@@ -15,8 +15,9 @@ import java.nio.file.Path;
 class PluginApiPackRuntimeVersionTest {
   @Test
   void targetVersionIsReadThroughTheSpigotDescription() throws IOException {
-    PluginApiPackDefinition definition = PluginApiPackParser.parse(Path.of("version.toml"), pack());
-    PluginApiPackRuntime runtime = new PluginApiPackRuntime(definition);
+    BukkitPluginApiHost host = new BukkitPluginApiHost();
+    PluginApiPackDefinition definition = PluginApiPackParser.parse(Path.of("version.toml"), pack(), host::icon);
+    PluginApiPackRuntime runtime = new PluginApiPackRuntime(definition, host);
     Plugin target = Mockito.mock(Plugin.class);
     PluginManager pluginManager = Mockito.mock(PluginManager.class);
     Mockito.when(target.isEnabled()).thenReturn(true);

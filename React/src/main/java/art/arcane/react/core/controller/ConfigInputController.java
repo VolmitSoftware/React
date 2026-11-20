@@ -49,11 +49,13 @@ public class ConfigInputController implements IController, Listener {
   @Override
   public void start() {
     sessions.clear();
+    ReactConfigGUI.monitorMenu().clear();
   }
 
   @Override
   public void stop() {
     sessions.clear();
+    ReactConfigGUI.monitorMenu().clear();
   }
 
   @Override
@@ -76,8 +78,16 @@ public class ConfigInputController implements IController, Listener {
     }
   }
 
+  @EventHandler(priority = EventPriority.HIGHEST)
+  public void onPromptChat(AsyncPlayerChatEvent event) {
+    if (ReactConfigGUI.monitorMenu().prompts().onChat(event.getPlayer().getUniqueId(), event.getMessage())) {
+      event.setCancelled(true);
+    }
+  }
+
   @EventHandler
   public void onQuit(PlayerQuitEvent event) {
     sessions.forget(event.getPlayer().getUniqueId());
+    ReactConfigGUI.monitorMenu().forget(event.getPlayer().getUniqueId());
   }
 }

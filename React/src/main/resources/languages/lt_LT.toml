@@ -363,6 +363,11 @@ server = "&f{name}&7 {address}&r | {status} | žaidėjų: {players} | ping {dura
 server_no_react = "&7be React&r"
 server_react = "TPS {average}, MSPT {tick}, atmintis {used}"
 
+[command.runtime.mod_api]
+header = "&bModų API paketai ({count})&r"
+not_ready = "&cModų API paketai dar neparuošti.&r"
+reload_queued = "&aModų API paketų pakartotinis nuskaitymas įtrauktas į eilę.&r"
+
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 būsena=&f{state}&7 taikinys=&f{target}&7 rodikliai=&f{metrics}&7 informacija=&f{detail}&r"
 error_entry = "&7- &f{file}&7: &c{detail}&r"
@@ -3239,18 +3244,18 @@ summary = "Medžiagų verčių koregavimas, naudojamas receptų ir verčių anal
 impact = "Naudinga trikčių šalinimui, bet gali sukurti daug žurnalo triukšmo."
 summary = "Įjungia išsamią konsolės išvestį React vidinėms dalims."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings]
 description = "Numatytoji žaidėjų stebėsenos skydelio konfigūracija."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarheaderslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarheaderslots]
 impact = "Didesnės reikšmės sumažina horizontalų puslapiavimą, bet gali apsunkinti įrašų skaitymą, jei etiketės ilgos."
 summary = "Didžiausias vienu metu veiksmų juostoje rodomas stebimųjų grupių skaičius."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarsamplerslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarsamplerslots]
 impact = "Didesnės reikšmės sumažina puslapiavimą grupės viduje, bet gali pabloginti skaitomumą mažuose ekranuose."
 summary = "Didžiausias matuoklių skaičius, vienu metu rodomas fokusuotoje veiksmų juostos eilutėje."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.monitorconfiguration]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.monitorconfiguration]
 impact = "Pakeitus šią parinktį, keičiasi pradinio monitoriaus skydelio struktūra naujiems nustatymams."
 summary = "Numatytosios žaidėjams rodomos stebėsenos grupės ir matuokliai."
 

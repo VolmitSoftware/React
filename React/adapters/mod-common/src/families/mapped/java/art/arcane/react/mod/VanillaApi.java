@@ -13,6 +13,7 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,6 +23,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -37,6 +39,10 @@ public final class VanillaApi {
 
     static ResourceLocation id(String namespace, String path) {
         return ResourceLocation.fromNamespaceAndPath(namespace, path);
+    }
+
+    static DyedItemColor dyedColor(int rgb) {
+        return new DyedItemColor(rgb, true);
     }
 
     static Item vanillaItem(String path) {
@@ -78,6 +84,18 @@ public final class VanillaApi {
         return SharedConstants.getCurrentVersion().getName();
     }
 
+    static boolean allowFlight(MinecraftServer server) {
+        return server.isFlightAllowed();
+    }
+
+    static double averageTickMillis(MinecraftServer server) {
+        return server.getAverageTickTimeNanos() / 1_000_000D;
+    }
+
+    static int idleTimeoutMinutes(MinecraftServer server) {
+        return server.getPlayerIdleTimeout();
+    }
+
     static int chunkX(ChunkPos pos) {
         return pos.x;
     }
@@ -92,6 +110,10 @@ public final class VanillaApi {
 
     static long pack(int chunkX, int chunkZ) {
         return ChunkPos.asLong(chunkX, chunkZ);
+    }
+
+    static java.util.Set<String> tags(net.minecraft.world.entity.Entity entity) {
+        return entity.getTags();
     }
 
     static ServerLevel level(ServerPlayer player) {
@@ -133,6 +155,14 @@ public final class VanillaApi {
 
     static ItemStack selectedItem(Inventory inventory) {
         return inventory.getSelected();
+    }
+
+    static int selectedSlot(Inventory inventory) {
+        return inventory.selected;
+    }
+
+    static net.minecraft.network.chat.Style font(net.minecraft.network.chat.Style style, String namespace, String path) {
+        return style.withFont(ResourceLocation.fromNamespaceAndPath(namespace, path));
     }
 
     static void selectItem(Inventory inventory, ItemStack item) {

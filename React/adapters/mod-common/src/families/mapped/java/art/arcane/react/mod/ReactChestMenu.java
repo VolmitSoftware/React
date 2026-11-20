@@ -20,7 +20,7 @@ abstract class ReactChestMenu extends ChestMenu {
 
     abstract void clicked(int slot, int button, MenuClick click, Player player);
 
-    private static MenuClick kind(ClickType input) {
+    static MenuClick kind(ClickType input) {
         return switch (input) {
             case PICKUP -> MenuClick.PICKUP;
             case PICKUP_ALL -> MenuClick.PICKUP_ALL;

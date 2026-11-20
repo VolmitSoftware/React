@@ -14,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PluginApiPackParserTest {
+  private static final BukkitPluginApiHost HOST = new BukkitPluginApiHost();
+
   private static final Path EXAMPLES = Path.of("src/main/resources/plugin-apis/examples");
 
   @Test
@@ -25,7 +27,7 @@ class PluginApiPackParserTest {
     assertEquals(3, examples.size());
     for (Path example : examples) {
       String content = Files.readString(example, StandardCharsets.UTF_8);
-      PluginApiPackDefinition definition = PluginApiPackParser.parse(example, content);
+      PluginApiPackDefinition definition = PluginApiPackParser.parse(example, content, HOST::icon);
       assertEquals(PluginApiPackParser.SCHEMA, definition.schema());
       assertFalse(definition.metrics().isEmpty());
     }
@@ -36,7 +38,7 @@ class PluginApiPackParserTest {
     String content = minimalPack(false).replace("targetPlugin = \"Example\"", "targetPlugin = \"Example\"\nlegacyMode = true");
     IOException failure = assertThrows(
         IOException.class,
-        () -> PluginApiPackParser.parse(Path.of("unknown.toml"), content)
+        () -> PluginApiPackParser.parse(Path.of("unknown.toml"), content, HOST::icon)
     );
     assertTrue(failure.getMessage().contains("Unknown key root.legacyMode"));
   }
@@ -45,7 +47,7 @@ class PluginApiPackParserTest {
   void placeholderSourcesRequireExplicitTrust() {
     IOException failure = assertThrows(
         IOException.class,
-        () -> PluginApiPackParser.parse(Path.of("placeholder.toml"), minimalPack(true))
+        () -> PluginApiPackParser.parse(Path.of("placeholder.toml"), minimalPack(true), HOST::icon)
     );
     assertTrue(failure.getMessage().contains("requires trusted = true"));
   }

@@ -1,5 +1,6 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.api.protect.ReactModProtection;
 import art.arcane.react.api.protect.ReactOperation;
 import art.arcane.react.platform.EntityHost;
 import art.arcane.react.platform.GameEntity;
@@ -113,12 +114,12 @@ final class ModEntityHost implements EntityHost {
 
     @Override
     public boolean isProtected(GameEntity entity, ReactOperation operation) {
-        return false;
+        return ReactModProtection.isProtected(entity.handle(), operation);
     }
 
     @Override
     public boolean allows(GameEntity entity, ReactOperation operation) {
-        return true;
+        return !ReactModProtection.isProtected(entity.handle(), operation);
     }
 
     @Override

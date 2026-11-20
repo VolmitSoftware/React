@@ -363,6 +363,11 @@ server = "&f{name}&7 {address}&r | {status} | プレイヤー {players} 人 | pi
 server_no_react = "&7React なし&r"
 server_react = "TPS {average}、MSPT {tick}、メモリ {used}"
 
+[command.runtime.mod_api]
+header = "&bMOD API パック ({count})&r"
+not_ready = "&cMOD API パックはまだ準備できていません。&r"
+reload_queued = "&aMOD API パックの再スキャンをキューに追加しました。&r"
+
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 状態=&f{state}&7 対象=&f{target}&7 メトリクス=&f{metrics}&7 詳細=&f{detail}&r"
 error_entry = "&7- &f{file}&7: &c{detail}&r"
@@ -3239,18 +3244,18 @@ summary = "レシピ/価値の分析に使用する素材価値の調整。"
 impact = "トラブルシューティングに便利ですが、大量のログノイズが発生する場合があります。"
 summary = "React 内部のコンソール詳細出力を有効にします。"
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings]
 description = "既定のプレイヤー向けモニターダッシュボードの設定。"
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarheaderslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarheaderslots]
 impact = "値を大きくすると横方向のページ送りが減りますが、ラベルが長い場合は項目が読みにくくなることがあります。"
 summary = "アクションバーに一度に表示するモニターグループの最大数。"
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarsamplerslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarsamplerslots]
 impact = "値を大きくするとグループ内のページ送りが減りますが、小さなディスプレイでは読みやすさが損なわれる場合があります。"
 summary = "フォーカス中のアクションバー行に一度に表示するサンプラーの最大数。"
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.monitorconfiguration]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.monitorconfiguration]
 impact = "これを変更すると、新しい設定に対する基準のモニターパネル構造が変わります。"
 summary = "プレイヤーに表示する既定のモニターグループとサンプラー。"
 

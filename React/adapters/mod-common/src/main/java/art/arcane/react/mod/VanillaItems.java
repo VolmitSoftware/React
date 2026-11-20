@@ -42,6 +42,10 @@ final class VanillaItems {
         return lore == null ? List.of() : lore.lines();
     }
 
+    static void dyedColor(ItemStack item, int rgb) {
+        item.set(DataComponents.DYED_COLOR, VanillaApi.dyedColor(rgb));
+    }
+
     static void glint(ItemStack item) {
         item.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
     }

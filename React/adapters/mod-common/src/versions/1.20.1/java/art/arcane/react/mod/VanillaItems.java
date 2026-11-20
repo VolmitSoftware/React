@@ -27,6 +27,10 @@ final class VanillaItems {
     private VanillaItems() {
     }
 
+    static void dyedColor(ItemStack item, int rgb) {
+        item.getOrCreateTagElement(DISPLAY).putInt("color", rgb);
+    }
+
     static void name(ItemStack item, Component name) {
         item.setHoverName(name);
     }

@@ -1,6 +1,6 @@
 package art.arcane.react.content.feature;
 
-import art.arcane.react.api.metric.ReactMetric;
+import art.arcane.react.api.metric.ReactModMetric;
 import art.arcane.react.api.metric.internal.PublishedMetricStore;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -32,8 +32,8 @@ class AnimusMetricSeriesTest {
   void declaredSourceWithoutReadingsIsDeclaredButEmpty() {
     PublishedMetricStore store = new PublishedMetricStore();
     store.declare(SOURCE, List.of(
-        ReactMetric.millis("animus.cost.navigation_ms", "Navigation"),
-        ReactMetric.rate("animus.net.bytes_per_second", "Bandwidth", "B/s")
+        ReactModMetric.millis("animus.cost.navigation_ms", "Navigation"),
+        ReactModMetric.rate("animus.net.bytes_per_second", "Bandwidth", "B/s")
     ));
 
     AnimusMetrics.Snapshot snapshot = AnimusMetricSeries.fromStore(store, System.currentTimeMillis());
@@ -112,12 +112,12 @@ class AnimusMetricSeriesTest {
 
   private static PublishedMetricStore publish(long now, Map<String, Double> values) {
     PublishedMetricStore store = new PublishedMetricStore();
-    List<ReactMetric> metrics = new ArrayList<>();
+    List<ReactModMetric> metrics = new ArrayList<>();
     for (String key : values.keySet()) {
-      metrics.add(ReactMetric.gauge(key, key, ""));
+      metrics.add(ReactModMetric.gauge(key, key, ""));
     }
-    List<ReactMetric> accepted = store.declare(SOURCE, metrics);
-    for (ReactMetric metric : accepted) {
+    List<ReactModMetric> accepted = store.declare(SOURCE, metrics);
+    for (ReactModMetric metric : accepted) {
       Assertions.assertTrue(store.publish(SOURCE, metric.key(), values.get(metric.key()), now, now), metric.key());
     }
     return store;

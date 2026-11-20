@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -128,6 +129,30 @@ public final class VanillaApi {
 
     static int forcedChunkCount(ServerLevel level) {
         return level.getForcedChunks().size();
+    }
+
+    static boolean allowFlight(MinecraftServer server) {
+        return server.isFlightAllowed();
+    }
+
+    static double averageTickMillis(MinecraftServer server) {
+        return server.getAverageTickTime();
+    }
+
+    static int idleTimeoutMinutes(MinecraftServer server) {
+        return server.getPlayerIdleTimeout();
+    }
+
+    static java.util.Set<String> tags(net.minecraft.world.entity.Entity entity) {
+        return entity.getTags();
+    }
+
+    static int selectedSlot(Inventory inventory) {
+        return inventory.selected;
+    }
+
+    static net.minecraft.network.chat.Style font(net.minecraft.network.chat.Style style, String namespace, String path) {
+        return style.withFont(new ResourceLocation(namespace, path));
     }
 
     static ItemStack selectedItem(Inventory inventory) {

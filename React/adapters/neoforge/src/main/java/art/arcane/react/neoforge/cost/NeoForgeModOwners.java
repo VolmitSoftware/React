@@ -4,9 +4,12 @@ import art.arcane.react.mod.cost.ModOwners;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.locating.IModFile;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,5 +47,17 @@ public final class NeoForgeModOwners implements ModOwners {
     public String displayName(String ownerId) {
         Optional<? extends ModContainer> container = ModList.get().getModContainerById(ownerId);
         return container.isPresent() ? container.get().getModInfo().getDisplayName() : ownerId;
+    }
+
+    @Override
+    public List<LoadedMod> loadedMods() {
+        List<LoadedMod> mods = new ArrayList<>();
+        for (IModFileInfo file : ModList.get().getModFiles()) {
+            for (IModInfo mod : file.getMods()) {
+                mods.add(new LoadedMod(mod.getModId(), mod.getDisplayName(), mod.getVersion().toString()));
+            }
+        }
+        mods.sort(Comparator.comparing(LoadedMod::id));
+        return mods;
     }
 }

@@ -9,7 +9,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 
-/** React's rich text as vanilla components, with colours, decorations, hover text and clicks. Fonts are dropped. */
+/** React's rich text as vanilla components, with colours, fonts, decorations, hover text and clicks. */
 final class ModText {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
 
@@ -18,6 +18,10 @@ final class ModText {
 
     static MutableComponent component(ComponentText text) {
         return converted(MINI_MESSAGE.deserialize(text.miniMessage()));
+    }
+
+    static MutableComponent component(net.kyori.adventure.text.Component source) {
+        return converted(source);
     }
 
     private static MutableComponent converted(net.kyori.adventure.text.Component source) {
@@ -33,6 +37,9 @@ final class ModText {
         Style style = Style.EMPTY;
         if (source.color() != null) {
             style = style.withColor(TextColor.fromRgb(source.color().value()));
+        }
+        if (source.font() != null) {
+            style = VanillaApi.font(style, source.font().namespace(), source.font().value());
         }
         style = style.withBold(decoration(source, TextDecoration.BOLD))
                 .withItalic(decoration(source, TextDecoration.ITALIC))

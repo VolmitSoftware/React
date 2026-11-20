@@ -166,7 +166,11 @@ final class ModConfigHotload {
             if (after == null) {
                 return Applied.IGNORED;
             }
-            return language.reload() && ReactLanguage.reload() ? new Applied(true, ModLanguageHost.Settings.class) : Applied.REJECTED;
+            if (!language.reload() || !ReactLanguage.reload()) {
+                return Applied.REJECTED;
+            }
+            ModPlayerMonitors.current().ifPresent(ModPlayerMonitors::updateMonitors);
+            return new Applied(true, ModLanguageHost.Settings.class);
         }
         if (same(folder, ReactLanguage.languageFolder())) {
             return ReactLanguage.reload() ? new Applied(true, null) : Applied.REJECTED;
@@ -176,13 +180,11 @@ final class ModConfigHotload {
         }
         String category = folder.getName();
         String id = file.getName().substring(0, file.getName().length() - ".toml".length());
-        if (category.equals("core")) {
-            if (!id.equals("map")) {
-                return Applied.IGNORED;
-            }
+        if (category.equals("core") && id.equals("map")) {
             return maps.reloadSettings() ? new Applied(true, maps.settings().getClass()) : Applied.REJECTED;
         }
         Registered target = switch (category) {
+            case "core" -> ModSettings.current().flatMap((ModSettings settings) -> settings.controller(id)).orElse(null);
             case "feature" -> ReactComponents.feature(id);
             case "tweak" -> ReactComponents.tweak(id);
             case "action" -> ReactComponents.action(id);
@@ -197,6 +199,12 @@ final class ModConfigHotload {
         } catch (IOException | RuntimeException invalid) {
             platform.warn("Rejected hotload of " + relative(file) + ": " + invalid.getMessage());
             return Applied.REJECTED;
+        }
+        if (category.equals("core")) {
+            if (!target.reloadConfiguration()) {
+                return Applied.REJECTED;
+            }
+            return new Applied(true, target.getClass());
         }
         boolean ok = target instanceof Sampler
                 ? samples.get() != null && samples.get().reloadSamplerConfig(id)

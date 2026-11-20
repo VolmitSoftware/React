@@ -19,34 +19,10 @@
 
 package art.arcane.react.model;
 
+import art.arcane.react.api.monitor.MonitoringSettings;
+
 import art.arcane.react.React;
 import art.arcane.react.api.entity.EntityPriority;
-import art.arcane.react.api.monitor.configuration.MonitorConfiguration;
-import art.arcane.react.api.monitor.configuration.MonitorGroup;
-import art.arcane.react.content.sampler.SamplerAdaptAbilityChecksPerTick;
-import art.arcane.react.content.sampler.SamplerAdaptAbilityOps;
-import art.arcane.react.content.sampler.SamplerAdaptSessionLoad;
-import art.arcane.react.content.sampler.SamplerAdaptWorldPolicyLatency;
-import art.arcane.react.content.sampler.SamplerChunks;
-import art.arcane.react.content.sampler.SamplerEntities;
-import art.arcane.react.content.sampler.SamplerFluidEventSpan;
-import art.arcane.react.content.sampler.SamplerHopperEventSpan;
-import art.arcane.react.content.sampler.SamplerIrisChunksPerSecond;
-import art.arcane.react.content.sampler.SamplerIrisGenerationTotalMS;
-import art.arcane.react.content.sampler.SamplerIrisPregenQueue;
-import art.arcane.react.content.sampler.SamplerIrisPregenThroughput;
-import art.arcane.react.content.sampler.SamplerMemoryPressure;
-import art.arcane.react.content.sampler.SamplerMemoryUsedAfterGC;
-import art.arcane.react.content.sampler.SamplerPhysicsEventSpan;
-import art.arcane.react.content.sampler.SamplerPlayers;
-import art.arcane.react.content.sampler.SamplerProcessorOutsideLoad;
-import art.arcane.react.content.sampler.SamplerProcessorProcessLoad;
-import art.arcane.react.content.sampler.SamplerProcessorSystemLoad;
-import art.arcane.react.content.sampler.SamplerReactAsyncTickTime;
-import art.arcane.react.content.sampler.SamplerReactJobsQueue;
-import art.arcane.react.content.sampler.SamplerRedstoneEventSpan;
-import art.arcane.react.content.sampler.SamplerTickTime;
-import art.arcane.react.content.sampler.SamplerTicksPerSecond;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.react.util.project.config.ConfigFileSupport;
@@ -112,7 +88,7 @@ public class ReactConfiguration {
   private AdaptAbilityOpsMetricMode adaptAbilityOpsMetricMode = AdaptAbilityOpsMetricMode.SUCCESSFUL_CHECKS;
 
   @ConfigDoc(value = "Default monitor layout shown to players.", impact = "Changes affect the baseline monitoring dashboard composition and sampler grouping.")
-  private Monitoring monitoring = new Monitoring();
+  private MonitoringSettings monitoring = new MonitoringSettings();
 
   public int getIntegrationSnapshotMaxMetrics() {
     return Math.max(1, Math.min(65_536, integrationSnapshotMaxMetrics));
@@ -270,70 +246,5 @@ public class ReactConfiguration {
 
       return f;
     }
-  }
-
-  @Data
-  @ConfigDescription("Default player monitor dashboard configuration.")
-  public static class Monitoring {
-    @ConfigDoc(value = "Maximum number of monitor groups shown in the action bar at once.", impact = "Higher values reduce horizontal paging, but can make entries harder to read if labels are long.")
-    private int actionBarHeaderSlots = 6;
-
-    @ConfigDoc(value = "Maximum number of samplers shown in the focused action bar row at once.", impact = "Higher values reduce paging inside a group, but can compress readability on small displays.")
-    private int actionBarSamplerSlots = 6;
-
-    @ConfigDoc(value = "Default monitor groups and samplers shown to players.", impact = "Changing this alters the baseline monitor panel structure for new settings.")
-    private MonitorConfiguration monitorConfiguration = MonitorConfiguration.builder()
-        .group(MonitorGroup.builder()
-            .name("CPU")
-            .color("#00ff73")
-            .sampler(SamplerTicksPerSecond.ID)
-            .sampler(SamplerTickTime.ID)
-            .sampler(SamplerProcessorProcessLoad.ID)
-            .sampler(SamplerProcessorSystemLoad.ID)
-            .sampler(SamplerProcessorOutsideLoad.ID)
-            .sampler(SamplerReactAsyncTickTime.ID)
-            .sampler(SamplerReactJobsQueue.ID)
-            .build())
-        .group(MonitorGroup.builder()
-            .name("Memory")
-            .color("#ee00ff")
-            .sampler(SamplerMemoryUsedAfterGC.ID)
-            .sampler(SamplerMemoryPressure.ID)
-            .build())
-        .group(MonitorGroup.builder()
-            .name("World")
-            .color("#42cbf5")
-            .sampler(SamplerChunks.ID)
-            .sampler(SamplerEntities.ID)
-            .sampler(SamplerPlayers.ID)
-            .build())
-        .group(MonitorGroup.builder()
-            .name("Physics")
-            .color("#f25a02")
-            .head(SamplerPhysicsEventSpan.ID)
-            .sampler(SamplerPhysicsEventSpan.ID)
-            .sampler(SamplerRedstoneEventSpan.ID)
-            .sampler(SamplerFluidEventSpan.ID)
-            .sampler(SamplerHopperEventSpan.ID)
-            .build())
-        .group(MonitorGroup.builder()
-            .name("Iris")
-            .color("#35d68f")
-            .head(SamplerIrisGenerationTotalMS.ID)
-            .sampler(SamplerIrisGenerationTotalMS.ID)
-            .sampler(SamplerIrisChunksPerSecond.ID)
-            .sampler(SamplerIrisPregenQueue.ID)
-            .sampler(SamplerIrisPregenThroughput.ID)
-            .build())
-        .group(MonitorGroup.builder()
-            .name("Adapt")
-            .color("#f8b84f")
-            .head(SamplerAdaptSessionLoad.ID)
-            .sampler(SamplerAdaptSessionLoad.ID)
-            .sampler(SamplerAdaptAbilityOps.ID)
-            .sampler(SamplerAdaptAbilityChecksPerTick.ID)
-            .sampler(SamplerAdaptWorldPolicyLatency.ID)
-            .build())
-        .build();
   }
 }

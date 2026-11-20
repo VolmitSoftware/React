@@ -363,6 +363,11 @@ server = "&f{name}&7 {address}&r | {status} | {players} 名玩家 | 延遲 {dura
 server_no_react = "&7無 React&r"
 server_react = "TPS {average}，MSPT {tick}，記憶體 {used}"
 
+[command.runtime.mod_api]
+header = "&b模組 API 套件 ({count})&r"
+not_ready = "&c模組 API 套件尚未就緒。&r"
+reload_queued = "&a模組 API 套件重新掃描工作已加入佇列。&r"
+
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 狀態=&f{state}&7 目標=&f{target}&7 指標=&f{metrics}&7 詳細資料=&f{detail}&r"
 error_entry = "&7- &f{file}&7: &c{detail}&r"
@@ -3239,18 +3244,18 @@ summary = "用於配方／價值分析的材質價值調整。"
 impact = "適用於疑難排解，但可能產生大量日誌雜訊。"
 summary = "啟用 React 內部運作的詳細主控台輸出。"
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings]
 description = "預設玩家監控儀表板設定。"
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarheaderslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarheaderslots]
 impact = "數值越高，水平分頁越少，但標籤較長時項目可能更難閱讀。"
 summary = "動作列一次顯示的監控群組數量上限。"
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarsamplerslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarsamplerslots]
 impact = "數值越高，群組內分頁越少，但在小型顯示器上可讀性可能下降。"
 summary = "聚焦的動作列一次顯示的取樣器數量上限。"
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.monitorconfiguration]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.monitorconfiguration]
 impact = "變更此項會改變新設定的基準監控面板結構。"
 summary = "向玩家顯示的預設監控群組與取樣器。"
 

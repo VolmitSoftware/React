@@ -363,6 +363,11 @@ server = "&f{name}&7 {address}&r | {status} | {players} spelers | ping {duration
 server_no_react = "&7geen React&r"
 server_react = "TPS {average}, MSPT {tick}, geheugen {used}"
 
+[command.runtime.mod_api]
+header = "&bMod-API-pakketten ({count})&r"
+not_ready = "&cDe mod-API-pakketten zijn nog niet gereed.&r"
+reload_queued = "&aHet opnieuw scannen van de mod-API-pakketten is in de wachtrij geplaatst.&r"
+
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 status=&f{state}&7 doel=&f{target}&7 statistieken=&f{metrics}&7 details=&f{detail}&r"
 error_entry = "&7- &f{file}&7: &c{detail}&r"
@@ -3239,18 +3244,18 @@ summary = "Afstemming van materiaalwaarden voor recept-/waardeanalyse."
 impact = "Handig voor probleemoplossing maar kan veel loggeluid creëren."
 summary = "Schakelt uitgebreide consoleuitvoer in voor interne onderdelen van React."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings]
 description = "Standaard configuratie van het dashboard voor de spelermonitor."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarheaderslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarheaderslots]
 impact = "Hogere waarden verminderen het horizontaal bladeren, maar kunnen vermeldingen moeilijker leesbaar maken als labels lang zijn."
 summary = "Maximaal aantal monitorgroepen dat tegelijk in de actiebalk wordt getoond."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarsamplerslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarsamplerslots]
 impact = "Hogere waarden verminderen het bladeren binnen een groep, maar kunnen de leesbaarheid op kleine displays verminderen."
 summary = "Maximaal aantal samplers dat tegelijk in de gefocuste rij van de actiebalk wordt getoond."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.monitorconfiguration]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.monitorconfiguration]
 impact = "Wijzigen verandert de basisstructuur van het monitorpaneel voor nieuwe instellingen."
 summary = "Standaard monitorgroepen en samplers die aan spelers worden getoond."
 

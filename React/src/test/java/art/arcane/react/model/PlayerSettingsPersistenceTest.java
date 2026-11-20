@@ -31,6 +31,7 @@ class PlayerSettingsPersistenceTest {
 
   @AfterEach
   void tearDown() {
+    PlayerSettings.bind(null);
     React.instance = previous;
   }
 
@@ -41,6 +42,7 @@ class PlayerSettingsPersistenceTest {
     React plugin = Mockito.mock(React.class);
     Mockito.when(plugin.getDataFile("player-settings", playerId + ".json")).thenReturn(target);
     React.instance = plugin;
+    PlayerSettings.bind((UUID id) -> plugin.getDataFile("player-settings", id + ".json"));
     ArgumentCaptor<Runnable> drain = ArgumentCaptor.forClass(Runnable.class);
     PlayerSettings first = new PlayerSettings();
     PlayerSettings latest = new PlayerSettings();
@@ -92,6 +94,7 @@ class PlayerSettingsPersistenceTest {
     React plugin = Mockito.mock(React.class);
     Mockito.when(plugin.getDataFile("player-settings", playerId + ".json")).thenReturn(target.toFile());
     React.instance = plugin;
+    PlayerSettings.bind((UUID id) -> plugin.getDataFile("player-settings", id + ".json"));
 
     try (MockedStatic<J> scheduler = Mockito.mockStatic(J.class)) {
       scheduler.when(() -> J.a(Mockito.any(Runnable.class))).thenAnswer(invocation -> {

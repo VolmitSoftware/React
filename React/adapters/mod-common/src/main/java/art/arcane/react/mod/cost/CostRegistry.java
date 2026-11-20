@@ -24,6 +24,11 @@ public final class CostRegistry {
         owners = Objects.requireNonNull(resolver, "resolver");
     }
 
+    public static List<ModOwners.LoadedMod> loadedMods() {
+        ModOwners resolver = owners;
+        return resolver == null ? List.of() : resolver.loadedMods();
+    }
+
     public static CostBucket bucket(String ownerId, CostKind kind) {
         return BUCKETS.computeIfAbsent(kind.name() + '/' + ownerId, (String key) -> new CostBucket(ownerId, kind));
     }

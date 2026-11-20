@@ -1,7 +1,7 @@
 package art.arcane.react.api.metric.internal;
 
-import art.arcane.react.api.metric.ReactMetric;
-import art.arcane.react.api.metric.ReactMetricSource;
+import art.arcane.react.api.metric.ReactModMetric;
+import art.arcane.react.api.metric.ReactModMetricSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -16,15 +16,15 @@ class MetricSourceGatewayTest {
     return new MetricSourceGateway(3, 0L, log::add);
   }
 
-  private static ReactMetricSource source(String id, List<ReactMetric> metrics) {
-    return new ReactMetricSource() {
+  private static ReactModMetricSource source(String id, List<ReactModMetric> metrics) {
+    return new ReactModMetricSource() {
       @Override
       public String sourceId() {
         return id;
       }
 
       @Override
-      public List<ReactMetric> metrics() {
+      public List<ReactModMetric> metrics() {
         if (metrics == null) {
           throw new IllegalStateException("boom");
         }
@@ -38,8 +38,8 @@ class MetricSourceGatewayTest {
   void wellBehavedSourceIsAccepted() {
     List<String> log = new ArrayList<>();
     MetricSourceGateway gateway = gateway(log);
-    ReactMetricSource healthy = source("guardianpets",
-        List.of(ReactMetric.gauge("guardianpets.pets.live", "Live", "")));
+    ReactModMetricSource healthy = source("guardianpets",
+        List.of(ReactModMetric.gauge("guardianpets.pets.live", "Live", "")));
 
     Assertions.assertEquals("guardianpets", gateway.sourceIdOf(healthy, "GuardianPets"));
     Assertions.assertEquals(1, gateway.declarationOf(healthy, "guardianpets", "GuardianPets").size());
@@ -59,14 +59,14 @@ class MetricSourceGatewayTest {
     List<String> log = new ArrayList<>();
     MetricSourceGateway gateway = gateway(log);
 
-    String id = gateway.sourceIdOf(new ReactMetricSource() {
+    String id = gateway.sourceIdOf(new ReactModMetricSource() {
       @Override
       public String sourceId() {
         throw new IllegalArgumentException("nope");
       }
 
       @Override
-      public List<ReactMetric> metrics() {
+      public List<ReactModMetric> metrics() {
         return List.of();
       }
     }, "Broken");
@@ -109,14 +109,14 @@ class MetricSourceGatewayTest {
   @Test
   void nullMetricsIsAFault() {
     MetricSourceGateway gateway = gateway(new ArrayList<>());
-    ReactMetricSource nully = new ReactMetricSource() {
+    ReactModMetricSource nully = new ReactModMetricSource() {
       @Override
       public String sourceId() {
         return "guardianpets";
       }
 
       @Override
-      public List<ReactMetric> metrics() {
+      public List<ReactModMetric> metrics() {
         return null;
       }
     };
@@ -129,7 +129,7 @@ class MetricSourceGatewayTest {
   void repeatedFaultsQuarantineTheSourceAndItIsSkippedAfterwards() {
     List<String> log = new ArrayList<>();
     MetricSourceGateway gateway = gateway(log);
-    ReactMetricSource hostile = source("guardianpets", null);
+    ReactModMetricSource hostile = source("guardianpets", null);
 
     for (int i = 0; i < 3; i++) {
       gateway.declarationOf(hostile, "guardianpets", "GuardianPets");
@@ -146,7 +146,7 @@ class MetricSourceGatewayTest {
   @Test
   void forgettingASourceClearsItsQuarantine() {
     MetricSourceGateway gateway = gateway(new ArrayList<>());
-    ReactMetricSource hostile = source("guardianpets", null);
+    ReactModMetricSource hostile = source("guardianpets", null);
 
     for (int i = 0; i < 3; i++) {
       gateway.declarationOf(hostile, "guardianpets", "GuardianPets");
@@ -161,10 +161,10 @@ class MetricSourceGatewayTest {
   @Test
   void theGatewayNeverHandsBackTheListTheSourceReturned() {
     MetricSourceGateway gateway = gateway(new ArrayList<>());
-    List<ReactMetric> theirs = new ArrayList<>(
-        List.of(ReactMetric.gauge("guardianpets.pets.live", "Live", "")));
+    List<ReactModMetric> theirs = new ArrayList<>(
+        List.of(ReactModMetric.gauge("guardianpets.pets.live", "Live", "")));
 
-    List<ReactMetric> ours = gateway.declarationOf(source("guardianpets", theirs), "guardianpets", "GuardianPets");
+    List<ReactModMetric> ours = gateway.declarationOf(source("guardianpets", theirs), "guardianpets", "GuardianPets");
 
     Assertions.assertNotSame(theirs, ours);
     Assertions.assertEquals(1, ours.size());
@@ -178,9 +178,9 @@ class MetricSourceGatewayTest {
   void aMetricListWhoseIteratorThrowsIsContainedAsAFault() {
     List<String> log = new ArrayList<>();
     MetricSourceGateway gateway = gateway(log);
-    List<ReactMetric> hostile = new AbstractList<>() {
+    List<ReactModMetric> hostile = new AbstractList<>() {
       @Override
-      public ReactMetric get(int index) {
+      public ReactModMetric get(int index) {
         throw new IllegalStateException("get() is hostile");
       }
 
@@ -190,7 +190,7 @@ class MetricSourceGatewayTest {
       }
 
       @Override
-      public Iterator<ReactMetric> iterator() {
+      public Iterator<ReactModMetric> iterator() {
         throw new IllegalStateException("iterator() is hostile");
       }
     };
@@ -204,10 +204,10 @@ class MetricSourceGatewayTest {
   void aMetricListWhoseSizeThrowsIsNeverAsked() {
     List<String> log = new ArrayList<>();
     MetricSourceGateway gateway = gateway(log);
-    ReactMetric metric = ReactMetric.gauge("guardianpets.pets.live", "Live", "");
-    List<ReactMetric> hostile = new AbstractList<>() {
+    ReactModMetric metric = ReactModMetric.gauge("guardianpets.pets.live", "Live", "");
+    List<ReactModMetric> hostile = new AbstractList<>() {
       @Override
-      public ReactMetric get(int index) {
+      public ReactModMetric get(int index) {
         return metric;
       }
 
@@ -217,12 +217,12 @@ class MetricSourceGatewayTest {
       }
 
       @Override
-      public Iterator<ReactMetric> iterator() {
+      public Iterator<ReactModMetric> iterator() {
         return List.of(metric).iterator();
       }
     };
 
-    List<ReactMetric> ours = gateway.declarationOf(source("guardianpets", hostile), "guardianpets", "GuardianPets");
+    List<ReactModMetric> ours = gateway.declarationOf(source("guardianpets", hostile), "guardianpets", "GuardianPets");
 
     Assertions.assertEquals(List.of(metric), ours);
     Assertions.assertEquals(0L, gateway.totalFaults());
@@ -233,10 +233,10 @@ class MetricSourceGatewayTest {
   void anEndlessMetricListIsDrainedNoFurtherThanTheCap() {
     List<String> log = new ArrayList<>();
     MetricSourceGateway gateway = gateway(log);
-    List<ReactMetric> endless = new AbstractList<>() {
+    List<ReactModMetric> endless = new AbstractList<>() {
       @Override
-      public ReactMetric get(int index) {
-        return ReactMetric.gauge("guardianpets.m" + index, "M", "");
+      public ReactModMetric get(int index) {
+        return ReactModMetric.gauge("guardianpets.m" + index, "M", "");
       }
 
       @Override
@@ -245,7 +245,7 @@ class MetricSourceGatewayTest {
       }
     };
 
-    List<ReactMetric> ours = gateway.declarationOf(source("guardianpets", endless), "guardianpets", "GuardianPets");
+    List<ReactModMetric> ours = gateway.declarationOf(source("guardianpets", endless), "guardianpets", "GuardianPets");
 
     Assertions.assertEquals(MetricSourceGateway.MAX_METRICS_PER_SOURCE, ours.size());
     Assertions.assertTrue(log.stream().anyMatch(line -> line.contains("declared more than")));
@@ -263,14 +263,14 @@ class MetricSourceGatewayTest {
   void aSlowSourceIsWarnedAboutOnce() {
     List<String> log = new ArrayList<>();
     MetricSourceGateway gateway = new MetricSourceGateway(5, 1L, log::add);
-    ReactMetricSource slow = new ReactMetricSource() {
+    ReactModMetricSource slow = new ReactModMetricSource() {
       @Override
       public String sourceId() {
         return "guardianpets";
       }
 
       @Override
-      public List<ReactMetric> metrics() {
+      public List<ReactModMetric> metrics() {
         long until = System.nanoTime() + 3_000_000L;
 
         while (System.nanoTime() < until) {

@@ -363,6 +363,11 @@ server = "&f{name}&7 {address}&r | {status} | {players} giocatori | ping {durati
 server_no_react = "&7senza React&r"
 server_react = "TPS {average}, MSPT {tick}, memoria {used}"
 
+[command.runtime.mod_api]
+header = "&bPacchetti API delle mod ({count})&r"
+not_ready = "&cI pacchetti API delle mod non sono ancora pronti.&r"
+reload_queued = "&aLa nuova scansione dei pacchetti API delle mod è stata messa in coda.&r"
+
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 stato=&f{state}&7 destinazione=&f{target}&7 metriche=&f{metrics}&7 dettagli=&f{detail}&r"
 error_entry = "&7- &f{file}&7: &c{detail}&r"
@@ -3239,18 +3244,18 @@ summary = "Regolazione del valore dei materiali usata per l'analisi di ricette e
 impact = "Utile per la risoluzione dei problemi, ma può generare molto rumore nel registro."
 summary = "Abilita l'output dettagliato della console per le parti interne di React."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings]
 description = "Configurazione predefinita della dashboard del monitor dei giocatori."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarheaderslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarheaderslots]
 impact = "Valori più alti riducono la paginazione orizzontale, ma possono rendere le voci più difficili da leggere se le etichette sono lunghe."
 summary = "Numero massimo di gruppi del monitor mostrati contemporaneamente nella barra delle azioni."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarsamplerslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarsamplerslots]
 impact = "Valori più alti riducono la paginazione all'interno di un gruppo, ma possono compromettere la leggibilità sui display piccoli."
 summary = "Numero massimo di campionatori mostrati contemporaneamente nella riga evidenziata della barra delle azioni."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.monitorconfiguration]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.monitorconfiguration]
 impact = "Modificarlo cambia la struttura di base del pannello di monitoraggio per le nuove impostazioni."
 summary = "Gruppi del monitor e campionatori predefiniti mostrati ai giocatori."
 

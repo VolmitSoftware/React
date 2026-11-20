@@ -3,6 +3,7 @@ package art.arcane.react.util.project.config;
 import art.arcane.react.api.action.ReactAction;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.tweak.ReactTweak;
+import art.arcane.react.api.monitor.MonitoringSettings;
 import art.arcane.react.api.rendering.MapSettings;
 import art.arcane.react.api.web.WebConfiguration;
 import art.arcane.react.content.action.ActionCaptureProfile;
@@ -209,6 +210,7 @@ public final class ConfigLocalizationTypes {
         IncidentController.class,
         MapController.class,
         MapSettings.class,
+        MonitoringSettings.class,
         ReactConfiguration.class
     ));
     types.addAll(FeatureConfigLocalizationTypes.types());

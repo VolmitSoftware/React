@@ -1,11 +1,10 @@
 package art.arcane.react.core.integration;
 
-import art.arcane.react.api.metric.ReactMetric;
+import art.arcane.react.api.metric.ReactModMetric;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.api.metric.ReactMetricKind;
 import art.arcane.react.api.metric.internal.MetricKeys;
 import art.arcane.react.api.metric.internal.PublishedMetricStore;
-import org.bukkit.Material;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -15,8 +14,8 @@ class PublishedMetricSamplerTest {
   private static final String SOURCE = "guardianpets";
   private static final String LIVE = "guardianpets.pets.live";
 
-  private static PublishedMetricSampler sampler(PublishedMetricStore store, ReactMetric metric) {
-    List<ReactMetric> accepted = store.declare(SOURCE, List.of(metric));
+  private static PublishedMetricSampler sampler(PublishedMetricStore store, ReactModMetric metric) {
+    List<ReactModMetric> accepted = store.declare(SOURCE, List.of(metric));
     return new PublishedMetricSampler(
         MetricKeys.samplerIdFor(accepted.getFirst().key()), accepted.getFirst(), store);
   }
@@ -24,7 +23,7 @@ class PublishedMetricSamplerTest {
   @Test
   void snapshotReadingUsesPublisherTimestampAndWithdrawalState() {
     PublishedMetricStore store = new PublishedMetricStore();
-    PublishedMetricSampler sampler = sampler(store, ReactMetric.gauge(LIVE, "Live Pets", " pets"));
+    PublishedMetricSampler sampler = sampler(store, ReactModMetric.gauge(LIVE, "Live Pets", " pets"));
     long now = System.currentTimeMillis();
     long sampledAt = now - 5_000L;
     store.publish(SOURCE, LIVE, 9D, sampledAt, now);
@@ -40,7 +39,7 @@ class PublishedMetricSamplerTest {
   void samplerIdentityComesFromTheDeclaredMetric() {
     PublishedMetricStore store = new PublishedMetricStore();
     PublishedMetricSampler sampler = sampler(store,
-        ReactMetric.gauge(LIVE, "Live Pets", " pets").withIcon(Material.BONE));
+        ReactModMetric.gauge(LIVE, "Live Pets", " pets").withIcon("minecraft:bone"));
 
     Assertions.assertEquals("guardianpets-pets-live", sampler.getId());
     Assertions.assertEquals("Live Pets", sampler.getName());
@@ -51,7 +50,7 @@ class PublishedMetricSamplerTest {
   @Test
   void anUnpublishedMetricRendersAsUnavailable() {
     PublishedMetricStore store = new PublishedMetricStore();
-    PublishedMetricSampler sampler = sampler(store, ReactMetric.gauge(LIVE, "Live Pets", " pets"));
+    PublishedMetricSampler sampler = sampler(store, ReactModMetric.gauge(LIVE, "Live Pets", " pets"));
     sampler.start();
 
     Assertions.assertEquals(0D, sampler.onSample());
@@ -63,7 +62,7 @@ class PublishedMetricSamplerTest {
   void aPublishedMetricIsSampledAndFormatted() {
     PublishedMetricStore store = new PublishedMetricStore();
     PublishedMetricSampler sampler = sampler(store,
-        ReactMetric.rate(LIVE, "Pet Summons", " /min").withDecimals(2));
+        ReactModMetric.rate(LIVE, "Pet Summons", " /min").withDecimals(2));
     sampler.start();
     store.publish(SOURCE, LIVE, 12.345D, System.currentTimeMillis(), System.currentTimeMillis());
 
@@ -75,7 +74,7 @@ class PublishedMetricSamplerTest {
   @Test
   void theLastKnownValueIsHeldWhenPublishingStops() {
     PublishedMetricStore store = new PublishedMetricStore();
-    PublishedMetricSampler sampler = sampler(store, ReactMetric.gauge(LIVE, "Live Pets", " pets"));
+    PublishedMetricSampler sampler = sampler(store, ReactModMetric.gauge(LIVE, "Live Pets", " pets"));
     sampler.start();
 
     long now = System.currentTimeMillis();
@@ -90,7 +89,7 @@ class PublishedMetricSamplerTest {
   @Test
   void startResetsTheHeldValue() {
     PublishedMetricStore store = new PublishedMetricStore();
-    PublishedMetricSampler sampler = sampler(store, ReactMetric.gauge(LIVE, "Live Pets", " pets"));
+    PublishedMetricSampler sampler = sampler(store, ReactModMetric.gauge(LIVE, "Live Pets", " pets"));
     sampler.start();
 
     long now = System.currentTimeMillis();
@@ -106,7 +105,7 @@ class PublishedMetricSamplerTest {
   void loadConfigurationIsANoOpSoFieldCopyNeverRewritesThirdPartyMetrics() {
     PublishedMetricStore store = new PublishedMetricStore();
     PublishedMetricSampler sampler = sampler(store,
-        ReactMetric.gauge(LIVE, "Live Pets", " pets").withIcon(Material.BONE));
+        ReactModMetric.gauge(LIVE, "Live Pets", " pets").withIcon("minecraft:bone"));
 
     Assertions.assertDoesNotThrow(sampler::loadConfiguration);
     Assertions.assertEquals("Live Pets", sampler.getName());
@@ -116,9 +115,9 @@ class PublishedMetricSamplerTest {
   @Test
   void descriptorRefreshUpdatesPresentationWithoutReplacingTheSampler() {
     PublishedMetricStore store = new PublishedMetricStore();
-    PublishedMetricSampler sampler = sampler(store, ReactMetric.gauge(LIVE, "Live Pets", " pets"));
-    ReactMetric replacement = ReactMetric.rate(LIVE, "Active Pets", " /min")
-        .withIcon(Material.CLOCK)
+    PublishedMetricSampler sampler = sampler(store, ReactModMetric.gauge(LIVE, "Live Pets", " pets"));
+    ReactModMetric replacement = ReactModMetric.rate(LIVE, "Active Pets", " /min")
+        .withIcon("minecraft:clock")
         .withDecimals(2);
 
     store.declare(SOURCE, List.of(replacement));
@@ -133,35 +132,35 @@ class PublishedMetricSamplerTest {
   @Test
   void descriptorRefreshRejectsAKeyChange() {
     PublishedMetricStore store = new PublishedMetricStore();
-    PublishedMetricSampler sampler = sampler(store, ReactMetric.gauge(LIVE, "Live Pets", " pets"));
+    PublishedMetricSampler sampler = sampler(store, ReactModMetric.gauge(LIVE, "Live Pets", " pets"));
 
     Assertions.assertThrows(IllegalArgumentException.class, () -> sampler.updateMetric(
-        ReactMetric.gauge(SOURCE + ".other", "Other", "")));
+        ReactModMetric.gauge(SOURCE + ".other", "Other", "")));
   }
 
   @Test
   void suffixFallsBackToTheKindWhenNoUnitIsDeclared() {
     Assertions.assertEquals("%", PublishedMetricSampler.suffixFor(
-        new ReactMetric(LIVE, ReactMetricKind.PERCENT, "", "P", Material.SLIME_BALL, 0)));
+        new ReactModMetric(LIVE, ReactMetricKind.PERCENT, "", "P", "minecraft:slime_ball", 0)));
     Assertions.assertEquals("ms", PublishedMetricSampler.suffixFor(
-        new ReactMetric(LIVE, ReactMetricKind.MILLIS, "", "M", Material.SLIME_BALL, 0)));
+        new ReactModMetric(LIVE, ReactMetricKind.MILLIS, "", "M", "minecraft:slime_ball", 0)));
     Assertions.assertEquals("B", PublishedMetricSampler.suffixFor(
-        new ReactMetric(LIVE, ReactMetricKind.BYTES, "", "B", Material.SLIME_BALL, 0)));
+        new ReactModMetric(LIVE, ReactMetricKind.BYTES, "", "B", "minecraft:slime_ball", 0)));
     Assertions.assertEquals("/s", PublishedMetricSampler.suffixFor(
-        new ReactMetric(LIVE, ReactMetricKind.RATE, "", "R", Material.SLIME_BALL, 0)));
+        new ReactModMetric(LIVE, ReactMetricKind.RATE, "", "R", "minecraft:slime_ball", 0)));
     Assertions.assertEquals("", PublishedMetricSampler.suffixFor(
-        new ReactMetric(LIVE, ReactMetricKind.GAUGE, "", "G", Material.SLIME_BALL, 0)));
+        new ReactModMetric(LIVE, ReactMetricKind.GAUGE, "", "G", "minecraft:slime_ball", 0)));
   }
 
   @Test
   void aDeclaredUnitAlwaysWinsOverTheKindDefault() {
     Assertions.assertEquals("pets", PublishedMetricSampler.suffixFor(
-        new ReactMetric(LIVE, ReactMetricKind.PERCENT, " pets", "P", Material.SLIME_BALL, 0)));
+        new ReactModMetric(LIVE, ReactMetricKind.PERCENT, " pets", "P", "minecraft:slime_ball", 0)));
   }
 
   @Test
   void unitAndDisplayTextAreStrippedOfSurroundingWhitespace() {
-    ReactMetric metric = ReactMetric.gauge(LIVE, "  Live Pets  ", "  pets  ");
+    ReactModMetric metric = ReactModMetric.gauge(LIVE, "  Live Pets  ", "  pets  ");
     Assertions.assertEquals("pets", metric.unit());
     Assertions.assertEquals("Live Pets", metric.displayName());
   }

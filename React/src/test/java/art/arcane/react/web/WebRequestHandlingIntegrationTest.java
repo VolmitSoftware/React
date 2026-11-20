@@ -9,6 +9,7 @@ import art.arcane.react.api.web.WebConfiguration;
 import art.arcane.react.api.web.dto.ControlItemDto;
 import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.core.controller.PluginApiPackController;
+import art.arcane.react.core.pluginapi.PluginApiPacks;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.controller.WebController;
 import art.arcane.react.core.pluginapi.PluginApiPackRuntime;
@@ -225,7 +226,7 @@ public class WebRequestHandlingIntegrationTest {
             PluginApiPackRuntime.PackState.LOADING, "reload-queued", PACK_ID + ".toml", "", List.of());
         PluginApiPackController packs = mock(PluginApiPackController.class);
         when(packs.validate(anyString()))
-            .thenReturn(new PluginApiPackController.ValidationResult(true, PACK_ID, 0, "valid"));
+            .thenReturn(new PluginApiPacks.ValidationResult(true, PACK_ID, 0, "valid"));
         when(packs.install(anyString(), anyString())).thenReturn(status);
         when(packs.remove(anyString())).thenReturn(true);
         when(packs.statuses()).thenReturn(List.of());

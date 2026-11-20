@@ -1,8 +1,7 @@
 package art.arcane.react.api.metric.internal;
 
-import art.arcane.react.api.metric.ReactMetric;
+import art.arcane.react.api.metric.ReactModMetric;
 import art.arcane.react.api.metric.ReactMetricKind;
-import org.bukkit.Material;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +14,7 @@ class PublishedMetricStoreTest {
 
   private static PublishedMetricStore storeWithLive() {
     PublishedMetricStore store = new PublishedMetricStore();
-    store.declare(SOURCE, List.of(ReactMetric.gauge(LIVE, "Live Pets", " pets")));
+    store.declare(SOURCE, List.of(ReactModMetric.gauge(LIVE, "Live Pets", " pets")));
     return store;
   }
 
@@ -48,8 +47,8 @@ class PublishedMetricStoreTest {
   @Test
   void reservedAndMalformedSourceIdsCannotDeclare() {
     PublishedMetricStore store = new PublishedMetricStore();
-    Assertions.assertTrue(store.declare("react", List.of(ReactMetric.gauge("react.x", "X", ""))).isEmpty());
-    Assertions.assertTrue(store.declare("adapt", List.of(ReactMetric.gauge("adapt.x", "X", ""))).isEmpty());
+    Assertions.assertTrue(store.declare("react", List.of(ReactModMetric.gauge("react.x", "X", ""))).isEmpty());
+    Assertions.assertTrue(store.declare("adapt", List.of(ReactModMetric.gauge("adapt.x", "X", ""))).isEmpty());
     Assertions.assertTrue(store.declare("Bad Id", List.of()).isEmpty());
     Assertions.assertTrue(store.sourceIds().isEmpty());
   }
@@ -57,10 +56,10 @@ class PublishedMetricStoreTest {
   @Test
   void keysOutsideTheSourceNamespaceAreDropped() {
     PublishedMetricStore store = new PublishedMetricStore();
-    List<ReactMetric> accepted = store.declare(SOURCE, List.of(
-        ReactMetric.gauge(LIVE, "Live", ""),
-        ReactMetric.gauge("adapt.xp", "Stolen", ""),
-        ReactMetric.gauge("guardianpets.BAD", "Bad", "")));
+    List<ReactModMetric> accepted = store.declare(SOURCE, List.of(
+        ReactModMetric.gauge(LIVE, "Live", ""),
+        ReactModMetric.gauge("adapt.xp", "Stolen", ""),
+        ReactModMetric.gauge("guardianpets.BAD", "Bad", "")));
 
     Assertions.assertEquals(1, accepted.size());
     Assertions.assertEquals(LIVE, accepted.getFirst().key());
@@ -69,9 +68,9 @@ class PublishedMetricStoreTest {
   @Test
   void duplicateKeysWithinOneDeclarationAreCollapsed() {
     PublishedMetricStore store = new PublishedMetricStore();
-    List<ReactMetric> accepted = store.declare(SOURCE, List.of(
-        ReactMetric.gauge(LIVE, "First", ""),
-        ReactMetric.gauge(LIVE, "Second", "")));
+    List<ReactModMetric> accepted = store.declare(SOURCE, List.of(
+        ReactModMetric.gauge(LIVE, "First", ""),
+        ReactModMetric.gauge(LIVE, "Second", "")));
 
     Assertions.assertEquals(1, accepted.size());
     Assertions.assertEquals("First", accepted.getFirst().displayName());
@@ -80,23 +79,23 @@ class PublishedMetricStoreTest {
   @Test
   void thirdPartyTextIsSanitizedAndTruncatedAtDeclarationTime() {
     PublishedMetricStore store = new PublishedMetricStore();
-    List<ReactMetric> accepted = store.declare(SOURCE, List.of(new ReactMetric(
-        LIVE, ReactMetricKind.GAUGE, "§cred", "Evil\nName" + "x".repeat(200), Material.BONE, 2)));
+    List<ReactModMetric> accepted = store.declare(SOURCE, List.of(new ReactModMetric(
+        LIVE, ReactMetricKind.GAUGE, "§cred", "Evil\nName" + "x".repeat(200), "minecraft:bone", 2)));
 
-    ReactMetric metric = accepted.getFirst();
+    ReactModMetric metric = accepted.getFirst();
     Assertions.assertEquals("cred", metric.unit());
     Assertions.assertFalse(metric.displayName().contains("\n"));
     Assertions.assertTrue(metric.displayName().length() <= 48);
-    Assertions.assertEquals(Material.BONE, metric.icon());
+    Assertions.assertEquals("minecraft:bone", metric.icon());
   }
 
   @Test
   void metricsPerSourceAreCapped() {
     PublishedMetricStore store = new PublishedMetricStore();
-    List<ReactMetric> metrics = new ArrayList<>();
+    List<ReactModMetric> metrics = new ArrayList<>();
 
     for (int i = 0; i < PublishedMetricStore.MAX_METRICS_PER_SOURCE + 10; i++) {
-      metrics.add(ReactMetric.gauge(SOURCE + ".m" + i, "M" + i, ""));
+      metrics.add(ReactModMetric.gauge(SOURCE + ".m" + i, "M" + i, ""));
     }
 
     Assertions.assertEquals(PublishedMetricStore.MAX_METRICS_PER_SOURCE, store.declare(SOURCE, metrics).size());
@@ -108,10 +107,10 @@ class PublishedMetricStoreTest {
 
     for (int i = 0; i < PublishedMetricStore.MAX_SOURCES; i++) {
       String source = "source" + i;
-      Assertions.assertFalse(store.declare(source, List.of(ReactMetric.gauge(source + ".m", "M", ""))).isEmpty());
+      Assertions.assertFalse(store.declare(source, List.of(ReactModMetric.gauge(source + ".m", "M", ""))).isEmpty());
     }
 
-    Assertions.assertTrue(store.declare("overflow", List.of(ReactMetric.gauge("overflow.m", "M", ""))).isEmpty());
+    Assertions.assertTrue(store.declare("overflow", List.of(ReactModMetric.gauge("overflow.m", "M", ""))).isEmpty());
     Assertions.assertEquals(PublishedMetricStore.MAX_SOURCES, store.sourceIds().size());
   }
 
@@ -121,10 +120,10 @@ class PublishedMetricStoreTest {
 
     for (int i = 0; i < PublishedMetricStore.MAX_SOURCES; i++) {
       String source = "source" + i;
-      store.declare(source, List.of(ReactMetric.gauge(source + ".m", "M", "")));
+      store.declare(source, List.of(ReactModMetric.gauge(source + ".m", "M", "")));
     }
 
-    Assertions.assertFalse(store.declare("source0", List.of(ReactMetric.gauge("source0.m2", "M2", ""))).isEmpty());
+    Assertions.assertFalse(store.declare("source0", List.of(ReactModMetric.gauge("source0.m2", "M2", ""))).isEmpty());
   }
 
   @Test
@@ -132,7 +131,7 @@ class PublishedMetricStoreTest {
     PublishedMetricStore store = storeWithLive();
     store.publish(SOURCE, LIVE, 5D, 1000L, 1000L);
 
-    store.declare(SOURCE, List.of(ReactMetric.gauge(SOURCE + ".pets.dead", "Dead Pets", "")));
+    store.declare(SOURCE, List.of(ReactModMetric.gauge(SOURCE + ".pets.dead", "Dead Pets", "")));
 
     Assertions.assertNull(store.metric(LIVE));
     Assertions.assertFalse(store.available(LIVE, 1000L));
@@ -143,8 +142,8 @@ class PublishedMetricStoreTest {
   void redeclaringARetainedKeyPreservesItsReadingAndRefreshesItsDescriptor() {
     PublishedMetricStore store = storeWithLive();
     store.publish(SOURCE, LIVE, 5D, 1000L, 1000L);
-    ReactMetric replacement = ReactMetric.rate(LIVE, "Active Pets", " /min")
-        .withIcon(Material.CLOCK)
+    ReactModMetric replacement = ReactModMetric.rate(LIVE, "Active Pets", " /min")
+        .withIcon("minecraft:clock")
         .withDecimals(2);
 
     store.declare(SOURCE, List.of(replacement));
@@ -163,8 +162,8 @@ class PublishedMetricStoreTest {
   @Test
   void oneSourceCannotPublishUnderAnothersKey() {
     PublishedMetricStore store = new PublishedMetricStore();
-    store.declare("alpha", List.of(ReactMetric.gauge("alpha.m", "M", "")));
-    store.declare("beta", List.of(ReactMetric.gauge("beta.m", "M", "")));
+    store.declare("alpha", List.of(ReactModMetric.gauge("alpha.m", "M", "")));
+    store.declare("beta", List.of(ReactModMetric.gauge("beta.m", "M", "")));
 
     Assertions.assertFalse(store.publish("beta", "alpha.m", 9D, 1000L, 1000L));
     Assertions.assertFalse(store.available("alpha.m", 1000L));

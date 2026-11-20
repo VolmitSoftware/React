@@ -127,6 +127,9 @@ public final class CommandMessages {
   public static final TextKey PLUGIN_API_ERROR_HEADER = TextKey.of("command.runtime.plugin_api.error_header", "&cValidation errors ({count}):&r");
   public static final TextKey PLUGIN_API_ERROR_ENTRY = TextKey.of("command.runtime.plugin_api.error_entry", "&7- &f{file}&7: &c{detail}&r");
   public static final TextKey PLUGIN_API_RELOAD_QUEUED = TextKey.of("command.runtime.plugin_api.reload_queued", "&aPlugin API pack rescan queued.&r");
+  public static final TextKey MOD_API_NOT_READY = TextKey.of("command.runtime.mod_api.not_ready", "&cMod API packs are not ready.&r");
+  public static final TextKey MOD_API_HEADER = TextKey.of("command.runtime.mod_api.header", "&bMod API Packs ({count})&r");
+  public static final TextKey MOD_API_RELOAD_QUEUED = TextKey.of("command.runtime.mod_api.reload_queued", "&aMod API pack rescan queued.&r");
   public static final TextKey WEB_INVALID_ROLE = TextKey.of("command.runtime.web.invalid_role", "&cInvalid role: &f{role}&c. Expected viewer, operator, or admin.&r");
   public static final TextKey WEB_MUTATION_NOTICE = TextKey.of("command.runtime.web.mutation_notice", "&eWeb change by &f{actor}&e: &b{target}&e — &f{detail}&e.&r");
   public static final TextKey WEB_PAIR_UNAVAILABLE = TextKey.of("command.runtime.web.pair_unavailable", "&cWeb pairing is unavailable: &f{reason}&r");
@@ -329,6 +332,9 @@ public final class CommandMessages {
     builder.add(PLUGIN_API_ERROR_HEADER);
     builder.add(PLUGIN_API_ERROR_ENTRY);
     builder.add(PLUGIN_API_RELOAD_QUEUED);
+    builder.add(MOD_API_NOT_READY);
+    builder.add(MOD_API_HEADER);
+    builder.add(MOD_API_RELOAD_QUEUED);
     builder.add(WEB_INVALID_ROLE);
     builder.add(WEB_MUTATION_NOTICE);
     builder.add(WEB_PAIR_UNAVAILABLE);

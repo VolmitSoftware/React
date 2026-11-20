@@ -1,14 +1,11 @@
 package art.arcane.react.platform.bukkit.command;
 
 import art.arcane.react.React;
+import art.arcane.react.content.directorcommand.EntityDataCommands;
 import art.arcane.react.model.ReactEntity;
-import art.arcane.react.localization.ReactLanguage;
-import art.arcane.react.localization.catalog.CommandMessages;
 import art.arcane.react.util.common.scheduling.J;
 import art.arcane.react.platform.bukkit.BukkitCommandSender;
 import art.arcane.react.util.plugin.VolmitSender;
-import art.arcane.volmlib.util.format.Form;
-import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
@@ -35,10 +32,8 @@ public final class BukkitCommandDebug {
         if (j instanceof LivingEntity living) {
           J.runEntity(living, () -> living.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 20, 0, false, false)));
         }
-        ReactLanguage.send(BukkitCommandSender.player(sender), CommandMessages.DEBUG_PRIORITY, MessageArgument.untrusted("value", Form.f((int) ReactEntity.getPriority(j))));
-        ReactLanguage.send(BukkitCommandSender.player(sender), CommandMessages.DEBUG_CROWDING, MessageArgument.untrusted("value", Form.f((int) ReactEntity.getCrowding(j))));
-        ReactLanguage.send(BukkitCommandSender.player(sender), CommandMessages.DEBUG_NEAREST_PLAYER, MessageArgument.untrusted("value", Form.f(ReactEntity.getNearestPlayer(j), 1)));
-        ReactLanguage.send(BukkitCommandSender.player(sender), CommandMessages.DEBUG_UPDATED, MessageArgument.untrusted("duration", Form.duration(ReactEntity.getStaleness(j), 0)));
+        EntityDataCommands.send(BukkitCommandSender.player(sender), ReactEntity.getPriority(j), ReactEntity.getCrowding(j),
+            ReactEntity.getNearestPlayer(j), ReactEntity.getStaleness(j));
         break ray;
       }
     }

@@ -5,6 +5,8 @@ import art.arcane.react.api.benchmark.BenchmarkRunner;
 import art.arcane.react.api.benchmark.BenchmarkTarget;
 import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.core.controller.MapController;
+import art.arcane.react.core.pluginapi.PluginApiCommands;
+import art.arcane.react.core.pluginapi.PluginApiPacks;
 import art.arcane.react.platform.CommandHost;
 import art.arcane.react.platform.CommandTargets;
 import art.arcane.react.platform.ReactCommandSender;
@@ -35,7 +37,6 @@ public final class BukkitCommandHost implements CommandHost {
   private final BukkitCommandDev dev = new BukkitCommandDev();
   private final BukkitCommandEnvironment environment = new BukkitCommandEnvironment();
   private final BukkitCommandIntegration integration = new BukkitCommandIntegration();
-  private final BukkitCommandPluginApi pluginApi = new BukkitCommandPluginApi();
   private final BukkitCommandTest test = new BukkitCommandTest();
 
   public static CommandTargets.World target(World world) {
@@ -202,12 +203,12 @@ public final class BukkitCommandHost implements CommandHost {
 
   @Override
   public void pluginApiStatus(VolmitSender sender) {
-    pluginApi.status(sender);
+    PluginApiCommands.status(sender, PluginApiPacks.active());
   }
 
   @Override
   public void pluginApiReload(VolmitSender sender) {
-    pluginApi.reload(sender);
+    PluginApiCommands.reload(sender, PluginApiPacks.active());
   }
 
   @Override

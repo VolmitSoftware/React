@@ -363,6 +363,11 @@ server = "&f{name}&7 {address}&r | {status} | 플레이어 {players}명 | 핑 {d
 server_no_react = "&7React 없음&r"
 server_react = "TPS {average}, MSPT {tick}, 메모리 {used}"
 
+[command.runtime.mod_api]
+header = "&b모드 API 팩 ({count})&r"
+not_ready = "&c모드 API 팩이 아직 준비되지 않았습니다.&r"
+reload_queued = "&a모드 API 팩 다시 스캔 작업을 대기열에 추가했습니다.&r"
+
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 상태=&f{state}&7 대상=&f{target}&7 메트릭=&f{metrics}&7 세부 정보=&f{detail}&r"
 error_entry = "&7- &f{file}&7: &c{detail}&r"
@@ -3239,18 +3244,18 @@ summary = "레시피/가치 분석에 사용하는 재료 가치 조정."
 impact = "문제 해결에는 유용하지만 로그 노이즈가 많이 생길 수 있습니다."
 summary = "React 내부 동작에 대한 상세 콘솔 출력을 활성화합니다."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings]
 description = "기본 플레이어 모니터 대시보드 구성."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarheaderslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarheaderslots]
 impact = "값이 높을수록 가로 페이지 넘김이 줄지만 레이블이 길면 항목을 읽기 어려워질 수 있습니다."
 summary = "액션바에 한 번에 표시하는 모니터 그룹의 최대 수."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarsamplerslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarsamplerslots]
 impact = "값이 높을수록 그룹 내 페이지 넘김이 줄지만 작은 화면에서는 가독성이 떨어질 수 있습니다."
 summary = "액션바의 집중 행에 한 번에 표시하는 샘플러의 최대 수."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.monitorconfiguration]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.monitorconfiguration]
 impact = "이 변경은 새로운 설정을 위한 기본 모니터 패널 구조를 변경합니다."
 summary = "플레이어에게 표시되는 기본 모니터 그룹 및 메트릭 샘플러."
 

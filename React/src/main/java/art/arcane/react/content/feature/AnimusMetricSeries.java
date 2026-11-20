@@ -1,7 +1,7 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
-import art.arcane.react.api.metric.ReactMetric;
+import art.arcane.react.api.metric.ReactModMetric;
 import art.arcane.react.api.metric.internal.PublishedMetricStore;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.core.integration.ThirdPartyMetricRegistry;
@@ -39,9 +39,9 @@ public final class AnimusMetricSeries {
       return AnimusMetrics.Snapshot.empty();
     }
 
-    List<ReactMetric> declared = store.declared(AnimusMetrics.SOURCE_ID);
+    List<ReactModMetric> declared = store.declared(AnimusMetrics.SOURCE_ID);
     Map<String, Double> readings = new LinkedHashMap<>();
-    for (ReactMetric metric : declared) {
+    for (ReactModMetric metric : declared) {
       PublishedMetricStore.Reading reading = store.reading(metric.key(), now);
       if (reading != null) {
         readings.put(metric.key(), reading.value());

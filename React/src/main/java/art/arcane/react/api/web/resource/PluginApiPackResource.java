@@ -11,6 +11,7 @@ import art.arcane.react.api.web.dto.PluginApiPackDto;
 import art.arcane.react.api.web.dto.PluginApiValidationErrorDto;
 import art.arcane.react.api.web.dto.PluginApiValidationResultDto;
 import art.arcane.react.core.controller.PluginApiPackController;
+import art.arcane.react.core.pluginapi.PluginApiPacks;
 import art.arcane.react.core.pluginapi.PluginApiPackRuntime.MetricStatus;
 import art.arcane.react.core.pluginapi.PluginApiPackRuntime.PackStatus;
 import io.javalin.http.BadRequestResponse;
@@ -54,7 +55,7 @@ public final class PluginApiPackResource implements PluginApiPackRoutes {
   public void validate(Context context) {
     WebAuth.requireScope(context, "admin");
     ContentBody body = body(context);
-    PluginApiPackController.ValidationResult result = controller().validate(body.content());
+    PluginApiPacks.ValidationResult result = controller().validate(body.content());
     context.json(new Envelope<>(new PluginApiValidationResultDto(
         result.valid(),
         result.id(),
@@ -68,7 +69,7 @@ public final class PluginApiPackResource implements PluginApiPackRoutes {
     WebAuth.requireScope(context, "admin");
     ContentBody body = body(context);
     PluginApiPackController controller = controller();
-    PluginApiPackController.ValidationResult validation = controller.validate(body.content());
+    PluginApiPacks.ValidationResult validation = controller.validate(body.content());
     if (!validation.valid()) {
       throw new BadRequestResponse(validation.message());
     }

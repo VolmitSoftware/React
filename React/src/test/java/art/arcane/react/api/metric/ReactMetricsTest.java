@@ -35,7 +35,7 @@ class ReactMetricsTest {
   @Test
   void publishingReachesTheBoundStore() {
     PublishedMetricStore store = new PublishedMetricStore();
-    store.declare(SOURCE, List.of(ReactMetric.gauge(LIVE, "Live Pets", " pets")));
+    store.declare(SOURCE, List.of(ReactModMetric.gauge(LIVE, "Live Pets", " pets")));
     MetricInstaller.install(store);
 
     Assertions.assertTrue(ReactMetrics.available());
@@ -55,7 +55,7 @@ class ReactMetricsTest {
   @Test
   void withdrawClearsTheReading() {
     PublishedMetricStore store = new PublishedMetricStore();
-    store.declare(SOURCE, List.of(ReactMetric.gauge(LIVE, "Live Pets", " pets")));
+    store.declare(SOURCE, List.of(ReactModMetric.gauge(LIVE, "Live Pets", " pets")));
     MetricInstaller.install(store);
 
     ReactMetrics.publish(SOURCE, LIVE, 42D);

@@ -363,6 +363,11 @@ server = "&f{name}&7 {address}&r | {status} | {players} joueurs | ping {duration
 server_no_react = "&7sans React&r"
 server_react = "TPS {average}, MSPT {tick}, mémoire {used}"
 
+[command.runtime.mod_api]
+header = "&bPacks d’API de mods ({count})&r"
+not_ready = "&cLes packs d’API de mods ne sont pas encore prêts.&r"
+reload_queued = "&aLa nouvelle analyse des packs d’API de mods a été mise en file d’attente.&r"
+
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 état=&f{state}&7 cible=&f{target}&7 métriques=&f{metrics}&7 détail=&f{detail}&r"
 error_entry = "&7- &f{file}&7 : &c{detail}&r"
@@ -3239,18 +3244,18 @@ summary = "Réglage de la valeur des matériaux utilisée pour l'analyse des rec
 impact = "Utile pour le dépannage mais peut créer beaucoup de bruit dans les journaux."
 summary = "Active une sortie console détaillée pour les composants internes de React."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings]
 description = "Configuration par défaut du tableau de bord de moniteur du joueur."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarheaderslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarheaderslots]
 impact = "Des valeurs plus élevées réduisent la pagination horizontale, mais peuvent rendre les entrées plus difficiles à lire si les libellés sont longs."
 summary = "Nombre maximal de groupes de moniteur affichés simultanément dans la barre d'action."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.actionbarsamplerslots]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.actionbarsamplerslots]
 impact = "Des valeurs plus élevées réduisent la pagination dans un groupe, mais peuvent nuire à la lisibilité sur les petits écrans."
 summary = "Nombre maximal d'échantillonneurs affichés simultanément dans la ligne ciblée de la barre d'action."
 
-[config.documentation.annotation.art.arcane.react.model.reactconfiguration_monitoring.field.monitorconfiguration]
+[config.documentation.annotation.art.arcane.react.api.monitor.monitoringsettings.field.monitorconfiguration]
 impact = "Modifier cela modifie la structure du panneau de surveillance de base pour les nouveaux réglages."
 summary = "Groupes de moniteur et échantillonneurs affichés par défaut aux joueurs."
 

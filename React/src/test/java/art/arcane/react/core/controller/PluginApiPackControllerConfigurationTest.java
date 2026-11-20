@@ -15,13 +15,7 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 
 class PluginApiPackControllerConfigurationTest {
-  private static final List<String> RUNTIME_FIELDS = List.of(
-      "collectionQueued",
-      "running",
-      "scanQueued",
-      "packs",
-      "validationErrors"
-  );
+  private static final List<String> RUNTIME_FIELDS = List.of("packs");
 
   @Test
   void runtimeOnlyControllerDoesNotLoadCoreConfiguration() throws ReflectiveOperationException {

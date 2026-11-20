@@ -1,7 +1,10 @@
 package art.arcane.react.mod;
 
 import art.arcane.react.core.controller.ComponentConfigEditor;
+import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.JobController;
+import art.arcane.react.core.controller.ReactComponents;
+import art.arcane.react.core.controller.TweakController;
 import art.arcane.react.platform.ComponentHost;
 import art.arcane.react.platform.RegistryHost;
 import art.arcane.react.platform.Subscription;
@@ -28,6 +31,7 @@ final class ModComponentHost implements ComponentHost {
     private final Predicate<String> integrationInstalled;
     private final BooleanSupplier integrationSecrets;
     private volatile boolean enabled = true;
+    private volatile boolean monitoringOnly;
 
     ModComponentHost(ModTicks ticks, ExecutorService async, JobController jobs, BooleanSupplier ready, Logger logger,
                      RegistryHost registry, Predicate<String> integrationInstalled, BooleanSupplier integrationSecrets) {
@@ -94,7 +98,20 @@ final class ModComponentHost implements ComponentHost {
 
     @Override
     public boolean isMonitoringOnly() {
-        return false;
+        return monitoringOnly;
+    }
+
+    /** Pauses or resumes every feature and tweak while samplers, maps and commands keep running. Server thread only. */
+    void setMonitoringOnly(boolean monitoringOnly) {
+        this.monitoringOnly = monitoringOnly;
+        FeatureController features = ReactComponents.features();
+        if (features != null) {
+            features.reconcileRuntimeMode();
+        }
+        TweakController tweaks = ReactComponents.tweaks();
+        if (tweaks != null) {
+            tweaks.reconcileRuntimeMode();
+        }
     }
 
     @Override

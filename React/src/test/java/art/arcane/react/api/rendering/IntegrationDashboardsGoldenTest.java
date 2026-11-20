@@ -4,7 +4,7 @@ import art.arcane.react.React;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.core.integration.RemoteSamplerBridge;
 import art.arcane.react.core.integration.ThirdPartyMetricRegistry;
-import art.arcane.react.api.metric.ReactMetric;
+import art.arcane.react.api.metric.ReactModMetric;
 import art.arcane.react.api.metric.internal.PublishedMetricStore;
 import art.arcane.react.content.feature.FeatureAnimusCostSharePieMap;
 import art.arcane.react.content.feature.FeatureAnimusNetworkListMap;
@@ -175,11 +175,11 @@ public class IntegrationDashboardsGoldenTest {
     values.put("animus.pressure.navigation", 40D);
     values.put("animus.pressure.combat", 70D);
     PublishedMetricStore store = new PublishedMetricStore();
-    List<ReactMetric> declared = new java.util.ArrayList<>();
+    List<ReactModMetric> declared = new java.util.ArrayList<>();
     for (String key : values.keySet()) {
-      declared.add(ReactMetric.gauge(key, key, ""));
+      declared.add(ReactModMetric.gauge(key, key, ""));
     }
-    for (ReactMetric metric : store.declare("animus", declared)) {
+    for (ReactModMetric metric : store.declare("animus", declared)) {
       store.publish("animus", metric.key(), values.get(metric.key()), now, now);
     }
     return store;

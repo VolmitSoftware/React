@@ -7,6 +7,7 @@ import art.arcane.react.api.web.dto.PluginApiCatalogDto;
 import art.arcane.react.api.web.dto.PluginApiValidationResultDto;
 import art.arcane.react.api.web.resource.PluginApiPackResource;
 import art.arcane.react.core.controller.PluginApiPackController;
+import art.arcane.react.core.pluginapi.PluginApiPacks;
 import art.arcane.react.core.pluginapi.PluginApiPackRuntime.PackState;
 import art.arcane.react.core.pluginapi.PluginApiPackRuntime.PackStatus;
 import io.javalin.http.Context;
@@ -51,7 +52,7 @@ class PluginApiPackResourceTest {
   void validateRequiresAdminAndReturnsParserResult() {
     PluginApiPackController controller = mock(PluginApiPackController.class);
     when(controller.validate("pack")).thenReturn(
-        new PluginApiPackController.ValidationResult(true, "community.example", 1, "valid")
+        new PluginApiPacks.ValidationResult(true, "community.example", 1, "valid")
     );
     PluginApiPackResource resource = new PluginApiPackResource(() -> controller, mock(WebMutationReporter.class));
     Context context = mock(Context.class);
