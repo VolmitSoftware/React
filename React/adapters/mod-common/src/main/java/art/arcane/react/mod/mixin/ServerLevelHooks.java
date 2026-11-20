@@ -1,6 +1,7 @@
 package art.arcane.react.mod.mixin;
 
 import art.arcane.react.mod.ModReactWorld;
+import art.arcane.react.mod.ModSpawnHost;
 import art.arcane.react.platform.SamplerEventCounters;
 import art.arcane.react.platform.SamplerEventCounters.Counter;
 import net.minecraft.server.level.ServerLevel;
@@ -15,6 +16,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ServerLevel.class)
 public abstract class ServerLevelHooks {
+    @Inject(method = "addFreshEntity", at = @At("HEAD"), cancellable = true, require = 0)
+    private void react$joining(Entity entity, CallbackInfoReturnable<Boolean> callback) {
+        if (!ModSpawnHost.allowAdd((ServerLevel) (Object) this, entity)) {
+            callback.setReturnValue(false);
+        }
+    }
+
     @Inject(method = "unload", at = @At("HEAD"), require = 0)
     private void react$unloading(LevelChunk chunk, CallbackInfo callback) {
         SamplerEventCounters.get().count(Counter.CHUNK_UNLOAD, chunk);

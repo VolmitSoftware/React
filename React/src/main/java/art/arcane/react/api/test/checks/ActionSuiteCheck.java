@@ -19,8 +19,9 @@ import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.TestMessages;
 import art.arcane.react.model.AreaActionParams;
-import art.arcane.volmlib.util.localization.MessageArgument;
 import art.arcane.react.util.project.registry.Registry;
+import art.arcane.volmlib.util.bukkit.WorldIdentity;
+import art.arcane.volmlib.util.localization.MessageArgument;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -201,7 +202,7 @@ public class ActionSuiteCheck implements ReactAsyncSubsystemCheck {
     }
 
     if (ActionHopperNetworkNormalize.ID.equals(actionId) && params instanceof ActionHopperNetworkNormalize.Params normalizeParams) {
-      normalizeParams.withWorld(world);
+      normalizeParams.withWorld(world == null ? null : WorldIdentity.serialize(world));
       normalizeParams.setMaxChunks(Math.min(normalizeParams.getMaxChunks(), 8));
       return normalizeParams;
     }

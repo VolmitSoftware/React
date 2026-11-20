@@ -1,5 +1,6 @@
 package art.arcane.react.mod.mixin;
 
+import art.arcane.react.mod.ModBlockHost;
 import art.arcane.react.platform.SamplerEventCounters;
 import art.arcane.react.platform.SamplerEventCounters.Counter;
 import net.minecraft.server.level.ServerLevel;
@@ -35,6 +36,7 @@ public abstract class LevelChunkHooks {
     @Inject(method = "setUnsavedListener", at = @At("TAIL"), require = 0)
     private void react$loaded(CallbackInfo callback) {
         SamplerEventCounters counters = SamplerEventCounters.get();
+        ModBlockHost.chunkLoaded((LevelChunk) (Object) this);
         counters.count(Counter.CHUNK_LOAD, this);
         if (react$generated) {
             counters.count(Counter.CHUNK_GENERATE, this);

@@ -1,6 +1,8 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.React;
 import art.arcane.react.nms.NmsBridges;
+import art.arcane.react.platform.bukkit.BukkitEvents;
 import art.arcane.react.testutil.Fakes;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
@@ -53,7 +55,8 @@ class FeatureHopperChainCoalescingTest {
   @Test
   void maintenanceTickCounterAdvancesByClampedInterval() throws Exception {
     FeatureHopperChainCoalescing feature = engagedFeature(100);
-    try (MockedStatic<NmsBridges> bridges = Mockito.mockStatic(NmsBridges.class)) {
+    try (MockedStatic<NmsBridges> bridges = Mockito.mockStatic(NmsBridges.class);
+         MockedStatic<React> react = Mockito.mockStatic(React.class)) {
       bridges.when(NmsBridges::get).thenReturn(null);
       feature.onTick();
     }
@@ -80,7 +83,7 @@ class FeatureHopperChainCoalescingTest {
         feature.onActivate();
         Block block = block(world, material);
 
-        feature.on(new BlockBreakEvent(block, player));
+        breakBlock(feature, block, player);
 
         Set<?> queuedRepairs = field(feature, "queuedRepairs", Set.class);
         assertEquals(9, queuedRepairs.size(), material.name());
@@ -100,7 +103,7 @@ class FeatureHopperChainCoalescingTest {
       feature.onActivate();
       Block block = block(world, Material.STONE);
 
-      feature.on(new BlockBreakEvent(block, Mockito.mock(Player.class)));
+      breakBlock(feature, block, Mockito.mock(Player.class));
 
       assertTrue(field(feature, "queuedRepairs", Set.class).isEmpty());
       Mockito.verify(block, Mockito.never()).getState();
@@ -116,7 +119,7 @@ class FeatureHopperChainCoalescingTest {
     World world = Mockito.mock(World.class);
     Chunk chunk = Mockito.mock(Chunk.class);
     Mockito.when(world.isChunkLoaded(2, 3)).thenReturn(true);
-    Mockito.when(world.getChunkAt(2, 3)).thenReturn(chunk);
+    Mockito.when(world.getChunkAt(2, 3, false)).thenReturn(chunk);
     Mockito.when(chunk.getTileEntities()).thenReturn(new BlockState[0]);
     Mockito.when(chunk.getTileEntities(Mockito.<Predicate<? super Block>>any(), Mockito.eq(false)))
         .thenReturn(List.of());
@@ -158,7 +161,8 @@ class FeatureHopperChainCoalescingTest {
   private static double ticksSavedOverOneSecond(int tickIntervalMs, int ticks) throws Exception {
     FeatureHopperChainCoalescing feature = engagedFeature(tickIntervalMs);
     field(feature, "ticksSavedPerEvaluation", AtomicLong.class).set(30L);
-    try (MockedStatic<NmsBridges> bridges = Mockito.mockStatic(NmsBridges.class)) {
+    try (MockedStatic<NmsBridges> bridges = Mockito.mockStatic(NmsBridges.class);
+         MockedStatic<React> react = Mockito.mockStatic(React.class)) {
       bridges.when(NmsBridges::get).thenReturn(null);
       for (int tick = 0; tick < ticks; tick++) {
         feature.onTick();
@@ -277,5 +281,10 @@ class FeatureHopperChainCoalescingTest {
     Field field = target.getClass().getDeclaredField(name);
     field.setAccessible(true);
     field.set(target, value);
+  }
+
+  private static void breakBlock(FeatureHopperChainCoalescing feature, Block block, Player player) {
+    BlockBreakEvent event = new BlockBreakEvent(block, player);
+    feature.queueAffectedChunkRepairs(BukkitEvents.location(event.getBlock()), event.getBlock().getType().name());
   }
 }

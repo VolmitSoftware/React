@@ -5,6 +5,13 @@ import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.telemetry.RuntimeTelemetry;
 import art.arcane.react.platform.CapabilityRefusal;
 import art.arcane.react.platform.CommandHost;
+import art.arcane.react.platform.BlockHost;
+import art.arcane.react.platform.GrowthHost;
+import art.arcane.react.platform.RedstoneHost;
+import art.arcane.react.platform.SpawnHost;
+import art.arcane.react.platform.PortalHost;
+import art.arcane.react.platform.ExplosionHost;
+import art.arcane.react.platform.FurnaceHost;
 import art.arcane.react.platform.ComponentHost;
 import art.arcane.react.platform.EntityHost;
 import art.arcane.react.platform.HopperHost;
@@ -72,7 +79,7 @@ public final class ModReactPlatform implements ReactPlatform {
     private final ModEntityKiller entityKiller = new ModEntityKiller();
     private final WorldHost worldHost;
     private final EntityHost entityHost;
-    private final HopperHost hopperHost = new ModHopperHost();
+    private final HopperHost hopperHost;
     private final ModViewDistanceHost viewDistanceHost;
     private final ModChunkHost chunkHost;
     private final ModPlayerHost playerHost;
@@ -81,6 +88,14 @@ public final class ModReactPlatform implements ReactPlatform {
     private final ModDropHost dropHost;
     private final ModShorthandHost shorthandHost;
     private final ModMapData mapData;
+
+    private final BlockHost blockHost;
+    private final GrowthHost growthHost;
+    private final RedstoneHost redstoneHost = new ModRedstoneHost();
+    private final SpawnHost spawnHost;
+    private final PortalHost portalHost = new ModPortalHost();
+    private final ExplosionHost explosionHost = new ModExplosionHost(this::server);
+    private final FurnaceHost furnaceHost;
 
     ModReactPlatform(String loader, MinecraftServer server, File dataFolder, Logger logger, ModTicks ticks, ExecutorService async,
                      List<Runnable> startupTasks, LanguageHost languageHost, OwnerCostProbe costProbe, Supplier<SampleController> samples,
@@ -116,6 +131,11 @@ public final class ModReactPlatform implements ReactPlatform {
         this.gameRuleHost = new ModGameRuleHost();
         this.dropHost = new ModDropHost();
         this.shorthandHost = new ModShorthandHost(server);
+        this.furnaceHost = new ModFurnaceHost(server);
+        this.spawnHost = new ModSpawnHost(server);
+        this.blockHost = new ModBlockHost(server);
+        this.growthHost = new ModGrowthHost(server);
+        this.hopperHost = new ModHopperHost(server, modSamplerHost.chunks());
     }
 
     ModComponentHost components() {
@@ -410,5 +430,42 @@ public final class ModReactPlatform implements ReactPlatform {
     @Override
     public Optional<RuntimeStatsHost> runtimeStatsHost() {
         return Optional.of(runtimeStatsHost);
+    }
+
+    // Block, redstone, spawn and explosion hosts
+
+    @Override
+    public Optional<BlockHost> blockHost() {
+        return Optional.of(blockHost);
+    }
+
+    @Override
+    public Optional<GrowthHost> growthHost() {
+        return Optional.of(growthHost);
+    }
+
+    @Override
+    public Optional<RedstoneHost> redstoneHost() {
+        return Optional.of(redstoneHost);
+    }
+
+    @Override
+    public Optional<SpawnHost> spawnHost() {
+        return Optional.of(spawnHost);
+    }
+
+    @Override
+    public Optional<PortalHost> portalHost() {
+        return Optional.of(portalHost);
+    }
+
+    @Override
+    public Optional<ExplosionHost> explosionHost() {
+        return Optional.of(explosionHost);
+    }
+
+    @Override
+    public Optional<FurnaceHost> furnaceHost() {
+        return Optional.of(furnaceHost);
     }
 }

@@ -17,6 +17,7 @@
 
 package art.arcane.react.util.common.scheduling;
 
+import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.PlatformScheduler;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
@@ -475,6 +476,42 @@ public class J {
     }
 
     sync(r, safeDelay);
+  }
+
+  /**
+   * Runs the task on the thread that owns the block, the way {@link #s(Object, Runnable, int)} does for a platform
+   * location.
+   */
+  public static void s(GameLocation location, Runnable r, int delay) {
+    ReactWorld world = location == null ? null : world(location);
+    if (world == null) {
+      sync(r, delay);
+      return;
+    }
+
+    PlatformScheduler scheduler = scheduler();
+    if (scheduler != null && scheduler.region(world, location.chunkX(), location.chunkZ(), r, Math.max(0, delay))) {
+      return;
+    }
+
+    if (isFoliaThreading()) {
+      throw new IllegalStateException("Failed to schedule region task on Folia.");
+    }
+
+    sync(r, Math.max(0, delay));
+  }
+
+  public static boolean isOwnedByCurrentRegion(GameLocation location) {
+    ReactWorld world = location == null ? null : world(location);
+    PlatformScheduler scheduler = scheduler();
+    return world != null && scheduler != null && scheduler.isOwnedByCurrentRegion(world, location.chunkX(), location.chunkZ());
+  }
+
+  private static ReactWorld world(GameLocation location) {
+    ReactPlatform platform = ReactPlatforms.getOrNull();
+    return platform == null || location.worldId() == null
+        ? null
+        : platform.worldHost().flatMap(host -> host.world(location.worldId())).orElse(null);
   }
 
   public static void s(Object location, Runnable r) {

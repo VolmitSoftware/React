@@ -3,6 +3,7 @@ package art.arcane.react.mod;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.model.ChunkCostTally;
 import art.arcane.react.model.SampledChunk;
+import art.arcane.react.platform.HopperHost;
 import art.arcane.react.platform.RuntimeStatsHost;
 import com.google.common.util.concurrent.AtomicDouble;
 import net.minecraft.server.level.ServerLevel;
@@ -63,6 +64,17 @@ final class ModChunkSamples {
                 .flatMap((SampledChunk sampled) -> sampled.optional(samplerId))
                 .map(AtomicDouble::get)
                 .orElse(0D);
+    }
+
+    List<HopperHost.SampledChunkRate> rates(String samplerId) {
+        List<HopperHost.SampledChunkRate> rates = new ArrayList<>();
+        for (Map.Entry<String, Map<Long, SampledChunk>> world : worlds.entrySet()) {
+            for (SampledChunk chunk : world.getValue().values()) {
+                double rate = chunk.optional(samplerId).map(AtomicDouble::get).orElse(0D);
+                rates.add(new HopperHost.SampledChunkRate(world.getKey(), chunk.getChunkX(), chunk.getChunkZ(), rate));
+            }
+        }
+        return rates;
     }
 
     /** Replaces a gauge for every chunk of one world; chunks missing from {@code values} lose it. */

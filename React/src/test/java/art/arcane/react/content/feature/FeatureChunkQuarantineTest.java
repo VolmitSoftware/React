@@ -1,5 +1,10 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.HopperHost;
+import art.arcane.react.platform.ReactPlatforms;
+import art.arcane.react.platform.bukkit.BukkitHopperHost;
+import art.arcane.react.platform.bukkit.BukkitSpawnHost;
+import art.arcane.react.testutil.BukkitHostEvents;
 import art.arcane.react.testutil.FakeInventories;
 import art.arcane.react.testutil.Fakes;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -13,6 +18,7 @@ import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.inventory.Inventory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -31,6 +37,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FeatureChunkQuarantineTest {
+  private final List<FeatureChunkQuarantine> active = new ArrayList<>();
+
+  @AfterEach
+  void deactivate() {
+    for (FeatureChunkQuarantine quarantine : active) {
+      quarantine.onDeactivate();
+    }
+  }
   @BeforeAll
   static void initializeInventoryTypes() {
     FakeInventories.initializeInventoryTypes();
@@ -43,15 +57,14 @@ class FeatureChunkQuarantineTest {
     Block physicsBlock = Mockito.mock(Block.class);
     Block redstoneBlock = Mockito.mock(Block.class);
     LivingEntity spawned = Mockito.mock(LivingEntity.class);
-    Inventory chest = FakeInventories.chest(world, 0, 65, 0);
-    Inventory hopper = FakeInventories.hopperBlock(world, 0, 64, 0);
+    HopperHost.Move move = Mockito.mock(HopperHost.Move.class);
 
-    quarantine.on(new BlockPhysicsEvent(physicsBlock, Mockito.mock(BlockData.class)));
-    quarantine.on(new BlockRedstoneEvent(redstoneBlock, 0, 15));
-    quarantine.on(new CreatureSpawnEvent(spawned, CreatureSpawnEvent.SpawnReason.NATURAL));
-    quarantine.on(FakeInventories.move(chest, hopper));
+    quarantine.onPhysics(BukkitHostEvents.physics(new BlockPhysicsEvent(physicsBlock, Mockito.mock(BlockData.class))));
+    quarantine.onSignal(BukkitHostEvents.signal(new BlockRedstoneEvent(redstoneBlock, 0, 15)));
+    quarantine.onSpawn(BukkitSpawnHost.spawn(new CreatureSpawnEvent(spawned, CreatureSpawnEvent.SpawnReason.NATURAL)));
+    quarantine.onMove(move);
 
-    Mockito.verifyNoInteractions(physicsBlock, redstoneBlock, spawned, chest, hopper);
+    Mockito.verifyNoInteractions(physicsBlock, redstoneBlock, spawned, move);
     assertTrue(states(quarantine).isEmpty());
   }
 
@@ -139,8 +152,8 @@ class FeatureChunkQuarantineTest {
     Inventory hopper = FakeInventories.hopperBlock(world, 40, 64, -20);
     Inventory minecart = FakeInventories.hopperMinecart(world, 100.5D, 64D, 100.5D);
 
-    quarantine.on(FakeInventories.move(chest, hopper));
-    quarantine.on(FakeInventories.move(chest, minecart));
+    hopperHost().on(FakeInventories.move(chest, hopper));
+    hopperHost().on(FakeInventories.move(chest, minecart));
 
     Mockito.verify(chest, Mockito.never()).getHolder();
     Mockito.verify(hopper, Mockito.never()).getHolder();
@@ -148,9 +161,10 @@ class FeatureChunkQuarantineTest {
     assertEquals(Set.of(chunkKey(2, -2)), trackedChunks(quarantine, world));
   }
 
-  private static FeatureChunkQuarantine quarantine() throws Exception {
+  private FeatureChunkQuarantine quarantine() throws Exception {
     FeatureChunkQuarantine quarantine = new FeatureChunkQuarantine();
     quarantine.onActivate();
+    active.add(quarantine);
     set(quarantine, "bypassNearPlayers", false);
     set(quarantine, "samplePhysicsEveryN", 1);
     return quarantine;
@@ -158,8 +172,12 @@ class FeatureChunkQuarantineTest {
 
   private static BlockPhysicsEvent physics(FeatureChunkQuarantine quarantine, Block block) {
     BlockPhysicsEvent event = new BlockPhysicsEvent(block, Mockito.mock(BlockData.class));
-    quarantine.on(event);
+    quarantine.onPhysics(BukkitHostEvents.physics(event));
     return event;
+  }
+
+  private static BukkitHopperHost hopperHost() {
+    return (BukkitHopperHost) ReactPlatforms.get().hopperHost().orElseThrow();
   }
 
   private static void runMaintenance(FeatureChunkQuarantine quarantine) throws Exception {

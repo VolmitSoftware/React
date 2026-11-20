@@ -184,6 +184,36 @@ public interface ReactPlatform {
     return Optional.empty();
   }
 
+  // Block, redstone, spawn and explosion hosts
+
+  default Optional<BlockHost> blockHost() {
+    return Optional.empty();
+  }
+
+  default Optional<GrowthHost> growthHost() {
+    return Optional.empty();
+  }
+
+  default Optional<RedstoneHost> redstoneHost() {
+    return Optional.empty();
+  }
+
+  default Optional<SpawnHost> spawnHost() {
+    return Optional.empty();
+  }
+
+  default Optional<PortalHost> portalHost() {
+    return Optional.empty();
+  }
+
+  default Optional<ExplosionHost> explosionHost() {
+    return Optional.empty();
+  }
+
+  default Optional<FurnaceHost> furnaceHost() {
+    return Optional.empty();
+  }
+
   // Commands, messaging and localization
 
   /**

@@ -7,10 +7,9 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.event.block.BlockGrowEvent;
-import org.bukkit.event.world.WorldUnloadEvent;
+import art.arcane.react.platform.GameLocation;
+import art.arcane.react.platform.GrowthHost;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -33,7 +32,7 @@ class FeatureFarmBurstSmootherLifecycleTest {
         FeatureFarmBurstSmoother feature = configuredFeature();
         feature.onActivate();
         feature.on(growth.event());
-        Mockito.verify(growth.event()).setCancelled(true);
+        Assertions.assertTrue(growth.event().isCancelled());
 
         try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
              MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
@@ -49,7 +48,7 @@ class FeatureFarmBurstSmootherLifecycleTest {
 
         GrowthFixture rejected = growth(world, 5, 64, 7);
         feature.on(rejected.event());
-        Mockito.verify(rejected.event(), Mockito.never()).setCancelled(true);
+        Assertions.assertFalse(rejected.event().isCancelled());
         Assertions.assertEquals(0, pendingSize(feature));
     }
 
@@ -75,7 +74,7 @@ class FeatureFarmBurstSmootherLifecycleTest {
         Assertions.assertEquals(2, pendingSize(feature));
         GrowthFixture rejected = growth(world, 3, 64, 3);
         feature.on(rejected.event());
-        Mockito.verify(rejected.event(), Mockito.never()).setCancelled(true);
+        Assertions.assertFalse(rejected.event().isCancelled());
         Assertions.assertEquals(2, pendingSize(feature));
     }
 
@@ -84,15 +83,12 @@ class FeatureFarmBurstSmootherLifecycleTest {
         World world = Mockito.mock(World.class);
         Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
         GrowthFixture growth = growth(world, 6, 64, 6);
-        WorldUnloadEvent unload = Mockito.mock(WorldUnloadEvent.class);
-        Mockito.when(unload.getWorld()).thenReturn(world);
-        Mockito.when(unload.isCancelled()).thenReturn(false);
         FeatureFarmBurstSmoother feature = configuredFeature();
         feature.onActivate();
         feature.on(growth.event());
-        Mockito.verify(growth.event()).setCancelled(true);
+        Assertions.assertTrue(growth.event().isCancelled());
 
-        feature.on(unload);
+        feature.onWorldUnload(world.getUID());
 
         Assertions.assertEquals(0, pendingSize(feature));
         Assertions.assertDoesNotThrow(feature::onDeactivate);
@@ -101,20 +97,15 @@ class FeatureFarmBurstSmootherLifecycleTest {
     }
 
     @Test
-    void cancelledWorldUnloadPreservesGrowthForDeactivateDrain() throws Exception {
+    void growthSurvivesUntilDeactivateDrainWithoutWorldUnload() throws Exception {
         World world = Mockito.mock(World.class);
         UUID worldId = UUID.randomUUID();
         Mockito.when(world.getUID()).thenReturn(worldId);
         GrowthFixture growth = growth(world, 7, 64, 7);
         Mockito.when(world.getBlockAt(7, 64, 7)).thenReturn(growth.block());
-        WorldUnloadEvent unload = Mockito.mock(WorldUnloadEvent.class);
-        Mockito.when(unload.getWorld()).thenReturn(world);
-        Mockito.when(unload.isCancelled()).thenReturn(true);
         FeatureFarmBurstSmoother feature = configuredFeature();
         feature.onActivate();
         feature.on(growth.event());
-
-        feature.on(unload);
 
         Assertions.assertEquals(1, pendingSize(feature));
         try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class);
@@ -179,9 +170,9 @@ class FeatureFarmBurstSmootherLifecycleTest {
              MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
             bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
             scheduling.when(J::isFoliaThreading).thenReturn(true);
-            scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Location.class))).thenReturn(false);
+            scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(GameLocation.class))).thenReturn(false);
             scheduling.when(() -> J.s(
-                    Mockito.any(Location.class),
+                    Mockito.any(GameLocation.class),
                     Mockito.any(Runnable.class),
                     Mockito.eq(0)))
                 .thenAnswer(invocation -> {
@@ -221,9 +212,9 @@ class FeatureFarmBurstSmootherLifecycleTest {
              MockedStatic<React> react = Mockito.mockStatic(React.class)) {
             bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
             scheduling.when(J::isFoliaThreading).thenReturn(true);
-            scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Location.class))).thenReturn(false);
+            scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(GameLocation.class))).thenReturn(false);
             scheduling.when(() -> J.s(
-                    Mockito.any(Location.class),
+                    Mockito.any(GameLocation.class),
                     Mockito.any(Runnable.class),
                     Mockito.eq(0)))
                 .thenAnswer(invocation -> {
@@ -259,7 +250,7 @@ class FeatureFarmBurstSmootherLifecycleTest {
              MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
             bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
             scheduling.when(J::isFoliaThreading).thenReturn(true);
-            scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Location.class))).thenReturn(false);
+            scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(GameLocation.class))).thenReturn(false);
 
             IllegalStateException failure = Assertions.assertThrows(
                 IllegalStateException.class,
@@ -267,7 +258,7 @@ class FeatureFarmBurstSmootherLifecycleTest {
 
             Assertions.assertTrue(failure.getMessage().contains("1 cancelled growth changes"));
             scheduling.verify(() -> J.s(
-                Mockito.any(Location.class),
+                Mockito.any(GameLocation.class),
                 Mockito.any(Runnable.class),
                 Mockito.eq(0)));
         }
@@ -302,20 +293,10 @@ class FeatureFarmBurstSmootherLifecycleTest {
 
     private static GrowthFixture growth(World world, int x, int y, int z) {
         Block block = Mockito.mock(Block.class);
-        BlockState newState = Mockito.mock(BlockState.class);
-        BlockData sourceData = Mockito.mock(BlockData.class);
         BlockData targetData = Mockito.mock(BlockData.class);
-        BlockGrowEvent event = Mockito.mock(BlockGrowEvent.class);
-        Mockito.when(block.getWorld()).thenReturn(world);
-        Mockito.when(block.getX()).thenReturn(x);
-        Mockito.when(block.getY()).thenReturn(y);
-        Mockito.when(block.getZ()).thenReturn(z);
         Mockito.when(block.getType()).thenReturn(Material.WHEAT);
         Mockito.when(block.getLocation()).thenReturn(new Location(world, x, y, z));
-        Mockito.when(newState.getBlockData()).thenReturn(sourceData);
-        Mockito.when(sourceData.clone()).thenReturn(targetData);
-        Mockito.when(event.getBlock()).thenReturn(block);
-        Mockito.when(event.getNewState()).thenReturn(newState);
+        Grow event = new Grow(new GameLocation(world.getUID(), x, y, z), targetData);
         return new GrowthFixture(event, block, targetData);
     }
 
@@ -332,6 +313,47 @@ class FeatureFarmBurstSmootherLifecycleTest {
         field.set(target, value);
     }
 
-    private record GrowthFixture(BlockGrowEvent event, Block block, BlockData targetData) {
+    private record GrowthFixture(Grow event, Block block, BlockData targetData) {
+    }
+
+    private static final class Grow implements GrowthHost.GrowEvent {
+        private final GameLocation location;
+        private final BlockData targetData;
+        private boolean cancelled;
+
+        private Grow(GameLocation location, BlockData targetData) {
+            this.location = location;
+            this.targetData = targetData;
+        }
+
+        @Override
+        public GameLocation location() {
+            return location;
+        }
+
+        @Override
+        public String type() {
+            return "WHEAT";
+        }
+
+        @Override
+        public Object state() {
+            return null;
+        }
+
+        @Override
+        public Object newState() {
+            return targetData;
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return cancelled;
+        }
+
+        @Override
+        public void cancel() {
+            cancelled = true;
+        }
     }
 }

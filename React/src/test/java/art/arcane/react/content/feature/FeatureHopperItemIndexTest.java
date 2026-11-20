@@ -2,6 +2,7 @@ package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.platform.bukkit.BukkitHopperHost;
 import art.arcane.react.testutil.Fakes;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
@@ -37,13 +38,13 @@ class FeatureHopperItemIndexTest {
     World world = Fakes.world("index-remove");
     Item burned = item(new UUID(1L, 1L), new Location(world, 0.5D, 64D, 0.5D));
     Item kept = item(new UUID(1L, 2L), new Location(world, 8.5D, 64D, 8.5D));
-    feature.on(new ItemSpawnEvent(burned));
-    feature.on(new ItemSpawnEvent(kept));
+    BukkitHopperHost.forward(new ItemSpawnEvent(burned), feature);
+    BukkitHopperHost.forward(new ItemSpawnEvent(kept), feature);
     Zombie zombie = Mockito.mock(Zombie.class);
     Mockito.when(zombie.getUniqueId()).thenReturn(new UUID(1L, 2L));
 
-    feature.on(new EntityRemoveEvent(burned, EntityRemoveEvent.Cause.ENTER_BLOCK));
-    feature.on(new EntityRemoveEvent(zombie, EntityRemoveEvent.Cause.DEATH));
+    BukkitHopperHost.forward(new EntityRemoveEvent(burned, EntityRemoveEvent.Cause.ENTER_BLOCK), feature);
+    BukkitHopperHost.forward(new EntityRemoveEvent(zombie, EntityRemoveEvent.Cause.DEATH), feature);
 
     assertEquals(1, feature.getItemIndex().size());
     assertEquals(1, trackedItems(feature).size());
@@ -60,12 +61,12 @@ class FeatureHopperItemIndexTest {
     for (int index = 0; index < 1000; index++) {
       Item item = item(new UUID(2L, index), farmDrop);
       items.add(item);
-      feature.on(new ItemSpawnEvent(item));
+      BukkitHopperHost.forward(new ItemSpawnEvent(item), feature);
     }
     assertEquals(1000, trackedItems(feature).size());
 
     for (int index = 1; index < items.size(); index++) {
-      feature.on(new EntityRemoveEvent(items.get(index), EntityRemoveEvent.Cause.MERGE));
+      BukkitHopperHost.forward(new EntityRemoveEvent(items.get(index), EntityRemoveEvent.Cause.MERGE), feature);
     }
 
     assertEquals(1, feature.getItemIndex().size());
@@ -182,7 +183,7 @@ class FeatureHopperItemIndexTest {
 
   private static WeakReference<Item> trackUnreferencedItem(FeatureHopperItemIndex feature, World world) {
     Item item = item(new UUID(3L, 1L), new Location(world, 1.5D, 64D, 1.5D));
-    feature.on(new ItemSpawnEvent(item));
+    BukkitHopperHost.forward(new ItemSpawnEvent(item), feature);
     return new WeakReference<>(item);
   }
 

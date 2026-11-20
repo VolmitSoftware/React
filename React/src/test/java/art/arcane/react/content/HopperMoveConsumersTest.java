@@ -73,13 +73,17 @@ class HopperMoveConsumersTest {
     set(incidentMode, "bypassNearPlayers", false);
     set(incidentMode, "maxHopperMovesPerWindow", 1);
     set(incidentMode, "rateWindowMS", 60000);
-    incidentMode.onActivate();
-    set(incidentMode, "incident", true);
-
     InventoryMoveItemEvent first = FakeInventories.move(hopper, chest);
     InventoryMoveItemEvent second = FakeInventories.move(hopper, chest);
-    incidentMode.on(first);
-    incidentMode.on(second);
+    BukkitHopperHost host = hopperHost();
+    incidentMode.onActivate();
+    try {
+      set(incidentMode, "incident", true);
+      host.on(first);
+      host.on(second);
+    } finally {
+      incidentMode.onDeactivate();
+    }
 
     Mockito.verify(hopper, Mockito.never()).getHolder();
     Mockito.verify(chest, Mockito.never()).getHolder();

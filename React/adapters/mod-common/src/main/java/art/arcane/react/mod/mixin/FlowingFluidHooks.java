@@ -1,5 +1,6 @@
 package art.arcane.react.mod.mixin;
 
+import art.arcane.react.mod.ModBlockHost;
 import art.arcane.react.platform.SamplerEventCounters;
 import art.arcane.react.platform.SamplerEventCounters.Counter;
 import net.minecraft.core.BlockPos;
@@ -21,5 +22,13 @@ public abstract class FlowingFluidHooks {
         SamplerEventCounters counters = SamplerEventCounters.get();
         counters.count(Counter.FLUID_FLOW, pos);
         counters.count(Counter.FLUID_EVENT, pos);
+    }
+
+    @Inject(method = "spreadTo", at = @At("HEAD"), cancellable = true, require = 0)
+    private void react$flowing(LevelAccessor level, BlockPos pos, BlockState state, Direction direction, FluidState target,
+                               CallbackInfo callback) {
+        if (!ModBlockHost.allowFlow(level, pos, direction, state)) {
+            callback.cancel();
+        }
     }
 }

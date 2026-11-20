@@ -16,6 +16,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
+import org.bukkit.plugin.PluginManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -84,7 +85,7 @@ class FeatureCropFastForwardScaleTest {
     }
     Mockito.when(observer.nextLoadedChunkCoordinateBatch(128)).thenReturn(indexed.subList(0, 128));
     FeatureCropFastForward feature = new FeatureCropFastForward();
-    feature.onActivate();
+    activate(feature);
 
     try (MockedStatic<React> react = Mockito.mockStatic(React.class);
          MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
@@ -107,7 +108,7 @@ class FeatureCropFastForwardScaleTest {
   @Test
   void pendingChunksNearAPlayerDispatchOneJobEach() throws ReflectiveOperationException {
     FeatureCropFastForward feature = new FeatureCropFastForward();
-    feature.onActivate();
+    activate(feature);
     CropActivityLedger ledger = ledger(feature);
     pend(ledger, 0, 0);
     pend(ledger, 1, 0);
@@ -138,7 +139,7 @@ class FeatureCropFastForwardScaleTest {
   @Test
   void fastForwardReadsBlockTypesFromTheChunkSnapshot() throws ReflectiveOperationException {
     FeatureCropFastForward feature = new FeatureCropFastForward();
-    feature.onActivate();
+    activate(feature);
     pend(ledger(feature), 0, 0);
     Chunk chunk = Mockito.mock(Chunk.class);
     ChunkSnapshot snapshot = Mockito.mock(ChunkSnapshot.class);
@@ -181,7 +182,7 @@ class FeatureCropFastForwardScaleTest {
   @Test
   void silencedPassesKeepStampingButDoNotDispatch() throws ReflectiveOperationException {
     FeatureCropFastForward feature = new FeatureCropFastForward();
-    feature.onActivate();
+    activate(feature);
     CropActivityLedger ledger = ledger(feature);
     pend(ledger, 0, 0);
     Sampler tickTime = Mockito.mock(Sampler.class);
@@ -209,7 +210,7 @@ class FeatureCropFastForwardScaleTest {
   @Test
   void ownerTaskRetiresWithoutWorldAccessAfterDeactivation() throws ReflectiveOperationException {
     FeatureCropFastForward feature = new FeatureCropFastForward();
-    feature.onActivate();
+    activate(feature);
     pend(ledger(feature), 0, 0);
     AtomicReference<Runnable> ownerTask = new AtomicReference<>();
 
@@ -219,7 +220,7 @@ class FeatureCropFastForwardScaleTest {
       stubControllers(react, bukkit);
       scheduling.when(J::isFoliaThreading).thenReturn(true);
       scheduling.when(() -> J.runChunk(
-          Mockito.eq(world),
+          Mockito.any(),
           Mockito.eq(0),
           Mockito.eq(0),
           Mockito.any(Runnable.class)
@@ -235,6 +236,13 @@ class FeatureCropFastForwardScaleTest {
       ownerTask.get().run();
 
       Mockito.verifyNoInteractions(world);
+    }
+  }
+
+  private static void activate(FeatureCropFastForward feature) {
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(Bukkit::getPluginManager).thenReturn(Mockito.mock(PluginManager.class));
+      feature.onActivate();
     }
   }
 

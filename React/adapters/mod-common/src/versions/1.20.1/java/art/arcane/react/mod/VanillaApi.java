@@ -2,6 +2,16 @@ package art.arcane.react.mod;
 
 import art.arcane.react.platform.GameLocation;
 import net.minecraft.SharedConstants;
+import java.util.Locale;
+import java.util.List;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.core.particles.ItemParticleOption;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.network.protocol.game.ClientboundExplodePacket;
+import net.minecraft.network.protocol.Packet;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleOptions;
@@ -223,5 +233,53 @@ public final class VanillaApi {
     /** How far the player reaches blocks. */
     static double blockReach(ServerPlayer player) {
         return player.isCreative() ? 5.0D : 4.5D;
+    }
+
+    static Packet<?> mergedExplosionPacket(double x, double y, double z, float radius) {
+        return new ClientboundExplodePacket(x, y, z, radius, List.of(), null);
+    }
+
+    /** A block's type as React's config files name it: the Bukkit material constant for vanilla blocks. */
+    public static String blockTypeName(Block block) {
+        ResourceLocation key = BuiltInRegistries.BLOCK.getKey(block);
+        return "minecraft".equals(key.getNamespace()) ? key.getPath().toUpperCase(Locale.ROOT) : key.toString();
+    }
+
+    static SoundEvent sound(String key) {
+        ResourceLocation id = key == null ? null : ResourceLocation.tryParse(key);
+        return id == null ? null : SoundEvent.createVariableRangeEvent(id);
+    }
+
+    /**
+     * The block or item named the way {@link #blockTypeName} names it; air when there is none.
+     */
+    static Block blockByName(String name) {
+        ResourceLocation id = configId(name);
+        return id == null ? Blocks.AIR : BuiltInRegistries.BLOCK.get(id);
+    }
+
+    static Item itemByName(String name) {
+        ResourceLocation id = configId(name);
+        return id == null ? Items.AIR : BuiltInRegistries.ITEM.get(id);
+    }
+
+    private static ResourceLocation configId(String name) {
+        if (name == null || name.isEmpty()) {
+            return null;
+        }
+        return name.indexOf(':') >= 0 ? ResourceLocation.tryParse(name) : ResourceLocation.tryParse("minecraft:" + name.toLowerCase(Locale.ROOT));
+    }
+
+    static ParticleOptions itemParticle(Item item) {
+        return new ItemParticleOption(ParticleTypes.ITEM, new ItemStack(item));
+    }
+
+    static void tickFluid(FluidState fluid, ServerLevel level, BlockPos pos, BlockState block) {
+        fluid.tick(level, pos);
+    }
+
+    /** True when both stacks hold the same item with the same data, so they can merge. */
+    static boolean sameItemSameData(ItemStack first, ItemStack second) {
+        return ItemStack.isSameItemSameTags(first, second);
     }
 }

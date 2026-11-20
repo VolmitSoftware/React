@@ -6,6 +6,13 @@ import art.arcane.react.core.controller.WebController;
 import art.arcane.react.core.controller.EventController;
 import art.arcane.react.platform.CapabilityRefusal;
 import art.arcane.react.platform.CommandHost;
+import art.arcane.react.platform.BlockHost;
+import art.arcane.react.platform.GrowthHost;
+import art.arcane.react.platform.RedstoneHost;
+import art.arcane.react.platform.SpawnHost;
+import art.arcane.react.platform.PortalHost;
+import art.arcane.react.platform.ExplosionHost;
+import art.arcane.react.platform.FurnaceHost;
 import art.arcane.react.platform.ComponentHost;
 import art.arcane.react.platform.EntityHost;
 import art.arcane.react.platform.HopperHost;
@@ -75,6 +82,14 @@ public final class BukkitReactPlatform implements ReactPlatform {
   private final DropHost dropHost = new BukkitDropHost();
   private final ShorthandHost shorthandHost = new BukkitShorthandHost();
   private final MapDataHost mapDataHost = new BukkitMapDataHost();
+
+  private final BlockHost blockHost = new BukkitBlockHost();
+  private final GrowthHost growthHost = new BukkitGrowthHost();
+  private final RedstoneHost redstoneHost = new BukkitRedstoneHost();
+  private final SpawnHost spawnHost = new BukkitSpawnHost();
+  private final PortalHost portalHost = new BukkitPortalHost();
+  private final ExplosionHost explosionHost = new BukkitExplosionHost();
+  private final FurnaceHost furnaceHost = new BukkitFurnaceHost();
 
   public static BukkitReactPlatform instance() {
     return INSTANCE;
@@ -342,5 +357,42 @@ public final class BukkitReactPlatform implements ReactPlatform {
   @Override
   public Optional<LanguageHost> languageHost() {
     return Optional.of(languageHost);
+  }
+
+  // Block, redstone, spawn and explosion hosts
+
+  @Override
+  public Optional<BlockHost> blockHost() {
+    return Optional.of(blockHost);
+  }
+
+  @Override
+  public Optional<GrowthHost> growthHost() {
+    return Optional.of(growthHost);
+  }
+
+  @Override
+  public Optional<RedstoneHost> redstoneHost() {
+    return Optional.of(redstoneHost);
+  }
+
+  @Override
+  public Optional<SpawnHost> spawnHost() {
+    return Optional.of(spawnHost);
+  }
+
+  @Override
+  public Optional<PortalHost> portalHost() {
+    return Optional.of(portalHost);
+  }
+
+  @Override
+  public Optional<ExplosionHost> explosionHost() {
+    return Optional.of(explosionHost);
+  }
+
+  @Override
+  public Optional<FurnaceHost> furnaceHost() {
+    return Optional.of(furnaceHost);
   }
 }

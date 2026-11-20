@@ -1,5 +1,13 @@
 package art.arcane.react.content.tweak;
 
+import art.arcane.react.platform.HostListeners;
+import art.arcane.react.platform.ListenerPriority;
+import art.arcane.react.platform.ReactPlatform;
+import art.arcane.react.platform.ReactPlatforms;
+import art.arcane.react.platform.SpawnHost;
+import art.arcane.react.platform.Subscription;
+import art.arcane.react.platform.bukkit.BukkitSpawnHost;
+import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -9,8 +17,6 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
-import org.bukkit.event.EventException;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
@@ -18,22 +24,47 @@ import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.entity.SpawnerSpawnEvent;
 import org.bukkit.event.entity.TrialSpawnerSpawnEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.plugin.EventExecutor;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.RegisteredListener;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class TweakEntityHardstopTest {
+  private final Map<UUID, World> worlds = new HashMap<>();
+  private final CapturingSpawnHost host = new CapturingSpawnHost();
+  private MockedStatic<Bukkit> bukkit;
+
+  @BeforeEach
+  void bindPlatform() {
+    ReactPlatform platform = Mockito.mock(ReactPlatform.class);
+    Mockito.when(platform.spawnHost()).thenReturn(Optional.of(host));
+    ReactPlatforms.unbind();
+    ReactPlatforms.bind(platform);
+    bukkit = Mockito.mockStatic(Bukkit.class);
+    bukkit.when(() -> Bukkit.getWorld(Mockito.any(UUID.class)))
+        .thenAnswer(invocation -> worlds.get(invocation.getArgument(0, UUID.class)));
+  }
+
+  @AfterEach
+  void unbindPlatform() {
+    bukkit.close();
+    ReactPlatforms.unbind();
+  }
 
   @Test
   public void sameCoordinatesInDifferentWorldsDoNotShareTheChunkCache() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     ChunkFixture crowded = loadedChunk(4, -7, entities(100));
     ChunkFixture empty = loadedChunk(4, -7, new Entity[0]);
 
@@ -45,7 +76,7 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void cachedRejectionSkipsRepeatedEntityEnumeration() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     ChunkFixture crowded = loadedChunk(2, 3, entities(100));
 
     Assertions.assertTrue(cancelsCreatureSpawn(tweak, crowded));
@@ -55,7 +86,7 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void cachedCountSkipsEntityEnumerationForAcceptedSpawns() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     ChunkFixture quiet = loadedChunk(-9, 12, entities(3));
 
     Assertions.assertFalse(cancelsCreatureSpawn(tweak, quiet));
@@ -66,7 +97,7 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void acceptedSpawnsRaiseTheCachedCountUntilARecountConfirmsTheCap() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     ChunkFixture nearlyFull = loadedChunk(6, 6, entities(99));
     Mockito.when(nearlyFull.chunk().getEntities()).thenReturn(entities(99), entities(100));
 
@@ -78,7 +109,7 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void overstatedCountsRecountBeforeRejecting() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     ChunkFixture steady = loadedChunk(7, -2, entities(99));
 
     Assertions.assertFalse(cancelsCreatureSpawn(tweak, steady));
@@ -88,7 +119,7 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void cancelledSpawnsAreNotEvaluatedOrCounted() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     ChunkFixture nearlyFull = loadedChunk(3, 9, entities(99));
     CreatureSpawnEvent blocked = creatureSpawn(nearlyFull, CreatureSpawnEvent.SpawnReason.NATURAL);
     Mockito.when(blocked.isCancelled()).thenReturn(true);
@@ -102,17 +133,17 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void everySpawnHandlerSkipsCancelledEvents() {
-    for (Method method : TweakEntityHardstop.class.getDeclaredMethods()) {
-      EventHandler handler = method.getAnnotation(EventHandler.class);
-      if (handler != null) {
-        Assertions.assertTrue(handler.ignoreCancelled(), method.toGenericString());
-      }
+    tweak();
+
+    Assertions.assertEquals(4, host.ignoreCancelled.size());
+    for (Boolean ignoreCancelled : host.ignoreCancelled) {
+      Assertions.assertTrue(ignoreCancelled);
     }
   }
 
   @Test
   public void spawnerSpawnsCountEachMobOnce() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     ChunkFixture spawnerRoom = loadedChunk(10, 4, entities(98));
 
     SpawnerSpawnEvent spawner = Mockito.mock(SpawnerSpawnEvent.class);
@@ -130,7 +161,7 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void breedingCountsTheChildOnce() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     ChunkFixture pen = loadedChunk(-4, -4, entities(98));
 
     for (int child = 0; child < 2; child++) {
@@ -149,7 +180,7 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void deniedItemDropsCountEachItemOnce() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     setField(tweak, "allowItemDrops", false);
     ChunkFixture dropZone = loadedChunk(12, 1, entities(98));
 
@@ -173,7 +204,7 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void spawnChecksNeverLoadTheChunkThroughTheLocation() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     ChunkFixture fixture = loadedChunk(1, -1, entities(2));
     EntitySpawnEvent spawn = Mockito.mock(EntitySpawnEvent.class);
     stubSpawnedEntity(spawn, fixture, EntityType.ARMOR_STAND);
@@ -186,7 +217,7 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void unloadedChunksAreAdmittedWithoutLoadingOrCounting() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     ChunkFixture unloaded = chunk(8, 8, entities(100), false);
 
     Assertions.assertFalse(cancelsCreatureSpawn(tweak, unloaded));
@@ -198,7 +229,7 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void chunksWithUnloadedEntitiesAreAdmittedWithoutCounting() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     ChunkFixture pending = loadedChunk(9, -9, entities(100));
     Mockito.when(pending.chunk().isEntitiesLoaded()).thenReturn(false);
 
@@ -208,7 +239,7 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void allowedItemDropsDoNotCountTowardTheCap() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     Entity[] items = new Entity[100];
     for (int index = 0; index < items.length; index++) {
       items[index] = Mockito.mock(Item.class);
@@ -220,27 +251,27 @@ public class TweakEntityHardstopTest {
 
   @Test
   public void genericSpawnHandlerLeavesCreatureEventsToReasonAwareHandler() {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
     CreatureSpawnEvent event = Mockito.mock(CreatureSpawnEvent.class);
 
-    tweak.onEntitySpawn(event);
+    Assertions.assertNull(BukkitSpawnHost.entitySpawn(event));
 
     Mockito.verifyNoInteractions(event);
   }
 
   @Test
   public void deactivationDropsCachedCounts() throws Exception {
-    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    TweakEntityHardstop tweak = tweak();
     ChunkFixture crowded = loadedChunk(0, 0, entities(100));
     Assertions.assertTrue(cancelsCreatureSpawn(tweak, crowded));
 
     tweak.onDeactivate();
+    tweak.onActivate();
 
     Assertions.assertTrue(cancelsCreatureSpawn(tweak, crowded));
     Mockito.verify(crowded.chunk(), Mockito.times(2)).getEntities();
   }
 
-  private static boolean cancelsCreatureSpawn(TweakEntityHardstop tweak, ChunkFixture fixture) throws EventException {
+  private boolean cancelsCreatureSpawn(TweakEntityHardstop tweak, ChunkFixture fixture) {
     return fire(tweak, creatureSpawn(fixture, CreatureSpawnEvent.SpawnReason.NATURAL));
   }
 
@@ -259,29 +290,29 @@ public class TweakEntityHardstopTest {
     Mockito.when(event.getEntity()).thenReturn(entity);
   }
 
-  private static boolean fire(TweakEntityHardstop tweak, Event event) throws EventException {
+  private TweakEntityHardstop tweak() {
+    host.clear();
+    TweakEntityHardstop tweak = new TweakEntityHardstop();
+    tweak.onActivate();
+    return tweak;
+  }
+
+  private boolean fire(TweakEntityHardstop tweak, Event event) {
     dispatch(tweak, event);
     return Mockito.mockingDetails(event).getInvocations().stream()
         .anyMatch(invocation -> invocation.getMethod().getName().equals("setCancelled")
             && Boolean.TRUE.equals(invocation.getArgument(0)));
   }
 
-  private static void dispatch(TweakEntityHardstop tweak, Event event) throws EventException {
-    Plugin plugin = Mockito.mock(Plugin.class);
-    for (Method method : TweakEntityHardstop.class.getDeclaredMethods()) {
-      EventHandler handler = method.getAnnotation(EventHandler.class);
-      if (handler == null || !method.getParameterTypes()[0].isInstance(event)) {
-        continue;
-      }
-      Class<? extends Event> eventClass = method.getParameterTypes()[0].asSubclass(Event.class);
-      RegisteredListener registered = new RegisteredListener(
-          tweak,
-          EventExecutor.create(method, eventClass),
-          handler.priority(),
-          plugin,
-          handler.ignoreCancelled()
-      );
-      registered.callEvent(event);
+  private void dispatch(TweakEntityHardstop tweak, Event event) {
+    if (event instanceof CreatureSpawnEvent creature) {
+      host.creatures.dispatch(BukkitSpawnHost.spawn(creature));
+    } else if (event instanceof EntitySpawnEvent spawn) {
+      host.entities.dispatch(BukkitSpawnHost.entitySpawn(spawn));
+    } else if (event instanceof EntityBreedEvent breed) {
+      host.breeds.dispatch(BukkitSpawnHost.breed(breed));
+    } else if (event instanceof PlayerDropItemEvent drop) {
+      host.drops.dispatch(BukkitSpawnHost.drop(drop));
     }
   }
 
@@ -291,13 +322,15 @@ public class TweakEntityHardstopTest {
     field.setBoolean(tweak, value);
   }
 
-  private static ChunkFixture loadedChunk(int chunkX, int chunkZ, Entity[] entities) {
+  private ChunkFixture loadedChunk(int chunkX, int chunkZ, Entity[] entities) {
     return chunk(chunkX, chunkZ, entities, true);
   }
 
-  private static ChunkFixture chunk(int chunkX, int chunkZ, Entity[] entities, boolean loaded) {
+  private ChunkFixture chunk(int chunkX, int chunkZ, Entity[] entities, boolean loaded) {
     World world = Mockito.mock(World.class);
-    Mockito.when(world.getUID()).thenReturn(UUID.randomUUID());
+    UUID worldId = UUID.randomUUID();
+    worlds.put(worldId, world);
+    Mockito.when(world.getUID()).thenReturn(worldId);
     Mockito.when(world.getName()).thenReturn("world");
     Chunk chunk = Mockito.mock(Chunk.class);
     Mockito.when(chunk.getWorld()).thenReturn(world);
@@ -322,5 +355,45 @@ public class TweakEntityHardstopTest {
   }
 
   private record ChunkFixture(World world, Chunk chunk, Location location) {
+  }
+
+  private static final class CapturingSpawnHost extends BukkitSpawnHost {
+    private HostListeners<Spawn> creatures = new HostListeners<>();
+    private HostListeners<EntitySpawn> entities = new HostListeners<>();
+    private HostListeners<Breed> breeds = new HostListeners<>();
+    private HostListeners<ItemDrop> drops = new HostListeners<>();
+    private final List<Boolean> ignoreCancelled = new ArrayList<>();
+
+    private void clear() {
+      creatures = new HostListeners<>();
+      entities = new HostListeners<>();
+      breeds = new HostListeners<>();
+      drops = new HostListeners<>();
+      ignoreCancelled.clear();
+    }
+
+    @Override
+    public Subscription onCreatureSpawn(ListenerPriority priority, boolean ignore, Consumer<Spawn> listener) {
+      ignoreCancelled.add(ignore);
+      return creatures.subscribe(priority, ignore, listener);
+    }
+
+    @Override
+    public Subscription onEntitySpawn(ListenerPriority priority, boolean ignore, Consumer<EntitySpawn> listener) {
+      ignoreCancelled.add(ignore);
+      return entities.subscribe(priority, ignore, listener);
+    }
+
+    @Override
+    public Subscription onBreed(ListenerPriority priority, boolean ignore, Consumer<Breed> listener) {
+      ignoreCancelled.add(ignore);
+      return breeds.subscribe(priority, ignore, listener);
+    }
+
+    @Override
+    public Subscription onPlayerDropItem(ListenerPriority priority, boolean ignore, Consumer<ItemDrop> listener) {
+      ignoreCancelled.add(ignore);
+      return drops.subscribe(priority, ignore, listener);
+    }
   }
 }

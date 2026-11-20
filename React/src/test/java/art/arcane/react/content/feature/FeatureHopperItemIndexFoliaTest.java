@@ -4,6 +4,8 @@ import art.arcane.react.React;
 import art.arcane.react.core.controller.EntityController;
 import art.arcane.react.core.controller.HopperItemIndex;
 import art.arcane.react.core.controller.HopperPositionIndex;
+import art.arcane.react.platform.ChunkRef;
+import art.arcane.react.platform.bukkit.BukkitHopperHost;
 import art.arcane.react.util.common.scheduling.J;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -51,6 +53,7 @@ class FeatureHopperItemIndexFoliaTest {
         try (MockedStatic<React> react = Mockito.mockStatic(React.class);
              MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
              MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
             react.when(() -> React.controller(EntityController.class)).thenReturn(controller);
             scheduling.when(J::isFoliaThreading).thenReturn(true);
             scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Entity.class))).thenReturn(true);
@@ -123,6 +126,7 @@ class FeatureHopperItemIndexFoliaTest {
         try (MockedStatic<React> react = Mockito.mockStatic(React.class);
              MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
              MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
             scheduling.when(J::isFoliaThreading).thenReturn(true);
             scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Entity.class))).thenReturn(true);
             scheduling.when(() -> J.runChunk(
@@ -140,7 +144,7 @@ class FeatureHopperItemIndexFoliaTest {
             feature.onActivate();
             HopperItemIndex itemIndex = feature.getItemIndex();
             itemIndex.addItem(worldId, 0, 0, itemId);
-            feature.on(event);
+            dispatch(feature, event);
             feature.onTick();
 
             Assertions.assertArrayEquals(new UUID[0], itemIndex.itemIdsInChunk(worldId, 0, 0));
@@ -148,7 +152,7 @@ class FeatureHopperItemIndexFoliaTest {
             long[] hoppers = feature.getPositionIndex().hoppersInChunk(worldId, 0, 0);
             Assertions.assertArrayEquals(new long[]{HopperPositionIndex.packPos(3, 64, 4)}, hoppers);
 
-            feature.on(event);
+            dispatch(feature, event);
             feature.onTick();
 
             Mockito.verify(chunk, Mockito.times(1)).getEntities();
@@ -191,7 +195,9 @@ class FeatureHopperItemIndexFoliaTest {
         Mockito.when(chunk.getEntities()).thenReturn(entities);
 
         try (MockedStatic<React> react = Mockito.mockStatic(React.class);
-             MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+             MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
+             MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
             List<Entity> ownerTasks = new ArrayList<>();
             scheduling.when(J::isFoliaThreading).thenReturn(true);
             scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Entity.class))).thenReturn(true);
@@ -217,18 +223,18 @@ class FeatureHopperItemIndexFoliaTest {
 
             FeatureHopperItemIndex feature = new FeatureHopperItemIndex();
             feature.onActivate();
-            feature.on(event);
+            dispatch(feature, event);
             feature.onTick();
 
             Assertions.assertEquals(300, feature.getItemIndex().size());
             Assertions.assertEquals(itemIds, feature.getItemIndex().allItemIds());
             Assertions.assertEquals(0, ownerTasks.size());
 
-            feature.on(event);
+            dispatch(feature, event);
             feature.onTick();
             Assertions.assertEquals(256, ownerTasks.size());
 
-            feature.on(event);
+            dispatch(feature, event);
             feature.onTick();
 
             Assertions.assertEquals(300, ownerTasks.size());
@@ -259,6 +265,7 @@ class FeatureHopperItemIndexFoliaTest {
         try (MockedStatic<React> react = Mockito.mockStatic(React.class);
              MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
              MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
             scheduling.when(J::isFoliaThreading).thenReturn(true);
             scheduling.when(() -> J.isOwnedByCurrentRegion(item)).thenReturn(true);
             scheduling.when(() -> J.runEntity(
@@ -274,7 +281,7 @@ class FeatureHopperItemIndexFoliaTest {
 
             FeatureHopperItemIndex feature = new FeatureHopperItemIndex();
             feature.onActivate();
-            feature.on(event);
+            dispatch(feature, event);
             Assertions.assertArrayEquals(
                 new UUID[]{itemId},
                 feature.getItemIndex().itemIdsInChunk(worldId, 0, 0));
@@ -307,7 +314,9 @@ class FeatureHopperItemIndexFoliaTest {
         Mockito.when(event.getChunk()).thenReturn(chunk);
 
         try (MockedStatic<React> react = Mockito.mockStatic(React.class);
-             MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+             MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
+             MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
             scheduling.when(J::isFoliaThreading).thenReturn(true);
             scheduling.when(() -> J.runChunk(
                     Mockito.same(world),
@@ -318,7 +327,7 @@ class FeatureHopperItemIndexFoliaTest {
 
             FeatureHopperItemIndex feature = new FeatureHopperItemIndex();
             feature.onActivate();
-            feature.on(event);
+            dispatch(feature, event);
             feature.onTick();
             feature.onTick();
 
@@ -345,7 +354,9 @@ class FeatureHopperItemIndexFoliaTest {
         Mockito.when(event.getChunk()).thenReturn(chunk);
 
         try (MockedStatic<React> react = Mockito.mockStatic(React.class);
-             MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+             MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
+             MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
             scheduling.when(J::isFoliaThreading).thenReturn(true);
             scheduling.when(() -> J.runChunk(
                     Mockito.same(world),
@@ -359,7 +370,7 @@ class FeatureHopperItemIndexFoliaTest {
 
             FeatureHopperItemIndex feature = new FeatureHopperItemIndex();
             feature.onActivate();
-            feature.on(event);
+            dispatch(feature, event);
             feature.onTick();
             Assertions.assertEquals(1, tasks.size());
 
@@ -375,5 +386,14 @@ class FeatureHopperItemIndexFoliaTest {
     }
 
     private record ChunkTask(int chunkX, int chunkZ) {
+    }
+
+    private static void dispatch(FeatureHopperItemIndex feature, ChunkLoadEvent event) {
+        Chunk chunk = event.getChunk();
+        feature.onChunkLoad(new ChunkRef(chunk.getWorld().getUID(), chunk.getX(), chunk.getZ()));
+    }
+
+    private static void dispatch(FeatureHopperItemIndex feature, EntitiesLoadEvent event) {
+        BukkitHopperHost.forward(event, feature);
     }
 }

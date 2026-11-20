@@ -22,6 +22,7 @@ import art.arcane.react.core.controller.ActionController;
 import art.arcane.react.core.controller.FeatureController;
 import art.arcane.react.core.controller.ReactComponents;
 import art.arcane.react.core.controller.TweakController;
+import art.arcane.react.content.feature.FeatureIncidentMode;
 import art.arcane.react.platform.ComponentHost;
 import art.arcane.react.platform.WebHost;
 import art.arcane.react.platform.WebMetricsSource;
@@ -152,5 +153,17 @@ final class ModWebHost implements WebHost {
 
     private static boolean applyConfigValue(String path, Object value) {
         return ReactComponents.host().map((ComponentHost host) -> host.applyConfigValue(path, value)).orElse(false);
+    }
+
+    @Override
+    public String incidentState() {
+        FeatureIncidentMode feature = ReactComponents.feature(FeatureIncidentMode.class);
+        if (feature == null) {
+            return "UNKNOWN";
+        }
+        if (!feature.isEnabled()) {
+            return "DISABLED";
+        }
+        return feature.isIncidentActive() ? "ACTIVE" : "NORMAL";
     }
 }

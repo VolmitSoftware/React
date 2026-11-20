@@ -1,19 +1,20 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
-import art.arcane.volmlib.nativelib.monitor.HopperTickHook;
-import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
 import art.arcane.react.nms.NmsBridges;
-import art.arcane.volmlib.nativelib.monitor.TickDecision;
+import art.arcane.react.platform.Facing;
 import art.arcane.react.platform.GameLocation;
 import art.arcane.react.platform.WorldHost;
 import art.arcane.react.util.common.scheduling.J;
+import art.arcane.volmlib.nativelib.monitor.HopperTickHook;
+import art.arcane.volmlib.nativelib.monitor.NativeMonitor;
+import art.arcane.volmlib.nativelib.monitor.TickDecision;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.Hopper;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -88,8 +89,13 @@ class HopperChainTokenBucketTest {
       return true;
     });
 
+    World world = Mockito.mock(World.class);
+    UUID worldId = UUID.randomUUID();
+    Mockito.when(world.getUID()).thenReturn(worldId);
     try (MockedStatic<NmsBridges> bridges = Mockito.mockStatic(NmsBridges.class);
-         MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+         MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
+         MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
       bridges.when(NmsBridges::get).thenReturn(bridge);
       scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Location.class))).thenReturn(true);
       feature.onActivate();
@@ -100,9 +106,6 @@ class HopperChainTokenBucketTest {
       Mockito.when(bucket.tryConsume(Mockito.any(GameLocation.class))).thenReturn(false);
       setObject(feature, "hopperTokenBucket", bucket);
 
-      World world = Mockito.mock(World.class);
-      UUID worldId = UUID.randomUUID();
-      Mockito.when(world.getUID()).thenReturn(worldId);
       Mockito.when(world.isChunkLoaded(0, 0)).thenReturn(true);
       Inventory headInventory = Mockito.mock(Inventory.class);
       Inventory recipientInventory = Mockito.mock(Inventory.class);
@@ -147,6 +150,8 @@ class HopperChainTokenBucketTest {
     FeatureHopperTokenBucket bucket = Mockito.mock(FeatureHopperTokenBucket.class);
     setObject(feature, "hopperTokenBucket", bucket);
     World world = Mockito.mock(World.class);
+    UUID worldId = UUID.randomUUID();
+    Mockito.when(world.getUID()).thenReturn(worldId);
     Mockito.when(world.isChunkLoaded(0, 0)).thenReturn(true);
     Inventory headInventory = Mockito.mock(Inventory.class);
     Inventory recipientInventory = Mockito.mock(Inventory.class);
@@ -164,7 +169,9 @@ class HopperChainTokenBucketTest {
     bindInventory(world, 3, 64, 0, recipientInventory);
     Object chain = chain(new long[]{packPos(0, 64, 0), packPos(1, 64, 0), packPos(2, 64, 0)});
 
-    try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class)) {
+    try (MockedStatic<J> scheduling = Mockito.mockStatic(J.class);
+         MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
       scheduling.when(() -> J.isOwnedByCurrentRegion(Mockito.any(Location.class))).thenReturn(true);
       applyChainTransfer(feature, world, chain);
     } finally {
@@ -189,9 +196,9 @@ class HopperChainTokenBucketTest {
 
   private static Object chain(long[] positions) throws Exception {
     Class<?> chainType = nestedClass("HopperChain");
-    Constructor<?> constructor = chainType.getDeclaredConstructor(long[].class, BlockFace.class);
+    Constructor<?> constructor = chainType.getDeclaredConstructor(long[].class, Facing.class);
     constructor.setAccessible(true);
-    return constructor.newInstance(positions, BlockFace.EAST);
+    return constructor.newInstance(positions, Facing.EAST);
   }
 
   private static void applyChainTransfer(
@@ -201,7 +208,7 @@ class HopperChainTokenBucketTest {
   ) throws Exception {
     Method method = FeatureHopperChainCoalescing.class.getDeclaredMethod(
         "applyChainTransfer",
-        World.class,
+        UUID.class,
         nestedClass("HopperChain"),
         int.class,
         int.class,
@@ -214,7 +221,7 @@ class HopperChainTokenBucketTest {
         int.class
     );
     method.setAccessible(true);
-    method.invoke(feature, world, chain, 0, 64, 0, 2, 64, 0, 1, 0, 0);
+    method.invoke(feature, world.getUID(), chain, 0, 64, 0, 2, 64, 0, 1, 0, 0);
   }
 
   private static void putMiddleMapping(

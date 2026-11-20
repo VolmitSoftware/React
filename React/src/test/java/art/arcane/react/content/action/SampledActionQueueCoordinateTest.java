@@ -4,6 +4,8 @@ import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.content.sampler.SamplerHopperUpdates;
 import art.arcane.react.core.controller.ObserverController;
+import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.model.SampledChunk;
 import art.arcane.react.model.SampledServer;
 import art.arcane.react.model.SampledWorld;
@@ -38,6 +40,9 @@ class SampledActionQueueCoordinateTest {
     try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
       react.when(() -> React.sampler(SamplerHopperUpdates.ID)).thenReturn(hopperSampler);
+      SampleController samples = Mockito.mock(SampleController.class);
+      Mockito.when(samples.getSampler(SamplerHopperUpdates.ID)).thenReturn(hopperSampler);
+      react.when(() -> React.controller(SampleController.class)).thenReturn(samples);
 
       ActionPrewarmCriticalChunks.Params prewarmParams = ActionPrewarmCriticalChunks.Params.builder()
           .includePlayerChunks(false)

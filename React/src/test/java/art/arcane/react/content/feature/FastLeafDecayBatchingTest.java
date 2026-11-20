@@ -1,12 +1,13 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.GameLocation;
+import art.arcane.react.platform.GrowthHost;
 import art.arcane.react.util.common.scheduling.J;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import org.bukkit.ChunkSnapshot;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Leaves;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -17,12 +18,13 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 class FastLeafDecayBatchingTest {
   @Test
   void partitionsAChunkBoundaryScanIntoOwnedChunkBatches() {
     FeatureFastLeafDecay feature = new FeatureFastLeafDecay();
-    World world = Mockito.mock(World.class);
+    UUID world = UUID.randomUUID();
     FeatureFastLeafDecay.IBlock root = new FeatureFastLeafDecay.IBlock(world, 15, 64, 15);
     Map<FeatureFastLeafDecay.IChunk, List<FeatureFastLeafDecay.IBlock>> batches = new HashMap<>();
 
@@ -36,12 +38,11 @@ class FastLeafDecayBatchingTest {
   void scansTheCompleteSymmetricRadiusWithoutSharedLoopState() throws ReflectiveOperationException {
     FeatureFastLeafDecay feature = new FeatureFastLeafDecay();
     setDouble(feature, "maxSyncSpikeMS", 60_000D);
-    World world = Mockito.mock(World.class);
-    Mockito.when(world.getMinHeight()).thenReturn(-64);
-    Mockito.when(world.getMaxHeight()).thenReturn(320);
-    ChunkSnapshot snapshot = Mockito.mock(ChunkSnapshot.class);
-    BlockData data = Mockito.mock(BlockData.class);
-    Mockito.when(snapshot.getBlockData(Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt())).thenReturn(data);
+    UUID world = UUID.randomUUID();
+    GrowthHost.ChunkBlocks snapshot = Mockito.mock(GrowthHost.ChunkBlocks.class);
+    Mockito.when(snapshot.minHeight()).thenReturn(-64);
+    Mockito.when(snapshot.maxHeight()).thenReturn(320);
+    Mockito.when(snapshot.leaf(Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt())).thenReturn(GrowthHost.NOT_LEAVES);
     FeatureFastLeafDecay.IBlock root = new FeatureFastLeafDecay.IBlock(world, 8, 64, 8);
     FeatureFastLeafDecay.IChunk chunk = new FeatureFastLeafDecay.IChunk(world, 0, 0);
 
@@ -55,7 +56,7 @@ class FastLeafDecayBatchingTest {
     );
 
     Assertions.assertTrue(complete);
-    Mockito.verify(snapshot, Mockito.times(1331)).getBlockData(Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt());
+    Mockito.verify(snapshot, Mockito.times(1331)).leaf(Mockito.anyInt(), Mockito.anyInt(), Mockito.anyInt());
   }
 
   @Test
@@ -63,6 +64,7 @@ class FastLeafDecayBatchingTest {
     FeatureFastLeafDecay feature = new FeatureFastLeafDecay();
     setDouble(feature, "soundChance", 2D);
     setBoolean(feature, "fastBlockChanges", false);
+    UUID worldId = UUID.randomUUID();
     World world = Mockito.mock(World.class);
     Block block = Mockito.mock(Block.class);
     Leaves leaves = Mockito.mock(Leaves.class);
@@ -74,7 +76,10 @@ class FastLeafDecayBatchingTest {
     Mockito.when(leaves.isPersistent()).thenReturn(false);
     Mockito.when(leaves.getDistance()).thenReturn(7);
 
-    feature.addBlockForDecay(new FeatureFastLeafDecay.IBlock(world, 1, 64, 2), leaves);
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
+      feature.addBlockForDecay(new FeatureFastLeafDecay.IBlock(worldId, 1, 64, 2), 7);
+    }
 
     Mockito.verify(world).playSound(location, "minecraft:block.azalea_leaves.fall", 0.26F, 0.2F);
     Mockito.verify(world, Mockito.never()).getPlayers();
@@ -92,12 +97,7 @@ class FastLeafDecayBatchingTest {
   @Test
   void deactivatedFeatureRejectsNewDecayRoots() {
     FeatureFastLeafDecay feature = new FeatureFastLeafDecay();
-    World world = Mockito.mock(World.class);
-    Block block = Mockito.mock(Block.class);
-    Mockito.when(block.getWorld()).thenReturn(world);
-    Mockito.when(block.getX()).thenReturn(1);
-    Mockito.when(block.getY()).thenReturn(64);
-    Mockito.when(block.getZ()).thenReturn(2);
+    GameLocation block = new GameLocation(UUID.randomUUID(), 1, 64, 2);
     feature.onActivate();
     feature.onDeactivate();
 

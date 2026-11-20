@@ -96,7 +96,7 @@ class HopperChainCoalescingRepairTest {
     World world = Mockito.mock(World.class);
     Chunk chunk = Mockito.mock(Chunk.class);
     Mockito.when(world.isChunkLoaded(14, -9)).thenReturn(true);
-    Mockito.when(world.getChunkAt(14, -9)).thenReturn(chunk);
+    Mockito.when(world.getChunkAt(14, -9, false)).thenReturn(chunk);
     Mockito.when(chunk.getTileEntities(Mockito.<Predicate<? super Block>>any(), Mockito.eq(false))).thenReturn(List.of());
 
     Method queueRepair = FeatureHopperChainCoalescing.class.getDeclaredMethod(
@@ -130,8 +130,8 @@ class HopperChainCoalescingRepairTest {
       process.invoke(feature, generation.get());
     }
 
-    Mockito.verify(world).getChunkAt(14, -9);
-    Mockito.verify(world, Mockito.times(1)).getChunkAt(Mockito.anyInt(), Mockito.anyInt());
+    Mockito.verify(world).getChunkAt(14, -9, false);
+    Mockito.verify(world, Mockito.times(1)).getChunkAt(Mockito.anyInt(), Mockito.anyInt(), Mockito.anyBoolean());
   }
 
   private static Object coordinate(UUID worldId, int chunkX, int chunkZ) throws Exception {

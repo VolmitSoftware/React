@@ -2,10 +2,13 @@ package art.arcane.react.content.tweak;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.content.feature.FeatureHopperContainerThroughputMap;
+import art.arcane.react.content.feature.HopperThroughputHeatmap;
 import art.arcane.react.content.feature.FeatureHopperItemIndex;
 import art.arcane.react.content.sampler.SamplerTickTime;
+import art.arcane.volmlib.nativelib.NativeAdapters;
 import art.arcane.volmlib.nativelib.monitor.NativeWorldAccess;
+import art.arcane.react.platform.ReactPlatform;
+import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.core.controller.HopperItemIndex;
 import art.arcane.react.core.controller.HopperPositionIndex;
 import art.arcane.react.util.common.scheduling.J;
@@ -28,6 +31,7 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -463,6 +467,7 @@ class TweakHopperIndexBatchTest {
         private final MockedStatic<React> react;
         private final MockedStatic<Bukkit> bukkit;
         private final MockedStatic<J> scheduler;
+        private final MockedStatic<NativeAdapters> adapters;
         private final NativeWorldAccess nativeAccess;
         private final List<ChunkTask> tasks;
         private boolean executeTasks;
@@ -489,11 +494,14 @@ class TweakHopperIndexBatchTest {
             bukkit = Mockito.mockStatic(Bukkit.class);
             scheduler = Mockito.mockStatic(J.class);
             nativeAccess = Mockito.mock(NativeWorldAccess.class);
-            FeatureHopperContainerThroughputMap.suckInItemsInvocations.set(0L);
+            adapters = Mockito.mockStatic(NativeAdapters.class);
+            adapters.when(() -> NativeAdapters.find(NativeWorldAccess.class)).thenReturn(Optional.of(nativeAccess));
+            HopperThroughputHeatmap.SUCK_IN_ITEMS_INVOCATIONS.set(0L);
 
             Mockito.when(world.getUID()).thenReturn(worldId);
             Mockito.when(world.isChunkLoaded(Mockito.anyInt(), Mockito.anyInt())).thenReturn(true);
             bukkit.when(Bukkit::getWorlds).thenReturn(List.of(world));
+            bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
             bukkit.when(() -> Bukkit.getEntity(Mockito.any(UUID.class)))
                 .thenAnswer(invocation -> {
                     UUID itemId = invocation.getArgument(0);
@@ -545,7 +553,10 @@ class TweakHopperIndexBatchTest {
             FeatureHopperItemIndex feature = Mockito.mock(FeatureHopperItemIndex.class);
             Mockito.when(feature.getItemIndex()).thenReturn(itemIndex);
             Mockito.when(feature.getPositionIndex()).thenReturn(positionIndex);
-            setField(tweak, "nativeAccess", nativeAccess);
+            ReactPlatform platform = ReactPlatforms.get();
+            setField(tweak, "hoppers", platform.hopperHost().orElseThrow());
+            setField(tweak, "blocks", platform.blockHost().orElseThrow());
+            setField(tweak, "worlds", platform.worldHost().orElseThrow());
             setField(tweak, "bridgesAvailable", true);
             setField(tweak, "indexFeature", feature);
             setField(tweak, "idleStretch", false);
@@ -602,7 +613,7 @@ class TweakHopperIndexBatchTest {
         }
 
         private long metricCount() {
-            return FeatureHopperContainerThroughputMap.suckInItemsInvocations.get();
+            return HopperThroughputHeatmap.SUCK_IN_ITEMS_INVOCATIONS.get();
         }
 
         private int itemValidityReads() {
@@ -621,8 +632,9 @@ class TweakHopperIndexBatchTest {
 
         @Override
         public void close() {
-            FeatureHopperContainerThroughputMap.suckInItemsInvocations.set(0L);
+            HopperThroughputHeatmap.SUCK_IN_ITEMS_INVOCATIONS.set(0L);
             scheduler.close();
+            adapters.close();
             bukkit.close();
             react.close();
         }

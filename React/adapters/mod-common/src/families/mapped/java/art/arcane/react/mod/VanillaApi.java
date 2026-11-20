@@ -4,6 +4,7 @@ import art.arcane.react.platform.GameLocation;
 import net.minecraft.SharedConstants;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -12,12 +13,16 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
@@ -25,10 +30,18 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FluidState;
+
+import java.util.List;
+import java.util.Locale;
 
 /** The 1.21.1 forms of the vanilla calls whose names or shapes changed later. */
 public final class VanillaApi {
@@ -229,5 +242,54 @@ public final class VanillaApi {
     /** How far the player reaches blocks. */
     static double blockReach(ServerPlayer player) {
         return player.blockInteractionRange();
+    }
+
+    static Packet<?> mergedExplosionPacket(double x, double y, double z, float radius) {
+        return new ClientboundExplodePacket(x, y, z, radius, List.of(), null, Explosion.BlockInteraction.DESTROY,
+                ParticleTypes.EXPLOSION, ParticleTypes.EXPLOSION_EMITTER, SoundEvents.GENERIC_EXPLODE);
+    }
+
+    /** A block's type as React's config files name it: the Bukkit material constant for vanilla blocks. */
+    public static String blockTypeName(Block block) {
+        ResourceLocation key = BuiltInRegistries.BLOCK.getKey(block);
+        return "minecraft".equals(key.getNamespace()) ? key.getPath().toUpperCase(Locale.ROOT) : key.toString();
+    }
+
+    static SoundEvent sound(String key) {
+        ResourceLocation id = key == null ? null : ResourceLocation.tryParse(key);
+        return id == null ? null : SoundEvent.createVariableRangeEvent(id);
+    }
+
+    /**
+     * The block or item named the way {@link #blockTypeName} names it; air when there is none.
+     */
+    static Block blockByName(String name) {
+        ResourceLocation id = configId(name);
+        return id == null ? Blocks.AIR : BuiltInRegistries.BLOCK.get(id);
+    }
+
+    static Item itemByName(String name) {
+        ResourceLocation id = configId(name);
+        return id == null ? Items.AIR : BuiltInRegistries.ITEM.get(id);
+    }
+
+    private static ResourceLocation configId(String name) {
+        if (name == null || name.isEmpty()) {
+            return null;
+        }
+        return name.indexOf(':') >= 0 ? ResourceLocation.tryParse(name) : ResourceLocation.tryParse("minecraft:" + name.toLowerCase(Locale.ROOT));
+    }
+
+    static ParticleOptions itemParticle(Item item) {
+        return new ItemParticleOption(ParticleTypes.ITEM, new ItemStack(item));
+    }
+
+    static void tickFluid(FluidState fluid, ServerLevel level, BlockPos pos, BlockState block) {
+        fluid.tick(level, pos);
+    }
+
+    /** True when both stacks hold the same item with the same data, so they can merge. */
+    static boolean sameItemSameData(ItemStack first, ItemStack second) {
+        return ItemStack.isSameItemSameComponents(first, second);
     }
 }

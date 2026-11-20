@@ -52,7 +52,7 @@ public final class BukkitCommandAction {
         .setMinimumHopperUpdatesPerChunk(Math.max(1D, minHopperUpdates));
 
     if (!world.equals("ALL")) {
-      p.withWorld(WorldIdentity.resolve(world).orElseThrow());
+      p.withWorld(WorldIdentity.serialize(WorldIdentity.resolve(world).orElseThrow()));
     }
 
     action.create(p, BukkitCommandSender.bukkit(sender)).queue();

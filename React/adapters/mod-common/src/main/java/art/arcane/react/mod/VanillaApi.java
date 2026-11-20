@@ -5,6 +5,8 @@ import net.minecraft.SharedConstants;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ColorParticleOption;
+import net.minecraft.core.particles.ExplosionParticleInfo;
+import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -12,6 +14,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -21,6 +25,9 @@ import net.minecraft.server.permissions.Permission;
 import net.minecraft.server.permissions.PermissionSet;
 import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.random.WeightedList;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
@@ -29,11 +36,20 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.DyedItemColor;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.portal.TeleportTransition;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 
 import java.net.URI;
+import java.util.Locale;
+import java.util.Optional;
+
+import java.net.URI;
+import java.util.Locale;
 
 /** Vanilla calls whose names or shapes changed after 1.21.1; the mapped source family carries the older forms. */
 public final class VanillaApi {
@@ -235,5 +251,55 @@ public final class VanillaApi {
     /** How far the player reaches blocks. */
     static double blockReach(ServerPlayer player) {
         return player.blockInteractionRange();
+    }
+
+    static Packet<?> mergedExplosionPacket(double x, double y, double z, float radius) {
+        return new ClientboundExplodePacket(new Vec3(x, y, z), radius, 0, Optional.<Vec3>empty(),
+                radius >= 2.0F ? ParticleTypes.EXPLOSION_EMITTER : ParticleTypes.EXPLOSION, SoundEvents.GENERIC_EXPLODE,
+                WeightedList.<ExplosionParticleInfo>of(), true);
+    }
+
+    /** A block's type as React's config files name it: the Bukkit material constant for vanilla blocks. */
+    public static String blockTypeName(Block block) {
+        Identifier key = BuiltInRegistries.BLOCK.getKey(block);
+        return "minecraft".equals(key.getNamespace()) ? key.getPath().toUpperCase(Locale.ROOT) : key.toString();
+    }
+
+    static SoundEvent sound(String key) {
+        Identifier id = key == null ? null : Identifier.tryParse(key);
+        return id == null ? null : SoundEvent.createVariableRangeEvent(id);
+    }
+
+    /**
+     * The block or item named the way {@link #blockTypeName} names it; air when there is none.
+     */
+    static Block blockByName(String name) {
+        Identifier id = configId(name);
+        return id == null ? Blocks.AIR : BuiltInRegistries.BLOCK.getValue(id);
+    }
+
+    static Item itemByName(String name) {
+        Identifier id = configId(name);
+        return id == null ? Items.AIR : BuiltInRegistries.ITEM.getValue(id);
+    }
+
+    private static Identifier configId(String name) {
+        if (name == null || name.isEmpty()) {
+            return null;
+        }
+        return name.indexOf(':') >= 0 ? Identifier.tryParse(name) : Identifier.tryParse("minecraft:" + name.toLowerCase(Locale.ROOT));
+    }
+
+    static ParticleOptions itemParticle(Item item) {
+        return new ItemParticleOption(ParticleTypes.ITEM, item);
+    }
+
+    static void tickFluid(FluidState fluid, ServerLevel level, BlockPos pos, BlockState block) {
+        fluid.tick(level, pos, block);
+    }
+
+    /** True when both stacks hold the same item with the same data, so they can merge. */
+    static boolean sameItemSameData(ItemStack first, ItemStack second) {
+        return ItemStack.isSameItemSameComponents(first, second);
     }
 }

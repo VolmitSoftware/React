@@ -1,5 +1,8 @@
 package art.arcane.react.mod;
 
+import art.arcane.react.content.feature.FeatureExplosionPacketBatching;
+import art.arcane.react.content.feature.FeatureLazyGravity;
+import art.arcane.react.core.controller.ReactComponents;
 import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
 import art.arcane.react.core.telemetry.RuntimeTelemetry;
 import art.arcane.react.platform.EventMeasurement;
@@ -9,8 +12,7 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 
 /**
- * Event time is per-mod cost and chunk cost comes from the chunk samples. React's async ticker has no work on mod servers
- * and Bukkit's optimisation features do not run here.
+ * Event time is per-mod cost and chunk cost comes from the chunk samples. React's async ticker has no work on mod servers.
  */
 final class ModRuntimeStatsHost implements RuntimeStatsHost {
     private final RuntimeTelemetry telemetry;
@@ -65,6 +67,17 @@ final class ModRuntimeStatsHost implements RuntimeStatsHost {
 
     @Override
     public OptionalDouble readAndResetFeatureCounter(FeatureCounter counter) {
+        if (counter == FeatureCounter.EXPLOSIONS || counter == FeatureCounter.EXPLOSION_CLUSTERS) {
+            FeatureExplosionPacketBatching feature = ReactComponents.feature(FeatureExplosionPacketBatching.class);
+            if (feature == null) {
+                return OptionalDouble.empty();
+            }
+            return OptionalDouble.of(counter == FeatureCounter.EXPLOSIONS ? feature.readAndResetExplosions() : feature.readAndResetClusters());
+        }
+        if (counter == FeatureCounter.LAZY_GRAVITY_PROJECTED_SKIPPED_TICKS) {
+            FeatureLazyGravity feature = ReactComponents.feature(FeatureLazyGravity.class);
+            return feature == null ? OptionalDouble.empty() : OptionalDouble.of(feature.readAndResetProjectedSkippedTicks());
+        }
         return OptionalDouble.empty();
     }
 }
