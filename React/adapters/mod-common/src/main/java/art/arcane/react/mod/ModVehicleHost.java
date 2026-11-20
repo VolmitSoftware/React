@@ -11,7 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
-/** Minecarts and boats on mods. Vanilla carts carry no flying or derailed modifiers, so velocity alone decides. */
+/**
+ * Minecarts and boats on mods. A cart that was never stopped counts as moving, as CraftBukkit's default flying and
+ * derailed modifiers do; stopping one zeroes its off-rail drag through {@link ModMinecartDrag}.
+ */
 final class ModVehicleHost implements VehicleHost {
     private final MinecraftServer server;
 
@@ -38,7 +41,7 @@ final class ModVehicleHost implements VehicleHost {
 
     @Override
     public boolean isMoving(GameEntity vehicle) {
-        return velocitySquared(vehicle) > 0D;
+        return velocitySquared(vehicle) > 0D || handle(vehicle) instanceof ModMinecartDrag drag && !drag.react$offRailStopped();
     }
 
     @Override
@@ -59,6 +62,9 @@ final class ModVehicleHost implements VehicleHost {
         if (handle != null) {
             handle.setDeltaMovement(Vec3.ZERO);
             VanillaCompat.syncVelocity(handle);
+            if (handle instanceof ModMinecartDrag drag) {
+                drag.react$setOffRailStopped(true);
+            }
         }
     }
 

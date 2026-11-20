@@ -7,6 +7,8 @@ import art.arcane.react.core.controller.HistoryController;
 import art.arcane.react.core.controller.JobController;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.history.MetricSnapshotValue;
+import art.arcane.react.core.telemetry.runtime.PathfindingRates;
+import art.arcane.react.core.telemetry.runtime.RuntimeMetricSampler;
 import art.arcane.react.platform.ReactPlatforms;
 
 import java.io.File;
@@ -18,14 +20,16 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * The parts of React's own telemetry that Bukkit runs as controllers: host telemetry refreshed once a second off the
- * server thread, the budgeted job queue behind {@code J.s}, and the metric history that web routes and map graphs read.
+ * server thread, the budgeted job queue behind {@code J.s}, the metric history that web routes and map graphs read, and
+ * the pathfinding rates that Bukkit's runtime telemetry controller publishes.
  */
 public final class RuntimeTelemetry {
     private static final long HOST_REFRESH_INTERVAL_MS = 1_000L;
     private final HostTelemetryFeed host;
     private final JobController jobs = new JobController();
     private final HistoryController history = new HistoryController();
-    private final List<String> hostSamplerIds = new ArrayList<>();
+    private final PathfindingRates pathfinding = new PathfindingRates(true);
+    private final List<String> samplerIds = new ArrayList<>();
     private ScheduledExecutorService hostRefresh;
     private boolean gcTracked;
 
@@ -45,6 +49,10 @@ public final class RuntimeTelemetry {
         return history;
     }
 
+    public PathfindingRates pathfinding() {
+        return pathfinding;
+    }
+
     /** Server thread, before the samplers start: the job queue must run before anything queues sync work. */
     public void startJobs() {
         jobs.start();
@@ -56,7 +64,15 @@ public final class RuntimeTelemetry {
         gcTracked = true;
         for (Sampler sampler : host.samplers()) {
             if (samples.registerSampler(sampler)) {
-                hostSamplerIds.add(sampler.getId());
+                samplerIds.add(sampler.getId());
+            }
+        }
+        pathfinding.reset(System.nanoTime());
+        for (RuntimeMetricSampler.Definition definition : PathfindingRates.DEFINITIONS) {
+            RuntimeMetricSampler sampler = new RuntimeMetricSampler(definition,
+                    () -> pathfinding.metric(definition.id(), System.currentTimeMillis()));
+            if (samples.registerSampler(sampler)) {
+                samplerIds.add(sampler.getId());
             }
         }
         ScheduledExecutorService refresh = Executors.newSingleThreadScheduledExecutor((Runnable task) -> {
@@ -65,7 +81,11 @@ public final class RuntimeTelemetry {
             return thread;
         });
         hostRefresh = refresh;
-        refresh.scheduleWithFixedDelay(() -> host.refresh(System.currentTimeMillis()), 0L, HOST_REFRESH_INTERVAL_MS, TimeUnit.MILLISECONDS);
+        refresh.scheduleWithFixedDelay(() -> {
+            long nowMs = System.currentTimeMillis();
+            host.refresh(nowMs);
+            pathfinding.refresh(nowMs, System.nanoTime());
+        }, 0L, HOST_REFRESH_INTERVAL_MS, TimeUnit.MILLISECONDS);
         history.start();
         history.postStart();
         Graph.bindLatest((String samplerId) -> {
@@ -87,11 +107,12 @@ public final class RuntimeTelemetry {
             refresh.shutdownNow();
         }
         if (samples != null) {
-            for (String id : hostSamplerIds) {
+            for (String id : samplerIds) {
                 samples.unregisterSampler(id);
             }
         }
-        hostSamplerIds.clear();
+        samplerIds.clear();
+        pathfinding.reset(System.nanoTime());
         host.reset();
         if (gcTracked) {
             gcTracked = false;

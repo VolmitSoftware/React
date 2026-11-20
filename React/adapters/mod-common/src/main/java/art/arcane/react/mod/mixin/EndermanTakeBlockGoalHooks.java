@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = {"net.minecraft.world.entity.monster.Enderman$EndermanTakeBlockGoal",
         "net.minecraft.world.entity.monster.EnderMan$EndermanTakeBlockGoal"})
 public abstract class EndermanTakeBlockGoalHooks {
-    @Inject(method = "tick",
+    @Inject(method = "tick()V",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;removeBlock(Lnet/minecraft/core/BlockPos;Z)Z"),
             cancellable = true, require = 0)
     private void react$taking(CallbackInfo callback) {

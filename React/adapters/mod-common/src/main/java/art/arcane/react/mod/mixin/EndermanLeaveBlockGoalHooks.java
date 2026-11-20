@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = {"net.minecraft.world.entity.monster.Enderman$EndermanLeaveBlockGoal",
         "net.minecraft.world.entity.monster.EnderMan$EndermanLeaveBlockGoal"})
 public abstract class EndermanLeaveBlockGoalHooks {
-    @Inject(method = "tick",
+    @Inject(method = "tick()V",
             at = {
                     @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;setBlockAndUpdate(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z"),
                     @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z")

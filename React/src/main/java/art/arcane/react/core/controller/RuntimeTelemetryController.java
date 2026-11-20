@@ -4,6 +4,7 @@ import art.arcane.react.React;
 import art.arcane.react.core.telemetry.runtime.FoliaRegionTps;
 import art.arcane.react.core.telemetry.runtime.JfrTelemetry;
 import art.arcane.react.core.telemetry.runtime.PaperPathfindingDecisions;
+import art.arcane.react.core.telemetry.runtime.PathfindingRates;
 import art.arcane.react.core.telemetry.runtime.RegionalHealth;
 import art.arcane.react.core.telemetry.runtime.RuntimeMetric;
 import art.arcane.react.core.telemetry.runtime.RuntimeMetricSampler;
@@ -48,9 +49,8 @@ public final class RuntimeTelemetryController implements IController {
   private transient volatile JfrTelemetry jfr;
   private transient Options appliedOptions;
   private transient long appliedRevision = -1L;
+  private final transient PathfindingRates pathfindingRates = new PathfindingRates(false);
   private transient PaperPathfindingDecisions pathfinding;
-  private transient volatile PaperPathfindingDecisions.Snapshot pathfindingSnapshot = PaperPathfindingDecisions.Snapshot.EMPTY;
-  private transient long pathfindingAtNanos;
 
   @Override
   public String getId() {
@@ -82,17 +82,18 @@ public final class RuntimeTelemetryController implements IController {
       register(controller, new RuntimeMetricSampler.Definition("region-players-below-18-tps", "Observed Players Below 18 TPS", "players", 5_000L));
       register(controller, new RuntimeMetricSampler.Definition("region-players-below-15-tps", "Observed Players Below 15 TPS", "players", 5_000L));
       register(controller, new RuntimeMetricSampler.Definition("region-player-coverage", "Region Player Coverage", "%", 5_000L));
-      register(controller, new RuntimeMetricSampler.Definition("pathfinding-decisions-rate", "Pathfinding Decisions", "/s", 1_000L));
-      register(controller, new RuntimeMetricSampler.Definition("pathfinding-cancelled-rate", "Cancelled Pathfinding Decisions", "/s", 1_000L));
+      for (RuntimeMetricSampler.Definition definition : PathfindingRates.DEFINITIONS) {
+        register(controller, definition);
+      }
       for (RuntimeMetricSampler.Definition definition : JfrTelemetry.definitions()) {
         register(controller, definition);
       }
     }
     try {
       Class.forName("com.destroystokyo.paper.event.entity.EntityPathfindEvent", false, getClass().getClassLoader());
-      pathfinding = new PaperPathfindingDecisions();
+      pathfindingRates.reset(System.nanoTime());
+      pathfinding = new PaperPathfindingDecisions(pathfindingRates);
       React.instance.registerListener(pathfinding);
-      pathfindingAtNanos = System.nanoTime();
     } catch (ClassNotFoundException missing) {
       pathfinding = null;
     }
@@ -114,7 +115,7 @@ public final class RuntimeTelemetryController implements IController {
         React.instance.unregisterListener(pathfinding);
         pathfinding = null;
       }
-      pathfindingSnapshot = PaperPathfindingDecisions.Snapshot.EMPTY;
+      pathfindingRates.reset(System.nanoTime());
       regionalSnapshot = RegionalHealth.Snapshot.EMPTY;
       jfrSnapshot = JfrTelemetry.Snapshot.EMPTY;
       SampleController controller = React.controller(SampleController.class);
@@ -161,10 +162,7 @@ public final class RuntimeTelemetryController implements IController {
     }
     long nowMs = System.currentTimeMillis();
     if (id.startsWith("pathfinding-")) {
-      PaperPathfindingDecisions.Snapshot snapshot = pathfindingSnapshot;
-      boolean available = snapshot.sampledAtMs() > 0L && nowMs >= snapshot.sampledAtMs() && nowMs - snapshot.sampledAtMs() <= MAX_SNAPSHOT_AGE_MS;
-      double value = id.equals("pathfinding-decisions-rate") ? snapshot.decisionsPerSecond() : snapshot.cancelledPerSecond();
-      return new RuntimeMetric(value, snapshot.sampledAtMs(), available, available ? "" : "source-unavailable");
+      return pathfindingRates.metric(id, nowMs);
     }
     if (id.startsWith("region-")) {
       RegionalHealth.Snapshot snapshot = regionalSnapshot;
@@ -226,9 +224,7 @@ public final class RuntimeTelemetryController implements IController {
     }
     long nowMs = System.currentTimeMillis();
     if (pathfinding != null) {
-      long nowNanos = System.nanoTime();
-      pathfindingSnapshot = pathfinding.snapshot(nowMs, nowNanos - pathfindingAtNanos);
-      pathfindingAtNanos = nowNanos;
+      pathfindingRates.refresh(nowMs, System.nanoTime());
     }
     if (regionSource != null) {
       try {

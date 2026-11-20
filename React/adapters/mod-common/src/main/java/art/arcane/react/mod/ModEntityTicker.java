@@ -7,6 +7,7 @@ import art.arcane.react.platform.Subscription;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -144,6 +145,17 @@ public final class ModEntityTicker {
             ticker.tick(entity, EntityPriority.active());
         } catch (RuntimeException failure) {
             ticker.logger.warn("React could not refresh an entity", failure);
+        }
+    }
+
+    /**
+     * A non-player entity physically touched a block, where Bukkit fires its EntityInteractEvent: pressure plates,
+     * tripwire, buttons, big dripleaf, redstone ore, turtle eggs and farmland. Players fire Bukkit's physical player
+     * interaction instead, which does not refresh them.
+     */
+    public static void interacted(Entity entity) {
+        if (!(entity instanceof Player)) {
+            poke(entity);
         }
     }
 

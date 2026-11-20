@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Pseudo
 @Mixin(targets = {"net.minecraft.world.entity.animal.equine.AbstractHorse", "net.minecraft.world.entity.animal.horse.AbstractHorse"})
 public abstract class AbstractHorseHooks {
-    @Inject(method = "tameWithName", at = @At("TAIL"), require = 0)
+    @Inject(method = "tameWithName(Lnet/minecraft/world/entity/player/Player;)Z", at = @At("TAIL"), require = 0)
     private void react$tamed(Player player, CallbackInfoReturnable<Boolean> callback) {
         if (Boolean.TRUE.equals(callback.getReturnValue())) {
             ModMobStackHost.tamed((Entity) (Object) this, player);

@@ -2,6 +2,7 @@ package art.arcane.react.mod;
 
 import art.arcane.react.mod.mixin.ChunkMapAccess;
 import art.arcane.react.mod.mixin.CreeperAccess;
+import art.arcane.react.mod.mixin.EndermanAccess;
 import art.arcane.react.platform.ChunkRef;
 import art.arcane.react.platform.GameEntity;
 import art.arcane.react.platform.MobStackHost;
@@ -341,6 +342,7 @@ public final class ModMobStackHost implements MobStackHost {
         }
         state.remove("ignited");
         VanillaApi.loadEntity(target, state);
+        copyProvocation(source, target);
         Component name = source.getCustomName();
         target.setCustomName(copyName && name != null ? name.copy() : null);
         float maxHealth = source.getMaxHealth();
@@ -547,7 +549,21 @@ public final class ModMobStackHost implements MobStackHost {
         }
         return source instanceof Mob left && target instanceof Mob right
                 && left.getTarget() == null && right.getTarget() == null
-                && sameKeys(left, right, List.of("carriedBlockState"));
+                && sameKeys(left, right, List.of("carriedBlockState"))
+                && !isProvoked(left) && !isProvoked(right);
+    }
+
+    private static boolean isProvoked(Entity entity) {
+        return entity instanceof EndermanAccess enderman && (enderman.react$isCreepy() || enderman.react$hasBeenStaredAt());
+    }
+
+    private static void copyProvocation(Entity source, Entity target) {
+        if (source instanceof EndermanAccess left && target instanceof EndermanAccess right) {
+            target.getEntityData().set(EndermanAccess.react$creepyData(), left.react$isCreepy());
+            if (left.react$hasBeenStaredAt() && !right.react$hasBeenStaredAt()) {
+                right.react$setBeingStaredAt();
+            }
+        }
     }
 
     private boolean hasMatchingFarmState(String type, LivingEntity source, LivingEntity target) {

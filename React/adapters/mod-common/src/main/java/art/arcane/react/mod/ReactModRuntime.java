@@ -158,6 +158,7 @@ public final class ReactModRuntime {
             ticks.every(modPlatform.entityKiller()::tick);
             components.postStart();
             telemetry.start(samples);
+            ModPathfinding.bind(telemetry.pathfinding());
             maps.start(modPlatform);
             ticks.every(maps::tick);
             ModSettings.bind(settings);
@@ -263,6 +264,7 @@ public final class ReactModRuntime {
             LOGGER.warn("React Web did not stop cleanly", failure);
         }
         pluginApis.stop();
+        ModPathfinding.bind(null);
         try {
             active.telemetry().stop(active.samples());
         } catch (RuntimeException failure) {
