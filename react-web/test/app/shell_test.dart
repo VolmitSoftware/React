@@ -334,6 +334,9 @@ void main() {
         '/server/:id/tuning',
         '/server/:id/plugins',
         '/server/:id/metrics',
+        '/server/:id/profiler',
+        '/server/:id/profiler/snapshot/:snapshot',
+        '/server/:id/plugins/:owner',
       ]);
     });
   });

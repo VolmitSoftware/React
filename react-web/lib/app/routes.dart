@@ -17,10 +17,13 @@ import '../screen/pages/map_page.dart';
 import '../screen/pages/metrics_page.dart';
 import '../screen/pages/network_page.dart';
 import '../screen/pages/overview_page.dart';
+import '../screen/pages/owner_page.dart';
 import '../screen/pages/pair_page.dart';
 import '../screen/pages/performance_page.dart';
 import '../screen/pages/plugins_page.dart';
+import '../screen/pages/profiler_page.dart';
 import '../screen/pages/settings_page.dart';
+import '../screen/pages/snapshot_page.dart';
 import '../screen/pages/start_page.dart';
 import '../screen/pages/tuning_page.dart';
 import '../state/connection_manager.dart';
@@ -67,7 +70,32 @@ List<RouteBase> buildReactorRoutes() => <RouteBase>[
   _server(kRouteServerTuning, const TuningPage()),
   _server(kRouteServerPlugins, const PluginsPage()),
   _server(kRouteServerMetrics, const MetricsPage()),
+  _server(kRouteServerProfiler, const ProfilerPage()),
+  Route(
+    path: kRouteServerSnapshot,
+    builder: (BuildContext context, RouteState state) => ServerScopes(
+      id: state.params['id'],
+      child: SnapshotPage(snapshotId: _param(state, 'snapshot')),
+    ),
+  ),
+  Route(
+    path: kRouteServerOwner,
+    builder: (BuildContext context, RouteState state) => ServerScopes(
+      id: state.params['id'],
+      child: OwnerPage(ownerId: _param(state, 'owner')),
+    ),
+  ),
 ];
+
+/// The decoded path parameter [name] of [state].
+String _param(RouteState state, String name) {
+  final String raw = state.params[name] ?? '';
+  try {
+    return Uri.decodeComponent(raw);
+  } on ArgumentError {
+    return raw;
+  }
+}
 
 Route _server(String path, Widget page) => Route(
   path: path,

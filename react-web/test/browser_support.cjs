@@ -80,7 +80,10 @@ function declaredRoutes() {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) visit(full);
       else if (entry.name.endsWith('.dart')) {
-        for (const m of fs.readFileSync(full, 'utf8').matchAll(/const\s+String\s+kRoute\w*\s*=\s*'(\/[^']*)'/g)) found.add(m[1]);
+        for (const m of fs.readFileSync(full, 'utf8').matchAll(/const\s+String\s+kRoute\w*\s*=\s*'(\/[^']*)'/g)) {
+          // A record's page (a snapshot, a plugin) needs a real id; its list links to it.
+          if (!/:(?!id\b)/.test(m[1])) found.add(m[1]);
+        }
       }
     }
   };

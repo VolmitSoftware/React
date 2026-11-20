@@ -16,6 +16,7 @@ import '../localization/reactor_localizations.dart';
 import '../model/heatmap.dart';
 import '../model/player_navigation.dart';
 import '../model/role_info.dart';
+import '../model/snapshot.dart';
 import '../model/world_settings.dart';
 import '../service/clipboard.dart';
 import '../service/react_client.dart';
@@ -32,6 +33,7 @@ import '../ui/kit/card.dart';
 import '../ui/kit/confirm_dialog.dart';
 import '../ui/kit/mode.dart';
 import '../ui/kit/page.dart';
+import '../ui/kit/role_gate.dart';
 import '../ui/kit/states.dart';
 import '../ui/error_text.dart';
 import '../widget/heatmap_controls.dart';
@@ -81,6 +83,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
   String? _selectedPlayerId;
   HeatmapTarget? _selectedTarget;
   bool _teleporting = false;
+  bool _snapshotting = false;
 
   @override
   void didChangeDependencies() {
@@ -453,6 +456,42 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
     }
   }
 
+  /// Freezes the heatmap as it is asked for now.
+  Future<void> _snapshot() async {
+    final ISnapshotClient? client = ServerSessionScope.of(context)
+        ?.clientAs<ISnapshotClient>();
+    final HeatmapViewport? viewport = _appliedViewport;
+    final String? heatmapId = _selectedHeatmapId;
+    if (client == null || viewport == null || heatmapId == null) return;
+    setState(() => _snapshotting = true);
+    try {
+      final SnapshotMeta meta = await client.createSnapshot(
+        SnapshotRequest.heatmap(
+          HeatmapSnapshotQuery(
+            id: heatmapId,
+            world: viewport.world,
+            centerChunkX: viewport.centerChunkX,
+            centerChunkZ: viewport.centerChunkZ,
+            radius: viewport.radius,
+          ),
+        ),
+      );
+      if (!mounted) return;
+      ArcaneSonner.success(
+        reactorText(ReactorText.snapshotTaken),
+        description: meta.label,
+      );
+    } on Object catch (error) {
+      if (!mounted) return;
+      ArcaneSonner.error(
+        reactorText(ReactorText.snapshotFailed),
+        description: localizedReactorError(error),
+      );
+    } finally {
+      if (mounted) setState(() => _snapshotting = false);
+    }
+  }
+
   OnlinePlayerInfo? _selectedPlayer() {
     final String? selectedId = _selectedPlayerId;
     if (selectedId == null) return null;
@@ -616,6 +655,21 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
               ? null
               : () => _zoom(true),
         ),
+        if (ServerSessionScope.of(context)?.supports<ISnapshotClient>() ??
+            false)
+          RowAction(
+            reactorText(ReactorText.snapshotTake),
+            ready &&
+                    _grid != null &&
+                    !_snapshotting &&
+                    RoleGate.allows(context, RoleNeed.admin)
+                ? () => unawaited(_snapshot())
+                : null,
+            icon: ArcaneIcon.camera(),
+            iconOnly: true,
+            loading: _snapshotting,
+            id: 'heatmap-snapshot',
+          ),
       ],
     );
   }

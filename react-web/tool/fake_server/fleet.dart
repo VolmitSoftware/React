@@ -10,6 +10,7 @@ import 'fixtures.dart';
 import 'host_fixtures.dart';
 import 'metric_fixtures.dart';
 import 'plugin_source.dart';
+import 'profiler_fixtures.dart';
 
 part 'fleet_api.dart';
 part 'fleet_control.dart';
@@ -114,6 +115,8 @@ final class _FakeServer {
   final Map<String, dynamic> config;
   final Map<String, dynamic> pluginApiCatalog;
   final List<_LogLine> logs;
+  final FakeProfiler profiler;
+  final FakeSnapshots snapshots;
   final Map<WebSocket, String> metricsSockets = <WebSocket, String>{};
   final Set<_LogSession> logSessions = <_LogSession>{};
   final Map<String, _Ticket> tickets = <String, _Ticket>{};
@@ -152,6 +155,8 @@ final class _FakeServer {
       players = FakeFixtures.players(profile),
       config = HostFixtures.config(profile),
       pluginApiCatalog = HostFixtures.pluginApiPacks(profile),
+      profiler = FakeProfiler(profile),
+      snapshots = FakeSnapshots(profile),
       logs = <_LogLine>[
         for (final (int index, String line) in FakeFixtures.logBacklog(
           profile,
@@ -237,6 +242,9 @@ final class _FakeServer {
       sampler['available'] = reason == null;
       sampler['unavailableReason'] = reason;
     }
+    (data['samplers'] as List<dynamic>).addAll(
+      HostFixtures.ownerCosts(profile, now),
+    );
     data['revisions'] = Map<String, int>.of(revisions);
     return body;
   }
@@ -788,7 +796,10 @@ final class FakeFleet {
         HttpHeaders.accessControlAllowHeadersHeader,
         'Authorization, Content-Type, X-React-Counter, X-React-Challenge',
       )
-      ..set(HttpHeaders.accessControlExposeHeadersHeader, 'Retry-After');
+      ..set(
+        HttpHeaders.accessControlExposeHeadersHeader,
+        'Retry-After, Content-Disposition',
+      );
   }
 
   Future<void> _writeData(HttpRequest request, Object? data) =>

@@ -61,6 +61,10 @@ extension _FleetApi on FakeFleet {
         await _writeData(request, HostFixtures.owners());
       case ('config', _):
         await _handleConfig(request, state, token, route);
+      case ('profiler', _):
+        await _handleProfiler(request, state, token, route, now);
+      case ('snapshots', _):
+        await _handleSnapshots(request, state, token, route, now);
       case ('logs', 1):
         _expect(request, 'GET');
         _requireScope(token, 'console:read');
@@ -78,6 +82,230 @@ extension _FleetApi on FakeFleet {
         await _writeData(request, <String, dynamic>{'dispatched': true});
       default:
         throw const _Reject(HttpStatus.notFound, 'Route not found');
+    }
+  }
+
+  /// The plugin's sampling profiler: status and start, stop or reset on
+  /// `/profiler`, its views below it.
+  Future<void> _handleProfiler(
+    HttpRequest request,
+    _FakeServer state,
+    FakeToken token,
+    List<String> route,
+    DateTime now,
+  ) async {
+    final FakeProfiler profiler = state.profiler;
+    final Map<String, String> query = request.uri.queryParameters;
+    String? text(String key) {
+      final String? value = query[key];
+      return value == null || value.isEmpty ? null : value;
+    }
+
+    num? number(String key) {
+      final String? raw = text(key);
+      if (raw == null) return null;
+      final num? value = num.tryParse(raw);
+      if (value == null) {
+        throw _Reject(HttpStatus.badRequest, '$key must be a number');
+      }
+      return value;
+    }
+
+    switch (route.length > 1 ? route[1] : null) {
+      case null when route.length == 1:
+        if (request.method == 'POST') {
+          _requireScope(token, 'admin');
+          final Map<String, Object?>? status = profiler.apply(
+            await _readBody(request),
+            now,
+          );
+          if (status == null) {
+            throw const _Reject(
+              HttpStatus.badRequest,
+              'action must be start, stop or reset',
+            );
+          }
+          state.addLog(
+            '[${_clock(now)} INFO]: [React] ${token.label} '
+            '${status['running'] == true ? 'started' : 'stopped'} the profiler',
+          );
+          await _writeData(request, status);
+          return;
+        }
+        _expect(request, 'GET');
+        _requireScope(token, 'read');
+        await _writeData(request, profiler.status(now));
+      case 'owners' when route.length == 2:
+        _expect(request, 'GET');
+        _requireScope(token, 'read');
+        await _writeData(request, profiler.owners(now));
+      case 'hot' when route.length == 2:
+        _expect(request, 'GET');
+        _requireScope(token, 'read');
+        await _writeData(
+          request,
+          profiler.hot(
+            now,
+            owner: text('owner'),
+            limit: (number('limit') ?? 50).toInt(),
+          ),
+        );
+      case 'tree' when route.length == 2:
+        _expect(request, 'GET');
+        _requireScope(token, 'read');
+        await _writeData(
+          request,
+          profiler.tree(
+            now,
+            owner: text('owner'),
+            thread: text('thread'),
+            minPercent: (number('minPercent') ?? 0.5).toDouble(),
+            maxDepth: (number('maxDepth') ?? 64).toInt(),
+          ),
+        );
+      case 'threads' when route.length == 2:
+        _expect(request, 'GET');
+        _requireScope(token, 'read');
+        await _writeData(request, profiler.threadList(now));
+      default:
+        throw const _Reject(HttpStatus.notFound, 'Profiler route not found');
+    }
+  }
+
+  /// Frozen profiles and heatmaps: list, take, read, export and delete.
+  Future<void> _handleSnapshots(
+    HttpRequest request,
+    _FakeServer state,
+    FakeToken token,
+    List<String> route,
+    DateTime now,
+  ) async {
+    final FakeSnapshots snapshots = state.snapshots;
+    if (route.length == 1) {
+      if (request.method == 'POST') {
+        _requireScope(token, 'admin');
+        await _writeData(
+          request,
+          _takeSnapshot(state, await _readBody(request), now).meta,
+        );
+        return;
+      }
+      _expect(request, 'GET');
+      _requireScope(token, 'read');
+      await _writeData(request, <String, Object?>{
+        'snapshots': snapshots.list(request.uri.queryParameters['kind']),
+      });
+      return;
+    }
+    final FakeSnapshot? snapshot = snapshots.byId(route[1]);
+    if (snapshot == null || route.length > 3) {
+      throw const _Reject(HttpStatus.notFound, 'Unknown snapshot');
+    }
+    if (route.length == 3) {
+      if (route[2] != 'export') {
+        throw const _Reject(HttpStatus.notFound, 'Snapshot route not found');
+      }
+      _expect(request, 'GET');
+      _requireScope(token, 'read');
+      request.response
+        ..statusCode = HttpStatus.ok
+        ..headers.contentType = ContentType('application', 'gzip')
+        ..headers.set(
+          'Content-Disposition',
+          'attachment; filename="${snapshot.filename}"',
+        )
+        ..headers.set(HttpHeaders.cacheControlHeader, 'no-store')
+        ..add(snapshot.gzip);
+      await request.response.close();
+      return;
+    }
+    if (request.method == 'DELETE') {
+      _requireScope(token, 'admin');
+      snapshots.remove(snapshot.id);
+      await _writeData(request, snapshot.meta);
+      return;
+    }
+    _expect(request, 'GET');
+    _requireScope(token, 'read');
+    await _writeData(request, snapshot.detail);
+  }
+
+  FakeSnapshot _takeSnapshot(
+    _FakeServer state,
+    Map<String, dynamic> body,
+    DateTime now,
+  ) {
+    final Object? label = body['label'];
+    if (label != null && label is! String) {
+      throw const _Reject(HttpStatus.badRequest, 'label must be text');
+    }
+    switch (body['kind']) {
+      case 'profile':
+        final Map<String, Object?> data = state.profiler.freeze(now);
+        final Map<String, Object?> owners =
+            data['owners']! as Map<String, Object?>;
+        final List<Map<String, Object?>> ranked =
+            (owners['owners']! as List<Map<String, Object?>>);
+        final int samples = owners['samples']! as int;
+        if (samples == 0) {
+          throw const _Reject(
+            HttpStatus.conflict,
+            'The profiler has no samples yet',
+          );
+        }
+        final String top = ranked.isEmpty
+            ? ''
+            : ' · ${ranked.first['name']} '
+                  '${(ranked.first['percent']! as double).toStringAsFixed(1)}%';
+        return state.snapshots.add(
+          'profile',
+          label as String?,
+          '${fakeCount(samples)} samples · ${ranked.length} owners$top',
+          data,
+          now,
+        );
+      case 'heatmap':
+        final Object? query = body['heatmap'];
+        if (query is! Map<String, dynamic> || query['id'] is! String) {
+          throw const _Reject(
+            HttpStatus.badRequest,
+            'heatmap needs the heatmap id and its query',
+          );
+        }
+        int? integer(String key) {
+          final Object? value = query[key];
+          if (value == null) return null;
+          if (value is! int) {
+            throw _Reject(HttpStatus.badRequest, '$key must be an integer');
+          }
+          return value;
+        }
+
+        final Object? world = query['world'];
+        final Map<String, dynamic>? heatmap = HostFixtures.heatmap(
+          state.profile,
+          query['id'] as String,
+          world: world is String ? world : null,
+          centerChunkX: integer('centerChunkX'),
+          centerChunkZ: integer('centerChunkZ'),
+          radius: integer('radius'),
+        );
+        if (heatmap == null) {
+          throw _Reject(HttpStatus.notFound, 'Unknown heatmap: ${query['id']}');
+        }
+        return state.snapshots.add(
+          'heatmap',
+          label as String?,
+          '${heatmap['label']} · ${heatmap['world']} · '
+              'r${heatmap['radius']}',
+          heatmap,
+          now,
+        );
+      default:
+        throw const _Reject(
+          HttpStatus.badRequest,
+          'kind must be profile or heatmap',
+        );
     }
   }
 

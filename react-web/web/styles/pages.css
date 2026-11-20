@@ -21,12 +21,7 @@
 /* Library fields side by side, one column on a phone. Controls line up
    at the bottom of a row, so a label that wraps keeps its box level with
    the boxes beside it, and a switch row is as tall as a box. */
-.reactor-field-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr));
-  align-items: end;
-  gap: 1rem 1.5rem;
-}
+.reactor-field-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(15rem, 100%), 1fr)); align-items: end; gap: 1rem 1.5rem; }
 
 .reactor-field-grid > [data-orientation="horizontal"] { min-height: 2.25rem; }
 
@@ -35,12 +30,7 @@
    not grow with the log: it fills the window under the page header and
    toolbar, and above the command row, on any wrapper (a connection
    alert above the page included); on phones it is a fixed share. */
-.reactor-log-frame {
-  position: relative;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--card);
-}
+.reactor-log-frame { position: relative; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); }
 
 .reactor-log {
   height: max(12rem, calc(100dvh - 17.5rem));

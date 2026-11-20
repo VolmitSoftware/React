@@ -20,6 +20,7 @@ import '../ui/error_text.dart';
 import '../ui/kit/badge.dart';
 import '../ui/kit/data_list.dart';
 import '../ui/kit/states.dart';
+import 'profile_view.dart';
 
 /// "1.23 ms/s".
 String ownerCostText(double msPerSecond) =>
@@ -67,7 +68,9 @@ class OwnersScreen extends StatelessWidget {
     final Map<String, String> names = <String, String>{
       for (final OwnerInfo owner in owners) owner.id: owner.name,
     };
+    final String serverId = ServerSessionScope.of(context)?.serverId ?? '';
     return DataList<OwnerCost>(
+      href: (OwnerCost cost) => ownerPath(serverId, cost.owner.id),
       label: reactorText(
         modded ? ReactorText.pageModsTitle : ReactorText.pagePluginsTitle,
       ),

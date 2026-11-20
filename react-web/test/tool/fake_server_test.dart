@@ -31,6 +31,7 @@ import 'package:react_web/service/react_exceptions.dart';
 
 import '../../tool/fake_server/fixtures.dart';
 import '../../tool/fake_server/fleet.dart';
+import '../../tool/fake_server/host_fixtures.dart';
 import '../../tool/fake_server/metric_fixtures.dart';
 
 const String _origin = FakeFleet.defaultOrigin;
@@ -421,7 +422,7 @@ void main() {
       expect(identity.serverName, equals('Skyblock'));
       expect(role.isAdmin, isTrue);
       expect(pluginApiCatalog.packs, hasLength(2));
-      expect(snapshot.byId, hasLength(metricFixtures.length));
+      expect(snapshot.byId, hasLength(_liveSamplers));
       expect(metricFixtures.length, greaterThanOrEqualTo(79));
       expect(snapshot.sampler('players')!.value, equals(40));
       expect(snapshot.sampler('ticks-per-second')!.value, lessThan(12));
@@ -557,7 +558,7 @@ void main() {
           jsonDecode(await logsSocket.first as String) as Map<String, dynamic>;
 
       expect(frames.last.seq, greaterThan(frames.first.seq));
-      expect(frames.first.byId, hasLength(metricFixtures.length));
+      expect(frames.first.byId, hasLength(_liveSamplers));
       expect(logFrame['type'], equals('log'));
       expect(
         logFrame['line'],
@@ -1420,7 +1421,7 @@ void main() {
 
       expect(marked['available'], isFalse);
       expect(marked['unavailableReason'], equals('Paper API missing'));
-      expect(_samplersOf(full), hasLength(metricFixtures.length));
+      expect(_samplersOf(full), hasLength(_liveSamplers));
       expect(fullTps['available'], isFalse);
       expect(fullTps['unavailableReason'], equals('Paper API missing'));
       expect(_dataOf(full)['revisions'], isA<Map<String, dynamic>>());
@@ -1432,7 +1433,7 @@ void main() {
           _dataOf(body).keys.toSet(),
           equals(<String>{'sequence', 'capturedAtMs', 'samplers', 'revisions'}),
         );
-        expect(_samplersOf(body), hasLength(metricFixtures.length - 1));
+        expect(_samplersOf(body), hasLength(_liveSamplers - 1));
         expect(
           _samplersOf(body).map((Map<String, dynamic> s) => s['id']),
           isNot(contains('ticks-per-second')),
@@ -1588,6 +1589,11 @@ ServerCredential _credential(
   fingerprint: profile.fingerprint,
   serverKey: profile.publicKey,
 );
+
+/// Every metric fixture and each enabled plugin's cost sampler.
+final int _liveSamplers =
+    metricFixtures.length +
+    HostFixtures.ownerCosts(const FakeServerProfile(0), DateTime(2026)).length;
 
 Map<String, dynamic> _json(http.Response response) =>
     jsonDecode(response.body) as Map<String, dynamic>;

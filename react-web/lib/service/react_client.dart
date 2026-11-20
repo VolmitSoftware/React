@@ -17,11 +17,13 @@ import '../model/metric_history.dart';
 import '../model/network_info.dart';
 import '../model/player_navigation.dart';
 import '../model/plugin_api_pack.dart';
+import '../model/profiler.dart';
 import '../model/role_info.dart';
 import '../model/server_capabilities.dart';
 import '../model/server_credential.dart';
 import '../model/server_snapshot.dart';
 import '../model/server_summary.dart';
+import '../model/snapshot.dart';
 import '../model/world_settings.dart';
 import '../state/memory_fleet_storage.dart';
 import 'monotonic_counter.dart';
@@ -157,6 +159,58 @@ abstract interface class IOwnerClient {
   Future<List<OwnerInfo>> owners();
 }
 
+/// The sampling profiler: `GET`/`POST /profiler` and its views.
+abstract interface class IProfilerClient {
+  Future<ProfilerStatus> profiler();
+  Future<ProfilerStatus> controlProfiler(ProfilerCommand command);
+  Future<ProfilerOwners> profilerOwners();
+  Future<ProfilerHot> profilerHot({String? owner, int limit});
+  Future<ProfilerTree> profilerTree({
+    String? owner,
+    String? thread,
+    double minPercent,
+    int maxDepth,
+  });
+  Future<List<ProfilerThread>> profilerThreads();
+}
+
+/// Frozen profiles and heatmaps: `/snapshots`.
+abstract interface class ISnapshotClient {
+  Future<SnapshotMeta> createSnapshot(SnapshotRequest request);
+  Future<List<SnapshotMeta>> snapshots({SnapshotKind? kind});
+  Future<SnapshotDetail> snapshot(String id);
+  Future<SnapshotExport> exportSnapshot(SnapshotMeta meta);
+  Future<void> deleteSnapshot(String id);
+}
+
+String _encodeQuery(Map<String, String> params) => params.entries
+    .map(
+      (MapEntry<String, String> e) =>
+          '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}',
+    )
+    .join('&');
+
+/// `/profiler/hot` with its query.
+String profilerHotPath({String? owner, int limit = 50}) =>
+    '/profiler/hot?${_encodeQuery(<String, String>{'owner': ?owner, 'limit': '$limit'})}';
+
+/// `/profiler/tree` with its query.
+String profilerTreePath({
+  String? owner,
+  String? thread,
+  double minPercent = 0.5,
+  int maxDepth = 64,
+}) =>
+    '/profiler/tree?${_encodeQuery(<String, String>{'owner': ?owner, 'thread': ?thread, 'minPercent': '$minPercent', 'maxDepth': '$maxDepth'})}';
+
+/// `/snapshots`, narrowed to [kind] when given.
+String snapshotsPath({SnapshotKind? kind}) =>
+    kind == null ? '/snapshots' : '/snapshots?kind=${kind.wire}';
+
+/// `/snapshots/{id}` and below.
+String snapshotPath(String id, [String rest = '']) =>
+    '/snapshots/${Uri.encodeComponent(id)}$rest';
+
 abstract interface class IPluginApiPackClient {
   Future<PluginApiCatalog> pluginApiPacks();
   Future<PluginApiValidationResult> validatePluginApiPack(String content);
@@ -188,7 +242,9 @@ class ReactClient
         IHistoryClient,
         INetworkClient,
         IOwnerClient,
-        IPluginApiPackClient {
+        IPluginApiPackClient,
+        IProfilerClient,
+        ISnapshotClient {
   final ServerCredential cred;
   final http.Client _http;
   final MonotonicCounter _counter;
@@ -225,6 +281,7 @@ class ReactClient
     String path, {
     Map<String, Object?>? body,
     bool authenticated = true,
+    bool allowEmpty = false,
   }) async {
     final bool mutating = method != 'GET';
     int rateLimitRetries = 0;
@@ -244,7 +301,7 @@ class ReactClient
         retryAfter: parseRetryAfter(response.headers['retry-after']),
       );
       if (error == null) {
-        if (decoded == null) {
+        if (decoded == null && !allowEmpty) {
           throw const ReactUnavailable(
             'Malformed response: expected an object',
           );
@@ -680,4 +737,84 @@ class ReactClient
       PluginApiCatalog.fromJson(
         await _deleteData('/plugin-api-packs/${Uri.encodeComponent(id)}'),
       );
+
+  @override
+  Future<ProfilerStatus> profiler() async =>
+      ProfilerStatus.fromJson(await _getData('/profiler'));
+
+  @override
+  Future<ProfilerStatus> controlProfiler(ProfilerCommand command) async =>
+      ProfilerStatus.fromJson(await _postData('/profiler', command.toJson()));
+
+  @override
+  Future<ProfilerOwners> profilerOwners() async =>
+      ProfilerOwners.fromJson(await _getData('/profiler/owners'));
+
+  @override
+  Future<ProfilerHot> profilerHot({String? owner, int limit = 50}) async =>
+      ProfilerHot.fromJson(
+        await _getData(profilerHotPath(owner: owner, limit: limit)),
+      );
+
+  @override
+  Future<ProfilerTree> profilerTree({
+    String? owner,
+    String? thread,
+    double minPercent = 0.5,
+    int maxDepth = 64,
+  }) async => ProfilerTree.fromJson(
+    await _getData(
+      profilerTreePath(
+        owner: owner,
+        thread: thread,
+        minPercent: minPercent,
+        maxDepth: maxDepth,
+      ),
+    ),
+  );
+
+  @override
+  Future<List<ProfilerThread>> profilerThreads() async =>
+      profilerThreadsFromJson(await _getData('/profiler/threads'));
+
+  @override
+  Future<SnapshotMeta> createSnapshot(SnapshotRequest request) async =>
+      SnapshotMeta.fromJson(await _postData('/snapshots', request.toJson()));
+
+  @override
+  Future<List<SnapshotMeta>> snapshots({SnapshotKind? kind}) async =>
+      snapshotListFromJson(await _getData(snapshotsPath(kind: kind)));
+
+  @override
+  Future<SnapshotDetail> snapshot(String id) async =>
+      SnapshotDetail.fromJson(await _getData(snapshotPath(id)));
+
+  /// The export route's gzip bytes, named by its Content-Disposition.
+  @override
+  Future<SnapshotExport> exportSnapshot(SnapshotMeta meta) async {
+    final http.Response response = await _transport(
+      'GET',
+      snapshotPath(meta.id, '/export'),
+      body: null,
+      authenticated: true,
+      mutating: false,
+    );
+    final Exception? error = reactErrorFor(
+      response.statusCode,
+      response.statusCode >= 300 ? _tryDecode(response.body) : null,
+    );
+    if (error != null) throw error;
+    return SnapshotExport(
+      filename:
+          contentDispositionFileName(response.headers['content-disposition']) ??
+          snapshotFileName(meta),
+      bytes: response.bodyBytes,
+      gzipped: true,
+    );
+  }
+
+  @override
+  Future<void> deleteSnapshot(String id) async {
+    await _send('DELETE', snapshotPath(id), allowEmpty: true);
+  }
 }

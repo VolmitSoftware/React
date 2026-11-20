@@ -15,6 +15,7 @@ import '../model/metric_history.dart';
 import '../model/network_info.dart';
 import '../model/player_navigation.dart';
 import '../model/plugin_api_pack.dart';
+import '../model/profiler.dart';
 import '../model/range_history.dart';
 import '../model/relay_frame.dart';
 import '../model/role_info.dart';
@@ -22,6 +23,7 @@ import '../model/server_capabilities.dart';
 import '../model/server_credential.dart';
 import '../model/server_snapshot.dart';
 import '../model/server_summary.dart';
+import '../model/snapshot.dart';
 import '../model/world_settings.dart';
 import '../state/memory_fleet_storage.dart';
 import 'monotonic_counter.dart';
@@ -48,6 +50,8 @@ class RelayReactClient
         INetworkClient,
         IOwnerClient,
         IPluginApiPackClient,
+        IProfilerClient,
+        ISnapshotClient,
         IServerPresence {
   final IRelayConnection _connection;
   final ServerCredential _cred;
@@ -603,5 +607,76 @@ class RelayReactClient
       '/plugin-api-packs/${Uri.encodeComponent(id)}',
     );
     return PluginApiCatalog.fromJson(data);
+  }
+
+  Future<Map<String, dynamic>> _getData(String path) async =>
+      _decodeData((await _get(path)).body);
+
+  @override
+  Future<ProfilerStatus> profiler() async =>
+      ProfilerStatus.fromJson(await _getData('/profiler'));
+
+  @override
+  Future<ProfilerStatus> controlProfiler(ProfilerCommand command) async =>
+      ProfilerStatus.fromJson(await _postData('/profiler', command.toJson()));
+
+  @override
+  Future<ProfilerOwners> profilerOwners() async =>
+      ProfilerOwners.fromJson(await _getData('/profiler/owners'));
+
+  @override
+  Future<ProfilerHot> profilerHot({String? owner, int limit = 50}) async =>
+      ProfilerHot.fromJson(
+        await _getData(profilerHotPath(owner: owner, limit: limit)),
+      );
+
+  @override
+  Future<ProfilerTree> profilerTree({
+    String? owner,
+    String? thread,
+    double minPercent = 0.5,
+    int maxDepth = 64,
+  }) async => ProfilerTree.fromJson(
+    await _getData(
+      profilerTreePath(
+        owner: owner,
+        thread: thread,
+        minPercent: minPercent,
+        maxDepth: maxDepth,
+      ),
+    ),
+  );
+
+  @override
+  Future<List<ProfilerThread>> profilerThreads() async =>
+      profilerThreadsFromJson(await _getData('/profiler/threads'));
+
+  @override
+  Future<SnapshotMeta> createSnapshot(SnapshotRequest request) async =>
+      SnapshotMeta.fromJson(await _postData('/snapshots', request.toJson()));
+
+  @override
+  Future<List<SnapshotMeta>> snapshots({SnapshotKind? kind}) async =>
+      snapshotListFromJson(await _getData(snapshotsPath(kind: kind)));
+
+  @override
+  Future<SnapshotDetail> snapshot(String id) async =>
+      SnapshotDetail.fromJson(await _getData(snapshotPath(id)));
+
+  /// The relay carries JSON only: the snapshot itself, compressed by the
+  /// browser on save under the export route's name.
+  @override
+  Future<SnapshotExport> exportSnapshot(SnapshotMeta meta) async {
+    final RelayResponse response = await _get(snapshotPath(meta.id));
+    return SnapshotExport(
+      filename: snapshotFileName(meta),
+      bytes: utf8.encode(jsonEncode(response.body['data'] ?? response.body)),
+      gzipped: false,
+    );
+  }
+
+  @override
+  Future<void> deleteSnapshot(String id) async {
+    await _request('DELETE', snapshotPath(id));
   }
 }

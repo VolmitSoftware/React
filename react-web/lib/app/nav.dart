@@ -76,6 +76,12 @@ const List<ServerPage> serverPages = <ServerPage>[
   ),
   ServerPage('map', ReactorText.pageMapTitle, ArcaneIcon.map, NavGroup.monitor),
   ServerPage(
+    'profiler',
+    ReactorText.pageProfilerTitle,
+    ArcaneIcon.flame,
+    NavGroup.monitor,
+  ),
+  ServerPage(
     'incidents',
     ReactorText.incidentsTitle,
     ArcaneIcon.siren,

@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'fixtures.dart';
+import 'profiler_fixtures.dart';
 
 /// What a fake server reports about its host and setup: plugin API packs,
 /// the machine, the config tree and the heatmaps.
@@ -111,23 +114,49 @@ abstract final class HostFixtures {
 
   /// Host details. Disk and network counters grow with [now], so the
   /// Environment page shows live rates.
-  /// The plugins the fake servers list; their costs come from no sampler.
+  /// The plugins the fake servers list, each with its cost sampler.
   static List<Map<String, dynamic>> owners() => <Map<String, dynamic>>[
-    for (final (String name, String version, bool enabled)
-        in const <(String, String, bool)>[
-          ('React', '5.0.0', true),
-          ('Iris', '4.0.0', true),
-          ('WorldEdit', '7.3.10', true),
-          ('Essentials', '2.21.0', false),
-        ])
+    for (final FakeOwnerSpec owner in fakeOwnerSpecs)
       <String, dynamic>{
-        'id': name,
-        'name': name,
-        'version': version,
-        'enabled': enabled,
-        'samplerId': 'plugin-${name.toLowerCase()}',
+        'id': owner.id,
+        'name': owner.name,
+        'version': owner.version,
+        'enabled': owner.enabled,
+        'samplerId': ownerSamplerId(owner),
         'includedIn': null,
       },
+  ];
+
+  static String ownerSamplerId(FakeOwnerSpec owner) =>
+      'plugin-${owner.id.toLowerCase()}';
+
+  /// The owners' live cost samplers (ms of server thread per second).
+  static List<Map<String, dynamic>> ownerCosts(
+    FakeServerProfile profile,
+    DateTime now,
+  ) => <Map<String, dynamic>>[
+    for (final (int index, FakeOwnerSpec owner) in fakeOwnerSpecs.indexed)
+      if (owner.enabled)
+        () {
+          final double value = double.parse(
+            (owner.work *
+                    (profile.isCritical ? 9 : 4) *
+                    (1 +
+                        0.2 *
+                            math.sin(
+                              now.millisecondsSinceEpoch / 9000 + index,
+                            )))
+                .toStringAsFixed(2),
+          );
+          return <String, dynamic>{
+            'id': ownerSamplerId(owner),
+            'name': '${owner.name} cost',
+            'suffix': 'ms/s',
+            'value': value,
+            'display': '${value.toStringAsFixed(2)} ms/s',
+            'available': true,
+          };
+        }(),
   ];
 
   static Map<String, dynamic> environment(

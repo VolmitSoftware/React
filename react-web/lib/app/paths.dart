@@ -20,6 +20,9 @@ const String kRouteServerTuning = '/server/:id/tuning';
 const String kRouteServerPlugins = '/server/:id/plugins';
 const String kRouteServerMetrics = '/server/:id/metrics';
 const String kRouteServerNetwork = '/server/:id/network';
+const String kRouteServerProfiler = '/server/:id/profiler';
+const String kRouteServerSnapshot = '/server/:id/profiler/snapshot/:snapshot';
+const String kRouteServerOwner = '/server/:id/plugins/:owner';
 
 /// A server page's address: its Overview without [page].
 String serverPath(String id, [String page = '']) =>

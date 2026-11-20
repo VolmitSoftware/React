@@ -1,7 +1,11 @@
 library;
 
+import 'package:arcane_jaspr/arcane_jaspr.dart' show BreadcrumbItem;
+import 'package:react_web/app/fleet_observer.dart';
 import 'package:react_web/app/nav.dart';
 import 'package:react_web/app/paths.dart';
+import 'package:react_web/app/shell_nav.dart';
+import 'package:react_web/state/connection_manager.dart';
 import 'package:react_web/localization/reactor_localizations.dart';
 import 'package:test/test.dart';
 
@@ -40,6 +44,7 @@ void main() {
         'performance',
         'activity',
         'map',
+        'profiler',
         'incidents',
         'metrics',
       ]);
@@ -80,16 +85,34 @@ void main() {
         kRouteServerPlugins,
         kRouteServerMetrics,
         kRouteServerNetwork,
+        kRouteServerProfiler,
       ];
       for (final ServerPage page in serverPages) {
         expect(routes, contains(page.pathFor(':id')), reason: page.slug);
       }
     });
 
+    test('a page below a page links back to it in the breadcrumbs', () {
+      const List<ServerEntry> servers = <ServerEntry>[
+        ServerEntry(id: 'a', name: 'Survival', state: ConnState.live),
+      ];
+      final List<BreadcrumbItem> owner = breadcrumbsFor(
+        '/server/a/plugins/Iris',
+        servers,
+      );
+      expect(owner.map((BreadcrumbItem i) => i.href), <String?>[
+        '/server/a',
+        '/server/a/plugins',
+      ]);
+      expect(breadcrumbsFor('/server/a/profiler', servers).last.href, isNull);
+    });
+
     test('names the page at an address', () {
       expect(serverPageAt('/server/a')?.slug, '');
       expect(serverPageAt('/server/a/map')?.slug, 'map');
       expect(serverPageAt('/server/a/governors'), isNull);
+      expect(serverPageAt('/server/a/plugins/Iris')?.slug, 'plugins');
+      expect(serverPageAt('/server/a/profiler/snapshot/x')?.slug, 'profiler');
       expect(pageTitleAt('/alerts'), ReactorText.alertsTitle);
       expect(pageTitleAt('/pair'), ReactorText.pairTitle);
       expect(pageTitleAt('/'), ReactorText.pageHomeTitle);

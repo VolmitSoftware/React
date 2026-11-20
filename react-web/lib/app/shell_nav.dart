@@ -273,7 +273,17 @@ List<BreadcrumbItem> breadcrumbsFor(
       !(serverId != null && serverPageOf(path).isEmpty) &&
       Uri.parse(path).path != kRouteFleet &&
       Uri.parse(path).path != kRouteRoot) {
-    items.add(BreadcrumbItem(label: reactorText(title)));
+    final List<String> parts = Uri.parse(
+      path,
+    ).pathSegments.where((String part) => part.isNotEmpty).toList();
+    items.add(
+      BreadcrumbItem(
+        label: reactorText(title),
+        href: serverId != null && parts.length > 3
+            ? serverPath(serverId, serverPageOf(path))
+            : null,
+      ),
+    );
   }
   return items;
 }

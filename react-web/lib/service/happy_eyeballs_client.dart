@@ -16,10 +16,12 @@ import '../model/network_info.dart';
 import '../model/player_navigation.dart';
 import '../model/range_history.dart';
 import '../model/plugin_api_pack.dart';
+import '../model/profiler.dart';
 import '../model/role_info.dart';
 import '../model/server_capabilities.dart';
 import '../model/server_snapshot.dart';
 import '../model/server_summary.dart';
+import '../model/snapshot.dart';
 import '../model/world_settings.dart';
 import 'react_client.dart';
 import 'react_exceptions.dart';
@@ -45,6 +47,8 @@ class HappyEyeballsClient
         INetworkClient,
         IOwnerClient,
         IPluginApiPackClient,
+        IProfilerClient,
+        ISnapshotClient,
         IServerPresence {
   final IReactClient? _direct;
   final IReactClient? _relay;
@@ -540,5 +544,76 @@ class HappyEyeballsClient
   @override
   Future<PluginApiCatalog> removePluginApiPack(String id) => _execute(
     (IReactClient client) => _pluginApiPacks(client).removePluginApiPack(id),
+  );
+
+  IProfilerClient _profilerOf(IReactClient client) {
+    if (client is IProfilerClient) return client as IProfilerClient;
+    throw const ReactUnavailable('Active transport has no profiler');
+  }
+
+  ISnapshotClient _snapshotsOf(IReactClient client) {
+    if (client is ISnapshotClient) return client as ISnapshotClient;
+    throw const ReactUnavailable('Active transport has no snapshots');
+  }
+
+  @override
+  Future<ProfilerStatus> profiler() =>
+      _read((IReactClient client) => _profilerOf(client).profiler());
+
+  @override
+  Future<ProfilerStatus> controlProfiler(ProfilerCommand command) => _execute(
+    (IReactClient client) => _profilerOf(client).controlProfiler(command),
+  );
+
+  @override
+  Future<ProfilerOwners> profilerOwners() =>
+      _read((IReactClient client) => _profilerOf(client).profilerOwners());
+
+  @override
+  Future<ProfilerHot> profilerHot({String? owner, int limit = 50}) => _read(
+    (IReactClient client) =>
+        _profilerOf(client).profilerHot(owner: owner, limit: limit),
+  );
+
+  @override
+  Future<ProfilerTree> profilerTree({
+    String? owner,
+    String? thread,
+    double minPercent = 0.5,
+    int maxDepth = 64,
+  }) => _read(
+    (IReactClient client) => _profilerOf(client).profilerTree(
+      owner: owner,
+      thread: thread,
+      minPercent: minPercent,
+      maxDepth: maxDepth,
+    ),
+  );
+
+  @override
+  Future<List<ProfilerThread>> profilerThreads() =>
+      _read((IReactClient client) => _profilerOf(client).profilerThreads());
+
+  @override
+  Future<SnapshotMeta> createSnapshot(SnapshotRequest request) => _execute(
+    (IReactClient client) => _snapshotsOf(client).createSnapshot(request),
+  );
+
+  @override
+  Future<List<SnapshotMeta>> snapshots({SnapshotKind? kind}) => _read(
+    (IReactClient client) => _snapshotsOf(client).snapshots(kind: kind),
+  );
+
+  @override
+  Future<SnapshotDetail> snapshot(String id) =>
+      _read((IReactClient client) => _snapshotsOf(client).snapshot(id));
+
+  @override
+  Future<SnapshotExport> exportSnapshot(SnapshotMeta meta) =>
+      _read((IReactClient client) => _snapshotsOf(client).exportSnapshot(meta));
+
+  @override
+  Future<void> deleteSnapshot(String id) => _execute(
+    (IReactClient client) => _snapshotsOf(client).deleteSnapshot(id),
   );
 }
