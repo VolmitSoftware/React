@@ -600,5 +600,20 @@
   "pair.no_data_since": "自 {time} 起無資料。",
   "pair.ends_in_hours": "若未使用,配對將於 {hours} 小時後結束。",
   "pair.ends_tomorrow": "若未使用,配對將於 1 天後結束。",
-  "pair.ends_in": "若未使用,配對將於 {days} 天後結束。"
+  "pair.ends_in": "若未使用,配對將於 {days} 天後結束。",
+  "page.network.title": "網路",
+  "page.network.tip": "此代理後方的所有伺服器",
+  "screen.network.proxy_software": "代理軟體",
+  "screen.network.servers_online": "線上伺服器",
+  "screen.network.full_details": "完整詳情",
+  "screen.network.status": "狀態",
+  "screen.network.latency": "延遲",
+  "screen.network.details": "詳細程度",
+  "screen.network.full": "完整",
+  "screen.network.basic": "基礎",
+  "screen.network.unknown": "未知",
+  "screen.network.empty": "此代理後方沒有伺服器",
+  "screen.network.basic_hint": "未安裝 React 的伺服器僅顯示狀態、玩家和延遲。",
+  "screen.network.not_proxy": "此伺服器不是代理",
+  "screen.network.not_proxy_description": "配對執行 React 的 Velocity 或 BungeeCord 代理即可查看其網路。"
 }

@@ -1,0 +1,9 @@
+{
+  "id": "react",
+  "name": "React",
+  "version": "${version}",
+  "description": "Monitors the proxy and every server behind it",
+  "url": "https://react.volmitsoftware.com",
+  "authors": ["Volmit Software"],
+  "main": "art.arcane.react.proxy.velocity.ReactVelocityPlugin"
+}

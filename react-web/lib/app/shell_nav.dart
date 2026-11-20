@@ -5,6 +5,7 @@
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
+import 'package:jaspr/jaspr.dart' show ListenableBuilder;
 import 'package:jaspr_router/jaspr_router.dart';
 
 import '../localization/reactor_locale.dart';
@@ -19,6 +20,7 @@ import '../state/connection_manager.dart';
 import '../state/fleet_live_scope.dart';
 import '../state/fleet_rollup.dart';
 import '../state/fleet_scope.dart';
+import '../state/server_identity.dart';
 import '../ui/kit/menu.dart';
 import '../ui/kit/mode.dart';
 import 'fleet_observer.dart';
@@ -151,6 +153,18 @@ class ShellNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
+    final String? serverId = serverIdOf(currentPath);
+    final ServerIdentity? identity = serverId == null
+        ? null
+        : FleetScope.of(context)?.fleetManager.sessionFor(serverId)?.identity;
+    if (identity == null) return _nav(context, proxy: false);
+    return ListenableBuilder(
+      listenable: identity,
+      builder: (BuildContext context) => _nav(context, proxy: identity.proxy),
+    );
+  }
+
+  Widget _nav(BuildContext context, {required bool proxy}) {
     final bool advanced = ModeScope.advanced(context);
     final String? serverId = serverIdOf(currentPath);
     final bool known = servers.any((ServerEntry s) => s.id == serverId);
@@ -184,7 +198,9 @@ class ShellNav extends StatelessWidget {
               collapsed: rail,
               children: <Widget>[
                 for (final ServerPage page in serverPages)
-                  if (page.group == group && (advanced || !page.advanced))
+                  if (page.group == group &&
+                      (advanced || !page.advanced) &&
+                      (proxy || !page.proxyOnly))
                     ArcaneSidebarItem(
                       label: reactorText(page.label),
                       icon: page.icon(size: IconSize.sm),

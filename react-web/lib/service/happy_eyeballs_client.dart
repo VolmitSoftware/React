@@ -11,6 +11,7 @@ import '../model/identity_info.dart';
 import '../model/log_line.dart';
 import '../model/incident_status.dart';
 import '../model/metric_history.dart';
+import '../model/network_info.dart';
 import '../model/player_navigation.dart';
 import '../model/range_history.dart';
 import '../model/plugin_api_pack.dart';
@@ -40,6 +41,7 @@ class HappyEyeballsClient
         IRoleClient,
         ISummaryClient,
         IHistoryClient,
+        INetworkClient,
         IPluginApiPackClient,
         IServerPresence {
   final IReactClient? _direct;
@@ -324,6 +326,12 @@ class HappyEyeballsClient
   Future<ServerSummary> summary() => _read((IReactClient client) {
     if (client is ISummaryClient) return (client as ISummaryClient).summary();
     throw const ReactUnavailable('Active transport has no summary');
+  });
+
+  @override
+  Future<NetworkInfo> network() => _read((IReactClient client) {
+    if (client is INetworkClient) return (client as INetworkClient).network();
+    throw const ReactUnavailable('Active transport has no network');
   });
 
   @override

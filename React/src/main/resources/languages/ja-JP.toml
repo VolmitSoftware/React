@@ -29,6 +29,7 @@
 #   {active}  有効な機能または調整項目の数
 #   {actor}  変更を行った Web ユーザー
 #   {added}  有効化後に機能がアクティブレジストリへ再登録されたか; 言語更新で追加されたメッセージ
+#   {address}  プロキシの背後にあるサーバーのホストとポート
 #   {after}  変更後の設定値、言語メッセージ、またはヒープ使用量
 #   {age}  連携データの経過時間（秒）
 #   {amount}  付与するアイテム数
@@ -242,6 +243,10 @@ web = "React WebUI のアクセストークンを管理する"
 "web.status" = "リスナー、リレー、フィンガープリントを表示"
 "web.tokens" = "ペアリング済みのブラウザーを一覧表示"
 language = "自分の言語またはサーバーの言語を選択"
+network = "プロキシネットワークと、その中でのこのサーバーの位置を表示します"
+"network.join" = "バックエンドがこのプロキシに参加するために web.toml に設定する内容を表示します"
+"network.list" = "プロキシの背後にあるすべてのサーバーを一覧表示します"
+"network.status" = "ネットワークの概要、またはこのサーバーとプロキシの接続を表示します"
 
 [command.parameter]
 debugdump_upload = "レポートを mclo.gs にアップロードする"
@@ -330,6 +335,23 @@ invalid = "&c距離は &f{range}&c にしてください。&r"
 schedule_failed = "&c必要なサーバースレッドで距離変更を実行するよう予約できませんでした。&r"
 set = "&f{scope} {target}&a の &b{type}&a 距離を &f{distance}&a に設定しました。&r"
 unavailable = "&cこのサーバーは &f{scope} {type}&c 距離の設定に対応していません。&r"
+
+[command.runtime.network]
+join = "&bネットワーク&r 各バックエンドの web.toml に次を設定してください: networkProxyUrl = \"{url}\" および networkSecret = \"{value}\""
+join_console_only = "&7ネットワークキーを確認するには、プロキシのコンソールで &f/react network join&7 を実行してください。&r"
+link = "&bネットワーク&r プロキシ {url} | {state}"
+link_connecting = "接続中"
+link_refused = "拒否されました: {reason}"
+link_registered = "{name} として登録済み"
+link_unreachable = "到達不能: {reason}"
+no_secret = "&cプロキシにはまだ networkSecret がありません。プロキシを再起動するか、web.toml で設定してください。&r"
+no_servers = "&7プロキシにサーバーが登録されていません。&r"
+not_joined = "&7このサーバーはどのネットワークにも属していません。プロキシに参加するには web.toml で &fnetworkProxyUrl&7 と &fnetworkSecret&7 を設定してください。&r"
+proxy = "&bネットワーク&r {server} | プレイヤー {players} 人 | オンラインのサーバー {count}/{total} | React 搭載 {registered}"
+proxy_only = "&7ネットワークを一覧表示できるのは Velocity または BungeeCord プロキシだけです。&r"
+server = "&f{name}&7 {address}&r | {status} | プレイヤー {players} 人 | ping {duration} | {detail}"
+server_no_react = "&7React なし&r"
+server_react = "TPS {average}、MSPT {tick}、メモリ {used}"
 
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 状態=&f{state}&7 対象=&f{target}&7 メトリクス=&f{metrics}&7 詳細=&f{detail}&r"
@@ -610,6 +632,18 @@ summary = "Web リスナーがバインドする IP アドレス。"
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React は既定で認証付き API を公開します。false にすると HTTP/WebSocket リスナーを起動しません。"
 summary = "内蔵 Web リスナーを有効にします。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkproxyurl]
+impact = "networkSecret を設定すると、このサーバーは 15 秒ごとにプロキシへ登録され、プロキシの React Web にフルダッシュボードが表示されます。プロキシがこのサーバーの Web リスナーに到達できる必要があります。空にすると、サーバーはネットワークに参加しません。"
+summary = "バックエンドサーバー用: Velocity または BungeeCord プロキシの React Web アドレス。例: http://10.0.0.5:9696."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networksecret]
+impact = "プロキシ上の React は初回起動時に新しいキーをここに書き込みます。それをすべてのバックエンドの networkSecret にコピーしてください。登録はこのキーで暗号化され署名されます。古いコピーを締め出すには、プロキシとすべてのバックエンドで変更してください。"
+summary = "プロキシとそのバックエンドが共有するネットワークキーです。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkservername]
+impact = "空の場合はゲームポートでこのサーバーを照合します。異なるホスト上の 2 つのバックエンドが同じポートを使わない限り、これで十分です。"
+summary = "バックエンドサーバー用: プロキシのサーバー一覧での名前。"
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.port]
 impact = "このポートが使用中の場合、Reactは次の99個のポートを順番に試します。advertisedUrlが空の場合、実際にバインドしたポートをリレーのループバック接続と生成する直接接続URLに使用します。web.tomlを保存すると、リスナーが自動的に再起動します。"

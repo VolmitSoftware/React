@@ -29,6 +29,7 @@
 #   {active}  Число активных функций или настроек оптимизации
 #   {actor}  Пользователь веб-интерфейса, внёсший изменение
 #   {added}  Вернулась ли функция в реестр активных функций после активации; число сообщений, добавленных обновлением языка
+#   {address}  Хост и порт сервера за прокси
 #   {after}  Значение настройки, языковое сообщение или использование кучи после изменения
 #   {age}  Возраст данных интеграции в секундах
 #   {amount}  Количество выдаваемых предметов
@@ -242,6 +243,10 @@ web = "Управление токенами доступа к веб-интер
 "web.status" = "Показать слушатель, ретранслятор и отпечаток"
 "web.tokens" = "Показать сопряжённые браузеры"
 language = "Выбрать свой язык или язык сервера"
+network = "Показывает сеть прокси и место этого сервера в ней"
+"network.join" = "Показывает, что бэкенд указывает в web.toml, чтобы присоединиться к этому прокси"
+"network.list" = "Перечисляет все серверы за прокси"
+"network.status" = "Показывает сводку сети или связь этого сервера с его прокси"
 
 [command.parameter]
 debugdump_upload = "Загрузить отчёт на mclo.gs"
@@ -330,6 +335,23 @@ invalid = "&cРасстояние должно быть &f{range}&c.&r"
 schedule_failed = "&cНе удалось запланировать изменение расстояния в требуемом потоке сервера.&r"
 set = "&aДля &f{scope} {target}&a задана дальность &b{type}&a: &f{distance}&a.&r"
 unavailable = "&cЭтот сервер не поддерживает изменение дальности &f{scope} {type}&c.&r"
+
+[command.runtime.network]
+join = "&bСеть&r На каждом бэкенде задайте в web.toml: networkProxyUrl = \"{url}\" и networkSecret = \"{value}\""
+join_console_only = "&7Выполните &f/react network join&7 в консоли прокси, чтобы увидеть ключ сети.&r"
+link = "&bСеть&r прокси {url} | {state}"
+link_connecting = "подключение"
+link_refused = "отклонено: {reason}"
+link_registered = "зарегистрирован как {name}"
+link_unreachable = "недоступен: {reason}"
+no_secret = "&cУ прокси ещё нет networkSecret; перезапустите прокси или задайте его в web.toml.&r"
+no_servers = "&7Прокси не перечисляет серверов.&r"
+not_joined = "&7Этот сервер не входит ни в одну сеть. Задайте &fnetworkProxyUrl&7 и &fnetworkSecret&7 в web.toml, чтобы присоединиться к прокси.&r"
+proxy = "&bСеть&r {server} | игроков: {players} | серверов онлайн: {count}/{total} | с React: {registered}"
+proxy_only = "&7Сеть перечисляет только прокси Velocity или BungeeCord.&r"
+server = "&f{name}&7 {address}&r | {status} | игроков: {players} | пинг {duration} | {detail}"
+server_no_react = "&7без React&r"
+server_react = "TPS {average}, MSPT {tick}, память {used}"
 
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 состояние=&f{state}&7 цель=&f{target}&7 метрики=&f{metrics}&7 подробности=&f{detail}&r"
@@ -610,6 +632,18 @@ summary = "IP-адрес, к которому привязывается веб-
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React по умолчанию открывает API с аутентификацией. Значение false отключает привязку HTTP- и WebSocket-слушателей."
 summary = "Включает встроенный веб-слушатель."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkproxyurl]
+impact = "Если задан networkSecret, этот сервер регистрируется на прокси каждые 15 секунд, чтобы React Web прокси показывал его полную панель. Прокси должен иметь доступ к веб-слушателю этого сервера. Пустое значение оставляет сервер вне сети."
+summary = "На бэкенд-сервере: адрес React Web вашего прокси Velocity или BungeeCord, например http://10.0.0.5:9696."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networksecret]
+impact = "React на прокси записывает сюда новый ключ при первом запуске; скопируйте его в networkSecret на каждом бэкенде. Регистрации шифруются и подписываются им. Измените его на прокси и на каждом бэкенде, чтобы закрыть доступ старым копиям."
+summary = "Ключ сети, общий для прокси и его бэкендов."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkservername]
+impact = "Пустое значение определяет сервер по игровому порту, этого достаточно, если два бэкенда на разных хостах не используют один порт."
+summary = "На бэкенд-сервере: его имя в списке серверов прокси."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.port]
 impact = "Если этот порт занят, React по порядку проверяет следующие 99 портов и использует фактически привязанный порт для локального подключения ретранслятора и создаваемых прямых URL, когда advertisedUrl пуст. Сохранение web.toml автоматически перезапускает слушатель."

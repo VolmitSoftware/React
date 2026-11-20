@@ -16,6 +16,7 @@ import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.GuiMessages;
 import art.arcane.react.platform.MapHubAction;
 import art.arcane.react.platform.MapHubScreen;
+import art.arcane.react.util.project.config.TomlFiles;
 import art.arcane.volmlib.util.localization.LanguageAudience;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import net.minecraft.server.MinecraftServer;
@@ -69,7 +70,7 @@ final class ModMaps implements MapRuntimeConfig {
 
     void start(ModReactPlatform platform) {
         try {
-            settings = ModConfigFiles.load(settingsFile, MapSettings.class, new MapSettings(), SETTINGS_SOURCE_TAG, true, platform::info);
+            settings = TomlFiles.load(settingsFile, MapSettings.class, new MapSettings(), SETTINGS_SOURCE_TAG, true, platform::info);
         } catch (IOException failure) {
             platform.warn("Failed to load config for Map: " + failure.getMessage(), failure);
         }
@@ -122,7 +123,7 @@ final class ModMaps implements MapRuntimeConfig {
         platform.asyncExecutor().execute(() -> {
             MapSettings loaded = previous;
             try {
-                loaded = ModConfigFiles.load(settingsFile, MapSettings.class, previous, SETTINGS_SOURCE_TAG, false, platform::info);
+                loaded = TomlFiles.load(settingsFile, MapSettings.class, previous, SETTINGS_SOURCE_TAG, false, platform::info);
                 platform.info("Applied map settings from core/map.toml.");
             } catch (IOException | RuntimeException failure) {
                 platform.warn("Kept the current map settings; core/map.toml could not be read: " + failure.getMessage());

@@ -29,6 +29,7 @@
 #   {active}  Nombre de fonctionnalités ou d'ajustements actifs
 #   {actor}  Utilisateur web ayant effectué une modification
 #   {added}  Indique si une fonctionnalité a rejoint le registre actif après son activation ; messages ajoutés par une mise à jour de langue
+#   {address}  Hôte et port d'un serveur derrière le proxy
 #   {after}  Valeur de configuration, message de langue ou utilisation du tas après une modification
 #   {age}  Âge des données d'intégration en secondes
 #   {amount}  Nombre d'objets à donner
@@ -242,6 +243,10 @@ web = "Gérer les jetons d'accès WebUI de React"
 "web.status" = "Afficher l'écouteur, le relais et l'empreinte"
 "web.tokens" = "Lister les navigateurs appairés"
 language = "Choisir votre langue ou celle du serveur"
+network = "Affiche le réseau du proxy et la place de ce serveur dedans"
+"network.join" = "Affiche ce qu'un backend met dans web.toml pour rejoindre ce proxy"
+"network.list" = "Liste tous les serveurs derrière le proxy"
+"network.status" = "Affiche le résumé du réseau ou le lien de ce serveur avec son proxy"
 
 [command.parameter]
 debugdump_upload = "Publier le rapport sur mclo.gs"
@@ -330,6 +335,23 @@ invalid = "&cLa distance doit être &f{range}&c.&r"
 schedule_failed = "&cLa modification de distance n’a pas pu être planifiée sur le thread serveur requis.&r"
 set = "&aDistance &b{type}&a définie à &f{distance}&a pour &f{scope} {target}&a.&r"
 unavailable = "&cCe serveur ne permet pas de définir la distance &f{scope} {type}&c.&r"
+
+[command.runtime.network]
+join = "&bRéseau&r Sur chaque backend, définissez dans web.toml : networkProxyUrl = \"{url}\" et networkSecret = \"{value}\""
+join_console_only = "&7Exécutez &f/react network join&7 depuis la console du proxy pour voir la clé du réseau.&r"
+link = "&bRéseau&r proxy {url} | {state}"
+link_connecting = "connexion en cours"
+link_refused = "refusé : {reason}"
+link_registered = "enregistré sous {name}"
+link_unreachable = "injoignable : {reason}"
+no_secret = "&cLe proxy n'a pas encore de networkSecret ; redémarrez le proxy ou définissez-en un dans web.toml.&r"
+no_servers = "&7Le proxy ne liste aucun serveur.&r"
+not_joined = "&7Ce serveur n'est dans aucun réseau. Définissez &fnetworkProxyUrl&7 et &fnetworkSecret&7 dans web.toml pour rejoindre un proxy.&r"
+proxy = "&bRéseau&r {server} | {players} joueurs | {count}/{total} serveurs en ligne | {registered} avec React"
+proxy_only = "&7Seul un proxy Velocity ou BungeeCord liste un réseau.&r"
+server = "&f{name}&7 {address}&r | {status} | {players} joueurs | ping {duration} | {detail}"
+server_no_react = "&7sans React&r"
+server_react = "TPS {average}, MSPT {tick}, mémoire {used}"
 
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 état=&f{state}&7 cible=&f{target}&7 métriques=&f{metrics}&7 détail=&f{detail}&r"
@@ -610,6 +632,18 @@ summary = "Adresse IP sur laquelle le serveur web écoute."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React ouvre par défaut l’API authentifiée. Définissez false pour ne démarrer aucun serveur HTTP ou WebSocket."
 summary = "Active le serveur web intégré."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkproxyurl]
+impact = "Avec networkSecret défini, ce serveur s'enregistre auprès du proxy toutes les 15 secondes pour que le React Web du proxy affiche son tableau de bord complet. Le proxy doit pouvoir joindre l'écouteur web de ce serveur. Vide laisse le serveur hors du réseau."
+summary = "Sur un serveur backend : l'adresse React Web de votre proxy Velocity ou BungeeCord, par exemple http://10.0.0.5:9696."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networksecret]
+impact = "React sur le proxy écrit une nouvelle clé ici au premier démarrage ; copiez-la dans networkSecret sur chaque backend. Les enregistrements sont chiffrés et signés avec elle. Changez-la sur le proxy et sur chaque backend pour exclure les anciennes copies."
+summary = "La clé du réseau partagée par le proxy et ses backends."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkservername]
+impact = "Vide associe ce serveur par son port de jeu, ce qui suffit sauf si deux backends partagent un port sur des hôtes différents."
+summary = "Sur un serveur backend : son nom dans la liste des serveurs du proxy."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.port]
 impact = "Si ce port est occupé, React essaie les 99 ports suivants dans l’ordre et utilise le port effectivement lié pour la connexion locale du relais et les URL directes générées lorsque advertisedUrl est vide. L’enregistrement de web.toml redémarre automatiquement le serveur d’écoute."

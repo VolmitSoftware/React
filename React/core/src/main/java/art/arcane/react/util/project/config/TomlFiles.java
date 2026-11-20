@@ -1,6 +1,5 @@
-package art.arcane.react.mod;
+package art.arcane.react.util.project.config;
 
-import art.arcane.react.util.project.config.TomlCodec;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,14 +10,14 @@ import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
 
 /**
- * React's TOML config files on a mod server, read and written by the same codec as on Bukkit: the same keys, layout and
+ * React's TOML config files outside Bukkit, read and written by the same codec as on Bukkit: the same keys, layout and
  * documentation comments. Loading rewrites a file into its canonical form, which fills in missing keys from the defaults.
  */
-final class ModConfigFiles {
-    private ModConfigFiles() {
+public final class TomlFiles {
+    private TomlFiles() {
     }
 
-    static <T> T load(File file, Class<T> type, Object defaults, String sourceTag, boolean overwriteOnReadFailure,
+    public static <T> T load(File file, Class<T> type, Object defaults, String sourceTag, boolean overwriteOnReadFailure,
                       Consumer<String> info) throws IOException {
         T fallback = defaults == null ? TomlCodec.fromToml("", type) : type.cast(defaults);
         if (!file.isFile()) {
@@ -48,11 +47,11 @@ final class ModConfigFiles {
         return loaded;
     }
 
-    static void save(File file, Object value, String sourceTag) throws IOException {
+    public static void save(File file, Object value, String sourceTag) throws IOException {
         write(file, TomlCodec.toToml(value, sourceTag));
     }
 
-    static <T> T parse(String raw, Class<T> type) throws IOException {
+    public static <T> T parse(String raw, Class<T> type) throws IOException {
         T parsed = TomlCodec.fromToml(raw, type);
         if (parsed == null) {
             throw new IOException("Config parser returned null.");

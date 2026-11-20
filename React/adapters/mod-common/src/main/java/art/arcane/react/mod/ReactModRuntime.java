@@ -4,6 +4,7 @@ import art.arcane.react.api.web.HistoryWebMetricsSource;
 import art.arcane.react.api.web.MetricsSerializer;
 import art.arcane.react.api.web.ReactWebServer;
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.core.telemetry.RuntimeTelemetry;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.mod.cost.ModCostProbe;
 import art.arcane.react.platform.ReactPlatforms;
@@ -52,7 +53,7 @@ public final class ReactModRuntime {
     private volatile Running running;
 
     private record Running(ModReactPlatform platform, ModTicks ticks, ExecutorService async, SampleController samples,
-                           ReactWebServer web, ModMaps maps, ModTelemetry telemetry) {
+                           ReactWebServer web, ModMaps maps, RuntimeTelemetry telemetry) {
     }
 
     public ReactModRuntime(String platform, Path configDirectory, ModCostProbe costProbe) {
@@ -82,7 +83,7 @@ public final class ReactModRuntime {
         ExecutorService async = Executors.newCachedThreadPool(daemonThreads());
         List<Runnable> startupTasks = new ArrayList<>();
         SampleController samples = new SampleController();
-        ModTelemetry telemetry = new ModTelemetry(dataFolder, LOGGER);
+        RuntimeTelemetry telemetry = new RuntimeTelemetry(dataFolder);
         HistoryWebMetricsSource metrics = new HistoryWebMetricsSource(() -> samples, telemetry::history, new MetricsSerializer());
         ReactWebServer[] web = new ReactWebServer[1];
         ModMaps maps = new ModMaps(server, dataFolder, ticks, () -> samples);

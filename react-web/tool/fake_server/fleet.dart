@@ -133,6 +133,13 @@ final class _FakeServer {
   bool failNextAction = false;
   Timer? revisionPush;
 
+  /// Answers as a Velocity proxy: `/network` lists the other servers, each
+  /// reachable under `/<proxy>/network/<slug>` with the proxy's tokens.
+  bool isProxy = false;
+
+  /// The proxy this server stands behind; its tokens work here too.
+  _FakeServer? proxy;
+
   _FakeServer(
     this.profile,
     PluginControlSource controls,
@@ -198,7 +205,7 @@ final class _FakeServer {
     final int dot = bearer.indexOf('.');
     if (dot < 0) return null;
     final FakeToken? token = tokens[bearer.substring(0, dot)];
-    if (token == null || token.bearer != bearer) return null;
+    if (token == null || token.bearer != bearer) return proxy?.verify(bearer);
     if (token.ended == null && !token.expiresAt.isAfter(DateTime.now())) {
       token.ended = 'token_expired';
     }
@@ -351,6 +358,7 @@ final class FakeFleet {
     Duration mutateEvery = Duration.zero,
     Duration idleTimeout = Duration.zero,
     Directory? pluginContent,
+    bool proxy = false,
   }) async {
     final PluginControlSource controls = PluginControlSource.read(
       pluginContent ?? PluginControlSource.defaultContent(),
@@ -376,6 +384,13 @@ final class FakeFleet {
     );
     for (final _FakeServer state in states.values) {
       state.mint('admin', 'React Web', state.builtInAdminId);
+    }
+    if (proxy) {
+      final _FakeServer edge = states.values.first;
+      edge.isProxy = true;
+      for (final _FakeServer state in states.values.skip(1)) {
+        state.proxy = edge;
+      }
     }
     fleet._requests = http.listen(fleet._handle);
     fleet._metricsPulse = Timer.periodic(
@@ -501,7 +516,7 @@ final class FakeFleet {
     String recordedPath = '';
     String? recordedToken;
     try {
-      final List<String> segments = request.uri.pathSegments;
+      final List<String> segments = _throughProxy(request.uri.pathSegments);
       final _FakeServer? target = segments.isEmpty
           ? null
           : _servers[segments.first];
@@ -548,7 +563,7 @@ final class FakeFleet {
         throw const _Reject(HttpStatus.notFound, 'Route not found');
       }
       recorded = state;
-      recordedPath = request.uri.path.substring(state.profile.slug.length + 1);
+      recordedPath = '/${rest.join('/')}';
       recordedToken = _presentedToken(request, state)?.id;
       if (state.throttleCount > 0) {
         state.throttleCount--;
@@ -598,6 +613,18 @@ final class FakeFleet {
       recordedToken,
       request.response.statusCode,
     );
+  }
+
+  /// `/<proxy>/network/<slug>/...` as `/<slug>/...`: a server behind the
+  /// proxy answers its own routes. Anything else is left as asked.
+  List<String> _throughProxy(List<String> segments) {
+    if (segments.length < 3 || segments[1] != 'network') return segments;
+    final _FakeServer? edge = _servers[segments.first];
+    final _FakeServer? behind = _servers[segments[2]];
+    if (edge == null || !edge.isProxy || behind?.proxy != edge) {
+      return segments;
+    }
+    return <String>[segments[2], ...segments.sublist(3)];
   }
 
   static FakeToken? _presentedToken(HttpRequest request, _FakeServer state) {

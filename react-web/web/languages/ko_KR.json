@@ -600,5 +600,20 @@
   "pair.no_data_since": "{time} 이후 데이터가 없습니다.",
   "pair.ends_in_hours": "사용하지 않으면 페어링이 {hours}시간 후에 끝납니다.",
   "pair.ends_tomorrow": "사용하지 않으면 페어링이 1일 후에 끝납니다.",
-  "pair.ends_in": "사용하지 않으면 페어링이 {days}일 후에 끝납니다."
+  "pair.ends_in": "사용하지 않으면 페어링이 {days}일 후에 끝납니다.",
+  "page.network.title": "네트워크",
+  "page.network.tip": "이 프록시 뒤의 모든 서버",
+  "screen.network.proxy_software": "프록시 소프트웨어",
+  "screen.network.servers_online": "온라인 서버",
+  "screen.network.full_details": "전체 정보",
+  "screen.network.status": "상태",
+  "screen.network.latency": "지연 시간",
+  "screen.network.details": "세부 수준",
+  "screen.network.full": "전체",
+  "screen.network.basic": "기본",
+  "screen.network.unknown": "알 수 없음",
+  "screen.network.empty": "이 프록시 뒤에 서버가 없습니다",
+  "screen.network.basic_hint": "React가 없는 서버는 상태, 플레이어, 지연 시간만 표시합니다.",
+  "screen.network.not_proxy": "이 서버는 프록시가 아닙니다",
+  "screen.network.not_proxy_description": "React를 실행하는 Velocity 또는 BungeeCord 프록시를 페어링하면 네트워크가 표시됩니다."
 }

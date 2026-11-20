@@ -1,4 +1,4 @@
-package art.arcane.react.mod;
+package art.arcane.react.core.telemetry;
 
 import art.arcane.react.api.rendering.Graph;
 import art.arcane.react.api.sampler.Sampler;
@@ -7,8 +7,7 @@ import art.arcane.react.core.controller.HistoryController;
 import art.arcane.react.core.controller.JobController;
 import art.arcane.react.core.controller.SampleController;
 import art.arcane.react.core.history.MetricSnapshotValue;
-import art.arcane.react.core.telemetry.HostTelemetryFeed;
-import org.slf4j.Logger;
+import art.arcane.react.platform.ReactPlatforms;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -21,40 +20,38 @@ import java.util.concurrent.TimeUnit;
  * The parts of React's own telemetry that Bukkit runs as controllers: host telemetry refreshed once a second off the
  * server thread, the budgeted job queue behind {@code J.s}, and the metric history that web routes and map graphs read.
  */
-final class ModTelemetry {
+public final class RuntimeTelemetry {
     private static final long HOST_REFRESH_INTERVAL_MS = 1_000L;
     private final HostTelemetryFeed host;
     private final JobController jobs = new JobController();
     private final HistoryController history = new HistoryController();
-    private final Logger logger;
     private final List<String> hostSamplerIds = new ArrayList<>();
     private ScheduledExecutorService hostRefresh;
     private boolean gcTracked;
 
-    ModTelemetry(File dataFolder, Logger logger) {
+    public RuntimeTelemetry(File dataFolder) {
         this.host = HostTelemetryFeed.forDataFolder(dataFolder.toPath());
-        this.logger = logger;
     }
 
-    HostTelemetryFeed host() {
+    public HostTelemetryFeed host() {
         return host;
     }
 
-    JobController jobs() {
+    public JobController jobs() {
         return jobs;
     }
 
-    HistoryController history() {
+    public HistoryController history() {
         return history;
     }
 
     /** Server thread, before the samplers start: the job queue must run before anything queues sync work. */
-    void startJobs() {
+    public void startJobs() {
         jobs.start();
     }
 
     /** Server thread, once every sampler has started. */
-    void start(SampleController samples) {
+    public void start(SampleController samples) {
         GCStatsTracker.acquire();
         gcTracked = true;
         for (Sampler sampler : host.samplers()) {
@@ -77,12 +74,12 @@ final class ModTelemetry {
         });
     }
 
-    void stop(SampleController samples) {
+    public void stop(SampleController samples) {
         Graph.bindLatest(null);
         try {
             history.stop();
         } catch (RuntimeException failure) {
-            logger.warn("React history did not stop cleanly", failure);
+            ReactPlatforms.get().warn("React history did not stop cleanly", failure);
         }
         ScheduledExecutorService refresh = hostRefresh;
         hostRefresh = null;

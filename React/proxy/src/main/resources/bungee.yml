@@ -1,0 +1,5 @@
+name: React
+main: art.arcane.react.proxy.bungee.ReactBungeePlugin
+version: ${version}
+author: Volmit Software
+description: Monitors the proxy and every server behind it

@@ -2,6 +2,7 @@ package art.arcane.react.mod;
 
 import art.arcane.react.platform.RegistryHost;
 
+import art.arcane.react.util.project.config.TomlFiles;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -88,11 +89,11 @@ final class ModRegistryHost implements RegistryHost {
     @Override
     public Object loadConfiguration(File file, Class<?> type, Object defaults, boolean overwriteOnReadFailure, String sourceTag,
                                     String createdMessage) throws IOException {
-        return ModConfigFiles.load(file, type, defaults, sourceTag, overwriteOnReadFailure, message -> info.accept(sourceTag + ": " + message));
+        return TomlFiles.load(file, type, defaults, sourceTag, overwriteOnReadFailure, message -> info.accept(sourceTag + ": " + message));
     }
 
     @Override
     public Object parseConfiguration(File sourceFile, String rawContent, Class<?> type, String sourceTag) throws IOException {
-        return ModConfigFiles.parse(rawContent, type);
+        return TomlFiles.parse(rawContent, type);
     }
 }

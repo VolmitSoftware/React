@@ -600,5 +600,20 @@
   "pair.no_data_since": "Нет данных с {time}.",
   "pair.ends_in_hours": "Сопряжение закончится через {hours} ч, если им не пользоваться.",
   "pair.ends_tomorrow": "Сопряжение закончится через 1 день, если им не пользоваться.",
-  "pair.ends_in": "Сопряжение закончится через {days} дн., если им не пользоваться."
+  "pair.ends_in": "Сопряжение закончится через {days} дн., если им не пользоваться.",
+  "page.network.title": "Сеть",
+  "page.network.tip": "Все серверы за этим прокси",
+  "screen.network.proxy_software": "ПО прокси",
+  "screen.network.servers_online": "Серверы в сети",
+  "screen.network.full_details": "Полные данные",
+  "screen.network.status": "Состояние",
+  "screen.network.latency": "Задержка",
+  "screen.network.details": "Подробности",
+  "screen.network.full": "Полный",
+  "screen.network.basic": "Базовый",
+  "screen.network.unknown": "Неизвестно",
+  "screen.network.empty": "За этим прокси нет серверов",
+  "screen.network.basic_hint": "Серверы без React показывают только состояние, игроков и задержку.",
+  "screen.network.not_proxy": "Этот сервер не является прокси",
+  "screen.network.not_proxy_description": "Подключите прокси Velocity или BungeeCord с React, чтобы увидеть его сеть."
 }

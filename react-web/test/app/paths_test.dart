@@ -36,6 +36,7 @@ void main() {
       ];
       expect(slugs(NavGroup.monitor), <String>[
         '',
+        'network',
         'performance',
         'activity',
         'map',
@@ -56,6 +57,16 @@ void main() {
       );
     });
 
+    test('only Network is proxy only', () {
+      expect(
+        <String>[
+          for (final ServerPage page in serverPages)
+            if (page.proxyOnly) page.slug,
+        ],
+        <String>['network'],
+      );
+    });
+
     test('every server page has a route', () {
       const List<String> routes = <String>[
         kRouteServer,
@@ -68,6 +79,7 @@ void main() {
         kRouteServerTuning,
         kRouteServerPlugins,
         kRouteServerMetrics,
+        kRouteServerNetwork,
       ];
       for (final ServerPage page in serverPages) {
         expect(routes, contains(page.pathFor(':id')), reason: page.slug);

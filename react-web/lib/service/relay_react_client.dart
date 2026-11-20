@@ -11,6 +11,7 @@ import '../model/identity_info.dart';
 import '../model/log_line.dart';
 import '../model/incident_status.dart';
 import '../model/metric_history.dart';
+import '../model/network_info.dart';
 import '../model/player_navigation.dart';
 import '../model/plugin_api_pack.dart';
 import '../model/range_history.dart';
@@ -43,6 +44,7 @@ class RelayReactClient
         IRoleClient,
         ISummaryClient,
         IHistoryClient,
+        INetworkClient,
         IPluginApiPackClient,
         IServerPresence {
   final IRelayConnection _connection;
@@ -235,6 +237,16 @@ class RelayReactClient
   Future<RoleInfo> whoami() async {
     final RelayResponse response = await _get('/whoami');
     return RoleInfo.fromJson(_decodeData(response.body));
+  }
+
+  @override
+  Future<NetworkInfo> network() async {
+    final RelayResponse response = await _get('/network');
+    try {
+      return NetworkInfo.fromJson(_decodeData(response.body));
+    } on FormatException catch (error) {
+      throw ReactUnavailable(error.message);
+    }
   }
 
   @override

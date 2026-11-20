@@ -600,5 +600,20 @@
   "pair.no_data_since": "Sin datos desde las {time}.",
   "pair.ends_in_hours": "La vinculación termina en {hours} h si no se usa.",
   "pair.ends_tomorrow": "La vinculación termina en 1 día si no se usa.",
-  "pair.ends_in": "La vinculación termina en {days} días si no se usa."
+  "pair.ends_in": "La vinculación termina en {days} días si no se usa.",
+  "page.network.title": "Red",
+  "page.network.tip": "Todos los servidores tras este proxy",
+  "screen.network.proxy_software": "Software del proxy",
+  "screen.network.servers_online": "Servidores en línea",
+  "screen.network.full_details": "Detalles completos",
+  "screen.network.status": "Estado",
+  "screen.network.latency": "Latencia",
+  "screen.network.details": "Detalle",
+  "screen.network.full": "Completo",
+  "screen.network.basic": "Básico",
+  "screen.network.unknown": "Desconocido",
+  "screen.network.empty": "No hay servidores tras este proxy",
+  "screen.network.basic_hint": "Los servidores sin React solo muestran estado, jugadores y latencia.",
+  "screen.network.not_proxy": "Este servidor no es un proxy",
+  "screen.network.not_proxy_description": "Empareja un proxy Velocity o BungeeCord con React para ver su red."
 }

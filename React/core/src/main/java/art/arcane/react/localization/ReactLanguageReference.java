@@ -44,6 +44,7 @@ final class ReactLanguageReference {
                       Map.entry("active", "Number of active features or tweaks"),
                       Map.entry("actor", "Web user who made a change"),
                       Map.entry("added", "Feature registry rejoin state or messages added by a language update"),
+                      Map.entry("address", "Host and port of a server behind the proxy"),
                       Map.entry("after", "Configuration value, language message, or heap usage after a change"),
                       Map.entry("age", "Age of integration data in seconds"),
                       Map.entry("amount", "Number of items to give"),

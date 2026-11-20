@@ -38,6 +38,13 @@ class ServerCredential {
   /// links existed are false: the server no longer knows their tokens.
   final bool linked;
 
+  /// The proxy entry this server is reached through, for a server of a
+  /// Velocity or BungeeCord network; null for a server paired directly.
+  final String? networkOf;
+
+  /// This server's name in the proxy's server list.
+  final String? networkServer;
+
   const ServerCredential({
     required this.id,
     required this.label,
@@ -55,6 +62,8 @@ class ServerCredential {
     this.expiresAt,
     this.remember = true,
     this.linked = true,
+    this.networkOf,
+    this.networkServer,
   });
 
   /// Marks an entry paired from a link in storage.
@@ -84,6 +93,8 @@ class ServerCredential {
       expiresAt: expires is String ? DateTime.tryParse(expires) : null,
       remember: json['remember'] as bool? ?? true,
       linked: json['pairing'] == pairingVersion,
+      networkOf: json['networkOf'] as String?,
+      networkServer: json['networkServer'] as String?,
     );
   }
 
@@ -117,6 +128,8 @@ class ServerCredential {
     expiresAt: expiresAt ?? this.expiresAt,
     remember: remember ?? this.remember,
     linked: linked,
+    networkOf: networkOf,
+    networkServer: networkServer,
   );
 
   /// The same credential under another entry id (a new pairing of a server
@@ -138,6 +151,8 @@ class ServerCredential {
     expiresAt: expiresAt,
     remember: remember,
     linked: linked,
+    networkOf: networkOf,
+    networkServer: networkServer,
   );
 
   /// The entry without its bearer: what is left once the pairing ended here.
@@ -158,6 +173,8 @@ class ServerCredential {
     expiresAt: expiresAt,
     remember: remember,
     linked: linked,
+    networkOf: networkOf,
+    networkServer: networkServer,
   );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -177,7 +194,66 @@ class ServerCredential {
     if (expiresAt != null) 'expiresAt': expiresAt!.toUtc().toIso8601String(),
     'remember': remember,
     if (linked) 'pairing': pairingVersion,
+    'networkOf': ?networkOf,
+    'networkServer': ?networkServer,
   };
+
+  bool get networkMember => networkOf != null;
+
+  /// [server] of the network behind [proxy], reached through the proxy with
+  /// its pairing: the same address and bearer under the server's path. No
+  /// fingerprint, so it is never taken for another entry of the same server
+  /// and the proxy's own key is not checked against it.
+  static ServerCredential networkMemberOf(
+    ServerCredential proxy,
+    String server,
+    String serverBasePath,
+  ) {
+    String base = proxy.basePath.trim();
+    while (base.endsWith('/')) {
+      base = base.substring(0, base.length - 1);
+    }
+    final String suffix = serverBasePath.startsWith('/')
+        ? serverBasePath
+        : '/$serverBasePath';
+    return ServerCredential(
+      id: networkMemberId(proxy.id, server),
+      label: server,
+      host: proxy.host,
+      port: proxy.port,
+      bearer: proxy.bearer,
+      secure: proxy.secure,
+      basePath: '$base$suffix',
+      role: proxy.role,
+      pairedTokenId: proxy.tokenId,
+      scopes: proxy.scopes,
+      expiresAt: proxy.expiresAt,
+      remember: proxy.remember,
+      linked: true,
+      networkOf: proxy.id,
+      networkServer: server,
+    );
+  }
+
+  /// The entry id of [server] behind proxy [proxyId]; safe in an address.
+  static String networkMemberId(String proxyId, String server) {
+    final String slug = server.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9_-]+'),
+      '-',
+    );
+    return '$proxyId~$slug';
+  }
+
+  /// Whether [other] reaches the same server the same way.
+  bool sameRoute(ServerCredential other) =>
+      host == other.host &&
+      port == other.port &&
+      secure == other.secure &&
+      basePath == other.basePath &&
+      bearer == other.bearer &&
+      label == other.label &&
+      remember == other.remember &&
+      role == other.role;
 
   /// The token id: the part of `tok_x.<secret>` before the dot.
   String get tokenId {

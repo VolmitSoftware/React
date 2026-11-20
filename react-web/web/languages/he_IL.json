@@ -600,5 +600,20 @@
   "pair.no_data_since": "אין נתונים מאז {time}.",
   "pair.ends_in_hours": "הצימוד מסתיים בעוד {hours} שע׳ אם לא ייעשה בו שימוש.",
   "pair.ends_tomorrow": "הצימוד מסתיים בעוד יום אחד אם לא ייעשה בו שימוש.",
-  "pair.ends_in": "הצימוד מסתיים בעוד {days} ימים אם לא ייעשה בו שימוש."
+  "pair.ends_in": "הצימוד מסתיים בעוד {days} ימים אם לא ייעשה בו שימוש.",
+  "page.network.title": "רשת",
+  "page.network.tip": "כל השרתים מאחורי הפרוקסי הזה",
+  "screen.network.proxy_software": "תוכנת פרוקסי",
+  "screen.network.servers_online": "שרתים מקוונים",
+  "screen.network.full_details": "פרטים מלאים",
+  "screen.network.status": "מצב",
+  "screen.network.latency": "השהיה",
+  "screen.network.details": "פרטים",
+  "screen.network.full": "מלא",
+  "screen.network.basic": "בסיסי",
+  "screen.network.unknown": "לא ידוע",
+  "screen.network.empty": "אין שרתים מאחורי הפרוקסי הזה",
+  "screen.network.basic_hint": "שרתים ללא React מציגים רק מצב, שחקנים והשהיה.",
+  "screen.network.not_proxy": "השרת הזה אינו פרוקסי",
+  "screen.network.not_proxy_description": "צמדו פרוקסי Velocity או BungeeCord שמריץ React כדי לראות את הרשת שלו."
 }

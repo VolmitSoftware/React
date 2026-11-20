@@ -2,6 +2,7 @@ package art.arcane.react.mod;
 
 import art.arcane.react.api.web.ReactWebServer;
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.core.telemetry.RuntimeTelemetry;
 import art.arcane.react.platform.CapabilityRefusal;
 import art.arcane.react.platform.CommandHost;
 import art.arcane.react.platform.LanguageHost;
@@ -56,7 +57,7 @@ public final class ModReactPlatform implements ReactPlatform {
 
     ModReactPlatform(String loader, MinecraftServer server, File dataFolder, Logger logger, ModTicks ticks, ExecutorService async,
                      List<Runnable> startupTasks, LanguageHost languageHost, OwnerCostProbe costProbe, Supplier<SampleController> samples,
-                     Supplier<ReactWebServer> webServer, ModMaps maps, ModTelemetry telemetry) {
+                     Supplier<ReactWebServer> webServer, ModMaps maps, RuntimeTelemetry telemetry) {
         this.loader = loader;
         this.server = server;
         this.dataFolder = dataFolder;

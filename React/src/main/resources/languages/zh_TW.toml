@@ -29,6 +29,7 @@
 #   {active}  啟用中的功能或調校項目數量
 #   {actor}  執行修改的網頁使用者
 #   {added}  功能啟用後是否重新加入作用中登錄表; 語言更新中新增的訊息數
+#   {address}  代理後面某個伺服器的主機和連接埠
 #   {after}  變更後的設定值、語言訊息或堆積使用量
 #   {age}  整合資料的存在時間，單位為秒
 #   {amount}  要給予的物品數量
@@ -242,6 +243,10 @@ web = "管理 React WebUI 存取權杖"
 "web.status" = "顯示監聽器、中繼與指紋"
 "web.tokens" = "列出已配對的瀏覽器"
 language = "選擇個人語言或伺服器語言"
+network = "顯示代理網路以及此伺服器在其中的位置"
+"network.join" = "顯示後端要在 web.toml 中填寫什麼才能加入此代理"
+"network.list" = "列出代理後面的所有伺服器"
+"network.status" = "顯示網路概覽或此伺服器與其代理的連線"
 
 [command.parameter]
 debugdump_upload = "將報告上傳至 mclo.gs"
@@ -330,6 +335,23 @@ invalid = "&c距離必須為 &f{range}&c。&r"
 schedule_failed = "&c無法將距離變更安排至所需的伺服器執行緒執行。&r"
 set = "&a已將 &f{scope} {target}&a 的 &b{type}&a 距離設為 &f{distance}&a。&r"
 unavailable = "&c此伺服器不支援設定 &f{scope} {type}&c 距離。&r"
+
+[command.runtime.network]
+join = "&b網路&r 在每個後端的 web.toml 中設定：networkProxyUrl = \"{url}\" 和 networkSecret = \"{value}\""
+join_console_only = "&7在代理主控台執行 &f/react network join&7 即可查看網路金鑰。&r"
+link = "&b網路&r 代理 {url} | {state}"
+link_connecting = "連線中"
+link_refused = "已拒絕：{reason}"
+link_registered = "已註冊為 {name}"
+link_unreachable = "無法連線：{reason}"
+no_secret = "&c代理還沒有 networkSecret；請重新啟動代理，或在 web.toml 中設定一個。&r"
+no_servers = "&7代理未列出任何伺服器。&r"
+not_joined = "&7此伺服器不在任何網路中。在 web.toml 中設定 &fnetworkProxyUrl&7 和 &fnetworkSecret&7 即可加入代理。&r"
+proxy = "&b網路&r {server} | {players} 名玩家 | 線上伺服器 {count}/{total} | 裝有 React 的 {registered}"
+proxy_only = "&7只有 Velocity 或 BungeeCord 代理才會列出網路。&r"
+server = "&f{name}&7 {address}&r | {status} | {players} 名玩家 | 延遲 {duration} | {detail}"
+server_no_react = "&7無 React&r"
+server_react = "TPS {average}，MSPT {tick}，記憶體 {used}"
 
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 狀態=&f{state}&7 目標=&f{target}&7 指標=&f{metrics}&7 詳細資料=&f{detail}&r"
@@ -610,6 +632,18 @@ summary = "網頁接聽程式繫結的 IP 位址。"
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React 預設會開放需要驗證的 API。設為 false 則不繫結 HTTP 或 WebSocket 接聽程式。"
 summary = "啟用內建網頁接聽程式。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkproxyurl]
+impact = "設定 networkSecret 後，此伺服器每 15 秒向代理註冊一次，使代理的 React Web 顯示其完整儀表板。代理必須能連到此伺服器的 Web 監聽器。留空則此伺服器不加入網路。"
+summary = "在後端伺服器上：你的 Velocity 或 BungeeCord 代理的 React Web 位址，例如 http://10.0.0.5:9696."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networksecret]
+impact = "代理上的 React 在首次啟動時會在此寫入新金鑰；請把它複製到每個後端的 networkSecret。註冊資訊使用它加密並簽署。在代理和每個後端上變更它，即可擋住舊副本。"
+summary = "代理及其後端共用的網路金鑰。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkservername]
+impact = "留空則依遊戲連接埠比對此伺服器，除非不同主機上的兩個後端使用相同連接埠，否則這已足夠。"
+summary = "在後端伺服器上：它在代理伺服器清單中的名稱。"
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.port]
 impact = "如果此連接埠已被占用，React 會依序嘗試接下來的 99 個連接埠。當 advertisedUrl 為空時，中繼回送連線和產生的直連 URL 會使用實際繫結的連接埠。儲存 web.toml 會自動重新啟動接聽程式。"

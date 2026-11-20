@@ -18,6 +18,11 @@ import art.arcane.react.api.web.dto.IdentityDto;
 import art.arcane.react.api.web.heatmap.HeatmapSerializer;
 import art.arcane.react.api.web.heatmap.HeatmapViewportPlanner;
 import art.arcane.react.api.web.heatmap.ReactHeatmapCellProvider;
+import art.arcane.react.api.web.network.NetworkHub;
+import art.arcane.react.api.web.network.NetworkLink;
+import art.arcane.react.api.web.network.NetworkProtocol;
+import art.arcane.react.api.web.network.NetworkRegistration;
+import art.arcane.react.api.web.network.NetworkRoutes;
 import art.arcane.react.api.web.resource.ActionResource;
 import art.arcane.react.api.web.resource.CapabilityResource;
 import art.arcane.react.api.web.resource.ConfigResource;
@@ -42,6 +47,7 @@ import art.arcane.react.api.web.ws.WebSocketSessions;
 import art.arcane.react.api.web.ws.WsAuthenticationGate;
 import art.arcane.react.api.web.ws.WsMetricsBroadcaster;
 import art.arcane.react.core.incident.IncidentRecord;
+import art.arcane.react.platform.PlatformKind;
 import art.arcane.react.platform.ReactPlatform;
 import art.arcane.react.platform.ReactPlatforms;
 import art.arcane.react.platform.WebHost;
@@ -66,6 +72,7 @@ import java.net.BindException;
 import java.net.URI;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.file.Files;
+import java.time.Duration;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -123,6 +130,11 @@ public class ReactWebServer {
     private transient volatile Javalin app;
     private transient volatile int boundPort;
     private transient volatile RelayClient relayClient;
+    private transient volatile NetworkLink networkLink;
+    private transient volatile NetworkRoutes networkRoutes;
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private transient String networkBearer;
     private transient volatile CountDownLatch startLatch;
     private transient volatile Throwable startFailure;
     private transient volatile WebSocketSessions<CoalescingWsChannel> metricsSessions;
@@ -341,6 +353,9 @@ public class ReactWebServer {
         snapshot.setRequireTokenForReads(source.isRequireTokenForReads());
         snapshot.setRelayEnabled(source.isRelayEnabled());
         snapshot.setRelayUrl(source.getRelayUrl() == null ? "" : source.getRelayUrl().trim());
+        snapshot.setNetworkProxyUrl(source.getNetworkProxyUrl() == null ? "" : source.getNetworkProxyUrl().trim());
+        snapshot.setNetworkSecret(source.getNetworkSecret() == null ? "" : source.getNetworkSecret().trim());
+        snapshot.setNetworkServerName(source.getNetworkServerName() == null ? "" : source.getNetworkServerName().trim());
         if (snapshot.getListenAddress().isBlank()) {
             throw new IllegalArgumentException("listenAddress must not be blank");
         }
@@ -362,6 +377,12 @@ public class ReactWebServer {
             if ((!"ws".equalsIgnoreCase(uri.getScheme()) && !"wss".equalsIgnoreCase(uri.getScheme()))
                 || uri.getHost() == null) {
                 throw new IllegalArgumentException("relayUrl must be an absolute WS or WSS URL");
+            }
+        }
+        if (!snapshot.getNetworkProxyUrl().isBlank()) {
+            URI uri = URI.create(snapshot.getNetworkProxyUrl());
+            if ((!"http".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(uri.getScheme())) || uri.getHost() == null) {
+                throw new IllegalArgumentException("networkProxyUrl must be an absolute HTTP or HTTPS URL");
             }
         }
         return snapshot;
@@ -830,6 +851,8 @@ public class ReactWebServer {
                 consoleLogger.addHandler(localLogHandler);
                 try {
                     runtime.log4jConsoleCapture = Log4jConsoleCapture.attach(localLogHandler);
+                } catch (NoClassDefFoundError absent) {
+                    WebLog.verbose("Log4j is not on this server; React Web's console reads " + consoleLogger.getName());
                 } catch (ReflectiveOperationException | SecurityException | LinkageError e) {
                     WebLog.warn("Unable to attach React web console capture to Log4j", e);
                 }
@@ -838,6 +861,20 @@ public class ReactWebServer {
                 javalin.get("/api/v1/logs", logsResource::list);
                 if (!isCurrentGeneration(generation)) {
                     return false;
+                }
+                Optional<NetworkHub> network = localHost.network();
+                if (network.isPresent()) {
+                    WebConfiguration networkConfiguration = startupConfiguration;
+                    NetworkRoutes routes = new NetworkRoutes(network.get(), tokens, auth, networkConfiguration::getNetworkSecret,
+                        this::serverName, requireTokenForReads, (String origin) -> {
+                            boolean allowed = WebOrigins.allows(origins, origin);
+                            if (!allowed) {
+                                pairingNotices.originRefused(origin);
+                            }
+                            return allowed;
+                        });
+                    routes.install(javalin);
+                    runtime.networkRoutes = routes;
                 }
                 WebSocketSessions<CoalescingWsChannel> localMetricsSessions = new WebSocketSessions<>();
                 runtime.metricsSessions = localMetricsSessions;
@@ -1036,6 +1073,8 @@ public class ReactWebServer {
         app = runtime.app;
         boundPort = runtime.boundPort;
         relayClient = runtime.relayClient;
+        networkLink = runtime.networkLink;
+        networkRoutes = runtime.networkRoutes;
         metricsSessions = runtime.metricsSessions;
         metricsBroadcaster = runtime.metricsBroadcaster;
         wsPushExecutor = runtime.wsPushExecutor;
@@ -1067,6 +1106,13 @@ public class ReactWebServer {
             }
             if (relayConfigured(startupConfiguration) && tokens.wanted()) {
                 runtime.relayClient = startRelay(startupConfiguration, runtime.boundPort);
+            }
+            if (networkConfigured(startupConfiguration)) {
+                int webPort = runtime.boundPort;
+                NetworkLink link = new NetworkLink(startupConfiguration.getNetworkProxyUrl(), startupConfiguration.getNetworkSecret(),
+                    () -> networkRegistration(startupConfiguration, webPort));
+                link.start();
+                runtime.networkLink = link;
             }
             return publishRuntime(generation, runtime, startupConfiguration);
         }
@@ -1178,6 +1224,26 @@ public class ReactWebServer {
 
         closeRelayClient(runtime);
 
+        NetworkLink link = runtime.networkLink;
+        runtime.networkLink = null;
+        if (link != null) {
+            try {
+                link.stop();
+            } catch (Throwable failure) {
+                reportCleanupFailure("network link", failure);
+            }
+        }
+
+        NetworkRoutes routes = runtime.networkRoutes;
+        runtime.networkRoutes = null;
+        if (routes != null) {
+            try {
+                routes.close();
+            } catch (Throwable failure) {
+                reportCleanupFailure("network sockets", failure);
+            }
+        }
+
         Javalin localApp = runtime.app;
         if (localApp != null) {
             try {
@@ -1246,6 +1312,10 @@ public class ReactWebServer {
     }
 
     private void closeSockets(String tokenId, String reason) {
+        NetworkRoutes routes = networkRoutes;
+        if (routes != null) {
+            routes.closeToken(tokenId, reason);
+        }
         WebSocketSessions<CoalescingWsChannel> localMetricsSessions = metricsSessions;
         if (localMetricsSessions != null) {
             localMetricsSessions.closeToken(tokenId, WsAuthenticationGate.CLOSE_PAIRING_ENDED, reason);
@@ -1301,6 +1371,63 @@ public class ReactWebServer {
             grant.label().isBlank() ? Optional.empty() : Optional.of(grant.label()));
         auditLog().append(grant.issuer(), "pair-issued", "id=" + link.tokenId() + " scopes=" + String.join(",", grant.scopes()), "issued");
         return new IssuedLink(code.url(current.getAppUrl()), link);
+    }
+
+    private boolean networkConfigured(WebConfiguration configuration) {
+        ReactPlatform platform = ReactPlatforms.getOrNull();
+        WebHost localHost = host();
+        return !configuration.getNetworkProxyUrl().isBlank() && !configuration.getNetworkSecret().isBlank()
+            && (platform == null || platform.kind() != PlatformKind.PROXY) && (localHost == null || localHost.network().isEmpty());
+    }
+
+    /** This backend's network membership, empty when web.toml names no proxy or the listener is not running. */
+    public Optional<NetworkLink.Status> networkStatus() {
+        NetworkLink link = networkLink;
+        return link == null ? Optional.empty() : Optional.of(link.status());
+    }
+
+    /** On a proxy, its network. */
+    public Optional<NetworkHub> networkHub() {
+        WebHost localHost = host();
+        return localHost == null ? Optional.empty() : localHost.network();
+    }
+
+    private NetworkRegistration networkRegistration(WebConfiguration configuration, int webPort) {
+        IdentityDto identityDto = resolveIdentity();
+        String address = identityDto.serverId == null ? "" : identityDto.serverId;
+        int gamePort;
+        try {
+            gamePort = Integer.parseInt(address.substring(address.lastIndexOf(':') + 1));
+        } catch (NumberFormatException unknown) {
+            gamePort = 0;
+        }
+        return new NetworkRegistration(configuration.getNetworkServerName(), serverName(), gamePort, webPort,
+            networkBearer(configuration), identity.fingerprint(), identityDto.platform, identityDto.loader, resolveServerVersion(),
+            System.currentTimeMillis());
+    }
+
+    /**
+     * The token the proxy reaches this server with: an admin token issued to the network, which honours the proxy's
+     * narrowed scopes. A new one replaces any older network token when this one is gone.
+     */
+    private synchronized String networkBearer(WebConfiguration configuration) {
+        String current = networkBearer;
+        if (current != null && tokens.find(current.substring(0, current.indexOf('.'))).isPresent()) {
+            return current;
+        }
+        try {
+            for (WebToken token : tokens.list()) {
+                if (NetworkProtocol.TOKEN_ISSUER.equals(token.issuer())) {
+                    tokens.revoke(token.id());
+                }
+            }
+            WebTokens.Link link = tokens.pair(new WebTokens.Grant(NetworkProtocol.TOKEN_LABEL, WebRole.ADMIN.scopes(),
+                Duration.ofDays(configuration.getTokenDays()), NetworkProtocol.TOKEN_ISSUER, Optional.empty()));
+            networkBearer = tokens.redeem(link.tokenId(), link.secret(), Optional.of(NetworkProtocol.TOKEN_LABEL)).bearer();
+        } catch (IOException failure) {
+            throw new IllegalStateException("Could not save the network token: " + failure.getMessage(), failure);
+        }
+        return networkBearer;
     }
 
     private static boolean relayConfigured(WebConfiguration configuration) {
@@ -1399,6 +1526,8 @@ public class ReactWebServer {
         runtime.app = app;
         runtime.boundPort = boundPort;
         runtime.relayClient = relayClient;
+        runtime.networkLink = networkLink;
+        runtime.networkRoutes = networkRoutes;
         runtime.metricsSessions = metricsSessions;
         runtime.metricsBroadcaster = metricsBroadcaster;
         runtime.wsPushExecutor = wsPushExecutor;
@@ -1412,6 +1541,8 @@ public class ReactWebServer {
         app = null;
         boundPort = 0;
         relayClient = null;
+        networkLink = null;
+        networkRoutes = null;
         metricsSessions = null;
         metricsBroadcaster = null;
         wsPushExecutor = null;
@@ -1428,6 +1559,8 @@ public class ReactWebServer {
         private Javalin app;
         private int boundPort;
         private RelayClient relayClient;
+        private NetworkLink networkLink;
+        private NetworkRoutes networkRoutes;
         private WebSocketSessions<CoalescingWsChannel> metricsSessions;
         private WsMetricsBroadcaster metricsBroadcaster;
         private ScheduledExecutorService wsPushExecutor;

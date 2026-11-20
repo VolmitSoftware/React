@@ -29,6 +29,7 @@
 #   {active}  Số tính năng hoặc tinh chỉnh đang hoạt động
 #   {actor}  Người dùng web thực hiện thay đổi
 #   {added}  Tính năng có được đưa lại vào danh sách đăng ký đang hoạt động sau khi kích hoạt hay không; Thông báo được thêm bởi bản cập nhật ngôn ngữ
+#   {address}  Host và cổng của một máy chủ phía sau proxy
 #   {after}  Giá trị cấu hình, thông điệp ngôn ngữ hoặc mức dùng bộ nhớ heap sau thay đổi
 #   {age}  Tuổi của dữ liệu tích hợp, tính bằng giây
 #   {amount}  Số vật phẩm cần cấp
@@ -242,6 +243,10 @@ web = "Quản lý mã truy cập WebUI của React"
 "web.status" = "Hiện trình lắng nghe, chuyển tiếp và dấu vân tay"
 "web.tokens" = "Liệt kê các trình duyệt đã ghép nối"
 language = "Chọn ngôn ngữ của bạn hoặc của máy chủ"
+network = "Hiển thị mạng proxy và vị trí của máy chủ này trong đó"
+"network.join" = "Hiển thị nội dung backend đặt trong web.toml để tham gia proxy này"
+"network.list" = "Liệt kê mọi máy chủ phía sau proxy"
+"network.status" = "Hiển thị tóm tắt mạng hoặc liên kết của máy chủ này với proxy của nó"
 
 [command.parameter]
 debugdump_upload = "Tải báo cáo lên mclo.gs"
@@ -330,6 +335,23 @@ invalid = "&cKhoảng cách phải là &f{range}&c.&r"
 schedule_failed = "&cKhông thể lên lịch thay đổi khoảng cách trên luồng máy chủ được yêu cầu.&r"
 set = "&aĐã đặt khoảng cách &b{type}&a của &f{scope} {target}&a thành &f{distance}&a.&r"
 unavailable = "&cMáy chủ này không hỗ trợ đặt khoảng cách &f{scope} {type}&c.&r"
+
+[command.runtime.network]
+join = "&bMạng&r Trên mỗi backend, đặt trong web.toml: networkProxyUrl = \"{url}\" và networkSecret = \"{value}\""
+join_console_only = "&7Chạy &f/react network join&7 từ bảng điều khiển của proxy để xem khóa mạng.&r"
+link = "&bMạng&r proxy {url} | {state}"
+link_connecting = "đang kết nối"
+link_refused = "bị từ chối: {reason}"
+link_registered = "đã đăng ký là {name}"
+link_unreachable = "không thể truy cập: {reason}"
+no_secret = "&cProxy chưa có networkSecret; hãy khởi động lại proxy hoặc đặt một khóa trong web.toml.&r"
+no_servers = "&7Proxy không liệt kê máy chủ nào.&r"
+not_joined = "&7Máy chủ này không thuộc mạng nào. Đặt &fnetworkProxyUrl&7 và &fnetworkSecret&7 trong web.toml để tham gia một proxy.&r"
+proxy = "&bMạng&r {server} | {players} người chơi | {count}/{total} máy chủ trực tuyến | {registered} có React"
+proxy_only = "&7Chỉ proxy Velocity hoặc BungeeCord mới liệt kê một mạng.&r"
+server = "&f{name}&7 {address}&r | {status} | {players} người chơi | ping {duration} | {detail}"
+server_no_react = "&7không có React&r"
+server_react = "TPS {average}, MSPT {tick}, bộ nhớ {used}"
 
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 trạng thái=&f{state}&7 đích=&f{target}&7 chỉ số=&f{metrics}&7 chi tiết=&f{detail}&r"
@@ -610,6 +632,18 @@ summary = "Địa chỉ IP mà trình lắng nghe web liên kết tới."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React mặc định mở API có xác thực. Đặt false để không mở trình lắng nghe HTTP hoặc WebSocket."
 summary = "Bật trình lắng nghe web tích hợp."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkproxyurl]
+impact = "Khi đã đặt networkSecret, máy chủ này đăng ký với proxy mỗi 15 giây để React Web của proxy hiển thị bảng điều khiển đầy đủ của nó. Proxy phải truy cập được trình lắng nghe web của máy chủ này. Để trống sẽ giữ máy chủ ngoài mạng."
+summary = "Trên máy chủ backend: địa chỉ React Web của proxy Velocity hoặc BungeeCord của bạn, chẳng hạn http://10.0.0.5:9696."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networksecret]
+impact = "React trên proxy ghi một khóa mới vào đây ở lần khởi động đầu tiên; hãy sao chép nó vào networkSecret trên mọi backend. Các đăng ký được mã hóa và ký bằng khóa này. Hãy đổi nó trên proxy và mọi backend để chặn các bản sao cũ."
+summary = "Khóa mạng mà proxy và các backend của nó dùng chung."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkservername]
+impact = "Để trống sẽ khớp máy chủ này theo cổng trò chơi, đủ dùng trừ khi hai backend trên các máy khác nhau dùng chung một cổng."
+summary = "Trên máy chủ backend: tên của nó trong danh sách máy chủ của proxy."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.port]
 impact = "Nếu cổng này đang được sử dụng, React lần lượt thử 99 cổng tiếp theo và dùng cổng thực sự đã liên kết cho kết nối cục bộ của relay cùng các URL trực tiếp được tạo khi advertisedUrl để trống. Lưu web.toml sẽ tự động khởi động lại trình lắng nghe."

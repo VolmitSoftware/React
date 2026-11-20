@@ -600,5 +600,20 @@
   "pair.no_data_since": "{time} 以降のデータはありません。",
   "pair.ends_in_hours": "使用しなければペアリングは {hours} 時間後に終了します。",
   "pair.ends_tomorrow": "使用しなければペアリングは 1 日後に終了します。",
-  "pair.ends_in": "使用しなければペアリングは {days} 日後に終了します。"
+  "pair.ends_in": "使用しなければペアリングは {days} 日後に終了します。",
+  "page.network.title": "ネットワーク",
+  "page.network.tip": "このプロキシの背後にあるすべてのサーバー",
+  "screen.network.proxy_software": "プロキシソフトウェア",
+  "screen.network.servers_online": "オンラインのサーバー",
+  "screen.network.full_details": "すべての詳細",
+  "screen.network.status": "ステータス",
+  "screen.network.latency": "レイテンシ",
+  "screen.network.details": "詳細レベル",
+  "screen.network.full": "フル",
+  "screen.network.basic": "ベーシック",
+  "screen.network.unknown": "不明",
+  "screen.network.empty": "このプロキシの背後にサーバーはありません",
+  "screen.network.basic_hint": "React のないサーバーは、状態、プレイヤー、レイテンシのみを表示します。",
+  "screen.network.not_proxy": "このサーバーはプロキシではありません",
+  "screen.network.not_proxy_description": "React を実行する Velocity または BungeeCord プロキシをペアリングすると、そのネットワークが表示されます。"
 }

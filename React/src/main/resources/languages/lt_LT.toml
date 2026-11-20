@@ -29,6 +29,7 @@
 #   {active}  Aktyvių funkcijų arba patobulinimų skaičius
 #   {actor}  Pakeitimą atlikęs žiniatinklio naudotojas
 #   {added}  Ar po aktyvinimo funkcija grįžo į aktyvų registrą; kalbos atnaujinimo pridėtų pranešimų skaičius
+#   {address}  Serverio už tarpinio serverio kompiuteris ir prievadas
 #   {after}  Nustatymo reikšmė, kalbos pranešimas arba kaupo atmintis po pakeitimo
 #   {age}  Integracijos duomenų amžius sekundėmis
 #   {amount}  Duodamų daiktų skaičius
@@ -242,6 +243,10 @@ web = "Tvarkyti React WebUI prieigos žetonus"
 "web.status" = "Rodyti klausytoją, retransliatorių ir piršto atspaudą"
 "web.tokens" = "Išvardyti susietas naršykles"
 language = "Pasirinkite savo arba serverio kalbą"
+network = "Rodo tarpinio serverio tinklą ir šio serverio vietą jame"
+"network.join" = "Rodo, ką backend įrašo į web.toml, kad prisijungtų prie šio tarpinio serverio"
+"network.list" = "Išvardija visus serverius už tarpinio serverio"
+"network.status" = "Rodo tinklo santrauką arba šio serverio ryšį su savo tarpiniu serveriu"
 
 [command.parameter]
 debugdump_upload = "Įkelti ataskaitą į mclo.gs"
@@ -330,6 +335,23 @@ invalid = "&cAtstumas turi būti &f{range}&c.&r"
 schedule_failed = "&cNepavyko suplanuoti atstumo pakeitimo reikiamoje serverio gijoje.&r"
 set = "&f{scope} {target}&a atstumas &b{type}&a nustatytas į &f{distance}&a.&r"
 unavailable = "&cŠis serveris nepalaiko atstumo &f{scope} {type}&c nustatymo.&r"
+
+[command.runtime.network]
+join = "&bTinklas&r Kiekviename backend faile web.toml nustatyk: networkProxyUrl = \"{url}\" ir networkSecret = \"{value}\""
+join_console_only = "&7Paleisk &f/react network join&7 tarpinio serverio konsolėje, kad pamatytum tinklo raktą.&r"
+link = "&bTinklas&r tarpinis serveris {url} | {state}"
+link_connecting = "jungiamasi"
+link_refused = "atmesta: {reason}"
+link_registered = "užregistruotas kaip {name}"
+link_unreachable = "nepasiekiamas: {reason}"
+no_secret = "&cTarpinis serveris dar neturi networkSecret; perkrauk jį arba nustatyk faile web.toml.&r"
+no_servers = "&7Tarpinis serveris neturi jokių serverių sąraše.&r"
+not_joined = "&7Šis serveris nėra jokiame tinkle. Nustatyk &fnetworkProxyUrl&7 ir &fnetworkSecret&7 faile web.toml, kad prisijungtum prie tarpinio serverio.&r"
+proxy = "&bTinklas&r {server} | žaidėjų: {players} | prisijungusių serverių: {count}/{total} | su React: {registered}"
+proxy_only = "&7Tinklą išvardija tik Velocity arba BungeeCord tarpinis serveris.&r"
+server = "&f{name}&7 {address}&r | {status} | žaidėjų: {players} | ping {duration} | {detail}"
+server_no_react = "&7be React&r"
+server_react = "TPS {average}, MSPT {tick}, atmintis {used}"
 
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 būsena=&f{state}&7 taikinys=&f{target}&7 rodikliai=&f{metrics}&7 informacija=&f{detail}&r"
@@ -610,6 +632,18 @@ summary = "IP adresas, su kuriuo susiejama žiniatinklio klausyklė."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React pagal numatytuosius nustatymus atveria API su autentifikavimu. Nustatykite false, kad nebūtų atverta HTTP ar WebSocket klausyklė."
 summary = "Įjungia integruotą žiniatinklio klausyklę."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkproxyurl]
+impact = "Nustačius networkSecret, šis serveris registruojasi tarpiniame serveryje kas 15 sekundžių, kad tarpinio serverio React Web rodytų jo pilną skydelį. Tarpinis serveris turi pasiekti šio serverio web klausytoją. Tuščia reikšmė palieka serverį už tinklo ribų."
+summary = "Backend serveryje: tavo Velocity arba BungeeCord tarpinio serverio React Web adresas, pavyzdžiui, http://10.0.0.5:9696."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networksecret]
+impact = "React tarpiniame serveryje pirmą kartą paleidus įrašo čia naują raktą; nukopijuok jį į networkSecret kiekviename backend. Registracijos juo šifruojamos ir pasirašomos. Pakeisk jį tarpiniame serveryje ir visuose backend, kad užrakintum senas kopijas."
+summary = "Tinklo raktas, bendras tarpiniam serveriui ir jo backend serveriams."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkservername]
+impact = "Tuščia reikšmė suporuoja šį serverį pagal jo žaidimo prievadą, to pakanka, nebent du backend skirtinguose kompiuteriuose naudoja tą patį prievadą."
+summary = "Backend serveryje: jo pavadinimas tarpinio serverio serverių sąraše."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.port]
 impact = "Jei šis prievadas užimtas, React iš eilės bando kitus 99 prievadus ir naudoja faktiškai susietą prievadą perdavimo tarnybos vietiniam ryšiui bei generuojamiems tiesioginiams URL, kai advertisedUrl tuščias. Išsaugojus web.toml, klausytuvas automatiškai paleidžiamas iš naujo."

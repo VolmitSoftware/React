@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:jaspr/jaspr.dart' show ChangeNotifier, kIsWeb;
 
+import '../model/network_info.dart';
 import '../model/server_capabilities.dart';
 import '../model/server_credential.dart';
 import '../service/happy_eyeballs_client.dart';
@@ -122,9 +123,111 @@ class FleetManager extends ChangeNotifier {
     }
     _ended.remove(saved.id);
     _sessions[saved.id] = _buildSession(saved, _resolveClient(saved));
+    final ServerCredential? previous = index >= 0 && existing != null
+        ? existing
+        : null;
+    if (previous != null) {
+      for (final ServerCredential member in membersOf(saved.id)) {
+        _put(
+          ServerCredential.networkMemberOf(
+            saved,
+            member.networkServer ?? member.label,
+            _memberSuffix(previous, member),
+          ),
+        );
+      }
+    }
     _persist();
     _changed();
     return saved.id;
+  }
+
+  /// The servers reached through proxy [proxyId], in fleet order.
+  List<ServerCredential> membersOf(String proxyId) => <ServerCredential>[
+    for (final ServerCredential cred in _servers)
+      if (cred.networkOf == proxyId) cred,
+  ];
+
+  /// Lists every React server of [network] behind [proxyId] as its own
+  /// entry, reached through the proxy, and drops the ones no longer
+  /// listed. Entries already listed the same way keep their session.
+  /// Returns the ids opened or replaced and the ids removed.
+  ({List<String> opened, List<String> removed}) syncNetwork(
+    String proxyId,
+    List<NetworkServer> network,
+  ) {
+    final List<String> opened = <String>[];
+    final List<String> removed = <String>[];
+    ServerCredential? proxy;
+    for (final ServerCredential cred in _servers) {
+      if (cred.id == proxyId) proxy = cred;
+    }
+    if (_disposed || proxy == null || proxy.networkMember) {
+      return (opened: opened, removed: removed);
+    }
+    final Map<String, ServerCredential> wanted = <String, ServerCredential>{};
+    if (proxy.hasDirect && proxy.bearer.isNotEmpty) {
+      for (final NetworkServer server in network) {
+        if (!server.react) continue;
+        final ServerCredential member = ServerCredential.networkMemberOf(
+          proxy,
+          server.name,
+          server.basePath,
+        );
+        wanted[member.id] = member;
+      }
+    }
+    for (final ServerCredential member in membersOf(proxyId)) {
+      if (!wanted.containsKey(member.id)) {
+        _drop(member.id);
+        removed.add(member.id);
+      }
+    }
+    for (final ServerCredential member in wanted.values) {
+      final int index = _servers.indexWhere(
+        (ServerCredential c) => c.id == member.id,
+      );
+      if (index >= 0 && _servers[index].sameRoute(member)) continue;
+      _put(member);
+      opened.add(member.id);
+    }
+    if (opened.isNotEmpty || removed.isNotEmpty) {
+      _persist();
+      _changed();
+    }
+    return (opened: opened, removed: removed);
+  }
+
+  static String _memberSuffix(ServerCredential proxy, ServerCredential member) {
+    String base = proxy.basePath.trim();
+    while (base.endsWith('/')) {
+      base = base.substring(0, base.length - 1);
+    }
+    return member.basePath.startsWith(base)
+        ? member.basePath.substring(base.length)
+        : member.basePath;
+  }
+
+  void _put(ServerCredential cred) {
+    final int index = _servers.indexWhere(
+      (ServerCredential c) => c.id == cred.id,
+    );
+    _sessions.remove(cred.id)?.dispose();
+    if (index >= 0) {
+      _servers[index] = cred;
+    } else {
+      _servers.add(cred);
+    }
+    _ended.remove(cred.id);
+    _sessions[cred.id] = _buildSession(cred, _resolveClient(cred));
+  }
+
+  void _drop(String id) {
+    _servers.removeWhere((ServerCredential c) => c.id == id);
+    _sessions.remove(id)?.dispose();
+    _ended.remove(id);
+    session.remove(tokenKey(id));
+    if (_activeId == id) _activeId = null;
   }
 
   /// Whether the server no longer accepts [id]'s pairing, or it ended in
@@ -160,13 +263,13 @@ class FleetManager extends ChangeNotifier {
     _changed();
   }
 
-  /// Forgets [id] in this browser: its entry and its bearer.
+  /// Forgets [id] in this browser: its entry and its bearer, and on a
+  /// proxy the servers reached through it.
   void remove(String id) {
-    _servers.removeWhere((ServerCredential c) => c.id == id);
-    _sessions.remove(id)?.dispose();
-    _ended.remove(id);
-    session.remove(tokenKey(id));
-    if (_activeId == id) _activeId = null;
+    for (final ServerCredential member in membersOf(id)) {
+      _drop(member.id);
+    }
+    _drop(id);
     _persist();
     _changed();
   }

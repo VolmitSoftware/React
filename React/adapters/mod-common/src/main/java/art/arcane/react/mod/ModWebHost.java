@@ -5,6 +5,7 @@ import art.arcane.react.api.web.heatmap.HeatmapChunkSampler;
 import art.arcane.react.api.web.WebConfiguration;
 import art.arcane.react.platform.WebHost;
 import art.arcane.react.platform.WebMetricsSource;
+import art.arcane.react.util.project.config.TomlFiles;
 import net.minecraft.server.MinecraftServer;
 
 import java.io.File;
@@ -36,7 +37,7 @@ final class ModWebHost implements WebHost {
 
     @Override
     public Optional<WebConfiguration> loadConfiguration() throws IOException {
-        return Optional.of(ModConfigFiles.load(new File(dataFolder, "web.toml"), WebConfiguration.class, new WebConfiguration(), "web-config", false,
+        return Optional.of(TomlFiles.load(new File(dataFolder, "web.toml"), WebConfiguration.class, new WebConfiguration(), "web-config", false,
                 message -> info.accept("web.toml: " + message)));
     }
 

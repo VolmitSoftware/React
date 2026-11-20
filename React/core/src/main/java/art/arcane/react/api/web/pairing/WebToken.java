@@ -4,6 +4,7 @@ import art.arcane.react.api.web.WebRole;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,6 +25,12 @@ public record WebToken(String id, String hash, String label, List<String> scopes
   /** {@code viewer}, {@code operator}, {@code admin} or {@code custom}. */
   public String role() {
     return WebRole.roleOf(scopes);
+  }
+
+  /** This token with only the scopes it shares with {@code allowed}. */
+  public WebToken restrictedTo(Collection<String> allowed) {
+    return new WebToken(id, hash, label, scopes.stream().filter(allowed::contains).toList(), issuer, created, expires, lifetime,
+        lastUsed, client);
   }
 
   WebToken used(Instant now, Instant until) {

@@ -600,5 +600,20 @@
   "pair.no_data_since": "Duomenų nėra nuo {time}.",
   "pair.ends_in_hours": "Susiejimas baigsis po {hours} val., jei nebus naudojamas.",
   "pair.ends_tomorrow": "Susiejimas baigsis po 1 dienos, jei nebus naudojamas.",
-  "pair.ends_in": "Susiejimas baigsis po {days} d., jei nebus naudojamas."
+  "pair.ends_in": "Susiejimas baigsis po {days} d., jei nebus naudojamas.",
+  "page.network.title": "Tinklas",
+  "page.network.tip": "Visi serveriai už šio tarpinio serverio",
+  "screen.network.proxy_software": "Tarpinio serverio programa",
+  "screen.network.servers_online": "Prisijungę serveriai",
+  "screen.network.full_details": "Visa informacija",
+  "screen.network.status": "Būsena",
+  "screen.network.latency": "Delsa",
+  "screen.network.details": "Išsamumas",
+  "screen.network.full": "Pilnas",
+  "screen.network.basic": "Bazinis",
+  "screen.network.unknown": "Nežinoma",
+  "screen.network.empty": "Už šio tarpinio serverio nėra serverių",
+  "screen.network.basic_hint": "Serveriai be React rodo tik būseną, žaidėjus ir delsą.",
+  "screen.network.not_proxy": "Šis serveris nėra tarpinis serveris",
+  "screen.network.not_proxy_description": "Susiekite Velocity arba BungeeCord tarpinį serverį su React, kad matytumėte jo tinklą."
 }

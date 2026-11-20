@@ -600,5 +600,20 @@
   "pair.no_data_since": "{time} saatinden beri veri yok.",
   "pair.ends_in_hours": "Kullanılmazsa eşleştirme {hours} saat içinde biter.",
   "pair.ends_tomorrow": "Kullanılmazsa eşleştirme 1 gün içinde biter.",
-  "pair.ends_in": "Kullanılmazsa eşleştirme {days} gün içinde biter."
+  "pair.ends_in": "Kullanılmazsa eşleştirme {days} gün içinde biter.",
+  "page.network.title": "Ağ",
+  "page.network.tip": "Bu proxy arkasındaki tüm sunucular",
+  "screen.network.proxy_software": "Proxy yazılımı",
+  "screen.network.servers_online": "Çevrimiçi sunucular",
+  "screen.network.full_details": "Tüm ayrıntılar",
+  "screen.network.status": "Durum",
+  "screen.network.latency": "Gecikme",
+  "screen.network.details": "Ayrıntı",
+  "screen.network.full": "Tam",
+  "screen.network.basic": "Temel",
+  "screen.network.unknown": "Bilinmiyor",
+  "screen.network.empty": "Bu proxy arkasında sunucu yok",
+  "screen.network.basic_hint": "React olmayan sunucular yalnızca durum, oyuncu ve gecikme gösterir.",
+  "screen.network.not_proxy": "Bu sunucu bir proxy değil",
+  "screen.network.not_proxy_description": "Ağını görmek için React çalıştıran bir Velocity veya BungeeCord proxy sunucusu eşleyin."
 }

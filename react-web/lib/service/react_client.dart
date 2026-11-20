@@ -13,6 +13,7 @@ import '../model/range_history.dart';
 import '../model/log_line.dart';
 import '../model/incident_status.dart';
 import '../model/metric_history.dart';
+import '../model/network_info.dart';
 import '../model/player_navigation.dart';
 import '../model/plugin_api_pack.dart';
 import '../model/role_info.dart';
@@ -145,6 +146,11 @@ abstract interface class ISummaryClient {
   Future<ServerSummary> summary();
 }
 
+/// `GET /network`: the servers behind a Velocity or BungeeCord proxy.
+abstract interface class INetworkClient {
+  Future<NetworkInfo> network();
+}
+
 abstract interface class IPluginApiPackClient {
   Future<PluginApiCatalog> pluginApiPacks();
   Future<PluginApiValidationResult> validatePluginApiPack(String content);
@@ -174,6 +180,7 @@ class ReactClient
         IRoleClient,
         ISummaryClient,
         IHistoryClient,
+        INetworkClient,
         IPluginApiPackClient {
   final ServerCredential cred;
   final http.Client _http;
@@ -370,6 +377,15 @@ class ReactClient
   @override
   Future<RoleInfo> whoami() async =>
       RoleInfo.fromJson(await _getData('/whoami'));
+
+  @override
+  Future<NetworkInfo> network() async {
+    try {
+      return NetworkInfo.fromJson(await _getData('/network'));
+    } on FormatException catch (error) {
+      throw ReactUnavailable(error.message);
+    }
+  }
 
   @override
   Future<ServerSnapshot> metrics() async {

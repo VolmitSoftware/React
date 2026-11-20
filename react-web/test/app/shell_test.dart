@@ -324,6 +324,7 @@ void main() {
         '/alerts',
         '/settings',
         '/server/:id',
+        '/server/:id/network',
         '/server/:id/performance',
         '/server/:id/activity',
         '/server/:id/map',

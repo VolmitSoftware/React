@@ -8,6 +8,8 @@
 // Each server answers under its own path (http://127.0.0.1:8821/s1, /s2, ...).
 // --mutate flips one tweak per server every N seconds, as a hotload would;
 // --idle-timeout closes log sockets that saw no frame for N seconds.
+// --proxy makes s1 a Velocity proxy: GET /s1/api/v1/network lists the other
+// servers, each served under /s1/network/<slug> with s1's tokens.
 // Pairing links point at --app (default the first origin), as appUrl does
 // in web.toml. GET /__fake/servers lists the servers with a new admin
 // pairing link each; the other /__fake routes, among them new links, revoke,
@@ -24,6 +26,7 @@ Future<void> main(List<String> arguments) async {
   int players = 40;
   int mutateSeconds = 0;
   int idleTimeoutSeconds = 0;
+  bool proxy = false;
   final List<String> origins = <String>[];
   String? app;
   for (final String argument in arguments) {
@@ -47,11 +50,13 @@ Future<void> main(List<String> arguments) async {
         mutateSeconds = int.parse(value);
       case '--idle-timeout':
         idleTimeoutSeconds = int.parse(value);
+      case '--proxy':
+        proxy = true;
       default:
         stderr.writeln(
           'Usage: dart run tool/fake_server.dart [--port=$port] '
           '[--origin=${FakeFleet.defaultOrigin}[,...]] [--app=<url>] [--servers=1-8] [--players=40] '
-          '[--mutate=0] [--idle-timeout=0]',
+          '[--mutate=0] [--idle-timeout=0] [--proxy]',
         );
         exitCode = 64;
         return;
@@ -67,6 +72,7 @@ Future<void> main(List<String> arguments) async {
     players: players,
     mutateEvery: Duration(seconds: mutateSeconds),
     idleTimeout: Duration(seconds: idleTimeoutSeconds),
+    proxy: proxy,
   );
   stdout.writeln(
     'Fake React fleet on ${fleet.baseUri} for ${fleet.allowedOrigins.join(', ')}',

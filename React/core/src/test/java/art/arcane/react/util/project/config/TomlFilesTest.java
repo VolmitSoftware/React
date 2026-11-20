@@ -1,4 +1,4 @@
-package art.arcane.react.mod;
+package art.arcane.react.util.project.config;
 
 import art.arcane.react.api.rendering.MapSettings;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ModConfigFilesTest {
+class TomlFilesTest {
     @TempDir
     Path folder;
 
@@ -24,7 +24,7 @@ class ModConfigFilesTest {
         File file = folder.resolve("core/map.toml").toFile();
         List<String> messages = new ArrayList<>();
 
-        MapSettings loaded = ModConfigFiles.load(file, MapSettings.class, new MapSettings(), "core:map", true, messages::add);
+        MapSettings loaded = TomlFiles.load(file, MapSettings.class, new MapSettings(), "core:map", true, messages::add);
 
         String written = Files.readString(file.toPath(), StandardCharsets.UTF_8);
         assertEquals(150L, loaded.getHeldMapRedrawIntervalMs());
@@ -39,7 +39,7 @@ class ModConfigFilesTest {
         File file = folder.resolve("map.toml").toFile();
         Files.writeString(file.toPath(), "heldMapRedrawIntervalMs = 900\n", StandardCharsets.UTF_8);
 
-        MapSettings loaded = ModConfigFiles.load(file, MapSettings.class, new MapSettings(), "core:map", false, (String message) -> {
+        MapSettings loaded = TomlFiles.load(file, MapSettings.class, new MapSettings(), "core:map", false, (String message) -> {
         });
 
         String written = Files.readString(file.toPath(), StandardCharsets.UTF_8);
@@ -54,7 +54,7 @@ class ModConfigFilesTest {
         File file = folder.resolve("map.toml").toFile();
         Files.writeString(file.toPath(), "heldMapRedrawIntervalMs = = 1\n", StandardCharsets.UTF_8);
 
-        MapSettings loaded = ModConfigFiles.load(file, MapSettings.class, new MapSettings(), "core:map", true, (String message) -> {
+        MapSettings loaded = TomlFiles.load(file, MapSettings.class, new MapSettings(), "core:map", true, (String message) -> {
         });
 
         assertEquals(150L, loaded.getHeldMapRedrawIntervalMs());

@@ -69,4 +69,13 @@ public class WebConfiguration {
 
   @ConfigDoc(value = "Base WSS URL of the relay broker, e.g. wss://relay.arcane.art; the /agent path is appended automatically.", impact = "Only read when relayEnabled is true. Leave empty when relay is disabled.")
   private String relayUrl = "";
+
+  @ConfigDoc(value = "On a backend server: the React Web address of your Velocity or BungeeCord proxy, such as http://10.0.0.5:9696.", impact = "With networkSecret set, this server registers with the proxy every 15 seconds so the proxy's React Web shows its full dashboard. The proxy must reach this server's web listener. Empty keeps the server out of the network.")
+  private String networkProxyUrl = "";
+
+  @ConfigDoc(value = "The network key shared by the proxy and its backends.", impact = "React on the proxy writes a new key here on first start; copy it into networkSecret on every backend. Registrations are encrypted and signed with it. Change it on the proxy and every backend to lock out old copies.")
+  private String networkSecret = "";
+
+  @ConfigDoc(value = "On a backend server: its name in the proxy's server list.", impact = "Empty matches this server by its game port, which is enough unless two backends share a port on different hosts.")
+  private String networkServerName = "";
 }

@@ -600,5 +600,20 @@
   "pair.no_data_since": "Ei tietoja klo {time} jälkeen.",
   "pair.ends_in_hours": "Paritus päättyy {hours} tunnin kuluttua, jos sitä ei käytetä.",
   "pair.ends_tomorrow": "Paritus päättyy 1 päivän kuluttua, jos sitä ei käytetä.",
-  "pair.ends_in": "Paritus päättyy {days} päivän kuluttua, jos sitä ei käytetä."
+  "pair.ends_in": "Paritus päättyy {days} päivän kuluttua, jos sitä ei käytetä.",
+  "page.network.title": "Verkko",
+  "page.network.tip": "Kaikki tämän välityspalvelimen takana olevat palvelimet",
+  "screen.network.proxy_software": "Välityspalvelinohjelmisto",
+  "screen.network.servers_online": "Palvelimia verkossa",
+  "screen.network.full_details": "Täydet tiedot",
+  "screen.network.status": "Tila",
+  "screen.network.latency": "Viive",
+  "screen.network.details": "Tiedot",
+  "screen.network.full": "Täysi",
+  "screen.network.basic": "Perus",
+  "screen.network.unknown": "Tuntematon",
+  "screen.network.empty": "Tämän välityspalvelimen takana ei ole palvelimia",
+  "screen.network.basic_hint": "Palvelimet ilman Reactia näyttävät vain tilan, pelaajat ja viiveen.",
+  "screen.network.not_proxy": "Tämä palvelin ei ole välityspalvelin",
+  "screen.network.not_proxy_description": "Yhdistä Velocity- tai BungeeCord-välityspalvelin, jossa on React, nähdäksesi sen verkon."
 }

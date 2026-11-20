@@ -600,5 +600,20 @@
   "pair.no_data_since": "Geen gegevens sinds {time}.",
   "pair.ends_in_hours": "De koppeling eindigt over {hours} uur als hij niet wordt gebruikt.",
   "pair.ends_tomorrow": "De koppeling eindigt over 1 dag als hij niet wordt gebruikt.",
-  "pair.ends_in": "De koppeling eindigt over {days} dagen als hij niet wordt gebruikt."
+  "pair.ends_in": "De koppeling eindigt over {days} dagen als hij niet wordt gebruikt.",
+  "page.network.title": "Netwerk",
+  "page.network.tip": "Alle servers achter deze proxy",
+  "screen.network.proxy_software": "Proxysoftware",
+  "screen.network.servers_online": "Actieve servers",
+  "screen.network.full_details": "Alle details",
+  "screen.network.status": "Toestand",
+  "screen.network.latency": "Latentie",
+  "screen.network.details": "Detailniveau",
+  "screen.network.full": "Volledig",
+  "screen.network.basic": "Basis",
+  "screen.network.unknown": "Onbekend",
+  "screen.network.empty": "Geen servers achter deze proxy",
+  "screen.network.basic_hint": "Servers zonder React tonen alleen toestand, spelers en latentie.",
+  "screen.network.not_proxy": "Deze server is geen proxy",
+  "screen.network.not_proxy_description": "Koppel een Velocity- of BungeeCord-proxy met React om het netwerk te zien."
 }

@@ -1,0 +1,95 @@
+plugins {
+    id 'java-library'
+}
+
+String volmLibCoordinate = providers.gradleProperty('volmLibCoordinate')
+        .orElse('com.github.VolmitSoftware:VolmLib:master-SNAPSHOT')
+        .get()
+
+version = providers.gradleProperty('projectVersion').get()
+
+repositories {
+    mavenCentral()
+    maven {
+        url = uri('https://www.jitpack.io')
+        content { includeGroupByRegex 'com\\.github\\..*' }
+    }
+    maven { url = uri('https://repo.papermc.io/repository/maven-public/') }
+    maven { url = uri('https://oss.sonatype.org/content/repositories/snapshots/') }
+}
+
+configurations.configureEach {
+    resolutionStrategy.cacheChangingModulesFor(0, 'seconds')
+    resolutionStrategy.cacheDynamicVersionsFor(0, 'seconds')
+}
+
+dependencies {
+    implementation(project(':core'))
+    compileOnly('com.velocitypowered:velocity-api:3.4.0-SNAPSHOT')
+    compileOnly('net.md-5:bungeecord-api:1.21-R0.4-SNAPSHOT')
+    compileOnly('de.crazydev22.slimjar:runtime:2.1.9')
+    compileOnly(volmLibCoordinate) {
+        changing = true
+        transitive = false
+    }
+    for (String library : ['io.javalin:javalin:6.4.0', 'com.google.code.gson:gson:2.10', 'com.google.guava:guava:33.3.1-jre',
+                           'net.kyori:adventure-api:4.26.1', 'net.kyori:adventure-text-minimessage:4.26.1',
+                           'net.kyori:adventure-text-serializer-gson:4.26.1']) {
+        compileOnly(library)
+        testImplementation(library)
+    }
+    testImplementation(volmLibCoordinate) {
+        changing = true
+        transitive = false
+    }
+    testImplementation('org.junit.jupiter:junit-jupiter:5.11.4')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.11.4')
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add('-parameters')
+    options.encoding = 'UTF-8'
+    options.release.set(25)
+}
+
+tasks.named('processResources').configure {
+    Map<String, String> pluginProperties = [version: project.version.toString()]
+    inputs.properties(pluginProperties)
+    filesMatching(['velocity-plugin.json', 'bungee.yml']) {
+        expand(pluginProperties)
+    }
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+}
+
+TaskProvider<Task> coreClassIndex = tasks.register('coreClassIndex') {
+    File output = layout.buildDirectory.dir('generated/react-class-index').get().asFile
+    dependsOn(':core:classes')
+    inputs.files(project.provider { project(':core').sourceSets.main.output.classesDirs })
+    outputs.dir(output)
+    doLast {
+        List<String> names = []
+        project(':core').sourceSets.main.output.classesDirs.each { File directory ->
+            if (directory.isDirectory()) {
+                project.fileTree(directory).matching { include('**/*.class') }.visit { FileVisitDetails entry ->
+                    String path = entry.relativePath.pathString
+                    if (!entry.directory && !path.contains('$')) {
+                        names.add(path.substring(0, path.length() - '.class'.length()).replace('/', '.'))
+                    }
+                }
+            }
+        }
+        names.sort()
+        output.mkdirs()
+        new File(output, 'react-class-index.txt').text = names.join('\n') + '\n'
+    }
+}
+sourceSets.main.resources.srcDir(coreClassIndex)

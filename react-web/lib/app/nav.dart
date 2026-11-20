@@ -28,6 +28,7 @@ class ServerPage {
     this.icon,
     this.group, {
     this.advanced = false,
+    this.proxyOnly = false,
   });
 
   /// The address segment after `/server/<id>`; '' is Overview.
@@ -39,11 +40,21 @@ class ServerPage {
   /// Listed in Advanced mode only.
   final bool advanced;
 
+  /// Listed for a Velocity or BungeeCord proxy only.
+  final bool proxyOnly;
+
   String pathFor(String serverId) => serverPath(serverId, slug);
 }
 
 const List<ServerPage> serverPages = <ServerPage>[
   ServerPage('', ReactorText.overviewTitle, ArcaneIcon.gauge, NavGroup.monitor),
+  ServerPage(
+    'network',
+    ReactorText.pageNetworkTitle,
+    ArcaneIcon.network,
+    NavGroup.monitor,
+    proxyOnly: true,
+  ),
   ServerPage(
     'performance',
     ReactorText.performanceTitle,

@@ -15,7 +15,18 @@ extension _FleetApi on FakeFleet {
     switch ((resource, depth)) {
       case ('identity', 1):
         _expect(request, 'GET');
-        await _writeData(request, FakeFixtures.identity(profile));
+        await _writeData(request, <String, dynamic>{
+          ...FakeFixtures.identity(profile),
+          if (state.isProxy) ...<String, dynamic>{
+            'platform': 'proxy',
+            'loader': 'Velocity',
+            'ownerNoun': 'plugin',
+          },
+        });
+      case ('network', 1) when state.isProxy:
+        _expect(request, 'GET');
+        _requireScope(token, 'read');
+        await _writeData(request, _network(state, token, _servers, now));
       case ('whoami', 1):
         _expect(request, 'GET');
         await _writeData(request, token.toJson());
@@ -718,5 +729,80 @@ Map<String, Object?> _summary(
           : (events.length / 4).ceil(),
     },
     'pairing': token.toJson(),
+  };
+}
+
+/// `GET /api/v1/network` on the fake proxy: every other server of the fleet
+/// with its live readings under `/network/<slug>`, and one server without
+/// React that is not reachable.
+Map<String, Object?> _network(
+  _FakeServer proxy,
+  FakeToken token,
+  Map<String, _FakeServer> servers,
+  DateTime now,
+) {
+  double? value(_FakeServer state, String id) {
+    for (final Map<String, dynamic> sampler in FakeFixtures.metricData(
+      state.profile,
+      now,
+    )) {
+      if (sampler['id'] == id) return (sampler['value'] as num).toDouble();
+    }
+    return null;
+  }
+
+  final List<Map<String, Object?>> listed = <Map<String, Object?>>[];
+  for (final _FakeServer state in servers.values) {
+    if (state.proxy != proxy) continue;
+    final Map<String, Object?> summary = _summary(state, token, now);
+    final double? used = value(state, 'memory-used');
+    final double? free = value(state, 'memory-free');
+    listed.add(<String, Object?>{
+      'name': state.profile.slug,
+      'address': '127.0.0.1:${25566 + state.profile.index}',
+      'status': state.down ? 'offline' : 'online',
+      'players': state.down ? 0 : summary['players'] ?? 0,
+      'pingMs': state.down ? null : 2 + state.profile.index,
+      'react': true,
+      'tps': state.down ? null : summary['tps'],
+      'mspt': state.down ? null : summary['tickMs'],
+      'memoryUsedBytes': state.down || used == null ? null : used.round(),
+      'memoryMaxBytes': state.down || used == null || free == null
+          ? null
+          : (used + free).round(),
+      'platform': 'bukkit',
+      'loader': state.profile.brand,
+      'version': '${state.profile.brand} 26.3',
+      'lastSeenMs': now.millisecondsSinceEpoch,
+      'basePath': '/network/${state.profile.slug}',
+    });
+  }
+  listed.add(<String, Object?>{
+    'name': 'legacy',
+    'address': '127.0.0.1:25599',
+    'status': 'offline',
+    'players': 0,
+    'pingMs': null,
+    'react': false,
+    'basePath': '/network/legacy',
+  });
+  final int online = listed
+      .where((Map<String, Object?> s) => s['status'] == 'online')
+      .length;
+  int players = 0;
+  for (final Map<String, Object?> server in listed) {
+    players += (server['players'] as num? ?? 0).toInt();
+  }
+  return <String, Object?>{
+    'proxy': <String, Object?>{
+      'name': proxy.profile.label,
+      'kind': 'Velocity',
+      'version': '3.4.0',
+      'players': players,
+      'servers': listed.length,
+      'online': online,
+      'react': listed.length - 1,
+    },
+    'servers': listed,
   };
 }

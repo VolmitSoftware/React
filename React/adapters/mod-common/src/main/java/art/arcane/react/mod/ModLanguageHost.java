@@ -7,6 +7,7 @@ import art.arcane.react.platform.LanguageHost;
 import art.arcane.react.util.project.config.ConfigDescription;
 import art.arcane.react.util.project.config.ConfigDoc;
 import art.arcane.react.util.project.config.ConfigLocalization;
+import art.arcane.react.util.project.config.TomlFiles;
 import art.arcane.volmlib.util.localization.MessageCatalog;
 
 import java.io.File;
@@ -36,7 +37,7 @@ final class ModLanguageHost implements LanguageHost {
     }
 
     void load() throws IOException {
-        settings = ModConfigFiles.load(settingsFile, Settings.class, new Settings(), SOURCE_TAG, true, LOGGER::info);
+        settings = TomlFiles.load(settingsFile, Settings.class, new Settings(), SOURCE_TAG, true, LOGGER::info);
     }
 
     @Override
@@ -46,9 +47,9 @@ final class ModLanguageHost implements LanguageHost {
 
     @Override
     public void persistServerLanguage(String locale) throws Exception {
-        Settings next = ModConfigFiles.load(settingsFile, Settings.class, new Settings(), SOURCE_TAG, true, LOGGER::info);
+        Settings next = TomlFiles.load(settingsFile, Settings.class, new Settings(), SOURCE_TAG, true, LOGGER::info);
         next.language = locale;
-        ModConfigFiles.save(settingsFile, next, SOURCE_TAG);
+        TomlFiles.save(settingsFile, next, SOURCE_TAG);
         settings = next;
     }
 

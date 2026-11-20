@@ -29,6 +29,7 @@
 #   {active}  Aktiivisten ominaisuuksien tai säätöjen määrä
 #   {actor}  Muutoksen tehnyt verkkokäyttäjä
 #   {added}  Palasiko ominaisuus aktiiviseen rekisteriin aktivoinnin jälkeen; kielipäivityksen lisäämät viestit
+#   {address}  Proxyn takana olevan palvelimen isäntä ja portti
 #   {after}  Asetusarvo, kieliviesti tai kekomuistin käyttö muutoksen jälkeen
 #   {age}  Integraatiotiedon ikä sekunteina
 #   {amount}  Annettavien esineiden määrä
@@ -242,6 +243,10 @@ web = "Hallitse Reactin WebUI-käyttötokeneita"
 "web.status" = "Näytä kuuntelija, välityspalvelin ja sormenjälki"
 "web.tokens" = "Listaa paritetut selaimet"
 language = "Valitse oma kielesi tai palvelimen kieli"
+network = "Näyttää proxy-verkon ja tämän palvelimen paikan siinä"
+"network.join" = "Näyttää, mitä backend asettaa web.toml-tiedostoon liittyäkseen tähän proxyyn"
+"network.list" = "Listaa kaikki proxyn takana olevat palvelimet"
+"network.status" = "Näyttää verkon yhteenvedon tai tämän palvelimen yhteyden proxyynsä"
 
 [command.parameter]
 debugdump_upload = "Lähetä raportti mclo.gs-palveluun"
@@ -330,6 +335,23 @@ invalid = "&cEtäisyyden on oltava &f{range}&c.&r"
 schedule_failed = "&cEtäisyyden muutosta ei voitu ajoittaa vaaditulle palvelinsäikeelle.&r"
 set = "&aKohteen &f{scope} {target}&a etäisyys &b{type}&a asetettu arvoon &f{distance}&a.&r"
 unavailable = "&cPalvelin ei tue etäisyyden &f{scope} {type}&c asettamista.&r"
+
+[command.runtime.network]
+join = "&bVerkko&r Aseta jokaisella backendillä tiedostossa web.toml: networkProxyUrl = \"{url}\" ja networkSecret = \"{value}\""
+join_console_only = "&7Suorita &f/react network join&7 proxyn konsolissa nähdäksesi verkkoavaimen.&r"
+link = "&bVerkko&r proxy {url} | {state}"
+link_connecting = "yhdistetään"
+link_refused = "hylätty: {reason}"
+link_registered = "rekisteröity nimellä {name}"
+link_unreachable = "ei tavoitettavissa: {reason}"
+no_secret = "&cProxylla ei ole vielä networkSecret-arvoa; käynnistä proxy uudelleen tai aseta se tiedostossa web.toml.&r"
+no_servers = "&7Proxy ei listaa yhtään palvelinta.&r"
+not_joined = "&7Tämä palvelin ei ole missään verkossa. Aseta &fnetworkProxyUrl&7 ja &fnetworkSecret&7 tiedostossa web.toml liittyäksesi proxyyn.&r"
+proxy = "&bVerkko&r {server} | {players} pelaajaa | {count}/{total} palvelinta verkossa | {registered} React-palvelimella"
+proxy_only = "&7Vain Velocity- tai BungeeCord-proxy listaa verkon.&r"
+server = "&f{name}&7 {address}&r | {status} | {players} pelaajaa | ping {duration} | {detail}"
+server_no_react = "&7ei Reactia&r"
+server_react = "TPS {average}, MSPT {tick}, muisti {used}"
 
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 tila=&f{state}&7 kohde=&f{target}&7 mittarit=&f{metrics}&7 tiedot=&f{detail}&r"
@@ -610,6 +632,18 @@ summary = "IP-osoite, johon verkkokuuntelija sidotaan."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React avaa todennetun rajapinnan oletuksena. Arvo false estää HTTP- ja WebSocket-kuuntelijoiden avaamisen."
 summary = "Ottaa käyttöön sisäisen verkkokuuntelijan."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkproxyurl]
+impact = "Kun networkSecret on asetettu, tämä palvelin rekisteröityy proxyyn 15 sekunnin välein, jotta proxyn React Web näyttää sen täyden kojelaudan. Proxyn on tavoitettava tämän palvelimen web-kuuntelija. Tyhjä pitää palvelimen verkon ulkopuolella."
+summary = "Backend-palvelimella: Velocity- tai BungeeCord-proxysi React Web -osoite, esimerkiksi http://10.0.0.5:9696."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networksecret]
+impact = "Proxyn React kirjoittaa tähän uuden avaimen ensimmäisellä käynnistyksellä; kopioi se jokaisen backendin networkSecret-arvoon. Rekisteröinnit salataan ja allekirjoitetaan sillä. Vaihda se proxyssa ja jokaisessa backendissä lukitaksesi vanhat kopiot pois."
+summary = "Verkkoavain, jonka proxy ja sen backendit jakavat."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkservername]
+impact = "Tyhjä tunnistaa palvelimen pelaporttinsa perusteella, mikä riittää, ellei kaksi backendiä jaa samaa porttia eri isännillä."
+summary = "Backend-palvelimella: sen nimi proxyn palvelinluettelossa."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.port]
 impact = "Jos tämä portti on varattu, React kokeilee seuraavia 99 porttia järjestyksessä ja käyttää sidottua porttia välityspalvelun paikallisyhteyteen sekä luotuihin suoriin URL-osoitteisiin, kun advertisedUrl on tyhjä. Tiedoston web.toml tallentaminen käynnistää kuuntelijan automaattisesti uudelleen."

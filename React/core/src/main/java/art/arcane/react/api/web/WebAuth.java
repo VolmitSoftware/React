@@ -1,11 +1,13 @@
 package art.arcane.react.api.web;
 
+import art.arcane.react.api.web.network.NetworkProtocol;
 import art.arcane.react.api.web.pairing.WebToken;
 import art.arcane.react.api.web.pairing.WebTokens;
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
 import io.javalin.http.HandlerType;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,11 +35,23 @@ public final class WebAuth implements Handler {
     if (ctx.attribute("token") != null) {
       return;
     }
+    ctx.attribute("token", authenticate(ctx, ""));
+  }
+
+  /**
+   * Checks the bearer and, for a mutating request, its {@code X-React-Counter}. {@code counterScope} keeps a separate
+   * high-water mark per scope, as the network routes do for each backend a browser reaches through the proxy.
+   */
+  public WebToken authenticate(Context ctx, String counterScope) {
     String authorization = ctx.header("Authorization");
     if (authorization == null || !authorization.startsWith("Bearer ")) {
       throw WebError.unauthorized();
     }
     WebToken token = tokens.authenticate(authorization.substring(7));
+    String networkScopes = ctx.header(NetworkProtocol.SCOPES_HEADER);
+    if (networkScopes != null && NetworkProtocol.TOKEN_ISSUER.equals(token.issuer())) {
+      token = token.restrictedTo(List.of(networkScopes.split(",")));
+    }
 
     if (MUTATING_METHODS.contains(ctx.method())) {
       String counterHeader = ctx.header("X-React-Counter");
@@ -51,7 +65,7 @@ public final class WebAuth implements Handler {
         throw WebError.badRequest("Invalid X-React-Counter value");
       }
       long[] rejectedBy = {Long.MIN_VALUE};
-      counterMap.compute(token.id(), (id, lastSeen) -> {
+      counterMap.compute(token.id() + counterScope, (id, lastSeen) -> {
         if (lastSeen != null && counter <= lastSeen) {
           rejectedBy[0] = lastSeen;
           return lastSeen;
@@ -62,8 +76,7 @@ public final class WebAuth implements Handler {
         throw WebError.counterConflict(rejectedBy[0]);
       }
     }
-
-    ctx.attribute("token", token);
+    return token;
   }
 
   public static void requireScope(Context ctx, String scope) {

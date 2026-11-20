@@ -21,6 +21,9 @@ class ServerIdentity extends ChangeNotifier {
   /// True on Fabric, Forge and NeoForge, where React says "mod".
   bool get modded => _info?.modded ?? false;
 
+  /// True on a Velocity or BungeeCord proxy.
+  bool get proxy => _info?.proxy ?? false;
+
   @override
   void addListener(void Function() listener) {
     super.addListener(listener);

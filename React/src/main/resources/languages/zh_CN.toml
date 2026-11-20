@@ -29,6 +29,7 @@
 #   {active}  活跃的功能或调优项数量
 #   {actor}  执行修改的网页用户
 #   {added}  功能是否重新加入活跃注册表的状态，或语言更新新增的消息数
+#   {address}  代理后面某个服务器的主机和端口
 #   {after}  更改后的配置值、语言消息或堆使用量
 #   {age}  集成数据的存在时间，单位为秒
 #   {amount}  要给予的物品数量
@@ -242,6 +243,10 @@ web = "管理 React WebUI 访问令牌"
 "web.status" = "显示监听器、中继和指纹"
 "web.tokens" = "列出已配对的浏览器"
 language = "选择个人语言或服务器语言"
+network = "显示代理网络以及此服务器在其中的位置"
+"network.join" = "显示后端要在 web.toml 中填写什么才能加入此代理"
+"network.list" = "列出代理后面的所有服务器"
+"network.status" = "显示网络概览或此服务器与其代理的连接"
 
 [command.parameter]
 debugdump_upload = "将报告上传到 mclo.gs"
@@ -330,6 +335,23 @@ invalid = "&c距离必须为 &f{range}&c。&r"
 schedule_failed = "&c无法将距离更改安排到所需的服务器线程执行。&r"
 set = "&a已将 &f{scope} {target}&a 的 &b{type}&a 距离设为 &f{distance}&a。&r"
 unavailable = "&c此服务器不支持设置 &f{scope} {type}&c 距离。&r"
+
+[command.runtime.network]
+join = "&b网络&r 在每个后端的 web.toml 中设置：networkProxyUrl = \"{url}\" 和 networkSecret = \"{value}\""
+join_console_only = "&7在代理控制台运行 &f/react network join&7 即可查看网络密钥。&r"
+link = "&b网络&r 代理 {url} | {state}"
+link_connecting = "连接中"
+link_refused = "已拒绝：{reason}"
+link_registered = "已注册为 {name}"
+link_unreachable = "无法访问：{reason}"
+no_secret = "&c代理还没有 networkSecret；请重启代理，或在 web.toml 中设置一个。&r"
+no_servers = "&7代理未列出任何服务器。&r"
+not_joined = "&7此服务器不在任何网络中。在 web.toml 中设置 &fnetworkProxyUrl&7 和 &fnetworkSecret&7 即可加入代理。&r"
+proxy = "&b网络&r {server} | {players} 名玩家 | 在线服务器 {count}/{total} | 装有 React 的 {registered}"
+proxy_only = "&7只有 Velocity 或 BungeeCord 代理才会列出网络。&r"
+server = "&f{name}&7 {address}&r | {status} | {players} 名玩家 | 延迟 {duration} | {detail}"
+server_no_react = "&7无 React&r"
+server_react = "TPS {average}，MSPT {tick}，内存 {used}"
 
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 状态=&f{state}&7 目标=&f{target}&7 指标=&f{metrics}&7 详情=&f{detail}&r"
@@ -610,6 +632,18 @@ summary = "网页监听器绑定的 IP 地址。"
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React 默认开放需要身份验证的 API。设为 false 则不绑定 HTTP 或 WebSocket 监听器。"
 summary = "启用内置网页监听器。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkproxyurl]
+impact = "设置 networkSecret 后，此服务器每 15 秒向代理注册一次，使代理的 React Web 显示其完整仪表板。代理必须能访问此服务器的 Web 监听器。留空则此服务器不加入网络。"
+summary = "在后端服务器上：你的 Velocity 或 BungeeCord 代理的 React Web 地址，例如 http://10.0.0.5:9696."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networksecret]
+impact = "代理上的 React 在首次启动时会在此写入新密钥；请把它复制到每个后端的 networkSecret。注册信息使用它加密并签名。在代理和每个后端上更改它，即可挡住旧副本。"
+summary = "代理及其后端共用的网络密钥。"
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkservername]
+impact = "留空则按游戏端口匹配此服务器，除非不同主机上的两个后端使用相同端口，否则这已足够。"
+summary = "在后端服务器上：它在代理服务器列表中的名称。"
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.port]
 impact = "如果此端口被占用，React 会按顺序尝试接下来的 99 个端口。当 advertisedUrl 为空时，中继回环连接和生成的直连 URL 会使用实际绑定的端口。保存 web.toml 会自动重启监听器。"

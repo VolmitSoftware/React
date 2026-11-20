@@ -1,6 +1,7 @@
 package art.arcane.react.mod;
 
 import art.arcane.react.core.telemetry.HostTelemetrySnapshot;
+import art.arcane.react.core.telemetry.RuntimeTelemetry;
 import art.arcane.react.platform.EventMeasurement;
 import art.arcane.react.platform.RuntimeStatsHost;
 
@@ -12,11 +13,11 @@ import java.util.OptionalDouble;
  * and Bukkit's optimisation features do not run here.
  */
 final class ModRuntimeStatsHost implements RuntimeStatsHost {
-    private final ModTelemetry telemetry;
+    private final RuntimeTelemetry telemetry;
     private final ModChunkSamples chunks;
     private final EventMeasurement ownerCost;
 
-    ModRuntimeStatsHost(ModTelemetry telemetry, ModChunkSamples chunks, EventMeasurement ownerCost) {
+    ModRuntimeStatsHost(RuntimeTelemetry telemetry, ModChunkSamples chunks, EventMeasurement ownerCost) {
         this.telemetry = telemetry;
         this.chunks = chunks;
         this.ownerCost = ownerCost;

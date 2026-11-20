@@ -516,14 +516,14 @@ public class React extends VolmitPlugin implements ReloadAware {
     NMS.reset();
     attachConfiguredBytecodeAgent(ReactConfiguration.get().isUnsafeBytecode());
     controllerRegistry = new Registry<>(IController.class, "art.arcane.react.core.controller");
-    ServerTickEvent serverTick = new ServerTickEvent();
-    controller(JobController.class).setTickListener(() -> Bukkit.getPluginManager().callEvent(serverTick));
 
     for (Runnable i : startupTasks) {
       i.run();
     }
 
     startupTasks.clear();
+    ServerTickEvent serverTick = new ServerTickEvent();
+    controller(JobController.class).setTickListener(() -> Bukkit.getPluginManager().callEvent(serverTick));
 
     for (IController i : controllerRegistry.all()) {
       i.start();

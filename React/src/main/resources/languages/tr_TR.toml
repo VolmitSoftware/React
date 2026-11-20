@@ -29,6 +29,7 @@
 #   {active}  Etkin özellik veya ince ayar sayısı
 #   {actor}  Değişikliği yapan web kullanıcısı
 #   {added}  Etkinleştirmeden sonra özelliğin etkin kayıt listesine yeniden katılıp katılmadığı; Dil güncellemesiyle eklenen iletiler
+#   {address}  Proxy arkasındaki bir sunucunun ana makinesi ve portu
 #   {after}  Değişiklikten sonraki yapılandırma değeri, dil iletisi veya yığın bellek kullanımı
 #   {age}  Entegrasyon verisinin saniye cinsinden yaşı
 #   {amount}  Verilecek eşya sayısı
@@ -242,6 +243,10 @@ web = "React WebUI erişim belirteçlerini yönet"
 "web.status" = "Dinleyiciyi, aktarıcıyı ve parmak izini göster"
 "web.tokens" = "Eşleştirilmiş tarayıcıları listele"
 language = "Kendi dilinizi veya sunucu dilini seçin"
+network = "Proxy ağını ve bu sunucunun içindeki yerini gösterir"
+"network.join" = "Bir backend'in bu proxy'ye katılmak için web.toml dosyasına ne yazması gerektiğini gösterir"
+"network.list" = "Proxy arkasındaki tüm sunucuları listeler"
+"network.status" = "Ağ özetini veya bu sunucunun proxy bağlantısını gösterir"
 
 [command.parameter]
 debugdump_upload = "Raporu mclo.gs üzerine yükle"
@@ -330,6 +335,23 @@ invalid = "&cMesafe &f{range}&c olmalıdır.&r"
 schedule_failed = "&cMesafe değişikliği gerekli sunucu iş parçacığında zamanlanamadı.&r"
 set = "&f{scope} {target}&a için &b{type}&a mesafesi &f{distance}&a olarak ayarlandı.&r"
 unavailable = "&cBu sunucu &f{scope} {type}&c mesafesinin ayarlanmasını desteklemiyor.&r"
+
+[command.runtime.network]
+join = "&bAğ&r Her backend'de web.toml içinde şunu ayarla: networkProxyUrl = \"{url}\" ve networkSecret = \"{value}\""
+join_console_only = "&7Ağ anahtarını görmek için proxy konsolunda &f/react network join&7 komutunu çalıştır.&r"
+link = "&bAğ&r proxy {url} | {state}"
+link_connecting = "bağlanıyor"
+link_refused = "reddedildi: {reason}"
+link_registered = "{name} olarak kayıtlı"
+link_unreachable = "ulaşılamıyor: {reason}"
+no_secret = "&cProxy'nin henüz networkSecret değeri yok; proxy'yi yeniden başlat veya web.toml içinde bir tane ayarla.&r"
+no_servers = "&7Proxy hiçbir sunucu listelemiyor.&r"
+not_joined = "&7Bu sunucu hiçbir ağda değil. Bir proxy'ye katılmak için web.toml içinde &fnetworkProxyUrl&7 ve &fnetworkSecret&7 değerlerini ayarla.&r"
+proxy = "&bAğ&r {server} | {players} oyuncu | çevrimiçi sunucu {count}/{total} | React olan {registered}"
+proxy_only = "&7Yalnızca Velocity veya BungeeCord proxy bir ağ listeler.&r"
+server = "&f{name}&7 {address}&r | {status} | {players} oyuncu | ping {duration} | {detail}"
+server_no_react = "&7React yok&r"
+server_react = "TPS {average}, MSPT {tick}, bellek {used}"
 
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 durum=&f{state}&7 hedef=&f{target}&7 metrikler=&f{metrics}&7 ayrıntı=&f{detail}&r"
@@ -610,6 +632,18 @@ summary = "Web dinleyicisinin bağlandığı IP adresi."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React varsayılan olarak kimlik doğrulamalı API’yi açar. HTTP veya WebSocket dinleyicisi açmamak için false olarak ayarlayın."
 summary = "Yerleşik web dinleyicisini etkinleştirir."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkproxyurl]
+impact = "networkSecret ayarlandığında bu sunucu, proxy'nin React Web'i tam panosunu göstersin diye proxy'ye her 15 saniyede bir kaydolur. Proxy, bu sunucunun web dinleyicisine ulaşabilmelidir. Boş bırakmak sunucuyu ağın dışında tutar."
+summary = "Bir backend sunucuda: Velocity veya BungeeCord proxy'nin React Web adresi, örneğin http://10.0.0.5:9696."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networksecret]
+impact = "Proxy üzerindeki React ilk başlatmada buraya yeni bir anahtar yazar; bunu her backend'de networkSecret içine kopyala. Kayıtlar bununla şifrelenir ve imzalanır. Eski kopyaları dışarıda bırakmak için proxy'de ve her backend'de değiştir."
+summary = "Proxy ile backend'lerinin paylaştığı ağ anahtarı."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkservername]
+impact = "Boş bırakılırsa bu sunucu oyun portuyla eşleştirilir; farklı ana makinelerdeki iki backend aynı portu paylaşmadıkça bu yeterlidir."
+summary = "Bir backend sunucuda: proxy'nin sunucu listesindeki adı."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.port]
 impact = "Bu port doluysa React sonraki 99 portu sırayla dener ve advertisedUrl boş olduğunda aktarıcının yerel bağlantısı ve oluşturulan doğrudan URL’ler için gerçekten bağlanılan portu kullanır. web.toml dosyasını kaydetmek dinleyiciyi otomatik olarak yeniden başlatır."

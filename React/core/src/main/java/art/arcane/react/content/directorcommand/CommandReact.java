@@ -47,6 +47,7 @@ public class CommandReact implements DirectorExecutor {
   private CommandBridge bridge;
   private CommandTest test;
   private CommandWeb web;
+  private CommandNetwork network;
 
   @Director(
       name = "language",

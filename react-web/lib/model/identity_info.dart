@@ -23,6 +23,8 @@ class IdentityInfo {
 
   bool get modded => ownerNoun == 'mod';
 
+  bool get proxy => platform == 'proxy';
+
   factory IdentityInfo.fromJson(Map<String, dynamic> json) {
     return IdentityInfo(
       serverName: json['serverName'] as String,

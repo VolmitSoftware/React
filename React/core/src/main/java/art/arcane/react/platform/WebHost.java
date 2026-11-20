@@ -21,6 +21,7 @@ import art.arcane.react.api.web.dto.OnlinePlayerDto;
 import art.arcane.react.api.web.dto.WorldDto;
 import art.arcane.react.api.web.heatmap.ChunkGridExporter;
 import art.arcane.react.api.web.heatmap.HeatmapChunkSampler;
+import art.arcane.react.api.web.network.NetworkHub;
 import art.arcane.react.api.web.pairing.PairingNotices;
 import art.arcane.react.core.incident.IncidentEvidence;
 import art.arcane.react.core.incident.IncidentRecord;
@@ -202,6 +203,11 @@ public interface WebHost {
   /** Applies a preset; the number of values it changed, or -1 when the preset is unknown. */
   default int applyPreset(String name) {
     return -1;
+  }
+
+  /** On a proxy, the network of servers behind it; React Web then serves the network routes. */
+  default Optional<NetworkHub> network() {
+    return Optional.empty();
   }
 
   /** Tells the player who made a pairing link, if online, that a browser could not use it. */

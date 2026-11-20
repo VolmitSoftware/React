@@ -15,6 +15,7 @@ import '../screen/pages/fleet_page.dart';
 import '../screen/pages/incidents_page.dart';
 import '../screen/pages/map_page.dart';
 import '../screen/pages/metrics_page.dart';
+import '../screen/pages/network_page.dart';
 import '../screen/pages/overview_page.dart';
 import '../screen/pages/pair_page.dart';
 import '../screen/pages/performance_page.dart';
@@ -56,6 +57,7 @@ List<RouteBase> buildReactorRoutes() => <RouteBase>[
     builder: (BuildContext context, RouteState state) => const SettingsPage(),
   ),
   _server(kRouteServer, const OverviewPage()),
+  _server(kRouteServerNetwork, const NetworkPage()),
   _server(kRouteServerPerformance, const PerformancePage()),
   _server(kRouteServerActivity, const ActivityPage()),
   _server(kRouteServerMap, const MapPage()),

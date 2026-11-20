@@ -600,5 +600,20 @@
   "pair.no_data_since": "Sem dados desde as {time}.",
   "pair.ends_in_hours": "O emparelhamento termina dentro de {hours} h se não for usado.",
   "pair.ends_tomorrow": "O emparelhamento termina dentro de 1 dia se não for usado.",
-  "pair.ends_in": "O emparelhamento termina dentro de {days} dias se não for usado."
+  "pair.ends_in": "O emparelhamento termina dentro de {days} dias se não for usado.",
+  "page.network.title": "Rede",
+  "page.network.tip": "Todos os servidores atrás deste proxy",
+  "screen.network.proxy_software": "Software de proxy",
+  "screen.network.servers_online": "Servidores online",
+  "screen.network.full_details": "Detalhes completos",
+  "screen.network.status": "Estado",
+  "screen.network.latency": "Latência",
+  "screen.network.details": "Detalhe",
+  "screen.network.full": "Completo",
+  "screen.network.basic": "Básico",
+  "screen.network.unknown": "Desconhecido",
+  "screen.network.empty": "Nenhum servidor atrás deste proxy",
+  "screen.network.basic_hint": "Os servidores sem React mostram apenas estado, jogadores e latência.",
+  "screen.network.not_proxy": "Este servidor não é um proxy",
+  "screen.network.not_proxy_description": "Emparelhe um proxy Velocity ou BungeeCord com React para ver a sua rede."
 }

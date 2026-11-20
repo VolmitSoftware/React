@@ -600,5 +600,20 @@
   "pair.no_data_since": "Không có dữ liệu từ {time}.",
   "pair.ends_in_hours": "Ghép nối kết thúc sau {hours} giờ nếu không dùng.",
   "pair.ends_tomorrow": "Ghép nối kết thúc sau 1 ngày nếu không dùng.",
-  "pair.ends_in": "Ghép nối kết thúc sau {days} ngày nếu không dùng."
+  "pair.ends_in": "Ghép nối kết thúc sau {days} ngày nếu không dùng.",
+  "page.network.title": "Mạng",
+  "page.network.tip": "Mọi máy chủ phía sau proxy này",
+  "screen.network.proxy_software": "Phần mềm proxy",
+  "screen.network.servers_online": "Máy chủ trực tuyến",
+  "screen.network.full_details": "Đầy đủ chi tiết",
+  "screen.network.status": "Trạng thái",
+  "screen.network.latency": "Độ trễ",
+  "screen.network.details": "Chi tiết",
+  "screen.network.full": "Đầy đủ",
+  "screen.network.basic": "Cơ bản",
+  "screen.network.unknown": "Không rõ",
+  "screen.network.empty": "Không có máy chủ nào phía sau proxy này",
+  "screen.network.basic_hint": "Máy chủ không có React chỉ hiển thị trạng thái, người chơi và độ trễ.",
+  "screen.network.not_proxy": "Máy chủ này không phải là proxy",
+  "screen.network.not_proxy_description": "Ghép đôi proxy Velocity hoặc BungeeCord chạy React để xem mạng của nó."
 }

@@ -117,6 +117,7 @@ dependencies {
     spigotCompatibility("org.spigotmc:spigot-api:${spigotApiVersion}")
 
     api(project(':core'))
+    implementation(project(':proxy'))
     implementation('com.github.VolmitSoftware.VolmLib:native-api:master-SNAPSHOT')
     implementation('com.github.VolmitSoftware.VolmLib:native-v1_21_R7:master-SNAPSHOT')
     implementation('com.github.VolmitSoftware.VolmLib:native-v26_2_R1:master-SNAPSHOT')
@@ -259,6 +260,7 @@ tasks.named('shadowJar', ShadowJar).configure {
         exclude(dependency('io.github.slimjar:.*:.*'))
         exclude(dependency('com.github.VolmitSoftware.VolmLib:.*:.*'))
         exclude(project(':core'))
+        exclude(project(':proxy'))
     }
     dependsOn(tasks.named('processResources'))
     from(sourceSets.main.output)
@@ -381,6 +383,8 @@ if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_25)) {
     System.exit(69)
 }
 
+evaluationDependsOn(':proxy')
+
 pluginPackaging {
     loggingPolicy {
         sourceDirectories = [file('src/main/java'), file('core/src/main/java')]
@@ -398,6 +402,14 @@ pluginPackaging {
             prunePrefixes = ['art/arcane/react/util/arcane/volmlib/']
             keepPrefixes = ['art/arcane/react/util/arcane/volmlib/util/matter/slices/', 'art/arcane/react/util/arcane/volmlib/nativelib/']
             shrinkRules = [file('packaging/shrink.pro')]
+            shrinkLibraries.from(project(':proxy').configurations.compileClasspath.filter { File library -> library.isFile() })
+            forbiddenPrefixes = forbiddenPrefixes + ['com/velocitypowered/', 'net/md_5/bungee/', 'com/google/inject/']
+            requiredEntries = requiredEntries + [
+                'velocity-plugin.json',
+                'bungee.yml',
+                'art/arcane/react/proxy/velocity/ReactVelocityPlugin.class',
+                'art/arcane/react/proxy/bungee/ReactBungeePlugin.class'
+            ]
             shrinkDontwarn = ['net.minecraft.**', 'org.bukkit.craftbukkit.**', 'org.spigotmc.SpigotWorldConfig', 'ca.spottedleaf.**', 'java.lang.invoke.MethodHandle']
             shrinkRelocations = [
                 'net.bytebuddy': "${lib}.bytebuddy",

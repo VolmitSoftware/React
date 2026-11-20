@@ -45,6 +45,34 @@ final class PluginControlSource {
     );
   }
 
+  /// The `ID` constant's text, following `ID = Other.ID` to the class
+  /// that holds it in the plugin's or the core module's sources.
+  static String? _controlId(Directory dir, String source) {
+    final RegExpMatch? literal = RegExp(
+      r'public\s+static\s+final\s+String\s+ID\s*=\s*"([^"]+)"',
+    ).firstMatch(source);
+    if (literal != null) return literal.group(1);
+    final RegExpMatch? reference = RegExp(
+      r'public\s+static\s+final\s+String\s+ID\s*=\s*(\w+)\.ID\s*;',
+    ).firstMatch(source);
+    if (reference == null) return null;
+    final String java = dir.path.substring(0, dir.path.indexOf('/art/arcane/'));
+    for (final String root in <String>[
+      java,
+      java.replaceFirst('/src/main/java', '/core/src/main/java'),
+    ]) {
+      final Directory sources = Directory(root);
+      if (!sources.existsSync()) continue;
+      for (final FileSystemEntity entity in sources.listSync(recursive: true)) {
+        if (entity is File &&
+            entity.path.endsWith('/${reference.group(1)}.java')) {
+          return _controlId(dir, entity.readAsStringSync());
+        }
+      }
+    }
+    return null;
+  }
+
   static List<Map<String, dynamic>> _controls(Directory dir, String prefix) {
     if (!dir.existsSync()) return <Map<String, dynamic>>[];
     final List<File> files =
@@ -62,11 +90,8 @@ final class PluginControlSource {
     for (final File file in files) {
       final String source = file.readAsStringSync();
       if (RegExp(r'public\s+abstract\s+class').hasMatch(source)) continue;
-      final RegExpMatch? id = RegExp(
-        r'public\s+static\s+final\s+String\s+ID\s*=\s*"([^"]+)"',
-      ).firstMatch(source);
-      if (id == null || id.group(1) == 'unknown') continue;
-      final String controlId = id.group(1)!;
+      final String? controlId = _controlId(dir, source);
+      if (controlId == null || controlId == 'unknown') continue;
       controls.add(<String, dynamic>{
         'id': controlId,
         'name': _capitalizeWords(controlId.replaceAll('-', ' ')),

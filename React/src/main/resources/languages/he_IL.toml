@@ -29,6 +29,7 @@
 #   {active}  מספר התכונות או הכוונונים הפעילים
 #   {actor}  משתמש האינטרנט שביצע שינוי
 #   {added}  האם תכונה הצטרפה מחדש למרשם הפעיל לאחר הפעלתה; הודעות שנוספו בעדכון שפה
+#   {address}  מארח ופורט של שרת שמאחורי הפרוקסי
 #   {after}  ערך תצורה, הודעת שפה או שימוש בערימה לאחר שינוי
 #   {age}  גיל נתוני האינטגרציה בשניות
 #   {amount}  מספר הפריטים להענקה
@@ -242,6 +243,10 @@ web = "ניהול אסימוני גישה ל-WebUI של React"
 "web.status" = "הצגת המאזין, הממסר וטביעת האצבע"
 "web.tokens" = "רשימת הדפדפנים המצומדים"
 language = "בחירת השפה שלך או שפת השרת"
+network = "מציג את רשת הפרוקסי ואת מקומו של שרת זה בתוכה"
+"network.join" = "מציג מה שרת backend מגדיר ב-web.toml כדי להצטרף לפרוקסי זה"
+"network.list" = "מציג את כל השרתים שמאחורי הפרוקסי"
+"network.status" = "מציג את סיכום הרשת או את הקישור של שרת זה לפרוקסי שלו"
 
 [command.parameter]
 debugdump_upload = "העלאת הדוח אל mclo.gs"
@@ -330,6 +335,23 @@ invalid = "&cהמרחק חייב להיות &f{range}&c.&r"
 schedule_failed = "&cלא ניתן לתזמן את שינוי המרחק בתהליכון השרת הנדרש.&r"
 set = "&aמרחק &b{type}&a של &f{scope} {target}&a הוגדר ל־&f{distance}&a.&r"
 unavailable = "&cשרת זה אינו תומך בהגדרת מרחק &f{scope} {type}&c.&r"
+
+[command.runtime.network]
+join = "&bרשת&r בכל שרת backend הגדר ב-web.toml: networkProxyUrl = \"{url}\" ו-networkSecret = \"{value}\""
+join_console_only = "&7הרץ את &f/react network join&7 מקונסולת הפרוקסי כדי לראות את מפתח הרשת.&r"
+link = "&bרשת&r פרוקסי {url} | {state}"
+link_connecting = "מתחבר"
+link_refused = "נדחה: {reason}"
+link_registered = "רשום בשם {name}"
+link_unreachable = "לא נגיש: {reason}"
+no_secret = "&cלפרוקסי עדיין אין networkSecret; הפעל מחדש את הפרוקסי או הגדר אחד ב-web.toml.&r"
+no_servers = "&7הפרוקסי לא מציג אף שרת.&r"
+not_joined = "&7שרת זה אינו חלק מרשת. הגדר את &fnetworkProxyUrl&7 ואת &fnetworkSecret&7 ב-web.toml כדי להצטרף לפרוקסי.&r"
+proxy = "&bרשת&r {server} | {players} שחקנים | {count}/{total} שרתים מחוברים | {registered} עם React"
+proxy_only = "&7רק פרוקסי Velocity או BungeeCord מציג רשת.&r"
+server = "&f{name}&7 {address}&r | {status} | {players} שחקנים | פינג {duration} | {detail}"
+server_no_react = "&7ללא React&r"
+server_react = "TPS {average}, MSPT {tick}, זיכרון {used}"
 
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 מצב=&f{state}&7 יעד=&f{target}&7 מדדים=&f{metrics}&7 פרטים=&f{detail}&r"
@@ -610,6 +632,18 @@ summary = "כתובת ה־IP שאליה מאזין האינטרנט נקשר."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React פותח כברירת מחדל API הדורש אימות. הערך false מונע פתיחת מאזין HTTP או WebSocket."
 summary = "הפעלת מאזין האינטרנט המובנה."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkproxyurl]
+impact = "כאשר networkSecret מוגדר, שרת זה נרשם בפרוקסי כל 15 שניות כדי ש-React Web של הפרוקסי יציג את לוח הבקרה המלא שלו. הפרוקסי חייב להגיע למאזין האינטרנט של שרת זה. ריק משאיר את השרת מחוץ לרשת."
+summary = "בשרת backend: כתובת React Web של פרוקסי ה-Velocity או ה-BungeeCord שלך, כגון http://10.0.0.5:9696."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networksecret]
+impact = "React בפרוקסי כותב כאן מפתח חדש בהפעלה הראשונה; העתק אותו אל networkSecret בכל שרת backend. הרישומים מוצפנים וחתומים באמצעותו. שנה אותו בפרוקסי ובכל שרת backend כדי לנעול החוצה עותקים ישנים."
+summary = "מפתח הרשת המשותף לפרוקסי ולשרתי ה-backend שלו."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkservername]
+impact = "ריק מזהה את השרת לפי פורט המשחק שלו, וזה מספיק אלא אם שני שרתי backend חולקים פורט במארחים שונים."
+summary = "בשרת backend: שמו ברשימת השרתים של הפרוקסי."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.port]
 impact = "אם היציאה תפוסה, React מנסה את 99 היציאות הבאות לפי הסדר ומשתמש ביציאה שנקשרה בפועל לחיבור המקומי של הממסר ולכתובות הישירות שנוצרות כאשר advertisedUrl ריק. שמירת web.toml מפעילה מחדש את המאזין אוטומטית."

@@ -29,6 +29,7 @@
 #   {active}  활성 기능 또는 조정 항목 수
 #   {actor}  변경한 웹 사용자
 #   {added}  활성화 후 기능이 활성 레지스트리에 다시 등록되었는지 여부; 언어 업데이트로 추가된 메시지
+#   {address}  프록시 뒤에 있는 서버의 호스트와 포트
 #   {after}  변경 후 설정 값, 언어 메시지 또는 힙 사용량
 #   {age}  연동 데이터의 경과 시간(초)
 #   {amount}  지급할 아이템 수
@@ -242,6 +243,10 @@ web = "React WebUI 액세스 토큰 관리"
 "web.status" = "리스너, 릴레이, 지문 보기"
 "web.tokens" = "페어링된 브라우저 목록"
 language = "개인 언어 또는 서버 언어 선택"
+network = "프록시 네트워크와 그 안에서 이 서버의 위치를 표시합니다"
+"network.join" = "백엔드가 이 프록시에 참여하기 위해 web.toml에 넣어야 할 내용을 표시합니다"
+"network.list" = "프록시 뒤에 있는 모든 서버를 나열합니다"
+"network.status" = "네트워크 요약 또는 이 서버와 프록시의 연결을 표시합니다"
 
 [command.parameter]
 debugdump_upload = "보고서를 mclo.gs에 업로드"
@@ -330,6 +335,23 @@ invalid = "&c거리는 &f{range}&c여야 합니다.&r"
 schedule_failed = "&c필요한 서버 스레드에 거리 변경 작업을 예약하지 못했습니다.&r"
 set = "&f{scope} {target}&a의 &b{type}&a 거리를 &f{distance}&a로 설정했습니다.&r"
 unavailable = "&c이 서버는 &f{scope} {type}&c 거리 설정을 지원하지 않습니다.&r"
+
+[command.runtime.network]
+join = "&b네트워크&r 각 백엔드의 web.toml에 다음을 설정하세요: networkProxyUrl = \"{url}\" 및 networkSecret = \"{value}\""
+join_console_only = "&7네트워크 키를 보려면 프록시 콘솔에서 &f/react network join&7을 실행하세요.&r"
+link = "&b네트워크&r 프록시 {url} | {state}"
+link_connecting = "연결 중"
+link_refused = "거부됨: {reason}"
+link_registered = "{name}(으)로 등록됨"
+link_unreachable = "연결할 수 없음: {reason}"
+no_secret = "&c프록시에 아직 networkSecret이 없습니다. 프록시를 재시작하거나 web.toml에서 설정하세요.&r"
+no_servers = "&7프록시에 서버가 없습니다.&r"
+not_joined = "&7이 서버는 어떤 네트워크에도 속해 있지 않습니다. 프록시에 참여하려면 web.toml에서 &fnetworkProxyUrl&7 및 &fnetworkSecret&7을 설정하세요.&r"
+proxy = "&b네트워크&r {server} | 플레이어 {players}명 | 온라인 서버 {count}/{total}개 | React 사용 {registered}개"
+proxy_only = "&7Velocity 또는 BungeeCord 프록시만 네트워크를 나열합니다.&r"
+server = "&f{name}&7 {address}&r | {status} | 플레이어 {players}명 | 핑 {duration} | {detail}"
+server_no_react = "&7React 없음&r"
+server_react = "TPS {average}, MSPT {tick}, 메모리 {used}"
 
 [command.runtime.plugin_api]
 entry = "&7- &b{id}&7 상태=&f{state}&7 대상=&f{target}&7 메트릭=&f{metrics}&7 세부 정보=&f{detail}&r"
@@ -610,6 +632,18 @@ summary = "웹 리스너가 바인딩할 IP 주소."
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.listenerenabled]
 impact = "React는 기본적으로 인증된 API를 엽니다. false로 설정하면 HTTP 또는 WebSocket 리스너를 열지 않습니다."
 summary = "내장 웹 리스너를 활성화합니다."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkproxyurl]
+impact = "networkSecret을 설정하면 이 서버는 15초마다 프록시에 등록되어 프록시의 React Web에 전체 대시보드가 표시됩니다. 프록시가 이 서버의 웹 리스너에 접근할 수 있어야 합니다. 비워 두면 서버가 네트워크에 참여하지 않습니다."
+summary = "백엔드 서버용: Velocity 또는 BungeeCord 프록시의 React Web 주소입니다. 예: http://10.0.0.5:9696."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networksecret]
+impact = "프록시의 React는 처음 시작할 때 여기에 새 키를 씁니다. 이를 모든 백엔드의 networkSecret에 복사하세요. 등록은 이 키로 암호화되고 서명됩니다. 이전 사본을 차단하려면 프록시와 모든 백엔드에서 변경하세요."
+summary = "프록시와 백엔드가 공유하는 네트워크 키입니다."
+
+[config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.networkservername]
+impact = "비워 두면 게임 포트로 이 서버를 구분하며, 서로 다른 호스트의 두 백엔드가 같은 포트를 쓰지 않는 한 충분합니다."
+summary = "백엔드 서버용: 프록시의 서버 목록에 표시되는 이름입니다."
 
 [config.documentation.annotation.art.arcane.react.api.web.webconfiguration.field.port]
 impact = "이 포트를 사용 중이면 React는 다음 99개 포트를 순서대로 시도합니다. advertisedUrl이 비어 있으면 실제로 바인딩한 포트를 릴레이 루프백 연결과 생성되는 직접 연결 URL에 사용합니다. web.toml을 저장하면 리스너가 자동으로 다시 시작됩니다."
