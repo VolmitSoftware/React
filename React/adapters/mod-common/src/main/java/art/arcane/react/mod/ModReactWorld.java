@@ -1,7 +1,9 @@
 package art.arcane.react.mod;
 
 import art.arcane.react.platform.ReactWorld;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -14,7 +16,11 @@ public record ModReactWorld(ServerLevel level) implements ReactWorld {
     }
 
     public static UUID idOf(ServerLevel level) {
-        return UUID.nameUUIDFromBytes(("react-dimension:" + nameOf(level)).getBytes(StandardCharsets.UTF_8));
+        return idOf(level.dimension());
+    }
+
+    public static UUID idOf(ResourceKey<Level> dimension) {
+        return UUID.nameUUIDFromBytes(("react-dimension:" + dimension.identifier()).getBytes(StandardCharsets.UTF_8));
     }
 
     public static String nameOf(ServerLevel level) {

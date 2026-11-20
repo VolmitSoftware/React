@@ -56,7 +56,7 @@ public final class ModReactPlatform implements ReactPlatform {
 
     ModReactPlatform(String loader, MinecraftServer server, File dataFolder, Logger logger, ModTicks ticks, ExecutorService async,
                      List<Runnable> startupTasks, LanguageHost languageHost, OwnerCostProbe costProbe, Supplier<SampleController> samples,
-                     Supplier<ReactWebServer> webServer) {
+                     Supplier<ReactWebServer> webServer, ModMaps maps) {
         this.loader = loader;
         this.server = server;
         this.dataFolder = dataFolder;
@@ -66,7 +66,7 @@ public final class ModReactPlatform implements ReactPlatform {
         this.webServer = webServer;
         this.languageHost = languageHost;
         this.costProbe = costProbe;
-        this.commandHost = new ModCommandHost(server);
+        this.commandHost = new ModCommandHost(server, maps);
         this.scheduler = new ModPlatformScheduler(server, ticks, async);
         this.samplerHost = new ModSamplerHost(samples);
         this.registryHost = new ModRegistryHost(dataFolder, startupTasks, this::verbose, this::warn);

@@ -3,6 +3,7 @@ package art.arcane.react.mod;
 import art.arcane.react.platform.CommandHost;
 import art.arcane.react.platform.CommandTargets;
 import art.arcane.react.platform.ReactPlayer;
+import art.arcane.react.util.plugin.VolmitSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,9 +15,24 @@ import java.util.Optional;
 /** Command targets on a mod server; subcommands that need Bukkit-only systems keep the unavailable reply. */
 final class ModCommandHost implements CommandHost {
     private final MinecraftServer server;
+    private final ModMaps maps;
 
-    ModCommandHost(MinecraftServer server) {
+    ModCommandHost(MinecraftServer server, ModMaps maps) {
         this.server = server;
+        this.maps = maps;
+    }
+
+    @Override
+    public List<String> rendererIds() {
+        return maps.rendererIds();
+    }
+
+    @Override
+    public void map(VolmitSender sender, String rendererId) {
+        ReactPlayer player = sender.player();
+        if (player != null && player.handle() instanceof ServerPlayer serverPlayer) {
+            maps.map(serverPlayer, rendererId);
+        }
     }
 
     @Override

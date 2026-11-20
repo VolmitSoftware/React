@@ -49,7 +49,7 @@ public final class ReactModRuntime {
     private volatile Running running;
 
     private record Running(ModReactPlatform platform, ModTicks ticks, ExecutorService async, SampleController samples,
-                           ReactWebServer web) {
+                           ReactWebServer web, ModMaps maps) {
     }
 
     public ReactModRuntime(String platform, Path configDirectory, ModCostProbe costProbe) {
@@ -87,11 +87,12 @@ public final class ReactModRuntime {
         SampleController samples = new SampleController();
         ModWebMetricsSource metrics = new ModWebMetricsSource(() -> samples);
         ReactWebServer[] web = new ReactWebServer[1];
+        ModMaps maps = new ModMaps(server, ticks, () -> samples);
         ModReactPlatform modPlatform = new ModReactPlatform(platform, server, dataFolder, LOGGER, ticks, async, startupTasks,
-                languageHost, costProbe, () -> samples, () -> web[0]);
+                languageHost, costProbe, () -> samples, () -> web[0], maps);
         ReactPlatforms.bind(modPlatform);
         web[0] = new ReactWebServer(new ModWebHost(server, dataFolder, platform, metrics, LOGGER::info));
-        running = new Running(modPlatform, ticks, async, samples, web[0]);
+        running = new Running(modPlatform, ticks, async, samples, web[0], maps);
         costProbe.start(server, ticks::later);
         ticks.every(costProbe::tick);
         try {
@@ -102,6 +103,8 @@ public final class ReactModRuntime {
             }
             startupTasks.clear();
             samples.postStart();
+            maps.start(modPlatform);
+            ticks.every(maps::tick);
             modPlatform.ownerCost().start();
             modPlatform.modScheduler().markReady();
             web[0].start();
@@ -139,6 +142,11 @@ public final class ReactModRuntime {
         active.platform().modScheduler().deactivate();
         active.platform().ownerCost().stop();
         costProbe.stop();
+        try {
+            active.maps().stop();
+        } catch (RuntimeException failure) {
+            LOGGER.warn("React maps did not stop cleanly", failure);
+        }
         try {
             active.web().stop();
         } catch (RuntimeException failure) {
