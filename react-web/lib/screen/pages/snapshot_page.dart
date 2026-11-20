@@ -170,6 +170,7 @@ class _SnapshotPageState extends State<SnapshotPage> {
             MetricTile(
               label: reactorText(ReactorText.snapshotKind),
               value: snapshotKindText(meta.kind),
+              note: meta.summary.isEmpty ? null : meta.summary,
             ),
             MetricTile(
               label: reactorText(ReactorText.snapshotTakenAt),
@@ -178,10 +179,6 @@ class _SnapshotPageState extends State<SnapshotPage> {
             MetricTile(
               label: reactorText(ReactorText.snapshotSize),
               value: snapshotSizeText(meta.bytes),
-            ),
-            MetricTile(
-              label: reactorText(ReactorText.snapshotSummary),
-              value: meta.summary.isEmpty ? '--' : meta.summary,
             ),
           ],
         ),
