@@ -25,7 +25,6 @@ import art.arcane.react.platform.ViewDistanceHost;
 import art.arcane.react.platform.WorldHost;
 import art.arcane.react.platform.WorldStatsHost;
 import art.arcane.react.platform.cost.OwnerCostProbe;
-import net.minecraft.SharedConstants;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -130,7 +129,7 @@ public final class ModReactPlatform implements ReactPlatform {
 
     @Override
     public String minecraftVersion() {
-        return SharedConstants.getCurrentVersion().name();
+        return VanillaApi.minecraftVersion();
     }
 
     @Override
@@ -213,7 +212,7 @@ public final class ModReactPlatform implements ReactPlatform {
         }
         for (ServerLevel level : server.getAllLevels()) {
             String id = ModReactWorld.nameOf(level);
-            if (id.equals(name) || level.dimension().identifier().getPath().equals(name)) {
+            if (id.equals(name) || VanillaApi.keyPath(level.dimension()).equals(name)) {
                 return Optional.of(new ModReactWorld(level));
             }
         }

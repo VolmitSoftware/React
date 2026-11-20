@@ -66,12 +66,12 @@ final class ModChunkHeatmapHost implements ChunkHeatmapHost, HeatmapChunkSampler
             Set<Long> loaded = new HashSet<>();
             for (ChunkHolder holder : ((ChunkMapAccess) level.getChunkSource().chunkMap).react$visibleChunkMap().values()) {
                 if (holder.getFullChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK).orElse(null) != null) {
-                    loaded.add(holder.getPos().pack());
+                    loaded.add(VanillaApi.pack(holder.getPos()));
                 }
             }
             Map<Long, Integer> entities = new HashMap<>();
             for (Entity entity : level.getAllEntities()) {
-                entities.merge(entity.chunkPosition().pack(), 1, Integer::sum);
+                entities.merge(VanillaApi.pack(entity.chunkPosition()), 1, Integer::sum);
             }
             samples.replaceGauge(level, SamplerEntities.ID, entities);
             List<PlayerPosition> players = new ArrayList<>();
@@ -163,7 +163,7 @@ final class ModChunkHeatmapHost implements ChunkHeatmapHost, HeatmapChunkSampler
         }
         for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
-                if (world.loaded().contains(ChunkPos.pack(chunkX, chunkZ))) {
+                if (world.loaded().contains(VanillaApi.pack(chunkX, chunkZ))) {
                     result.add(new LoadedChunkCoordinate(chunkX, chunkZ));
                 }
             }
@@ -201,7 +201,7 @@ final class ModChunkHeatmapHost implements ChunkHeatmapHost, HeatmapChunkSampler
 
     private static HeatmapWorldRef worldRef(UUID worldId, ServerLevel level) {
         String name = ModReactWorld.nameOf(level);
-        BlockPos spawn = level.getRespawnData().pos();
+        BlockPos spawn = VanillaApi.spawn(level);
         WorldBorder border = level.getWorldBorder();
         double size = border.getSize();
         return new HeatmapWorldRef(worldId, name, name, spawn.getX() >> 4, spawn.getZ() >> 4, border.getCenterX(),

@@ -113,29 +113,7 @@ public final class FabricEventWrap implements EventAttribution {
                 }
             };
         }
-        if (type == ServerTickEvents.EndLevelTick.class) {
-            ServerTickEvents.EndLevelTick delegate = (ServerTickEvents.EndLevelTick) listener;
-            return (ServerTickEvents.EndLevelTick) level -> {
-                long start = CostFrame.enter();
-                try {
-                    delegate.onEndTick(level);
-                } finally {
-                    CostFrame.exit(start, bucket);
-                }
-            };
-        }
-        if (type == ServerTickEvents.StartLevelTick.class) {
-            ServerTickEvents.StartLevelTick delegate = (ServerTickEvents.StartLevelTick) listener;
-            return (ServerTickEvents.StartLevelTick) level -> {
-                long start = CostFrame.enter();
-                try {
-                    delegate.onStartTick(level);
-                } finally {
-                    CostFrame.exit(start, bucket);
-                }
-            };
-        }
-        return null;
+        return FabricLevelTicks.wrap(type, listener, bucket);
     }
 
     private static Object proxy(Class<?> type, Object listener, CostBucket bucket) {

@@ -267,7 +267,7 @@ public final class BukkitMapHost implements MapHost<ItemStack> {
         pdc.get(nsRenderer, PersistentDataType.STRING),
         pdc.get(nsMapToken, PersistentDataType.STRING)
     );
-    MapView view = meta.getMapView();
+    MapView view = meta.hasMapView() ? meta.getMapView() : null;
     int mapId = view == null ? -1 : view.getId();
     return new MapItemView(mapId, tags, meta.getLore(), meta.getDisplayName() != null);
   }
@@ -279,7 +279,7 @@ public final class BukkitMapHost implements MapHost<ItemStack> {
     }
 
     if (mapId >= 0) {
-      MapView current = meta.getMapView();
+      MapView current = meta.hasMapView() ? meta.getMapView() : null;
       if (current == null || current.getId() != mapId) {
         MapView view = view(mapId);
         if (view != null) {
@@ -611,7 +611,7 @@ public final class BukkitMapHost implements MapHost<ItemStack> {
     if (item == null || item.getType() != Material.FILLED_MAP || !(item.getItemMeta() instanceof MapMeta meta)) {
       return -1;
     }
-    MapView view = meta.getMapView();
+    MapView view = meta.hasMapView() ? meta.getMapView() : null;
     return view == null ? -1 : view.getId();
   }
 

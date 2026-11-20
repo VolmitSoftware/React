@@ -5,7 +5,6 @@ import art.arcane.react.api.web.dto.EnvironmentDto;
 import art.arcane.react.content.sampler.GCStatsTracker;
 import art.arcane.volmlib.util.format.Form;
 import com.sun.management.OperatingSystemMXBean;
-import jdk.management.VirtualThreadSchedulerMXBean;
 import oshi.PlatformEnum;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
@@ -55,7 +54,7 @@ public final class HostTelemetryProvider {
   private final ClassLoadingMXBean classLoadingBean;
   private final RuntimeMXBean runtimeBean;
   private final ThreadMXBean threadBean;
-  private final VirtualThreadSchedulerMXBean virtualThreadBean;
+  private final VirtualThreadScheduler virtualThreads;
   private final List<GarbageCollectorMXBean> garbageCollectorBeans;
   private final List<BufferPoolMXBean> bufferPoolBeans;
   private final OperatingSystemMXBean operatingSystemBean;
@@ -100,7 +99,7 @@ public final class HostTelemetryProvider {
     this.classLoadingBean = ManagementFactory.getClassLoadingMXBean();
     this.runtimeBean = ManagementFactory.getRuntimeMXBean();
     this.threadBean = ManagementFactory.getThreadMXBean();
-    this.virtualThreadBean = ManagementFactory.getPlatformMXBean(VirtualThreadSchedulerMXBean.class);
+    this.virtualThreads = VirtualThreadScheduler.platform();
     this.garbageCollectorBeans = ManagementFactory.getGarbageCollectorMXBeans();
     this.bufferPoolBeans = ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
     this.operatingSystemBean = ManagementFactory.getOperatingSystemMXBean() instanceof OperatingSystemMXBean bean ? bean : null;
@@ -332,10 +331,10 @@ public final class HostTelemetryProvider {
     publish(HostMetric.THREAD_RUNNABLE, runnable, nowMs);
     publish(HostMetric.THREAD_BLOCKED, blocked, nowMs);
     publish(HostMetric.THREAD_WAITING, waiting, nowMs);
-    publish(HostMetric.VIRTUAL_PARALLELISM, virtualThreadBean == null ? -1D : virtualThreadBean.getParallelism(), nowMs);
-    publish(HostMetric.VIRTUAL_CARRIERS, virtualThreadBean == null ? -1D : virtualThreadBean.getPoolSize(), nowMs);
-    publish(HostMetric.VIRTUAL_MOUNTED, virtualThreadBean == null ? -1D : virtualThreadBean.getMountedVirtualThreadCount(), nowMs);
-    publish(HostMetric.VIRTUAL_QUEUED, virtualThreadBean == null ? -1D : virtualThreadBean.getQueuedVirtualThreadCount(), nowMs);
+    publish(HostMetric.VIRTUAL_PARALLELISM, virtualThreads.parallelism(), nowMs);
+    publish(HostMetric.VIRTUAL_CARRIERS, virtualThreads.poolSize(), nowMs);
+    publish(HostMetric.VIRTUAL_MOUNTED, virtualThreads.mounted(), nowMs);
+    publish(HostMetric.VIRTUAL_QUEUED, virtualThreads.queued(), nowMs);
   }
 
   private void captureGc(long nowMs) {

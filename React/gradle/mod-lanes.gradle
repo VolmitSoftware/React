@@ -33,7 +33,8 @@ List<TaskProvider<Exec>> matrixBuilds = []
                 '-p', "adapters/${loader}", '--project-cache-dir', file("adapters/${loader}/build/gradle-cache/${target}").absolutePath,
                 '--init-script', file('gradle/volmlib-isolation.init.gradle').absolutePath,
                 "-PvolmLibBuildDirectory=${file("adapters/${loader}/build/${target}/volmlib").absolutePath}",
-                '--no-daemon', '--console=plain', '--max-workers=2', 'build', "-PminecraftVersion=${target}"]
+                '--no-daemon', '--console=plain', '--max-workers=2', '-Dorg.gradle.jvmargs=-Xmx3g -Dfile.encoding=UTF-8',
+                'build', "-PminecraftVersion=${target}"]
             react.each { String key, String value ->
                 if (key != 'minecraftVersion') {
                     arguments.add("-P${key}=${value}".toString())

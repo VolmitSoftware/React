@@ -1,9 +1,7 @@
 package art.arcane.react.mod;
 
-import net.minecraft.resources.Identifier;
-import net.minecraft.server.permissions.Permission;
-import net.minecraft.server.permissions.PermissionSet;
-import net.minecraft.server.permissions.Permissions;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Optional;
 import java.util.Set;
@@ -22,15 +20,18 @@ final class ModPermissions {
     private ModPermissions() {
     }
 
-    static boolean has(PermissionSet permissions, String node) {
+    static boolean has(CommandSourceStack source, String node) {
         if (node != null && EVERYONE.contains(node)) {
             return true;
         }
-        Identifier atom = atom(node).map(Identifier::tryParse).orElse(null);
-        if (atom != null && permissions.hasPermission(Permission.Atom.create(atom))) {
+        return VanillaApi.granted(source, atom(node).orElse(null)) || VanillaApi.gamemaster(source);
+    }
+
+    static boolean has(ServerPlayer player, String node) {
+        if (node != null && EVERYONE.contains(node)) {
             return true;
         }
-        return permissions.hasPermission(Permissions.COMMANDS_GAMEMASTER);
+        return VanillaApi.granted(player, atom(node).orElse(null)) || VanillaApi.gamemaster(player);
     }
 
     static Optional<String> atom(String node) {

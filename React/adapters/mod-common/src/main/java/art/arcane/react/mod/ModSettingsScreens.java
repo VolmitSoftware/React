@@ -15,9 +15,7 @@ import art.arcane.react.util.project.config.ConfigLocalization;
 import art.arcane.react.util.project.registry.Registered;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -182,13 +180,12 @@ final class ModSettingsScreens {
     }
 
     private static Item icon(String key) {
-        Identifier id = key == null ? null : Identifier.tryParse(key);
-        Item item = id == null ? Items.AIR : BuiltInRegistries.ITEM.getValue(id);
+        Item item = key == null ? Items.AIR : VanillaApi.itemOrAir(key);
         return item == Items.AIR ? Items.CHEST : item;
     }
 
     private static List<ItemStack> background() {
-        Item pane = BuiltInRegistries.ITEM.getValue(Identifier.withDefaultNamespace("black_stained_glass_pane"));
+        Item pane = VanillaApi.vanillaItem("black_stained_glass_pane");
         List<ItemStack> items = new ArrayList<>(ModSettingsMenu.ROWS * 9);
         for (int slot = 0; slot < ModSettingsMenu.ROWS * 9; slot++) {
             ItemStack stack = new ItemStack(pane);

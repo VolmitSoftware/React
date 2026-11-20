@@ -2,7 +2,6 @@ package art.arcane.react.mod;
 
 import art.arcane.react.platform.GameEntity;
 import art.arcane.react.platform.GameLocation;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -19,8 +18,9 @@ public record ModGameEntity(Entity entity) implements GameEntity {
 
     /** The type in React's config naming: the Bukkit constant for vanilla types, the namespaced id otherwise. */
     public static String typeName(EntityType<?> type) {
-        Identifier key = EntityType.getKey(type);
-        return "minecraft".equals(key.getNamespace()) ? key.getPath().toUpperCase(Locale.ROOT) : key.toString();
+        String namespace = VanillaApi.namespace(type);
+        String path = VanillaApi.path(type);
+        return "minecraft".equals(namespace) ? path.toUpperCase(Locale.ROOT) : namespace + ":" + path;
     }
 
     public static GameLocation location(Entity entity) {

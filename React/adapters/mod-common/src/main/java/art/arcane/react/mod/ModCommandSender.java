@@ -5,7 +5,6 @@ import art.arcane.react.platform.ReactPlayer;
 import art.arcane.volmlib.util.plugin.ComponentText;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.Permissions;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -34,12 +33,12 @@ public record ModCommandSender(CommandSourceStack source) implements ReactComman
 
     @Override
     public boolean hasPermission(String node) {
-        return ModPermissions.has(source.permissions(), node);
+        return ModPermissions.has(source, node);
     }
 
     @Override
     public boolean isOp() {
-        return source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
+        return VanillaApi.gamemaster(source);
     }
 
     @Override

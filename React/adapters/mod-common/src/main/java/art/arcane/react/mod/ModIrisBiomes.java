@@ -68,7 +68,7 @@ final class ModIrisBiomes {
             return target.worldId();
         }
         ServerPlayer viewer = target.viewerId() == null ? null : server.getPlayerList().getPlayer(target.viewerId());
-        return viewer == null ? null : ModReactWorld.idOf(viewer.level());
+        return viewer == null ? null : ModReactWorld.idOf(VanillaApi.level(viewer));
     }
 
     private void sample() {
@@ -102,7 +102,7 @@ final class ModIrisBiomes {
         Set<Long> loaded = new HashSet<>();
         for (ChunkHolder holder : ((ChunkMapAccess) level.getChunkSource().chunkMap).react$visibleChunkMap().values()) {
             if (holder.getFullChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK).orElse(null) != null) {
-                loaded.add(holder.getPos().pack());
+                loaded.add(VanillaApi.pack(holder.getPos()));
             }
         }
         return loaded;
@@ -118,7 +118,7 @@ final class ModIrisBiomes {
             return irisBiome == null || irisBiome.isBlank() ? null : SharePieRenderer.displayName(irisBiome);
         }
         return SharePieRenderer.displayName(level.getBiome(new BlockPos(x, y, z)).unwrapKey()
-                .map((ResourceKey<Biome> key) -> lastSegment(key.identifier().getPath()))
+                .map((ResourceKey<Biome> key) -> lastSegment(VanillaApi.keyPath(key)))
                 .orElse(null));
     }
 

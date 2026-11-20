@@ -23,7 +23,7 @@ public final class ReactForge {
     private final ReactModRuntime runtime = new ReactModRuntime("Forge", FMLPaths.CONFIGDIR.get(), costProbe());
 
     public ReactForge(FMLJavaModLoadingContext context) {
-        ChannelBuilder.named(ReactMapsPayload.ID).optional().payloadChannel().play()
+        ChannelBuilder.named(ReactMapsPayload.TYPE.id()).optional().payloadChannel().play()
                 .bidirectional().add(ReactMapsPayload.TYPE, ReactMapsPayload.CODEC.cast(), ReactForge::mapsPayload)
                 .build();
         RegisterCommandsEvent.BUS.addListener(event -> runtime.registerCommands(event.getDispatcher()));

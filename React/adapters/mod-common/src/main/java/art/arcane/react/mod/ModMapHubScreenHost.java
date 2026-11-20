@@ -8,7 +8,6 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -114,7 +113,7 @@ final class ModMapHubScreenHost implements MapHubScreenHost {
     }
 
     private static Item vanilla(String path) {
-        return BuiltInRegistries.ITEM.getValue(Identifier.withDefaultNamespace(path));
+        return VanillaApi.vanillaItem(path);
     }
 
     static Item item(MapHubIcon icon) {

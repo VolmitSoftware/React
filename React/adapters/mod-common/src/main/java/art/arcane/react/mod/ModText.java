@@ -5,12 +5,9 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
-
-import java.net.URI;
 
 /** React's rich text as vanilla components, with colours, decorations, hover text and clicks. Fonts are dropped. */
 final class ModText {
@@ -44,20 +41,14 @@ final class ModText {
                 .withObfuscated(decoration(source, TextDecoration.OBFUSCATED));
         net.kyori.adventure.text.event.ClickEvent click = source.clickEvent();
         if (click != null && click.payload() instanceof net.kyori.adventure.text.event.ClickEvent.Payload.Text text) {
-            ClickEvent event = switch (click.action()) {
-                case RUN_COMMAND -> new ClickEvent.RunCommand(text.value());
-                case SUGGEST_COMMAND -> new ClickEvent.SuggestCommand(text.value());
-                case COPY_TO_CLIPBOARD -> new ClickEvent.CopyToClipboard(text.value());
-                case OPEN_URL -> new ClickEvent.OpenUrl(URI.create(text.value()));
-                default -> null;
-            };
+            ClickEvent event = VanillaApi.click(click.action(), text.value());
             if (event != null) {
                 style = style.withClickEvent(event);
             }
         }
         net.kyori.adventure.text.event.HoverEvent<?> hover = source.hoverEvent();
         if (hover != null && hover.value() instanceof net.kyori.adventure.text.Component shown) {
-            style = style.withHoverEvent(new HoverEvent.ShowText(converted(shown)));
+            style = style.withHoverEvent(VanillaApi.showText(converted(shown)));
         }
         return style;
     }

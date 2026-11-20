@@ -91,7 +91,7 @@ final class ModWorldStatsHost implements WorldStatsHost {
     public long forceLoadedChunkCount() {
         long total = 0L;
         for (ServerLevel level : server.getAllLevels()) {
-            total += level.getForceLoadedChunks().size();
+            total += VanillaApi.forcedChunkCount(level);
         }
         return total;
     }

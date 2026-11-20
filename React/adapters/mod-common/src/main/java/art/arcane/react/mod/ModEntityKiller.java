@@ -4,8 +4,6 @@ import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.RuntimeMessages;
 import art.arcane.volmlib.util.localization.MessageArgument;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.particles.ColorParticleOption;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -92,7 +90,7 @@ final class ModEntityKiller {
 
     private static void remove(Entity entity) {
         if (entity.level() instanceof ServerLevel level) {
-            level.sendParticles(ColorParticleOption.create(ParticleTypes.FLASH, 1F, 1F, 1F), entity.getX(), entity.getY(),
+            level.sendParticles(VanillaApi.whiteFlash(), entity.getX(), entity.getY(),
                     entity.getZ(), 1, 0D, 0D, 0D, 0D);
             level.playSound(null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.SOUL_ESCAPE, SoundSource.NEUTRAL, 0.5F, 0.9F);
         }

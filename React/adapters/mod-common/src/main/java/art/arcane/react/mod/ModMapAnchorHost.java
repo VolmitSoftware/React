@@ -30,7 +30,7 @@ final class ModMapAnchorHost implements MapAnchorHost {
         ServerLevel targetLevel = target == null ? null : level(target.worldId());
         ServerLevel mapLevel = targetLevel != null
                 ? targetLevel
-                : frameLevel != null ? frameLevel : viewer == null ? null : viewer.level();
+                : frameLevel != null ? frameLevel : viewer == null ? null : VanillaApi.level(viewer);
         if (mapLevel == null) {
             return Optional.empty();
         }
@@ -44,7 +44,7 @@ final class ModMapAnchorHost implements MapAnchorHost {
             x = viewer.getX();
             z = viewer.getZ();
         } else {
-            BlockPos spawn = mapLevel.getRespawnData().pos();
+            BlockPos spawn = VanillaApi.spawn(mapLevel);
             x = spawn.getX() + 0.5D;
             z = spawn.getZ() + 0.5D;
         }

@@ -38,14 +38,14 @@ final class ModChunkSamples {
             return Optional.empty();
         }
         ChunkPos pos = chunk.getPos();
-        return chunk(ModReactWorld.nameOf(level), pos.x(), pos.z())
+        return chunk(ModReactWorld.nameOf(level), VanillaApi.chunkX(pos), VanillaApi.chunkZ(pos))
                 .flatMap((SampledChunk sampled) -> sampled.optional(sampler.getId()))
                 .map(AtomicDouble::get);
     }
 
     Optional<SampledChunk> chunk(String worldKey, int chunkX, int chunkZ) {
         Map<Long, SampledChunk> chunks = worldKey == null ? null : worlds.get(worldKey);
-        return chunks == null ? Optional.empty() : Optional.ofNullable(chunks.get(ChunkPos.pack(chunkX, chunkZ)));
+        return chunks == null ? Optional.empty() : Optional.ofNullable(chunks.get(VanillaApi.pack(chunkX, chunkZ)));
     }
 
     double value(String worldKey, int chunkX, int chunkZ, String samplerId) {
@@ -109,14 +109,14 @@ final class ModChunkSamples {
             chunkZ = block.pos().getZ() >> 4;
         } else if (subject instanceof LevelChunk chunk && chunk.getLevel() instanceof ServerLevel chunkLevel) {
             level = chunkLevel;
-            chunkX = chunk.getPos().x();
-            chunkZ = chunk.getPos().z();
+            chunkX = VanillaApi.chunkX(chunk.getPos());
+            chunkZ = VanillaApi.chunkZ(chunk.getPos());
         } else {
             return null;
         }
         String worldKey = ModReactWorld.nameOf(level);
         return worlds.computeIfAbsent(worldKey, (String ignored) -> new ConcurrentHashMap<>())
-                .computeIfAbsent(ChunkPos.pack(chunkX, chunkZ),
+                .computeIfAbsent(VanillaApi.pack(chunkX, chunkZ),
                         (Long ignored) -> new SampledChunk(ModReactWorld.idOf(level), worldKey, chunkX, chunkZ));
     }
 }

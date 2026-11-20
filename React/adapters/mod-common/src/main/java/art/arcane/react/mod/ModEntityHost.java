@@ -11,7 +11,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
@@ -142,13 +141,13 @@ final class ModEntityHost implements EntityHost {
     }
 
     private static boolean isLoaded(ServerLevel level, int chunkX, int chunkZ) {
-        return level.getChunkSource().hasChunk(chunkX, chunkZ) && level.areEntitiesLoaded(ChunkPos.pack(chunkX, chunkZ));
+        return level.getChunkSource().hasChunk(chunkX, chunkZ) && level.areEntitiesLoaded(VanillaApi.pack(chunkX, chunkZ));
     }
 
     private static List<Entity> chunk(ServerLevel level, int chunkX, int chunkZ) {
         int minX = chunkX << 4;
         int minZ = chunkZ << 4;
-        AABB box = new AABB(minX, level.getMinY(), minZ, minX + 16, level.getMaxY() + 1, minZ + 16);
+        AABB box = new AABB(minX, VanillaApi.minY(level), minZ, minX + 16, VanillaApi.maxY(level) + 1, minZ + 16);
         return level.getEntities((Entity) null, box, (Entity entity) -> entity.getBlockX() >> 4 == chunkX
                 && entity.getBlockZ() >> 4 == chunkZ);
     }

@@ -76,7 +76,7 @@ final class ModCommandHost implements CommandHost {
 
     @Override
     public Optional<CommandTargets.World> worldOf(ReactPlayer player) {
-        return player.handle() instanceof ServerPlayer serverPlayer ? Optional.of(target(serverPlayer.level())) : Optional.empty();
+        return player.handle() instanceof ServerPlayer serverPlayer ? Optional.of(target(VanillaApi.level(serverPlayer))) : Optional.empty();
     }
 
     private static CommandTargets.World target(ServerLevel level) {

@@ -48,7 +48,11 @@ if (targetProperties.obfuscated) {
         inputFile.set(shaded.flatMap { task -> task.archiveFile })
         archiveFileName.set(shaded.flatMap { task -> task.archiveFileName })
         addNestedDependencies.set(false)
+        doLast {
+            compactJar(archiveFile.get().asFile)
+        }
     }
+    ext.compactShadowJar = false
     ext.distributionJar = remapped.flatMap { task -> task.archiveFile }
 }
 if (hasCore) {

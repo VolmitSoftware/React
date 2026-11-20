@@ -196,11 +196,11 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
             return null;
         }
         MapId id = item.get(DataComponents.MAP_ID);
-        CompoundTag values = item.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getCompoundOrEmpty(BUKKIT_VALUES);
+        CompoundTag values = VanillaApi.compound(item.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag(), BUKKIT_VALUES);
         MapItemTags tags = new MapItemTags(
-                values.getByteOr(KEY_REACT, (byte) 0) == 1,
-                values.getStringOr(KEY_RENDERER, null),
-                values.getStringOr(KEY_TOKEN, null));
+                VanillaApi.byteOr(values, KEY_REACT, (byte) 0) == 1,
+                VanillaApi.stringOr(values, KEY_RENDERER, null),
+                VanillaApi.stringOr(values, KEY_TOKEN, null));
         ItemLore lore = item.get(DataComponents.LORE);
         List<String> lines = new ArrayList<>();
         if (lore != null) {
@@ -226,7 +226,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
         }
         item.set(DataComponents.LORE, new ItemLore(lines));
         CustomData.update(DataComponents.CUSTOM_DATA, item, (CompoundTag tag) -> {
-            CompoundTag values = tag.getCompoundOrEmpty(BUKKIT_VALUES);
+            CompoundTag values = VanillaApi.compound(tag, BUKKIT_VALUES);
             if (tags.reactFlag()) {
                 values.putByte(KEY_REACT, (byte) 1);
             }
@@ -255,8 +255,8 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
             return;
         }
         Inventory inventory = player.getInventory();
-        ItemStack displaced = inventory.getSelectedItem();
-        inventory.setSelectedItem(item);
+        ItemStack displaced = VanillaApi.selectedItem(inventory);
+        VanillaApi.selectItem(inventory, item);
         if (!displaced.isEmpty()) {
             addOrDrop(player, displaced);
         }
@@ -302,7 +302,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
             return false;
         }
         Inventory inventory = player.getInventory();
-        if (match.test(inventory.getSelectedItem())) {
+        if (match.test(VanillaApi.selectedItem(inventory))) {
             return true;
         }
         int found = -1;
@@ -334,7 +334,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
         }
         int minX = chunkX << 4;
         int minZ = chunkZ << 4;
-        AABB area = new AABB(minX, level.getMinY(), minZ, minX + 16, level.getMaxY() + 1, minZ + 16);
+        AABB area = new AABB(minX, VanillaApi.minY(level), minZ, minX + 16, VanillaApi.maxY(level) + 1, minZ + 16);
         for (ItemFrame frame : level.getEntitiesOfClass(ItemFrame.class, area)) {
             BlockPos pos = frame.getPos();
             if (SectionPos.blockToSectionCoord(pos.getX()) == chunkX && SectionPos.blockToSectionCoord(pos.getZ()) == chunkZ) {
@@ -451,7 +451,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
             for (ChunkHolder holder : ((ChunkMapAccess) level.getChunkSource().chunkMap).react$visibleChunkMap().values()) {
                 LevelChunk chunk = holder.getFullChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK).orElse(null);
                 if (chunk != null) {
-                    sink.accept(new ChunkRef(worldId, chunk.getPos().x(), chunk.getPos().z()));
+                    sink.accept(new ChunkRef(worldId, VanillaApi.chunkX(chunk.getPos()), VanillaApi.chunkZ(chunk.getPos())));
                 }
             }
         }
@@ -475,7 +475,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
         Vec3 direction = hasDirection ? look.scale(1.0D / Math.sqrt(lengthSquared)) : look;
         return new ViewerSnapshot(
                 player.getUUID(),
-                ModReactWorld.idOf(player.level()),
+                ModReactWorld.idOf(VanillaApi.level(player)),
                 player.getX(),
                 player.getY(),
                 player.getZ(),
@@ -501,7 +501,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
     @Override
     public UUID viewerWorld(UUID viewerId) {
         ServerPlayer player = player(viewerId);
-        return player == null ? null : ModReactWorld.idOf(player.level());
+        return player == null ? null : ModReactWorld.idOf(VanillaApi.level(player));
     }
 
     @Override
@@ -571,7 +571,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
         unbind();
         listener = bound;
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            viewerWorlds.put(player.getUUID(), ModReactWorld.idOf(player.level()));
+            viewerWorlds.put(player.getUUID(), ModReactWorld.idOf(VanillaApi.level(player)));
         }
         ModMapHooks.bind(this);
     }
@@ -658,7 +658,7 @@ final class ModMapHost implements MapHost<ItemStack>, ModMapHooks.Listener {
             if (player.isRemoved() || player.hasDisconnected()) {
                 continue;
             }
-            UUID world = ModReactWorld.idOf(player.level());
+            UUID world = ModReactWorld.idOf(VanillaApi.level(player));
             UUID previous = viewerWorlds.put(player.getUUID(), world);
             if (previous == null) {
                 current.onViewerJoin(player.getUUID());

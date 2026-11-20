@@ -32,7 +32,7 @@ public record ModReactPlayer(ServerPlayer player) implements ReactPlayer {
 
     @Override
     public boolean hasPermission(String node) {
-        return ModPermissions.has(player.permissions(), node);
+        return ModPermissions.has(player, node);
     }
 
     @Override

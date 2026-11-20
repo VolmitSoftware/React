@@ -155,7 +155,7 @@ final class ModIntegrationMetrics implements IntegrationMetricsHost {
         UUID worldId = target.worldId();
         if (worldId == null && target.viewerId() != null) {
             ServerPlayer viewer = server.getPlayerList().getPlayer(target.viewerId());
-            return viewer == null ? null : ModReactWorld.nameOf(viewer.level());
+            return viewer == null ? null : ModReactWorld.nameOf(VanillaApi.level(viewer));
         }
         for (ServerLevel level : server.getAllLevels()) {
             if (ModReactWorld.idOf(level).equals(worldId)) {

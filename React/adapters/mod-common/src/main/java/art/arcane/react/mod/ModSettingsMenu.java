@@ -4,8 +4,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 
@@ -16,7 +14,7 @@ import java.util.Map;
  * The six-row chest behind {@code /react config gui} on mods. Item movement is blocked; clicks go to the button in the
  * slot as left, right or shift clicks.
  */
-final class ModSettingsMenu extends ChestMenu {
+final class ModSettingsMenu extends ReactChestMenu {
     static final int ROWS = 6;
 
     enum Click {
@@ -55,13 +53,13 @@ final class ModSettingsMenu extends ChestMenu {
     }
 
     @Override
-    public void clicked(int slot, int button, ContainerInput input, Player player) {
+    void clicked(int slot, int button, MenuClick input, Player player) {
         if (player != viewer || viewer.containerMenu != this || slot < 0 || slot >= ROWS * 9) {
             return;
         }
         Button target = buttons.get(slot);
-        Click click = input == ContainerInput.QUICK_MOVE ? Click.SHIFT
-                : input == ContainerInput.PICKUP ? (button == 0 ? Click.LEFT : button == 1 ? Click.RIGHT : null)
+        Click click = input == MenuClick.QUICK_MOVE ? Click.SHIFT
+                : input == MenuClick.PICKUP ? (button == 0 ? Click.LEFT : button == 1 ? Click.RIGHT : null)
                 : null;
         if (target != null && click != null) {
             target.click(click);

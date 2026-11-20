@@ -77,7 +77,7 @@ java {
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs.add('-parameters')
     options.encoding = 'UTF-8'
-    options.release.set(25)
+    options.release.set(21)
 }
 
 tasks.named('test', Test).configure {

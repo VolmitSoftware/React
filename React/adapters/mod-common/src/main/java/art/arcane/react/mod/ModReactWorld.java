@@ -20,11 +20,11 @@ public record ModReactWorld(ServerLevel level) implements ReactWorld {
     }
 
     public static UUID idOf(ResourceKey<Level> dimension) {
-        return UUID.nameUUIDFromBytes(("react-dimension:" + dimension.identifier()).getBytes(StandardCharsets.UTF_8));
+        return UUID.nameUUIDFromBytes(("react-dimension:" + VanillaApi.dimensionId(dimension)).getBytes(StandardCharsets.UTF_8));
     }
 
     public static String nameOf(ServerLevel level) {
-        return level.dimension().identifier().toString();
+        return VanillaApi.dimensionId(level.dimension());
     }
 
     @Override

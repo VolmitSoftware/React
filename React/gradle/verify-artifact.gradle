@@ -160,7 +160,9 @@ TaskProvider verification = tasks.register('verifyArtifact') {
                     JarEntry packEntry = archive.getJarEntry('pack.mcmeta')
                     require(packEntry != null, 'missing pack.mcmeta that Forge reads as the mod data pack')
                     Map<String, Object> pack = (Map<String, Object>) new JsonSlurper().parseText(archive.getInputStream(packEntry).withCloseable { InputStream stream -> stream.getText('UTF-8') }).pack
-                    require(pack instanceof Map && pack.description instanceof String && pack.min_format == target.dataPackFormat && pack.max_format == target.dataPackFormat, "pack.mcmeta must declare data pack format ${target.dataPackFormat}")
+                    boolean declaresFormat = pack instanceof Map && (pack.containsKey('pack_format') ? pack.pack_format == target.dataPackFormat
+                        : pack.min_format == target.dataPackFormat && pack.max_format == target.dataPackFormat)
+                    require(declaresFormat && pack.description instanceof String, "pack.mcmeta must declare data pack format ${target.dataPackFormat}")
                 }
                 if (platform == 'neoforge') {
                     String javaRange = "[${target.javaVersion},)"

@@ -9,7 +9,6 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 
@@ -20,7 +19,7 @@ import java.util.Map;
  * The map hub chest. Item movement is blocked. As in the Bukkit window, a left click acts on the next tick and two left
  * clicks inside one tick act on neither, while every other click acts at once.
  */
-final class ModMapHubMenu extends ChestMenu {
+final class ModMapHubMenu extends ReactChestMenu {
     private static final List<MenuType<ChestMenu>> TYPES = List.of(MenuType.GENERIC_9x1, MenuType.GENERIC_9x2,
             MenuType.GENERIC_9x3, MenuType.GENERIC_9x4, MenuType.GENERIC_9x5, MenuType.GENERIC_9x6);
 
@@ -57,14 +56,14 @@ final class ModMapHubMenu extends ChestMenu {
     }
 
     @Override
-    public void clicked(int slot, int button, ContainerInput input, Player player) {
+    void clicked(int slot, int button, MenuClick input, Player player) {
         if (player != viewer || viewer.containerMenu != this || slot < 0 || slot >= rows * 9 || tiles == null) {
             return;
         }
         MapHubTile tile = tiles.get(slot);
-        if (input == ContainerInput.PICKUP_ALL) {
+        if (input == MenuClick.PICKUP_ALL) {
             doubleClicked = true;
-        } else if (input == ContainerInput.PICKUP && button == 0) {
+        } else if (input == MenuClick.PICKUP && button == 0) {
             leftClick(tile);
         } else {
             call(tile, click(input, button));
@@ -99,14 +98,14 @@ final class ModMapHubMenu extends ChestMenu {
         }
     }
 
-    static MapHubClick click(ContainerInput input, int button) {
-        if (input == ContainerInput.PICKUP) {
+    static MapHubClick click(MenuClick input, int button) {
+        if (input == MenuClick.PICKUP) {
             return button == 0 ? MapHubClick.LEFT : button == 1 ? MapHubClick.RIGHT : null;
         }
-        if (input == ContainerInput.QUICK_MOVE) {
+        if (input == MenuClick.QUICK_MOVE) {
             return button == 0 ? MapHubClick.SHIFT_LEFT : button == 1 ? MapHubClick.SHIFT_RIGHT : null;
         }
-        return input == ContainerInput.CLONE && button == 2 ? MapHubClick.MIDDLE : null;
+        return input == MenuClick.CLONE && button == 2 ? MapHubClick.MIDDLE : null;
     }
 
     @Override

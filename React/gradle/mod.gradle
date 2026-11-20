@@ -114,11 +114,16 @@ tasks.named('shadowJar').configure {
     String displayVersion = loaderVersion.startsWith(target + '-') ? loaderVersion.substring(target.length() + 1) : loaderVersion
     displayVersion = displayVersion.replaceFirst(/-beta$/, '')
     archiveFileName.set("${react.projectName} v${version} [${platform}] ${target}+${displayVersion}.jar")
-    File compressionCache = new File(gradle.gradleUserHomeDir, 'caches/volmit-packaging/compression')
     doLast {
-        File archive = archiveFile.get().asFile
-        long before = archive.length()
-        JarCompactor.compact(archive, new JarCompactor.CompactionOptions(Collections.<String>emptySet(), false, true, true, compressionCache.toPath()))
-        logger.lifecycle("${archive.name}: ${before} -> ${archive.length()} bytes")
+        if (compactShadowJar) {
+            compactJar(archiveFile.get().asFile)
+        }
     }
+}
+File compressionCache = new File(gradle.gradleUserHomeDir, 'caches/volmit-packaging/compression')
+ext.compactShadowJar = true
+ext.compactJar = { File archive ->
+    long before = archive.length()
+    JarCompactor.compact(archive, new JarCompactor.CompactionOptions(Collections.<String>emptySet(), false, true, true, compressionCache.toPath()))
+    logger.lifecycle("${archive.name}: ${before} -> ${archive.length()} bytes")
 }

@@ -17,12 +17,48 @@ repositories {
     maven fg.forgeMaven
     maven fg.minecraftLibsMaven
 }
+configurations {
+    nestedMixinExtras { transitive = false }
+    // Unit tests never start a client; the 1.21.1 client natives are Mojang-patched builds missing from Maven Central.
+    testRuntimeClasspath { exclude(group: 'org.lwjgl') }
+}
 dependencies {
     implementation minecraft.dependency("net.minecraftforge:forge:${targetProperties.forge}")
+    // Forge only ships MixinExtras from 64 on; older lines get it nested through Forge's jar-in-jar.
+    if (targetProperties.forgeMixinExtras != null) {
+        compileOnly("io.github.llamalad7:mixinextras-common:${targetProperties.forgeMixinExtras}")
+        nestedMixinExtras("io.github.llamalad7:mixinextras-forge:${targetProperties.forgeMixinExtras}")
+    }
 }
+String eventBusPackage = targetProperties.sourceFamily == 'mapped' ? 'net.minecraftforge.eventbus' : 'net.minecraftforge.eventbus.internal'
 tasks.named('shadowJar').configure {
-    manifest.attributes('MixinConfigs': 'react.mixins.json',
-        'Add-Opens': 'net.minecraftforge.eventbus/net.minecraftforge.eventbus.internal')
+    manifest.attributes('MixinConfigs': 'react.mixins.json', 'Add-Opens': "net.minecraftforge.eventbus/${eventBusPackage}")
+}
+if (targetProperties.forgeMixinExtras != null) {
+    String mixinExtras = targetProperties.forgeMixinExtras
+    String nestedName = "mixinextras-forge-${mixinExtras}.jar"
+    TaskProvider<Task> jarJarMetadata = tasks.register('jarJarMetadata') {
+        File output = layout.buildDirectory.dir('generated/jarjar').get().asFile
+        inputs.property('mixinExtras', mixinExtras)
+        outputs.dir(output)
+        doLast {
+            File metadata = new File(output, 'META-INF/jarjar/metadata.json')
+            metadata.parentFile.mkdirs()
+            metadata.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([jars: [[
+                identifier: [group: 'io.github.llamalad7', artifact: 'mixinextras-forge'],
+                version: [range: "[${mixinExtras},)".toString(), artifactVersion: mixinExtras],
+                path: "META-INF/jarjar/${nestedName}".toString(),
+                isObfuscated: false
+            ]]]))
+        }
+    }
+    tasks.named('shadowJar').configure {
+        from(project.configurations.nestedMixinExtras) {
+            into('META-INF/jarjar')
+            rename { String filename -> nestedName }
+        }
+        from(jarJarMetadata)
+    }
 }
 
 if (targetProperties.forgeRuntimeMappings == 'srg') {

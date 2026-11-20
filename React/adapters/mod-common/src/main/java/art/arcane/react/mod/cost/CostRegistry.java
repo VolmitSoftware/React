@@ -1,7 +1,6 @@
 package art.arcane.react.mod.cost;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import art.arcane.react.mod.VanillaApi;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
@@ -49,8 +48,7 @@ public final class CostRegistry {
         CostBucketHolder holder = (CostBucketHolder) (Object) blockEntity.getType();
         CostBucket bucket = holder.react$costBucket();
         if (bucket == null) {
-            Identifier key = BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(blockEntity.getType());
-            bucket = bucket(owner(key, blockEntity.getClass()), CostKind.BLOCK_ENTITY);
+            bucket = bucket(owner(VanillaApi.namespace(blockEntity.getType()), blockEntity.getClass()), CostKind.BLOCK_ENTITY);
             holder.react$costBucket(bucket);
         }
         return bucket;
@@ -60,16 +58,15 @@ public final class CostRegistry {
         CostBucketHolder holder = (CostBucketHolder) (Object) entity.getType();
         CostBucket bucket = holder.react$costBucket();
         if (bucket == null) {
-            Identifier key = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
-            bucket = bucket(owner(key, entity.getClass()), CostKind.ENTITY);
+            bucket = bucket(owner(VanillaApi.namespace(entity.getType()), entity.getClass()), CostKind.ENTITY);
             holder.react$costBucket(bucket);
         }
         return bucket;
     }
 
-    private static String owner(Identifier key, Class<?> type) {
+    private static String owner(String namespace, Class<?> type) {
         ModOwners resolver = owners;
-        String owner = key == null || resolver == null ? null : resolver.ownerOfNamespace(key.getNamespace());
+        String owner = namespace == null || resolver == null ? null : resolver.ownerOfNamespace(namespace);
         return owner != null ? owner : ownerOf(type);
     }
 
