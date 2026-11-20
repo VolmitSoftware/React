@@ -1,6 +1,7 @@
 package art.arcane.react.mod;
 
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.mod.cost.CostRegistry;
 import art.arcane.react.platform.EventMeasurement;
 import art.arcane.react.platform.cost.OwnerCostModel;
 import art.arcane.react.platform.cost.OwnerCostProbe;
@@ -12,12 +13,14 @@ import java.util.function.Supplier;
 
 /**
  * Per-mod cost on a mod server: the shared owner cost model over the loader's probe, published once a second, with a
- * {@code mod-<id>} sampler registered for each mod the probe has seen.
+ * {@code mod-<id>} sampler registered for every loaded mod except React, as Bukkit does for plugins, plus any other
+ * owner the probe reports.
  */
 final class ModOwnerCost implements EventMeasurement {
     private final OwnerCostModel model;
     private final Supplier<SampleController> samples;
     private final Set<String> registered = new HashSet<>();
+    private boolean loadedModsRegistered;
 
     ModOwnerCost(OwnerCostProbe probe, Supplier<SampleController> samples) {
         this.model = new OwnerCostModel(probe);
@@ -43,8 +46,20 @@ final class ModOwnerCost implements EventMeasurement {
         if (controller == null) {
             return;
         }
-        for (Map.Entry<String, String> owner : model.displayNames().entrySet()) {
-            if (!owner.getKey().isBlank() && registered.add(owner.getKey())) {
+        if (!loadedModsRegistered) {
+            loadedModsRegistered = true;
+            register(controller, CostRegistry.costOwners());
+        }
+        register(controller, model.displayNames());
+    }
+
+    static boolean sampled(String owner) {
+        return !owner.isBlank() && !owner.equals(ReactModRuntime.ID);
+    }
+
+    private void register(SampleController controller, Map<String, String> owners) {
+        for (Map.Entry<String, String> owner : owners.entrySet()) {
+            if (sampled(owner.getKey()) && registered.add(owner.getKey())) {
                 controller.registerSampler(new ModOwnerCostSampler(owner.getKey(), owner.getValue(), model));
             }
         }

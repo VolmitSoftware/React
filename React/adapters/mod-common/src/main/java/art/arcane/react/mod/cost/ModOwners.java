@@ -1,6 +1,9 @@
 package art.arcane.react.mod.cost;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 
 /** Maps classes and registry namespaces to the loaded mod that owns them. */
 public interface ModOwners {
@@ -16,6 +19,16 @@ public interface ModOwners {
 
     /** Every mod the loader lists, sorted by id. */
     List<LoadedMod> loadedMods();
+
+    /** Each loaded mod's cost owner id and display name, with nested and bundled mods folded into their owner. */
+    default Map<String, String> costOwners() {
+        Map<String, String> owners = new TreeMap<>();
+        for (LoadedMod mod : loadedMods()) {
+            String owner = Objects.requireNonNullElse(ownerOfNamespace(mod.id()), mod.id());
+            owners.computeIfAbsent(owner, this::displayName);
+        }
+        return owners;
+    }
 
     record LoadedMod(String id, String name, String version) {
     }

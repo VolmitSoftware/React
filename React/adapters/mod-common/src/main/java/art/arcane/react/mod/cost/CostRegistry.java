@@ -6,6 +6,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,6 +28,11 @@ public final class CostRegistry {
     public static List<ModOwners.LoadedMod> loadedMods() {
         ModOwners resolver = owners;
         return resolver == null ? List.of() : resolver.loadedMods();
+    }
+
+    public static Map<String, String> costOwners() {
+        ModOwners resolver = owners;
+        return resolver == null ? Map.of() : resolver.costOwners();
     }
 
     public static CostBucket bucket(String ownerId, CostKind kind) {

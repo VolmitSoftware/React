@@ -8,10 +8,12 @@ import net.fabricmc.loader.api.metadata.ModMetadata;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public final class FabricModOwners implements ModOwners {
     private static final String FABRIC_API = "fabric-api";
+    private static final String JAVA_RUNTIME = "java";
 
     @Override
     public String ownerOf(Class<?> type) {
@@ -51,6 +53,13 @@ public final class FabricModOwners implements ModOwners {
         }
         Optional<ModContainer> container = FabricLoader.getInstance().getModContainer(ownerId);
         return container.isPresent() ? container.get().getMetadata().getName() : ownerId;
+    }
+
+    @Override
+    public Map<String, String> costOwners() {
+        Map<String, String> owners = ModOwners.super.costOwners();
+        owners.remove(JAVA_RUNTIME);
+        return owners;
     }
 
     @Override
