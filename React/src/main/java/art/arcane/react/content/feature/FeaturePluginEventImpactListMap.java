@@ -181,6 +181,6 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
 
   private boolean isFrameAnchored() {
     MapController mapController = React.controller(MapController.class);
-    return mapController != null && mapController.hasFrameAnchor(view());
+    return mapController != null && mapController.hasFrameAnchor(target());
   }
 }

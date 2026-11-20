@@ -152,7 +152,7 @@ public class FeatureAnimusNetworkListMap extends ReactFeature implements ReactRe
 
   private boolean isFrameAnchored() {
     MapController mapController = React.controller(MapController.class);
-    return mapController != null && mapController.hasFrameAnchor(view());
+    return mapController != null && mapController.hasFrameAnchor(target());
   }
 
   @Override

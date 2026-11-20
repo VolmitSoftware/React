@@ -1,8 +1,8 @@
-package art.arcane.react.core.controller;
+package art.arcane.react.platform.bukkit;
 
 import art.arcane.react.React;
-import art.arcane.react.api.rendering.ReactRenderer;
 import art.arcane.react.util.common.scheduling.Ticker;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -13,14 +13,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class MapControllerGiveMapTest {
+class BukkitMapHostGiveTest {
   private React previous;
 
   @BeforeEach
@@ -53,11 +55,11 @@ class MapControllerGiveMapTest {
     Mockito.when(player.getWorld()).thenReturn(world);
     Mockito.when(player.getLocation()).thenReturn(new Location(world, 0D, 64D, 0D));
     ItemStack dashboard = FakeInventory.stack(Material.FILLED_MAP, 1);
-    ReactRenderer renderer = Mockito.mock(ReactRenderer.class);
-    MapController controller = Mockito.spy(new MapController());
-    Mockito.doReturn(dashboard).when(controller).createMap(world, renderer);
-
-    controller.giveMap(player, renderer);
+    UUID playerId = UUID.randomUUID();
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(() -> Bukkit.getPlayer(playerId)).thenReturn(player);
+      new BukkitMapHost(null).giveToMainHand(playerId, dashboard);
+    }
 
     Assertions.assertSame(dashboard, inventory.slots[0]);
     Assertions.assertEquals(10, inventory.count(Material.DIRT) + FakeInventory.count(dropped, Material.DIRT));
@@ -81,11 +83,11 @@ class MapControllerGiveMapTest {
     Mockito.when(player.getWorld()).thenReturn(world);
     Mockito.when(player.getLocation()).thenReturn(new Location(world, 0D, 64D, 0D));
     ItemStack dashboard = FakeInventory.stack(Material.FILLED_MAP, 1);
-    ReactRenderer renderer = Mockito.mock(ReactRenderer.class);
-    MapController controller = Mockito.spy(new MapController());
-    Mockito.doReturn(dashboard).when(controller).createMap(world, renderer);
-
-    controller.giveMap(player, renderer);
+    UUID playerId = UUID.randomUUID();
+    try (MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(() -> Bukkit.getPlayer(playerId)).thenReturn(player);
+      new BukkitMapHost(null).giveToMainHand(playerId, dashboard);
+    }
 
     Assertions.assertSame(dashboard, inventory.slots[0]);
     Assertions.assertEquals(10, FakeInventory.count(dropped, Material.DIRT));

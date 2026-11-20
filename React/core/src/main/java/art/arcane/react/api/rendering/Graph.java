@@ -20,9 +20,6 @@
 package art.arcane.react.api.rendering;
 
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.React;
-import art.arcane.react.core.controller.HistoryController;
-import art.arcane.react.core.history.MetricSnapshotValue;
 import lombok.Getter;
 
 import java.util.Map;
@@ -50,6 +47,15 @@ public class Graph {
   private int cachedWindow = -1;
   private boolean minMaxDirty = true;
 
+  private static volatile LatestSource latestSource;
+
+  /**
+   * Where graphs read the latest recorded value of a sampler before falling back to sampling it directly.
+   */
+  public static void bindLatest(LatestSource source) {
+    latestSource = source;
+  }
+
   public static Graph of(Sampler sampler) {
     String id = sampler.getId() == null || sampler.getId().isBlank() ? sampler.getName() : sampler.getId();
     Graph g = graphs.computeIfAbsent(id, (k) -> new Graph());
@@ -57,8 +63,8 @@ public class Graph {
     synchronized (g) {
       if (now - g.lastPushMs >= PUSH_INTERVAL_MS) {
         sampler.markDemand();
-        HistoryController history = React.instance == null ? null : React.controller(HistoryController.class);
-        MetricSnapshotValue snapshot = history == null ? null : history.latest().value(sampler.getId());
+        LatestSource source = latestSource;
+        Latest snapshot = source == null ? null : source.latest(sampler.getId());
         if (snapshot == null) {
           g.lastPushMs = now;
           g.push(sampler.sample());
@@ -180,5 +186,16 @@ public class Graph {
     cachedMax = max;
     cachedWindow = window;
     minMaxDirty = false;
+  }
+
+  @FunctionalInterface
+  public interface LatestSource {
+    /**
+     * Null when nothing is recorded for the sampler yet.
+     */
+    Latest latest(String samplerId);
+  }
+
+  public record Latest(boolean available, double value) {
   }
 }

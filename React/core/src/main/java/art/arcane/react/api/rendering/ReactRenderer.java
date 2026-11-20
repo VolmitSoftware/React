@@ -19,9 +19,8 @@
 
 package art.arcane.react.api.rendering;
 
+import art.arcane.react.platform.MapRenderTarget;
 import art.arcane.react.util.data.TinyColor;
-import org.bukkit.entity.Player;
-import org.bukkit.map.MapView;
 
 import java.awt.Color;
 
@@ -162,10 +161,6 @@ public interface ReactRenderer {
     setRgb(x, y, color.toRGB());
   }
 
-  default void set(int x, int y, org.bukkit.Color color) {
-    setRgb(x, y, color.asRGB());
-  }
-
   default void textNear(int x, int y, String text) {
     ReactRenderContext context = ReactRenderContext.of();
     int scale = uiScaleOf(context);
@@ -178,12 +173,9 @@ public interface ReactRenderer {
     );
   }
 
-  default MapView view() {
-    return ReactRenderContext.of().getView();
-  }
-
-  default Player player() {
-    return ReactRenderContext.of().getPlayer();
+  default MapRenderTarget target() {
+    ReactRenderContext context = ReactRenderContext.of();
+    return context == null ? MapRenderTarget.DETACHED : context.getTarget();
   }
 
   default int width() {

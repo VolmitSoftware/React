@@ -19,6 +19,7 @@
 
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.BukkitMapTargets;
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.rendering.MapTheme;
@@ -119,13 +120,13 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
 
   @Override
   public void render() {
-    Player viewer = player();
+    Player viewer = BukkitMapTargets.player(target());
     MapController mapController = React.controller(MapController.class);
     Location anchor = mapController == null
         ? viewer == null ? null : viewer.getLocation().clone()
-        : mapController.resolveMapAnchor(view(), viewer);
-    World mapWorld = view() != null && view().getWorld() != null
-        ? view().getWorld()
+        : mapController.resolveMapAnchor(target());
+    World mapWorld = BukkitMapTargets.world(target()) != null
+        ? BukkitMapTargets.world(target())
         : anchor == null ? viewer == null ? null : viewer.getWorld() : anchor.getWorld();
 
     if (mapWorld == null) {
@@ -153,7 +154,7 @@ abstract class FeatureChunkHeatmapBase extends ReactFeature implements ReactRend
       );
     }
 
-    boolean frameAnchored = mapController != null && mapController.hasFrameAnchor(view());
+    boolean frameAnchored = mapController != null && mapController.hasFrameAnchor(target());
     fill(rootRegion(), backgroundColor());
     Region body = bodyRegion();
     int centerChunkX = Math.floorDiv(anchor.getBlockX(), 16);

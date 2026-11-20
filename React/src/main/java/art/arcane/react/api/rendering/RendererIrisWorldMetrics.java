@@ -1,5 +1,7 @@
 package art.arcane.react.api.rendering;
 
+import art.arcane.react.platform.bukkit.BukkitMapTargets;
+
 import art.arcane.react.React;
 import art.arcane.react.core.controller.IntegrationController;
 import art.arcane.react.core.integration.RemoteSamplerBridge;
@@ -163,9 +165,9 @@ public final class RendererIrisWorldMetrics extends RendererIntegrationMetricsBa
       IntegrationController controller = React.controller(IntegrationController.class);
       bridge = controller == null ? null : controller.getRemoteSamplerBridge();
     }
-    World world = view() != null ? view().getWorld() : null;
-    if (world == null && player() != null) {
-      world = player().getWorld();
+    World world = BukkitMapTargets.world(target());
+    if (world == null && BukkitMapTargets.player(target()) != null) {
+      world = BukkitMapTargets.player(target()).getWorld();
     }
     if (bridge == null || world == null) {
       return null;

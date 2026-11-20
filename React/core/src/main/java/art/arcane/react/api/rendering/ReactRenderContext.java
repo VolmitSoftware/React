@@ -19,9 +19,8 @@
 
 package art.arcane.react.api.rendering;
 
-import org.bukkit.entity.Player;
-import org.bukkit.map.MapCanvas;
-import org.bukkit.map.MapView;
+import art.arcane.react.platform.DirtyRect;
+import art.arcane.react.platform.MapRenderTarget;
 
 import java.util.Arrays;
 
@@ -32,9 +31,7 @@ public final class ReactRenderContext {
   private static final int INITIAL_CLIP_STACK = 32;
   private static final ThreadLocal<ReactRenderContext> CONTEXT = new ThreadLocal<ReactRenderContext>();
 
-  private final Player player;
-  private final MapView view;
-  private final MapCanvas canvas;
+  private final MapRenderTarget target;
   private final byte[] surface;
   private final byte[] shadow;
   private final int width;
@@ -58,9 +55,7 @@ public final class ReactRenderContext {
   private int dirtyY1;
 
   private ReactRenderContext(Builder builder) {
-    this.player = builder.player;
-    this.view = builder.view;
-    this.canvas = builder.canvas;
+    this.target = builder.target == null ? MapRenderTarget.DETACHED : builder.target;
     this.surface = adopt(builder.surface);
     this.shadow = adopt(builder.shadow);
     this.width = builder.width;
@@ -108,12 +103,8 @@ public final class ReactRenderContext {
     return CONTEXT.get();
   }
 
-  public Player getPlayer() {
-    return player;
-  }
-
-  public MapView getView() {
-    return view;
+  public MapRenderTarget getTarget() {
+    return target;
   }
 
   public int getWidth() {
@@ -180,14 +171,25 @@ public final class ReactRenderContext {
     return surface[(y * ReactRenderer.CANVAS_SIZE) + x];
   }
 
-  public int flush() {
-    if (canvas == null || dirtyX0 >= dirtyX1 || dirtyY0 >= dirtyY1) {
+  public DirtyRect flush() {
+    return flush(null);
+  }
+
+  /**
+   * Publishes painted changes into the shadow and returns their bounding rect. The sink, when given, receives
+   * every changed pixel.
+   */
+  public DirtyRect flush(PixelSink sink) {
+    if (dirtyX0 >= dirtyX1 || dirtyY0 >= dirtyY1) {
       clearDirty();
-      return 0;
+      return DirtyRect.EMPTY;
     }
 
     int size = ReactRenderer.CANVAS_SIZE;
-    int written = 0;
+    int changedX0 = size;
+    int changedY0 = size;
+    int changedX1 = 0;
+    int changedY1 = 0;
     for (int row = dirtyY0; row < dirtyY1; row++) {
       int base = row * size;
       int offset = Arrays.mismatch(surface, base + dirtyX0, base + dirtyX1, shadow, base + dirtyX0, base + dirtyX1);
@@ -201,20 +203,25 @@ public final class ReactRenderContext {
         last--;
       }
 
-      for (int column = first; column <= last; column++) {
-        byte value = surface[base + column];
-        if (value == shadow[base + column]) {
-          continue;
+      if (sink == null) {
+        System.arraycopy(surface, base + first, shadow, base + first, (last - first) + 1);
+      } else {
+        for (int column = first; column <= last; column++) {
+          byte value = surface[base + column];
+          if (value != shadow[base + column]) {
+            sink.setPixel(column, row, value);
+            shadow[base + column] = value;
+          }
         }
-
-        canvas.setPixel(column, row, value);
-        shadow[base + column] = value;
-        written++;
       }
+      changedX0 = Math.min(changedX0, first);
+      changedX1 = Math.max(changedX1, last + 1);
+      changedY0 = Math.min(changedY0, row);
+      changedY1 = row + 1;
     }
 
     clearDirty();
-    return written;
+    return changedX0 >= changedX1 ? DirtyRect.EMPTY : new DirtyRect(changedX0, changedY0, changedX1, changedY1);
   }
 
   public void pushClip(int x, int y, int w, int h) {
@@ -273,7 +280,7 @@ public final class ReactRenderContext {
     clipY1 = Math.max(0, height);
   }
 
-  void paintCanvasRect(int x0, int y0, int x1, int y1, byte paletteIndex) {
+  public void paintCanvasRect(int x0, int y0, int x1, int y1, byte paletteIndex) {
     int size = ReactRenderer.CANVAS_SIZE;
     int px0 = Math.max(0, x0);
     int py0 = Math.max(0, y0);
@@ -324,9 +331,7 @@ public final class ReactRenderContext {
   }
 
   public static final class Builder {
-    private Player player;
-    private MapView view;
-    private MapCanvas canvas;
+    private MapRenderTarget target;
     private byte[] surface;
     private byte[] shadow;
     private boolean fullFlush;
@@ -343,18 +348,8 @@ public final class ReactRenderContext {
     private Builder() {
     }
 
-    public Builder player(Player player) {
-      this.player = player;
-      return this;
-    }
-
-    public Builder view(MapView view) {
-      this.view = view;
-      return this;
-    }
-
-    public Builder canvas(MapCanvas canvas) {
-      this.canvas = canvas;
+    public Builder target(MapRenderTarget target) {
+      this.target = target;
       return this;
     }
 
@@ -421,5 +416,10 @@ public final class ReactRenderContext {
     public ReactRenderContext build() {
       return new ReactRenderContext(this);
     }
+  }
+
+  @FunctionalInterface
+  public interface PixelSink {
+    void setPixel(int x, int y, byte paletteIndex);
   }
 }

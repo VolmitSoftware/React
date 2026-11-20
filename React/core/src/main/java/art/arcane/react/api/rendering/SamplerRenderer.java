@@ -1,9 +1,6 @@
-package art.arcane.react.api.sampler;
+package art.arcane.react.api.rendering;
 
-import art.arcane.react.api.rendering.Graph;
-import art.arcane.react.api.rendering.MapColors;
-import art.arcane.react.api.rendering.MegamapGrid;
-import art.arcane.react.api.rendering.ReactRenderer;
+import art.arcane.react.api.sampler.Sampler;
 import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.MapMessages;
 import art.arcane.react.localization.catalog.RendererMessages;
@@ -17,21 +14,20 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Draws a sampler's history graph on a map. Samplers live in core, which has no map types yet,
- * so each sampler gets one of these when it is registered as a renderer.
+ * Draws a sampler's history graph on a map. Each sampler gets one when it is registered as a renderer.
  */
-public final class SamplerMapRenderer implements ReactRenderer {
+public final class SamplerRenderer implements ReactRenderer {
   private static final Map<String, TinyColor[]> PALETTE_CACHE = new ConcurrentHashMap<>();
-  private static final Map<Sampler, SamplerMapRenderer> RENDERERS = Collections.synchronizedMap(new IdentityHashMap<>());
+  private static final Map<Sampler, SamplerRenderer> RENDERERS = Collections.synchronizedMap(new IdentityHashMap<>());
 
   private final Sampler sampler;
 
-  private SamplerMapRenderer(Sampler sampler) {
+  private SamplerRenderer(Sampler sampler) {
     this.sampler = sampler;
   }
 
-  public static SamplerMapRenderer of(Sampler sampler) {
-    return RENDERERS.computeIfAbsent(sampler, SamplerMapRenderer::new);
+  public static SamplerRenderer of(Sampler sampler) {
+    return RENDERERS.computeIfAbsent(sampler, SamplerRenderer::new);
   }
 
   public static void forget(Sampler sampler) {
@@ -44,7 +40,7 @@ public final class SamplerMapRenderer implements ReactRenderer {
    * The sampler behind a renderer, or null when the renderer does not draw a sampler.
    */
   public static Sampler samplerOf(ReactRenderer renderer) {
-    return renderer instanceof SamplerMapRenderer samplerRenderer ? samplerRenderer.sampler : null;
+    return renderer instanceof SamplerRenderer samplerRenderer ? samplerRenderer.sampler : null;
   }
 
   public Sampler sampler() {

@@ -40,10 +40,6 @@ public class TinyColor {
     this(Color.decode(c));
   }
 
-  public TinyColor(org.bukkit.Color c) {
-    this(c.asRGB());
-  }
-
   public TinyColor(int r, int g, int b) {
     this.r = r;
     this.g = g;
@@ -106,10 +102,6 @@ public class TinyColor {
 
   public Color getColor() {
     return new Color(r, g, b);
-  }
-
-  public org.bukkit.Color getBukkitColor() {
-    return org.bukkit.Color.fromRGB(r, g, b);
   }
 
   public String toHex() {

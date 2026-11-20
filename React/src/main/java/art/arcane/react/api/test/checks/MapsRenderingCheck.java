@@ -15,7 +15,7 @@ import art.arcane.react.localization.ReactLanguage;
 import art.arcane.react.localization.catalog.TestMessages;
 import art.arcane.react.util.data.TinyColor;
 import art.arcane.volmlib.util.localization.MessageArgument;
-import org.bukkit.block.BlockFace;
+import art.arcane.react.platform.Facing;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapCursorCollection;
 import org.bukkit.map.MapFont;
@@ -316,7 +316,7 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
     List<MegamapGrid.FrameCell> rotated = new ArrayList<MegamapGrid.FrameCell>();
     rotated.add(cell(1, world, 0, 0));
     rotated.add(cell(2, world, 1, 0));
-    rotated.add(new MegamapGrid.FrameCell(3, world, BlockFace.SOUTH, 2, 0, 0, "react-test-megamap", false));
+    rotated.add(new MegamapGrid.FrameCell(3, world, Facing.SOUTH, 2, 0, 0, "react-test-megamap", false));
     MegamapGrid.MegamapSolution rotatedSolution = MegamapGrid.analyze(rotated);
     if (rotatedSolution.tiles().size() != 2) {
       problems.add("a rotated frame was not excluded from the wall");
@@ -326,8 +326,8 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
     }
 
     List<MegamapGrid.FrameCell> mixed = new ArrayList<MegamapGrid.FrameCell>();
-    mixed.add(new MegamapGrid.FrameCell(1, world, BlockFace.SOUTH, 0, 0, 0, "react-test-megamap", true));
-    mixed.add(new MegamapGrid.FrameCell(2, world, BlockFace.SOUTH, 1, 0, 0, "react-test-other", true));
+    mixed.add(new MegamapGrid.FrameCell(1, world, Facing.SOUTH, 0, 0, 0, "react-test-megamap", true));
+    mixed.add(new MegamapGrid.FrameCell(2, world, Facing.SOUTH, 1, 0, 0, "react-test-other", true));
     MegamapGrid.MegamapSolution mixedSolution = MegamapGrid.analyze(mixed);
     if (defectReason(mixedSolution, 1) != MegamapGrid.DefectReason.MIXED_RENDERER
         || defectReason(mixedSolution, 2) != MegamapGrid.DefectReason.MIXED_RENDERER) {
@@ -434,7 +434,6 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
         MegamapGrid.MegamapViewport viewport = MegamapGrid.viewportFor(tile, capability, 32, size);
         SyntheticCanvas canvas = new SyntheticCanvas(size, size);
         ReactRenderContext context = ReactRenderContext.builder()
-            .canvas(canvas)
             .width(viewport.width())
             .height(viewport.height())
             .offsetX(viewport.offsetX())
@@ -450,7 +449,7 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
         try {
           renderer.render();
         } finally {
-          context.flush();
+          context.flush(canvas::setPixel);
           ReactRenderContext.pop();
         }
 
@@ -768,7 +767,6 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
   private SyntheticCanvas renderToCanvas(ReactRenderer renderer, int width, int height, int textScale, Region clip) {
     SyntheticCanvas canvas = new SyntheticCanvas(width, height);
     ReactRenderContext context = ReactRenderContext.builder()
-        .canvas(canvas)
         .width(width)
         .height(height)
         .textScale(textScale)
@@ -781,7 +779,7 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
     try {
       renderer.render();
     } finally {
-      context.flush();
+      context.flush(canvas::setPixel);
       ReactRenderContext.pop();
     }
     return canvas;
@@ -822,7 +820,7 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
             } catch (Throwable e) {
               unavailable++;
             } finally {
-              context.flush();
+              context.flush(canvas::setPixel);
               ReactRenderContext.pop();
             }
 
@@ -952,7 +950,12 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
     } finally {
       ReactRenderContext.pop();
     }
-    return context.flush();
+    int[] written = new int[1];
+    context.flush((x, y, value) -> {
+      canvas.setPixel(x, y, value);
+      written[0]++;
+    });
+    return written[0];
   }
 
   private ReactRenderContext viewportContext(
@@ -964,7 +967,6 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
       boolean fullFlush
   ) {
     return ReactRenderContext.builder()
-        .canvas(canvas)
         .surface(surface)
         .shadow(shadow)
         .fullFlush(fullFlush)
@@ -1010,7 +1012,7 @@ public class MapsRenderingCheck implements ReactSubsystemCheck {
   }
 
   private MegamapGrid.FrameCell cell(int mapId, UUID world, int blockX, int blockY) {
-    return new MegamapGrid.FrameCell(mapId, world, BlockFace.SOUTH, blockX, blockY, 0, "react-test-megamap", true);
+    return new MegamapGrid.FrameCell(mapId, world, Facing.SOUTH, blockX, blockY, 0, "react-test-megamap", true);
   }
 
   private static final class ClipProbeRenderer implements ReactRenderer {

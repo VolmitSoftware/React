@@ -19,6 +19,7 @@
 
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.BukkitMapTargets;
 import art.arcane.react.React;
 import art.arcane.react.api.web.heatmap.HeatmapWorldRef;
 import art.arcane.react.content.sampler.SamplerEntities;
@@ -82,7 +83,7 @@ public class FeaturePlayerImpactOverlay extends FeatureChunkHeatmapBase {
 
   @Override
   protected void renderOverlay(Map<LoadedChunkCoordinate, Double> score, double min, double max) {
-    Player viewer = player();
+    Player viewer = BukkitMapTargets.player(target());
     ProjectionAnchor anchor = projectionAnchor();
     if (anchor == null) {
       return;

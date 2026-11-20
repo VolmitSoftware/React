@@ -20,7 +20,7 @@
 package art.arcane.react.api.rendering;
 
 import art.arcane.react.util.data.TinyColor;
-import org.bukkit.map.MinecraftFont;
+
 
 import java.util.HashSet;
 import java.util.Set;
@@ -85,7 +85,7 @@ public final class MapTheme {
   }
 
   public static int lineHeight(int uiScale) {
-    return (MinecraftFont.Font.getHeight() + 1) * Math.max(1, uiScale);
+    return (MapGlyphs.FONT_HEIGHT + 1) * Math.max(1, uiScale);
   }
 
   public static int rowHeight(int uiScale) {

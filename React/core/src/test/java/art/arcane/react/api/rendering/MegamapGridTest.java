@@ -4,7 +4,7 @@ import net.jqwik.api.Assume;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.constraints.IntRange;
-import org.bukkit.block.BlockFace;
+import art.arcane.react.platform.Facing;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -21,23 +21,23 @@ public class MegamapGridTest {
 
     private static final UUID world = UUID.randomUUID();
 
-    private static MegamapGrid.FrameCell cell(int mapId, BlockFace facing, int x, int y, int z) {
+    private static MegamapGrid.FrameCell cell(int mapId, Facing facing, int x, int y, int z) {
         return new MegamapGrid.FrameCell(mapId, world, facing, x, y, z, "tps", true);
     }
 
     @Test
     public void singleFrameProducesNoTiles() {
-        Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(cell(1, BlockFace.SOUTH, 10, 64, 5)));
+        Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(cell(1, Facing.SOUTH, 10, 64, 5)));
         Assertions.assertTrue(tiles.isEmpty());
     }
 
     @Test
     public void southWallTwoByTwoAssignsTiles() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(
-                cell(1, BlockFace.SOUTH, 10, 65, 5),
-                cell(2, BlockFace.SOUTH, 11, 65, 5),
-                cell(3, BlockFace.SOUTH, 10, 64, 5),
-                cell(4, BlockFace.SOUTH, 11, 64, 5)
+                cell(1, Facing.SOUTH, 10, 65, 5),
+                cell(2, Facing.SOUTH, 11, 65, 5),
+                cell(3, Facing.SOUTH, 10, 64, 5),
+                cell(4, Facing.SOUTH, 11, 64, 5)
         ));
 
         Assertions.assertEquals(4, tiles.size());
@@ -50,8 +50,8 @@ public class MegamapGridTest {
     @Test
     public void northWallHorizontalAxisIsMirrored() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(
-                cell(1, BlockFace.NORTH, 10, 64, 5),
-                cell(2, BlockFace.NORTH, 11, 64, 5)
+                cell(1, Facing.NORTH, 10, 64, 5),
+                cell(2, Facing.NORTH, 11, 64, 5)
         ));
 
         Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 1, 0), tiles.get(1));
@@ -61,8 +61,8 @@ public class MegamapGridTest {
     @Test
     public void eastWallRunsAlongZ() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(
-                cell(1, BlockFace.EAST, 7, 64, 20),
-                cell(2, BlockFace.EAST, 7, 64, 21)
+                cell(1, Facing.EAST, 7, 64, 20),
+                cell(2, Facing.EAST, 7, 64, 21)
         ));
 
         Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 1, 0), tiles.get(1));
@@ -72,8 +72,8 @@ public class MegamapGridTest {
     @Test
     public void westWallRunsAlongZUnmirrored() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(
-                cell(1, BlockFace.WEST, 7, 64, 20),
-                cell(2, BlockFace.WEST, 7, 64, 21)
+                cell(1, Facing.WEST, 7, 64, 20),
+                cell(2, Facing.WEST, 7, 64, 21)
         ));
 
         Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 1, 0, 0), tiles.get(1));
@@ -83,10 +83,10 @@ public class MegamapGridTest {
     @Test
     public void floorGridUsesXAndZ() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(
-                cell(1, BlockFace.UP, 0, 70, 0),
-                cell(2, BlockFace.UP, 1, 70, 0),
-                cell(3, BlockFace.UP, 0, 70, 1),
-                cell(4, BlockFace.UP, 1, 70, 1)
+                cell(1, Facing.UP, 0, 70, 0),
+                cell(2, Facing.UP, 1, 70, 0),
+                cell(3, Facing.UP, 0, 70, 1),
+                cell(4, Facing.UP, 1, 70, 1)
         ));
 
         Assertions.assertEquals(new MegamapGrid.MegamapTile(2, 2, 0, 0), tiles.get(1));
@@ -98,12 +98,12 @@ public class MegamapGridTest {
     @Test
     public void threeByTwoAssignsAllSix() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(
-                cell(1, BlockFace.SOUTH, 10, 65, 5),
-                cell(2, BlockFace.SOUTH, 11, 65, 5),
-                cell(3, BlockFace.SOUTH, 12, 65, 5),
-                cell(4, BlockFace.SOUTH, 10, 64, 5),
-                cell(5, BlockFace.SOUTH, 11, 64, 5),
-                cell(6, BlockFace.SOUTH, 12, 64, 5)
+                cell(1, Facing.SOUTH, 10, 65, 5),
+                cell(2, Facing.SOUTH, 11, 65, 5),
+                cell(3, Facing.SOUTH, 12, 65, 5),
+                cell(4, Facing.SOUTH, 10, 64, 5),
+                cell(5, Facing.SOUTH, 11, 64, 5),
+                cell(6, Facing.SOUTH, 12, 64, 5)
         ));
 
         Assertions.assertEquals(6, tiles.size());
@@ -115,24 +115,24 @@ public class MegamapGridTest {
     private static Stream<Arguments> componentsWithoutASolvableGrid() {
         return Stream.of(
                 Arguments.of("l shape", List.of(
-                        cell(1, BlockFace.SOUTH, 10, 65, 5),
-                        cell(2, BlockFace.SOUTH, 11, 65, 5),
-                        cell(3, BlockFace.SOUTH, 10, 64, 5))),
+                        cell(1, Facing.SOUTH, 10, 65, 5),
+                        cell(2, Facing.SOUTH, 11, 65, 5),
+                        cell(3, Facing.SOUTH, 10, 64, 5))),
                 Arguments.of("duplicate map ids", List.of(
-                        cell(1, BlockFace.SOUTH, 10, 64, 5),
-                        cell(1, BlockFace.SOUTH, 11, 64, 5))),
+                        cell(1, Facing.SOUTH, 10, 64, 5),
+                        cell(1, Facing.SOUTH, 11, 64, 5))),
                 Arguments.of("different planes", List.of(
-                        cell(1, BlockFace.SOUTH, 10, 64, 5),
-                        cell(2, BlockFace.SOUTH, 11, 64, 6))),
+                        cell(1, Facing.SOUTH, 10, 64, 5),
+                        cell(2, Facing.SOUTH, 11, 64, 6))),
                 Arguments.of("different worlds", List.of(
-                        new MegamapGrid.FrameCell(1, UUID.randomUUID(), BlockFace.SOUTH, 10, 64, 5, "tps", true),
-                        new MegamapGrid.FrameCell(2, UUID.randomUUID(), BlockFace.SOUTH, 11, 64, 5, "tps", true))),
+                        new MegamapGrid.FrameCell(1, UUID.randomUUID(), Facing.SOUTH, 10, 64, 5, "tps", true),
+                        new MegamapGrid.FrameCell(2, UUID.randomUUID(), Facing.SOUTH, 11, 64, 5, "tps", true))),
                 Arguments.of("different facings", List.of(
-                        cell(1, BlockFace.SOUTH, 10, 64, 5),
-                        cell(2, BlockFace.NORTH, 11, 64, 5))),
+                        cell(1, Facing.SOUTH, 10, 64, 5),
+                        cell(2, Facing.NORTH, 11, 64, 5))),
                 Arguments.of("blank renderer id", List.of(
-                        new MegamapGrid.FrameCell(1, world, BlockFace.SOUTH, 10, 64, 5, "", true),
-                        new MegamapGrid.FrameCell(2, world, BlockFace.SOUTH, 11, 64, 5, "", true)))
+                        new MegamapGrid.FrameCell(1, world, Facing.SOUTH, 10, 64, 5, "", true),
+                        new MegamapGrid.FrameCell(2, world, Facing.SOUTH, 11, 64, 5, "", true)))
         );
     }
 
@@ -147,14 +147,14 @@ public class MegamapGridTest {
     @Test
     public void rectangleWithHoleProducesNoTiles() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(
-                cell(1, BlockFace.SOUTH, 10, 66, 5),
-                cell(2, BlockFace.SOUTH, 11, 66, 5),
-                cell(3, BlockFace.SOUTH, 12, 66, 5),
-                cell(4, BlockFace.SOUTH, 10, 65, 5),
-                cell(5, BlockFace.SOUTH, 12, 65, 5),
-                cell(6, BlockFace.SOUTH, 10, 64, 5),
-                cell(7, BlockFace.SOUTH, 11, 64, 5),
-                cell(8, BlockFace.SOUTH, 12, 64, 5)
+                cell(1, Facing.SOUTH, 10, 66, 5),
+                cell(2, Facing.SOUTH, 11, 66, 5),
+                cell(3, Facing.SOUTH, 12, 66, 5),
+                cell(4, Facing.SOUTH, 10, 65, 5),
+                cell(5, Facing.SOUTH, 12, 65, 5),
+                cell(6, Facing.SOUTH, 10, 64, 5),
+                cell(7, Facing.SOUTH, 11, 64, 5),
+                cell(8, Facing.SOUTH, 12, 64, 5)
         ));
 
         Assertions.assertTrue(tiles.isEmpty());
@@ -163,9 +163,9 @@ public class MegamapGridTest {
     @Test
     public void differentRenderersDoNotMerge() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(
-                new MegamapGrid.FrameCell(1, world, BlockFace.SOUTH, 10, 64, 5, "tps", true),
-                new MegamapGrid.FrameCell(2, world, BlockFace.SOUTH, 11, 64, 5, "tps", true),
-                new MegamapGrid.FrameCell(3, world, BlockFace.SOUTH, 12, 64, 5, "tick-time", true)
+                new MegamapGrid.FrameCell(1, world, Facing.SOUTH, 10, 64, 5, "tps", true),
+                new MegamapGrid.FrameCell(2, world, Facing.SOUTH, 11, 64, 5, "tps", true),
+                new MegamapGrid.FrameCell(3, world, Facing.SOUTH, 12, 64, 5, "tick-time", true)
         ));
 
         Assertions.assertEquals(2, tiles.size());
@@ -177,8 +177,8 @@ public class MegamapGridTest {
     @Test
     public void rendererIdGroupingIsCaseInsensitive() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(
-                new MegamapGrid.FrameCell(1, world, BlockFace.SOUTH, 10, 64, 5, "TPS", true),
-                new MegamapGrid.FrameCell(2, world, BlockFace.SOUTH, 11, 64, 5, "tps", true)
+                new MegamapGrid.FrameCell(1, world, Facing.SOUTH, 10, 64, 5, "TPS", true),
+                new MegamapGrid.FrameCell(2, world, Facing.SOUTH, 11, 64, 5, "tps", true)
         ));
 
         Assertions.assertEquals(2, tiles.size());
@@ -187,9 +187,9 @@ public class MegamapGridTest {
     @Test
     public void misalignedRotationIsExcluded() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(
-                cell(1, BlockFace.SOUTH, 10, 64, 5),
-                cell(2, BlockFace.SOUTH, 11, 64, 5),
-                new MegamapGrid.FrameCell(3, world, BlockFace.SOUTH, 12, 64, 5, "tps", false)
+                cell(1, Facing.SOUTH, 10, 64, 5),
+                cell(2, Facing.SOUTH, 11, 64, 5),
+                new MegamapGrid.FrameCell(3, world, Facing.SOUTH, 12, 64, 5, "tps", false)
         ));
 
         Assertions.assertEquals(2, tiles.size());
@@ -199,10 +199,10 @@ public class MegamapGridTest {
     @Test
     public void disjointPairsOnSameWallFormSeparateGrids() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(
-                cell(1, BlockFace.SOUTH, 10, 64, 5),
-                cell(2, BlockFace.SOUTH, 11, 64, 5),
-                cell(3, BlockFace.SOUTH, 20, 64, 5),
-                cell(4, BlockFace.SOUTH, 21, 64, 5)
+                cell(1, Facing.SOUTH, 10, 64, 5),
+                cell(2, Facing.SOUTH, 11, 64, 5),
+                cell(3, Facing.SOUTH, 20, 64, 5),
+                cell(4, Facing.SOUTH, 21, 64, 5)
         ));
 
         Assertions.assertEquals(4, tiles.size());
@@ -213,8 +213,8 @@ public class MegamapGridTest {
     @Test
     public void verticalColumnFormsOneByTwo() {
         Map<Integer, MegamapGrid.MegamapTile> tiles = MegamapGrid.solve(List.of(
-                cell(1, BlockFace.SOUTH, 10, 65, 5),
-                cell(2, BlockFace.SOUTH, 10, 64, 5)
+                cell(1, Facing.SOUTH, 10, 65, 5),
+                cell(2, Facing.SOUTH, 10, 64, 5)
         ));
 
         Assertions.assertEquals(new MegamapGrid.MegamapTile(1, 2, 0, 0), tiles.get(1));
@@ -237,7 +237,7 @@ public class MegamapGridTest {
                 if (col == holeCol && row == holeRow) {
                     continue;
                 }
-                cells.add(new MegamapGrid.FrameCell(mapId, world, BlockFace.SOUTH, 10 + col, 64 - row, 5, "tps", true));
+                cells.add(new MegamapGrid.FrameCell(mapId, world, Facing.SOUTH, 10 + col, 64 - row, 5, "tps", true));
                 mapId++;
             }
         }
@@ -264,7 +264,7 @@ public class MegamapGridTest {
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
                 int id = (linear == duplicateIndex || linear == partnerIndex) ? sharedMapId : mapId;
-                cells.add(new MegamapGrid.FrameCell(id, world, BlockFace.SOUTH, 10 + col, 64 - row, 5, "tps", true));
+                cells.add(new MegamapGrid.FrameCell(id, world, Facing.SOUTH, 10 + col, 64 - row, 5, "tps", true));
                 mapId++;
                 linear++;
             }

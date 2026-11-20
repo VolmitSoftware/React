@@ -1,5 +1,7 @@
 package art.arcane.react.content.feature;
 
+import art.arcane.react.platform.bukkit.BukkitMapTargets;
+
 import art.arcane.react.React;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.rendering.MapTheme;
@@ -72,7 +74,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
     dashHeader(ReactLanguage.raw(title()), null, headerColor());
 
     Region body = RendererLayout.body(this);
-    Player viewer = player();
+    Player viewer = BukkitMapTargets.player(target());
     if (viewer == null || !viewer.isOnline()) {
       RendererLayout.emptyState(this, body, ReactLanguage.raw(RendererMessages.PIE_VIEWER_UNAVAILABLE), null);
       RendererLayout.footer(this, null, null, headerColor());
@@ -161,8 +163,8 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
 
   protected World targetWorld(Player viewer) {
     try {
-      if (view() != null && view().getWorld() != null) {
-        return view().getWorld();
+      if (BukkitMapTargets.world(target()) != null) {
+        return BukkitMapTargets.world(target());
       }
     } catch (Throwable ignored) {
     }
@@ -224,7 +226,7 @@ abstract class FeatureIrisChunkSharePieBase extends ReactFeature implements List
       return viewer == null ? null : viewer.getLocation();
     }
 
-    return controller.resolveMapAnchor(view(), viewer);
+    return controller.resolveMapAnchor(target());
   }
 
   protected String labelForChunkBiome(Chunk chunk, int y) {

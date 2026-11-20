@@ -2,7 +2,7 @@ package art.arcane.react.platform.bukkit;
 
 import art.arcane.react.React;
 import art.arcane.react.api.sampler.Sampler;
-import art.arcane.react.api.sampler.SamplerMapRenderer;
+import art.arcane.react.api.rendering.SamplerRenderer;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.ObserverController;
 import art.arcane.react.core.controller.PlayerController;
@@ -34,7 +34,7 @@ final class BukkitSamplerHost implements SamplerHost {
 
   @Override
   public void detachSampler(Sampler sampler) {
-    SamplerMapRenderer.forget(sampler);
+    SamplerRenderer.forget(sampler);
     if (sampler instanceof Listener listener && React.instance != null) {
       React.instance.unregisterListener(listener);
     }

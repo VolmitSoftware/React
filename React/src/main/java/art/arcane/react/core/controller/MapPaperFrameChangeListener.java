@@ -24,13 +24,15 @@ import org.bukkit.entity.ItemFrame;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
-// PlayerItemFrameChangeEvent is Paper-only, so it lives in its own listener: a missing
-// type here kills only this class instead of every MapController handler on Spigot.
-public class MapPaperFrameChangeListener implements Listener {
-  private final MapController controller;
+import java.util.function.Consumer;
 
-  public MapPaperFrameChangeListener(MapController controller) {
-    this.controller = controller;
+// PlayerItemFrameChangeEvent is Paper-only, so it lives in its own listener: a missing
+// type here kills only this class instead of every map handler on Spigot.
+public class MapPaperFrameChangeListener implements Listener {
+  private final Consumer<ItemFrame> changed;
+
+  public MapPaperFrameChangeListener(Consumer<ItemFrame> changed) {
+    this.changed = changed;
   }
 
   @EventHandler(ignoreCancelled = true)
@@ -40,8 +42,8 @@ public class MapPaperFrameChangeListener implements Listener {
       return;
     }
 
-    // PLACE/REMOVE/ROTATE all fire before the frame item settles; the controller
+    // PLACE/REMOVE/ROTATE all fire before the frame item settles; the runtime
     // re-reads the frame next tick.
-    controller.scheduleFrameRefresh(frame);
+    changed.accept(frame);
   }
 }

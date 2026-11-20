@@ -1,7 +1,10 @@
 package art.arcane.react.content.feature;
 
 import art.arcane.react.React;
-import art.arcane.react.api.rendering.MapRendererPipe;
+import art.arcane.react.api.rendering.ReactRenderContext;
+import art.arcane.react.api.rendering.ReactRenderer;
+import art.arcane.react.platform.MapRenderTarget;
+import org.bukkit.Bukkit;
 import art.arcane.react.core.controller.MapController;
 import art.arcane.react.core.controller.NearbyPlayerIndexController;
 import art.arcane.react.core.controller.ObserverController;
@@ -9,8 +12,6 @@ import art.arcane.react.util.common.scheduling.Ticker;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.map.MapCanvas;
-import org.bukkit.map.MapView;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,20 @@ class FeaturePlayerImpactOverlayAnchorTest {
     React.instance = previous;
   }
 
+  private static void render(ReactRenderer renderer, MapRenderTarget target) {
+    ReactRenderContext context = ReactRenderContext.builder()
+        .target(target)
+        .width(ReactRenderer.CANVAS_SIZE)
+        .height(ReactRenderer.CANVAS_SIZE)
+        .build();
+    ReactRenderContext.push(context);
+    try {
+      renderer.render();
+    } finally {
+      ReactRenderContext.pop();
+    }
+  }
+
   @Test
   void framedOverlayQueriesPlayersAroundTheFrameAnchorInsteadOfTheViewer() {
     FeaturePlayerImpactOverlay overlay = new FeaturePlayerImpactOverlay();
@@ -48,8 +63,6 @@ class FeaturePlayerImpactOverlayAnchorTest {
     NearbyPlayerIndexController playerIndex = Mockito.mock(NearbyPlayerIndexController.class);
     World world = Mockito.mock(World.class);
     Player viewer = Mockito.mock(Player.class);
-    MapView view = Mockito.mock(MapView.class);
-    MapCanvas canvas = Mockito.mock(MapCanvas.class);
     Location viewerLocation = new Location(world, 0D, 64D, 0D);
     Location frameAnchor = Mockito.spy(new Location(world, 1_600D, 72D, 3_200D));
     UUID worldId = UUID.randomUUID();
@@ -59,12 +72,8 @@ class FeaturePlayerImpactOverlayAnchorTest {
     Mockito.when(viewer.getWorld()).thenReturn(world);
     Mockito.when(viewer.getLocation()).thenReturn(viewerLocation);
     Mockito.when(viewer.getUniqueId()).thenReturn(UUID.randomUUID());
-    Mockito.when(view.getWorld()).thenReturn(world);
-    Mockito.when(mapController.shouldRenderForPlayer(view, viewer)).thenReturn(true);
-    Mockito.when(mapController.getRendererById(FeaturePlayerImpactOverlay.ID)).thenReturn(overlay);
-    Mockito.when(mapController.resolveMapAnchor(view, viewer)).thenReturn(frameAnchor);
-    Mockito.when(mapController.hasFrameAnchor(view)).thenReturn(true);
-    Mockito.when(mapController.redrawIntervalMsFor(view)).thenReturn(0L);
+    Mockito.when(mapController.resolveMapAnchor(Mockito.any(MapRenderTarget.class))).thenReturn(frameAnchor);
+    Mockito.when(mapController.hasFrameAnchor(Mockito.any(MapRenderTarget.class))).thenReturn(true);
     Mockito.when(observer.loadedChunkCoordinatesInBounds(
         Mockito.eq(world.getUID()),
         Mockito.anyInt(),
@@ -79,12 +88,15 @@ class FeaturePlayerImpactOverlayAnchorTest {
         Mockito.anyDouble()
     )).thenReturn(List.of());
 
-    try (MockedStatic<React> react = Mockito.mockStatic(React.class)) {
+    try (MockedStatic<React> react = Mockito.mockStatic(React.class);
+         MockedStatic<Bukkit> bukkit = Mockito.mockStatic(Bukkit.class)) {
+      bukkit.when(() -> Bukkit.getPlayer(Mockito.any(UUID.class))).thenReturn(viewer);
+      bukkit.when(() -> Bukkit.getWorld(Mockito.any(UUID.class))).thenReturn(world);
       react.when(() -> React.controller(MapController.class)).thenReturn(mapController);
       react.when(() -> React.controller(ObserverController.class)).thenReturn(observer);
       react.when(() -> React.controller(NearbyPlayerIndexController.class)).thenReturn(playerIndex);
 
-      new MapRendererPipe(overlay, 1L).render(view, canvas, viewer);
+      render(overlay, new MapRenderTarget(7, world.getUID(), UUID.randomUUID()));
 
       double anchorX = frameAnchor.getX();
       double anchorZ = frameAnchor.getZ();

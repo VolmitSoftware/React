@@ -20,8 +20,8 @@
 package art.arcane.react.api.rendering;
 
 import art.arcane.react.localization.catalog.MapMessages;
+import art.arcane.react.platform.Facing;
 import art.arcane.volmlib.util.localization.TextKey;
-import org.bukkit.block.BlockFace;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -152,7 +152,7 @@ public final class MegamapGrid {
   public record FrameCell(
       int mapId,
       UUID worldId,
-      BlockFace facing,
+      Facing facing,
       int blockX,
       int blockY,
       int blockZ,
@@ -507,10 +507,10 @@ public final class MegamapGrid {
     return (int) key;
   }
 
-  private record GroupKey(UUID worldId, BlockFace facing, int plane, String rendererId) {
+  private record GroupKey(UUID worldId, Facing facing, int plane, String rendererId) {
   }
 
-  private record PlaneKey(UUID worldId, BlockFace facing, int plane) {
+  private record PlaneKey(UUID worldId, Facing facing, int plane) {
   }
 
   private record PlaneMapping(int u, int v, int plane) {
@@ -526,7 +526,6 @@ public final class MegamapGrid {
         case WEST -> new PlaneMapping(cell.blockZ(), -cell.blockY(), cell.blockX());
         case UP -> new PlaneMapping(cell.blockX(), cell.blockZ(), cell.blockY());
         case DOWN -> new PlaneMapping(cell.blockX(), -cell.blockZ(), cell.blockY());
-        default -> null;
       };
     }
   }
