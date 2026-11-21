@@ -86,6 +86,7 @@ if (targetProperties.forgeRuntimeMappings == 'srg') {
     // merged map drops, so they are appended here as class blocks for the rename pass.
     Provider<RegularFile> shadowSource = layout.buildDirectory.file('tmp/compileJava/compileJava-mappings.tsrg')
     Provider<RegularFile> renameMap = layout.buildDirectory.file('mappings/reobfWithShadows.tsrg')
+    bundleFrameNames(renamer.mixin.generatedMappings.flatMap { task -> task.output }, 'tsrg')
     TaskProvider<Task> shadowMappings = tasks.register('shadowMixinMappings') {
         Provider<RegularFile> merged = renamer.mixin.generatedMappings.flatMap { task -> task.output }
         dependsOn(tasks.named('compileJava'))

@@ -76,6 +76,10 @@ public final class WebError extends RuntimeException {
     return new WebError(403, "scope_missing", "This pairing lacks " + scope + ".", Map.of("scope", scope));
   }
 
+  public static WebError scopeMissing(String scope, String message) {
+    return new WebError(403, "scope_missing", message, Map.of("scope", scope));
+  }
+
   public static WebError counterConflict(long lastCounter) {
     return new WebError(409, "counter_conflict", "Replayed or non-increasing X-React-Counter", Map.of("lastCounter", lastCounter));
   }

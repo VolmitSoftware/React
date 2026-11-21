@@ -22,8 +22,12 @@ package art.arcane.react.content.feature;
 import art.arcane.react.api.feature.ReactFeature;
 import art.arcane.react.api.rendering.MegamapGrid;
 import art.arcane.react.api.rendering.ReactRenderer;
+import art.arcane.react.platform.cost.OwnerNoun;
 
-@art.arcane.react.util.project.config.ConfigDescription("Configuration for Plugin Event Impact List Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.")
+@art.arcane.react.util.project.config.ConfigDescription(
+    value = "Configuration for Plugin Event Impact List Map feature. This feature continuously monitors server behavior and applies guardrails during runtime.",
+    mod = "Configuration for the Mod Impact List Map feature: mods ranked by total server cost across events, entities, block entities and world generation."
+)
 public class FeaturePluginEventImpactListMap extends ReactFeature implements ReactRenderer {
   public static final String ID = OwnerEventImpactListRenderer.ID;
   @art.arcane.react.util.project.config.ConfigDoc(value = "Maximum rows drawn per map tile, or 0 to fill the available height.", impact = "Zero lets a taller map wall list every plugin; a fixed value multiplies by the number of vertical tiles, so a taller wall still lists more plugins.")
@@ -39,6 +43,11 @@ public class FeaturePluginEventImpactListMap extends ReactFeature implements Rea
 
   public FeaturePluginEventImpactListMap() {
     super(ID);
+  }
+
+  @Override
+  public String getName() {
+    return OwnerNoun.modded() ? "Mod Impact List Map" : super.getName();
   }
 
   @Override

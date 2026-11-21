@@ -9,6 +9,7 @@ import art.arcane.react.platform.cost.OwnerGaugeSampler;
 import net.minecraft.server.MinecraftServer;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -25,6 +26,7 @@ final class ModOwnerGauges {
     private final ChunkLoaderCensus census = new ChunkLoaderCensus();
     private final Set<String> registered = new HashSet<>();
     private volatile Map<String, NetworkTraffic.Rates> traffic = Map.of();
+    private final RollingShare networkShare = new RollingShare();
     private long drainedAtNanos;
     private int untilCensus;
 
@@ -40,6 +42,7 @@ final class ModOwnerGauges {
 
     void stop() {
         NetworkTraffic.active(false);
+        networkShare.clear();
     }
 
     /** Server thread, once a second. */
@@ -47,6 +50,11 @@ final class ModOwnerGauges {
         long now = System.nanoTime();
         traffic = NetworkTraffic.drain((now - drainedAtNanos) / 1_000_000_000D, CostRegistry::ownerOfNamespace);
         drainedAtNanos = now;
+        Map<String, Double> bytes = new LinkedHashMap<>();
+        for (Map.Entry<String, NetworkTraffic.Rates> entry : traffic.entrySet()) {
+            bytes.put(entry.getKey(), entry.getValue().sentBytes() + entry.getValue().receivedBytes());
+        }
+        networkShare.fold(bytes);
         if (--untilCensus <= 0) {
             untilCensus = CENSUS_INTERVAL;
             census.run(server);
@@ -64,6 +72,22 @@ final class ModOwnerGauges {
             register(controller, OwnerGauge.PACKETS_OUT, owner);
             register(controller, OwnerGauge.PACKETS_IN, owner);
         }
+    }
+
+    /** Each owner's recent packet bytes per second, sent and received, by display name. */
+    Map<String, Long> networkShare() {
+        return networkShare.buckets(1D, CostRegistry::displayName);
+    }
+
+    /** Chunks each owner holds in the latest census, by display name. */
+    Map<String, Long> chunkLoaderShare() {
+        Map<String, Long> share = new LinkedHashMap<>();
+        for (Map.Entry<String, Integer> entry : census.counts().entrySet()) {
+            if (entry.getValue() != null && entry.getValue() > 0) {
+                share.merge(CostRegistry.displayName(entry.getKey()), entry.getValue().longValue(), Long::sum);
+            }
+        }
+        return share;
     }
 
     /** Chunks held by every owner in the latest census. */

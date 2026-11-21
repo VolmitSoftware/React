@@ -79,6 +79,20 @@ public final class WebAuth implements Handler {
     return token;
   }
 
+  /** Diagnostics and controls an operator pairing may run; admin pairings hold it too. */
+  public static final String OPERATE = "op:execute";
+
+  /** As {@link #requireScope(Context, String)}, with the message the 403 envelope carries. */
+  public static void requireScope(Context ctx, String scope, String message) {
+    WebToken token = ctx.attribute("token");
+    if (token == null) {
+      throw WebError.unauthorized();
+    }
+    if (!token.hasScope(scope)) {
+      throw WebError.scopeMissing(scope, message);
+    }
+  }
+
   public static void requireScope(Context ctx, String scope) {
     WebToken token = ctx.attribute("token");
     if (token == null) {

@@ -44,7 +44,7 @@ public final class SamplingProfiler {
     this.host = host;
     this.clock = clock;
     this.owners = new FrameOwners(host);
-    this.tree = new CallTree(CallTree.DEFAULT_MAX_NODES, false);
+    this.tree = newTree();
   }
 
   /**
@@ -59,7 +59,7 @@ public final class SamplingProfiler {
     }
     long now = clock.getAsLong();
     if (sampler == null) {
-      tree = new CallTree(CallTree.DEFAULT_MAX_NODES, false);
+      tree = newTree();
       startedAt = now;
       stoppedAt = 0;
       this.threads = mode;
@@ -70,7 +70,7 @@ public final class SamplingProfiler {
       thread.start();
     } else {
       if (!mode.equals(this.threads)) {
-        tree = new CallTree(CallTree.DEFAULT_MAX_NODES, false);
+        tree = newTree();
         startedAt = now;
         this.threads = mode;
       }
@@ -91,7 +91,7 @@ public final class SamplingProfiler {
 
   /** Clears the profile; a running profiler keeps sampling into the empty tree. */
   public synchronized ProfileDtos.State reset() {
-    tree = new CallTree(CallTree.DEFAULT_MAX_NODES, false);
+    tree = newTree();
     long now = clock.getAsLong();
     if (sampler != null) {
       startedAt = now;
@@ -116,19 +116,20 @@ public final class SamplingProfiler {
         running ? Long.valueOf(stopsAt) : null, tree.samples(), duration);
   }
 
-  public ProfileDtos.Owners owners() {
+  public ProfileDtos.Owners owners(boolean idle) {
     CallTree current = warm();
-    return current.owners(this::ownerOf);
+    return current.owners(this::ownerOf, idle);
   }
 
-  public ProfileDtos.Hot hot(String ownerId, int limit) {
+  public ProfileDtos.Hot hot(String ownerId, int limit, boolean idle) {
     CallTree current = warm();
-    return current.hot(this::ownerOf, blankToNull(ownerId), limit);
+    return current.hot(this::ownerOf, blankToNull(ownerId), limit, idle);
   }
 
-  public ProfileDtos.Tree tree(String ownerId, String thread, double minPercent, int maxDepth) {
+  public ProfileDtos.Tree tree(CallTree.Query query) {
     CallTree current = warm();
-    return current.tree(this::ownerOf, blankToNull(ownerId), blankToNull(thread), minPercent, maxDepth);
+    return current.tree(this::ownerOf, new CallTree.Query(blankToNull(query.ownerId()), blankToNull(query.thread()),
+        query.minPercent(), query.maxDepth(), query.group(), query.collapse(), query.idle()));
   }
 
   public ProfileDtos.Threads threads() {
@@ -138,8 +139,8 @@ public final class SamplingProfiler {
   /** Everything at once, for a snapshot. */
   public ProfileDtos.Profile profile() {
     CallTree current = warm();
-    return new ProfileDtos.Profile(state(), current.owners(this::ownerOf), current.hot(this::ownerOf, null, 500),
-        current.threads(), current.tree(this::ownerOf, null, null, 0.01D, CallTree.MAX_DEPTH));
+    return new ProfileDtos.Profile(state(), current.owners(this::ownerOf, false), current.hot(this::ownerOf, null, 500, false),
+        current.threads(), current.tree(this::ownerOf, new CallTree.Query(null, null, 0.01D, CallTree.MAX_DEPTH, true, true, false)));
   }
 
   public static int clampInterval(int intervalMs) {
@@ -148,6 +149,21 @@ public final class SamplingProfiler {
 
   public static int clampSeconds(int seconds) {
     return Math.max(1, Math.min(MAX_SECONDS, seconds));
+  }
+
+  /** A tree that names frames through the platform's mappings, loaded the first time a profile starts. */
+  private CallTree newTree() {
+    return new CallTree(CallTree.DEFAULT_MAX_NODES, false, new FrameNames(this::readableClass, this::readableMethod));
+  }
+
+  private String readableClass(String className) {
+    Optional<ProfilerHost> current = host.get();
+    return current.isPresent() ? current.get().readableClass(className) : className;
+  }
+
+  private String readableMethod(String methodName) {
+    Optional<ProfilerHost> current = host.get();
+    return current.isPresent() ? current.get().readableMethod(methodName) : methodName;
   }
 
   private FrameOwner ownerOf(String className, String methodName) {
@@ -181,6 +197,7 @@ public final class SamplingProfiler {
     Thread self = Thread.currentThread();
     ThreadMXBean bean = ManagementFactory.getThreadMXBean();
     Thread target = null;
+    host.get().ifPresent(ProfilerHost::loadNames);
     long next = System.nanoTime();
     while (sampler == self) {
       if (clock.getAsLong() >= stopsAt) {

@@ -38,7 +38,9 @@ public final class MapHubModel {
   public static final int OWNER_GROUP = 8;
   private static final int OWNER_GROUP_TOP_LINES = 3;
   private static final Set<String> OWNER_VIEW_IDS = Set.of(
-      "plugin-event-impact-list-map", "plugin-event-impact-pie-map", "plugin-cost-kind-list-map", "worldgen-mod-pie-map"
+      "plugin-event-impact-list-map", "plugin-event-impact-pie-map", "plugin-cost-kind-list-map", "worldgen-mod-pie-map",
+      "event-mod-pie-map", "entity-mod-pie-map", "block-entity-mod-pie-map", "chunk-loader-mod-pie-map", "network-mod-pie-map",
+      "profiler-mod-pie-map"
   );
 
   private static final String WHITE = "§f";

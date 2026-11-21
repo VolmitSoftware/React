@@ -125,7 +125,7 @@ public abstract class SharePieRenderer implements ReactRenderer {
     Map<String, Long> raw = cachedBuckets(target);
     List<Slice> slices = normalize(raw, legendCapacity);
     if (slices.isEmpty()) {
-      RendererLayout.emptyState(this, body, ReactLanguage.raw(RendererMessages.PIE_NO_DATA), null);
+      RendererLayout.emptyState(this, body, ReactLanguage.raw(emptyMessage()), null);
       RendererLayout.footer(this, null, null, headerColor());
       return;
     }
@@ -161,6 +161,11 @@ public abstract class SharePieRenderer implements ReactRenderer {
    * Label to weight, called at most once per viewer every few milliseconds on the render thread.
    */
   protected abstract Map<String, Long> collectBuckets(MapRenderTarget target);
+
+  /** The empty state's message when no bucket has a value. */
+  protected TextKey emptyMessage() {
+    return RendererMessages.PIE_NO_DATA;
+  }
 
   protected String totalUnitLabel() {
     return ReactLanguage.raw(totalUnit());

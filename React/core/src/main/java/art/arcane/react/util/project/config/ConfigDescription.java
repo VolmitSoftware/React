@@ -10,4 +10,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target(TYPE)
 public @interface ConfigDescription {
   String value();
+
+  /** The description on mod loaders, where it differs beyond the plugin-to-mod wording. */
+  String mod() default "";
 }

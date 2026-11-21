@@ -17,6 +17,23 @@ public interface ProfilerHost {
   Optional<FrameOwner> ownerOf(String className, String methodName);
 
   /**
+   * Loads the runtime-to-Mojang name map where the game runs obfuscated names; called once as the profiler starts, on
+   * its own thread. Never throws: without a map, frames keep their runtime names.
+   */
+  default void loadNames() {
+  }
+
+  /** The Mojang name of a runtime class name, or the name itself. */
+  default String readableClass(String className) {
+    return className;
+  }
+
+  /** The Mojang name of a runtime method name, or the name itself. */
+  default String readableMethod(String methodName) {
+    return methodName;
+  }
+
+  /**
    * One owner of profiled frames. {@code platform} owners (the JDK, the server and the loader) are skipped when a
    * sample is charged to the innermost plugin or mod frame.
    */

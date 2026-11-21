@@ -100,6 +100,9 @@ public class ConfigLocalizationCatalogTest {
       if (description != null && !description.value().isBlank()) {
         putUnique(expected, ConfigLocalization.descriptionId(type), description.value().strip());
       }
+      if (description != null && !description.mod().isBlank()) {
+        putUnique(expected, ConfigLocalization.modDescriptionId(type), description.mod().strip());
+      }
       for (Field field : type.getDeclaredFields()) {
         ConfigDoc annotation = field.getDeclaredAnnotation(ConfigDoc.class);
         if (annotation == null) {

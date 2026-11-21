@@ -41,7 +41,7 @@ public final class SnapshotResource {
   }
 
   public void create(Context ctx) throws IOException {
-    WebAuth.requireScope(ctx, "admin");
+    WebAuth.requireScope(ctx, WebAuth.OPERATE, "Snapshots need an operator or admin pairing.");
     CreateBody body = ctx.bodyAsClass(CreateBody.class);
     String kind = body == null || body.kind() == null ? "" : body.kind().trim().toLowerCase(Locale.ROOT);
     String label = body == null ? null : body.label();
@@ -89,7 +89,7 @@ public final class SnapshotResource {
   }
 
   public void delete(Context ctx) throws IOException {
-    WebAuth.requireScope(ctx, "admin");
+    WebAuth.requireScope(ctx, WebAuth.OPERATE, "Snapshots need an operator or admin pairing.");
     String id = ctx.pathParam("id");
     SnapshotStore current = store.get();
     SnapshotStore.Meta meta = current.meta(id).orElseThrow(SnapshotResource::missing);

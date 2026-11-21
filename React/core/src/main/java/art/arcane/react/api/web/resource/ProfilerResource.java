@@ -37,7 +37,7 @@ public final class ProfilerResource {
   }
 
   public void control(Context ctx) {
-    WebAuth.requireScope(ctx, "admin");
+    WebAuth.requireScope(ctx, WebAuth.OPERATE, "Profiler controls need an operator or admin pairing.");
     ControlBody body = ctx.bodyAsClass(ControlBody.class);
     String action = body == null || body.action() == null ? "" : body.action().trim().toLowerCase(Locale.ROOT);
     ProfileDtos.State state;
@@ -74,18 +74,19 @@ public final class ProfilerResource {
   }
 
   public void owners(Context ctx) {
-    ctx.json(new Envelope<>(profiler.owners()));
+    ctx.json(new Envelope<>(profiler.owners(booleanParam(ctx, "idle", false))));
   }
 
   public void hot(Context ctx) {
     int limit = intParam(ctx, "limit", 50, 1, MAX_HOT);
-    ctx.json(new Envelope<>(profiler.hot(ctx.queryParam("owner"), limit)));
+    ctx.json(new Envelope<>(profiler.hot(ctx.queryParam("owner"), limit, booleanParam(ctx, "idle", false))));
   }
 
   public void tree(Context ctx) {
     double minPercent = doubleParam(ctx, "minPercent", 0.5D);
     int maxDepth = intParam(ctx, "maxDepth", 64, 1, CallTree.MAX_DEPTH);
-    ctx.json(new Envelope<>(profiler.tree(ctx.queryParam("owner"), ctx.queryParam("thread"), minPercent, maxDepth)));
+    ctx.json(new Envelope<>(profiler.tree(new CallTree.Query(ctx.queryParam("owner"), ctx.queryParam("thread"), minPercent, maxDepth,
+        booleanParam(ctx, "group", true), booleanParam(ctx, "collapse", true), booleanParam(ctx, "idle", false)))));
   }
 
   public void threads(Context ctx) {
@@ -102,6 +103,18 @@ public final class ProfilerResource {
     } catch (NumberFormatException invalid) {
       throw WebError.badRequest(name + " must be a whole number");
     }
+  }
+
+  static boolean booleanParam(Context ctx, String name, boolean fallback) {
+    String raw = ctx.queryParam(name);
+    if (raw == null || raw.isBlank()) {
+      return fallback;
+    }
+    return switch (raw.trim().toLowerCase(Locale.ROOT)) {
+      case "true", "1", "yes" -> true;
+      case "false", "0", "no" -> false;
+      default -> throw WebError.badRequest(name + " must be true or false");
+    };
   }
 
   static double doubleParam(Context ctx, String name, double fallback) {

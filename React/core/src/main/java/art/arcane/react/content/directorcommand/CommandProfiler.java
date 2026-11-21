@@ -102,7 +102,7 @@ public class CommandProfiler implements DirectorExecutor {
     if (state.samples() == 0) {
       return;
     }
-    List<ProfileDtos.OwnerRank> owners = profiler.owners().owners();
+    List<ProfileDtos.OwnerRank> owners = profiler.owners(false).owners();
     for (int index = 0; index < Math.min(TOP_OWNERS, owners.size()); index++) {
       ProfileDtos.OwnerRank owner = owners.get(index);
       ReactLanguage.sendPrefixed(sender, CommandMessages.PROFILER_OWNER,

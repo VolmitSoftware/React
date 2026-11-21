@@ -69,6 +69,12 @@ public final class RendererMessages {
   public static final TextKey TITLE_PLUGIN_IMPACT_SHARE = title("plugin_impact_share", "Plugin Impact Share");
   public static final TextKey TITLE_MOD_IMPACT_SHARE = title("mod_impact_share", "Mod Impact Share");
   public static final TextKey TITLE_MOD_WORLDGEN_SHARE = title("mod_worldgen_share", "Mod Worldgen Share");
+  public static final TextKey TITLE_MOD_EVENT_SHARE = title("mod_event_share", "Mod Event Share");
+  public static final TextKey TITLE_MOD_ENTITY_SHARE = title("mod_entity_share", "Mod Entity Share");
+  public static final TextKey TITLE_MOD_BLOCK_ENTITY_SHARE = title("mod_block_entity_share", "Mod Block Entity Share");
+  public static final TextKey TITLE_MOD_CHUNK_LOADER_SHARE = title("mod_chunk_loader_share", "Mod Chunk Loader Share");
+  public static final TextKey TITLE_MOD_NETWORK_SHARE = title("mod_network_share", "Mod Network Share");
+  public static final TextKey TITLE_MOD_PROFILER_SHARE = title("mod_profiler_share", "Mod Profiler Share");
   public static final TextKey TITLE_BIOME_CHUNK_SHARE = title("biome_chunk_share", "Biome Chunk Share");
   public static final TextKey TITLE_CHUNK_COST_HEAT = title("chunk_cost_heat", "Chunk Cost Heat");
   public static final TextKey TITLE_ADAPT_PRESSURE = title("adapt_pressure", "Adapt Pressure");
@@ -204,6 +210,9 @@ public final class RendererMessages {
   public static final TextKey PIE_UNIT_CHUNKS = key("pie.unit.chunks", "chunks");
   public static final TextKey PIE_UNIT_IMPACT = key("pie.unit.impact", "impact");
   public static final TextKey PIE_UNIT_MS_PER_SECOND = key("pie.unit.ms_per_second", "ms/s");
+  public static final TextKey PIE_UNIT_BYTES_PER_SECOND = key("pie.unit.bytes_per_second", "B/s");
+  public static final TextKey PIE_UNIT_SAMPLES = key("pie.unit.samples", "samples");
+  public static final TextKey PIE_PROFILER_STOPPED = key("pie.profiler_stopped", "Profiler not running");
   public static final TextKey PIE_UNKNOWN = key("pie.unknown", "Unknown");
   public static final TextKey PIE_OTHER = key("pie.other", "Other");
   public static final TextKey ADAPT_MEASURED_UNAVAILABLE = key("adapt.measured_unavailable", "Measured callback data unavailable");
@@ -237,7 +246,9 @@ public final class RendererMessages {
       TITLE_IRIS_WORLD_MANTLE, TITLE_IRIS_WORLD_GENERATION, TITLE_IRIS_WORLD_FEATURES,
       TITLE_IRIS_WORLD_PREGEN, TITLE_IRIS_WORLD_PREGEN_TIME, TITLE_ADAPT_CALLBACK_COST,
       TITLE_PLUGIN_IMPACT, TITLE_MOD_IMPACT, TITLE_WORLD_CHUNK_SHARE, TITLE_PLUGIN_IMPACT_SHARE,
-      TITLE_MOD_IMPACT_SHARE, TITLE_MOD_WORLDGEN_SHARE, TITLE_BIOME_CHUNK_SHARE, TITLE_PLUGIN_COST_KINDS,
+      TITLE_MOD_IMPACT_SHARE, TITLE_MOD_WORLDGEN_SHARE, TITLE_MOD_EVENT_SHARE, TITLE_MOD_ENTITY_SHARE,
+      TITLE_MOD_BLOCK_ENTITY_SHARE, TITLE_MOD_CHUNK_LOADER_SHARE, TITLE_MOD_NETWORK_SHARE, TITLE_MOD_PROFILER_SHARE,
+      TITLE_BIOME_CHUNK_SHARE, TITLE_PLUGIN_COST_KINDS,
       TITLE_MOD_COST_KINDS, COST_KIND_EVENT, COST_KIND_BLOCK_ENTITY, COST_KIND_ENTITY, COST_KIND_WORLDGEN,
       TITLE_CHUNK_COST_HEAT, TITLE_ADAPT_PRESSURE, TITLE_REDSTONE_ACTIVITY, TITLE_ENTITY_PRESSURE,
       TITLE_PLAYER_IMPACT, TITLE_TICK_SPIKE_REPLAY, TITLE_IRIS_PRESSURE, TITLE_HOPPER_THROUGHPUT,
@@ -266,6 +277,7 @@ public final class RendererMessages {
       UNKNOWN_RENDERER_UNAVAILABLE, UNKNOWN_MAP_WAS, UNKNOWN_BOUND, UNKNOWN_MISSING,
       UNKNOWN_RESELECT_COMMAND, UNKNOWN_RESELECT, HEATMAP_NO_ACTIVITY, HEATMAP_QUIET,
       TICK_SPIKE_AUTOSAVE, TICK_SPIKE_SAVE, PIE_VIEWER_UNAVAILABLE, PIE_NO_DATA, PIE_TOTAL, PIE_UNIT_CHUNKS, PIE_UNIT_IMPACT, PIE_UNIT_MS_PER_SECOND,
+      PIE_UNIT_BYTES_PER_SECOND, PIE_UNIT_SAMPLES, PIE_PROFILER_STOPPED,
       PIE_UNKNOWN, PIE_OTHER, ADAPT_MEASURED_UNAVAILABLE, ADAPT_GUARD_ONLY, ADAPT_NO_ACTIVITY, ADAPT_USE_ABILITIES,
       ADAPT_TOP_VALUE, ANIMUS_UNAVAILABLE, ANIMUS_UPDATE_HINT, ANIMUS_NO_TRAFFIC, ANIMUS_TRAFFIC_HINT,
       ANIMUS_BANDWIDTH, ANIMUS_PACKET_RATE, ANIMUS_PLAYER_PEAK, PLUGIN_NO_IMPACT, MOD_NO_IMPACT, PLUGIN_WAIT_FOR_DATA,
@@ -314,6 +326,12 @@ public final class RendererMessages {
       Map.entry("iris-world-chunk-share-pie-map", TITLE_WORLD_CHUNK_SHARE),
       Map.entry("plugin-event-impact-pie-map", TITLE_PLUGIN_IMPACT_SHARE),
       Map.entry("worldgen-mod-pie-map", TITLE_MOD_WORLDGEN_SHARE),
+      Map.entry("event-mod-pie-map", TITLE_MOD_EVENT_SHARE),
+      Map.entry("entity-mod-pie-map", TITLE_MOD_ENTITY_SHARE),
+      Map.entry("block-entity-mod-pie-map", TITLE_MOD_BLOCK_ENTITY_SHARE),
+      Map.entry("chunk-loader-mod-pie-map", TITLE_MOD_CHUNK_LOADER_SHARE),
+      Map.entry("network-mod-pie-map", TITLE_MOD_NETWORK_SHARE),
+      Map.entry("profiler-mod-pie-map", TITLE_MOD_PROFILER_SHARE),
       Map.entry("plugin-cost-kind-list-map", TITLE_PLUGIN_COST_KINDS),
       Map.entry("iris-biome-chunk-share-pie-map", TITLE_BIOME_CHUNK_SHARE),
       Map.entry("chunk-sampler-map", TITLE_CHUNK_COST_HEAT),

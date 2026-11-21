@@ -1,6 +1,7 @@
 package art.arcane.react.util.project.config;
 
 import art.arcane.react.localization.ReactLanguage;
+import art.arcane.react.platform.cost.OwnerNoun;
 import art.arcane.volmlib.util.localization.MessageCatalog;
 import art.arcane.volmlib.util.localization.TextKey;
 
@@ -30,6 +31,9 @@ public final class ConfigLocalization {
     while (cursor != null && cursor != Object.class) {
       ConfigDescription annotation = cursor.getDeclaredAnnotation(ConfigDescription.class);
       if (annotation != null) {
+        if (!annotation.mod().isBlank() && OwnerNoun.modded()) {
+          return ReactLanguage.raw(modDescriptionId(cursor), annotation.mod().strip());
+        }
         String english = annotation.value().strip();
         return ReactLanguage.raw(descriptionId(cursor), english);
       }
@@ -66,6 +70,10 @@ public final class ConfigLocalization {
     return KEY_PREFIX + typeId(type) + ".description";
   }
 
+  public static String modDescriptionId(Class<?> type) {
+    return KEY_PREFIX + typeId(type) + ".mod_description";
+  }
+
   public static String fieldSummaryId(Field field) {
     return KEY_PREFIX + typeId(field.getDeclaringClass()) + ".field." + normalize(field.getName()) + ".summary";
   }
@@ -82,6 +90,9 @@ public final class ConfigLocalization {
     ConfigDescription description = type.getDeclaredAnnotation(ConfigDescription.class);
     if (description != null && !description.value().isBlank()) {
       builder.add(TextKey.of(descriptionId(type), description.value().strip()));
+    }
+    if (description != null && !description.mod().isBlank()) {
+      builder.add(TextKey.of(modDescriptionId(type), description.mod().strip()));
     }
 
     Field[] fields = type.getDeclaredFields();

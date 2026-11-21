@@ -30,6 +30,12 @@ public final class MapMessages {
       rendererSummaryEntry("plugin-event-impact-pie-map", "Pie chart showing rolling plugin event-impact share over time."),
       rendererSummaryEntry("plugin-event-impact-list-map", "Ranked list of plugins by rolling event-impact score."),
       rendererSummaryEntry("worldgen-mod-pie-map", "Pie chart showing each mod's rolling share of world generation time."),
+      rendererSummaryEntry("event-mod-pie-map", "Pie chart showing each mod's share of event handler time."),
+      rendererSummaryEntry("entity-mod-pie-map", "Pie chart showing each mod's share of entity tick time."),
+      rendererSummaryEntry("block-entity-mod-pie-map", "Pie chart showing each mod's share of block entity tick time."),
+      rendererSummaryEntry("chunk-loader-mod-pie-map", "Pie chart showing which mods keep chunks loaded."),
+      rendererSummaryEntry("network-mod-pie-map", "Pie chart showing each mod's share of network traffic."),
+      rendererSummaryEntry("profiler-mod-pie-map", "Pie chart showing each mod's share of profiler samples."),
       rendererSummaryEntry("iris-metrics", "Iris integration overview for engines, worlds, chunks, entities, and generation."),
       rendererSummaryEntry("adapt-metrics", "Adapt integration panel for session load, ability ops/min, and world policy latency."),
       rendererSummaryEntry("react-metrics", "React local metrics panel for TPS, tick latency, incident pressure, and queue health."),
@@ -56,15 +62,21 @@ public final class MapMessages {
       rendererDetail("plugin-event-impact-pie-map", "Each slice represents the rolling share of plugin event cost over recent windows."),
       rendererDetail("plugin-event-impact-list-map", "Rows are ordered from highest rolling plugin impact to lowest."),
       rendererDetail("worldgen-mod-pie-map", "Each slice is the time one mod's features, structures and carvers take on the generator threads."),
+      rendererDetail("event-mod-pie-map", "Each slice is one mod's event handler time in ms per second, averaged over recent seconds."),
+      rendererDetail("entity-mod-pie-map", "Each slice is the tick time of one mod's entities in ms per second, averaged over recent seconds."),
+      rendererDetail("block-entity-mod-pie-map", "Each slice is the tick time of one mod's block entities in ms per second, averaged over recent seconds."),
+      rendererDetail("chunk-loader-mod-pie-map", "Each slice is the number of chunks one mod keeps loaded through chunk tickets."),
+      rendererDetail("network-mod-pie-map", "Each slice is one mod's packet traffic in bytes per second, sent and received, averaged over recent seconds."),
+      rendererDetail("profiler-mod-pie-map", "Each slice counts the profiler samples whose innermost mod frame belongs to that mod."),
       rendererDetail("adapt-ability-impact-list-map", "Rows rank rolling 60-second measured callback cost; cb/m counts covered callback executions, while directly scheduled background work is outside this map.")
   );
   private static final Map<String, TextKey> MOD_RENDERER_SUMMARIES = Map.ofEntries(
-      modRendererSummaryEntry("plugin-event-impact-pie-map", "Pie chart showing rolling mod event-impact share over time."),
-      modRendererSummaryEntry("plugin-event-impact-list-map", "Ranked list of mods by rolling event-impact score."),
+      modRendererSummaryEntry("plugin-event-impact-pie-map", "Pie chart showing each mod's rolling share of total server cost."),
+      modRendererSummaryEntry("plugin-event-impact-list-map", "Ranked list of mods by rolling total server cost."),
       modRendererSummaryEntry("plugin-cost-kind-list-map", "Mod cost split into events, block entity ticks, entity ticks and world generation.")
   );
   private static final Map<String, TextKey> MOD_RENDERER_DETAILS = Map.ofEntries(
-      modRendererDetail("plugin-event-impact-pie-map", "Each slice represents the rolling share of mod event cost over recent windows."),
+      modRendererDetail("plugin-event-impact-pie-map", "Each slice is one mod's rolling share of cost across events, entities, block entities and world generation."),
       modRendererDetail("plugin-event-impact-list-map", "Rows are ordered from highest rolling mod impact to lowest."),
       modRendererDetail("plugin-cost-kind-list-map", "The top bar splits all mod cost by kind; each row splits one mod's cost the same way.")
   );

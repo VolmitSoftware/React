@@ -162,3 +162,80 @@ ext.compactJar = { File archive ->
     JarCompactor.compact(archive, new JarCompactor.CompactionOptions(Collections.<String>emptySet(), false, true, true, compressionCache.toPath()))
     logger.lifecycle("${archive.name}: ${before} -> ${archive.length()} bytes")
 }
+
+// Profiler frames on obfuscated runtimes read through a runtime-to-Mojang name map written from the build's own
+// mappings: 'tsrg' is Forge's official-to-SRG file (methods only, classes are Mojang names at runtime), 'tiny' is
+// Loom's official/intermediary/named file. ModFrameNames documents the format.
+ext.bundleFrameNames = { Object source, String format ->
+    File output = layout.buildDirectory.dir('generated/frame-names').get().asFile
+    TaskProvider<Task> frameNames = tasks.register('reactFrameNames') {
+        inputs.property('format', format)
+        inputs.files(source)
+        outputs.dir(output)
+        doLast {
+            File mappings = project.files(source).singleFile
+            Map<String, String> classes = new TreeMap<>()
+            Map<Integer, String> methods = new TreeMap<>()
+            String classPrefix = ''
+            String methodPrefix
+            String methodSuffix
+            if (format == 'tsrg') {
+                methodPrefix = 'm_'
+                methodSuffix = '_'
+                java.util.regex.Pattern srg = ~/^\t(\S+) \(\S*\)\S* m_(\d+)_$/
+                mappings.eachLine('UTF-8') { String line ->
+                    java.util.regex.Matcher matcher = srg.matcher(line)
+                    if (matcher.matches()) {
+                        methods.put(Integer.parseInt(matcher.group(2)), matcher.group(1))
+                    }
+                }
+            } else if (format == 'tiny') {
+                classPrefix = 'net.minecraft.'
+                methodPrefix = 'method_'
+                methodSuffix = ''
+                int intermediary = -1
+                int named = -1
+                mappings.eachLine('UTF-8') { String line ->
+                    String[] parts = line.split('\t', -1)
+                    if (parts[0] == 'tiny') {
+                        List<String> namespaces = parts.toList().subList(3, parts.length)
+                        intermediary = namespaces.indexOf('intermediary')
+                        named = namespaces.indexOf('named')
+                    } else if (parts[0] == 'c' && parts.length > named + 1) {
+                        String runtime = parts[intermediary + 1].replace('/', '.')
+                        String readable = parts[named + 1].replace('/', '.')
+                        if (runtime != readable && runtime.startsWith(classPrefix)) {
+                            classes.put(runtime.substring(classPrefix.length()), readable)
+                        }
+                    } else if (parts.length > named + 3 && parts[0] == '' && parts[1] == 'm') {
+                        String runtime = parts[intermediary + 3]
+                        if (runtime.startsWith(methodPrefix) && runtime.substring(methodPrefix.length()).isInteger()) {
+                            // Mojang's mappings leave synthetic lambda bodies unnamed.
+                            String readable = parts[named + 3] == runtime ? 'lambda$' + runtime : parts[named + 3]
+                            methods.put(Integer.parseInt(runtime.substring(methodPrefix.length())), readable)
+                        }
+                    }
+                }
+            } else {
+                throw new GradleException("Unknown frame name format ${format}")
+            }
+            File resource = new File(output, 'art/arcane/react/mod/frame-names.gz')
+            resource.parentFile.mkdirs()
+            resource.withOutputStream { OutputStream stream ->
+                java.util.zip.GZIPOutputStream gzip = new java.util.zip.GZIPOutputStream(stream)
+                Writer writer = new OutputStreamWriter(gzip, 'UTF-8')
+                writer.write("react-frame-names 1\nclasses ${classPrefix} ${classes.size()}\n")
+                classes.each { String key, String value -> writer.write("${key} ${value}\n") }
+                writer.write("methods ${methodPrefix} ${methodSuffix} ${methods.size()}\n")
+                int previous = 0
+                methods.each { Integer id, String name ->
+                    writer.write("${id - previous} ${name}\n")
+                    previous = id
+                }
+                writer.close()
+            }
+            logger.lifecycle("Frame names: ${classes.size()} classes, ${methods.size()} methods, ${resource.length()} bytes")
+        }
+    }
+    sourceSets.main.resources.srcDir(frameNames)
+}

@@ -1,6 +1,7 @@
 package art.arcane.react.mod;
 
 import art.arcane.react.core.controller.SampleController;
+import art.arcane.react.mod.cost.CostKind;
 import art.arcane.react.mod.cost.CostRegistry;
 import art.arcane.react.mod.cost.ModCostProbe;
 import art.arcane.react.mod.cost.WorldgenCost;
@@ -32,6 +33,7 @@ final class ModOwnerCost implements EventMeasurement {
     private final Set<String> registered = new HashSet<>();
     private final Set<String> worldgenRegistered = new HashSet<>();
     private final Map<String, Double> worldgenShareMs = new ConcurrentHashMap<>();
+    private final Map<String, RollingShare> kindShares = new ConcurrentHashMap<>();
     private boolean startupRegistered;
     private long worldgenWindowAtMs;
 
@@ -52,6 +54,7 @@ final class ModOwnerCost implements EventMeasurement {
     void stop() {
         model.stop();
         worldgenShareMs.clear();
+        kindShares.clear();
     }
 
     /** Server thread, once a second. */
@@ -83,12 +86,43 @@ final class ModOwnerCost implements EventMeasurement {
         return share;
     }
 
+    /**
+     * Each owner's recent ms/s of one kind of cost, in microseconds by display name, for that kind's pie. Reading it
+     * keeps the probe measuring, as the other cost maps do.
+     */
+    Map<String, Long> kindShare(CostKind kind) {
+        model.markActivity();
+        RollingShare share = kindShares.get(kind.id());
+        return share == null ? new LinkedHashMap<>() : share.buckets(1000D, probe::displayName);
+    }
+
+    private void foldKindShares() {
+        double seconds = model.windowSeconds();
+        if (seconds <= 0D) {
+            return;
+        }
+        Map<String, Map<String, Double>> byKind = new LinkedHashMap<>();
+        for (CostKind kind : CostKind.values()) {
+            byKind.put(kind.id(), new LinkedHashMap<>());
+        }
+        for (Map.Entry<String, Map<String, Double>> owner : model.snapshotOwnerKindMs().entrySet()) {
+            for (Map.Entry<String, Double> kind : owner.getValue().entrySet()) {
+                byKind.computeIfAbsent(kind.getKey(), (String id) -> new LinkedHashMap<>())
+                        .merge(owner.getKey(), (kind.getValue() == null ? 0D : kind.getValue()) / seconds, Double::sum);
+            }
+        }
+        for (Map.Entry<String, Map<String, Double>> kind : byKind.entrySet()) {
+            kindShares.computeIfAbsent(kind.getKey(), (String id) -> new RollingShare()).fold(kind.getValue());
+        }
+    }
+
     private void foldWorldgenShare() {
         long windowAt = model.publishedAtMs();
         if (windowAt == worldgenWindowAtMs || !model.measuring()) {
             return;
         }
         worldgenWindowAtMs = windowAt;
+        foldKindShares();
         worldgenShareMs.replaceAll((String owner, Double ms) -> ms * WORLDGEN_DECAY_PER_WINDOW);
         for (Map.Entry<String, Long> entry : probe.worldgen().ownerNanos().entrySet()) {
             worldgenShareMs.merge(entry.getKey(), entry.getValue() / 1.0E6D, Double::sum);

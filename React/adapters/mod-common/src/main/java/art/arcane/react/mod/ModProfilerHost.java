@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
  */
 final class ModProfilerHost implements ProfilerHost {
     private static final Pattern MIXIN_HANDLER = Pattern.compile("^[a-zA-Z]+\\$[a-z0-9]+\\$([a-z0-9_.\\-]+)\\$.+");
+    private static final Pattern MIXIN_UNIQUE = Pattern.compile("^md[0-9a-f]+\\$([a-z0-9_.\\-]+)\\$.+");
     private static final String REACT = "react";
     private static final Set<String> PLATFORM = Set.of("minecraft", "java", "forge", "neoforge", "fabricloader", "mixinextras", ModOwners.UNKNOWN);
 
@@ -37,6 +38,9 @@ final class ModProfilerHost implements ProfilerHost {
     @Override
     public Optional<FrameOwner> ownerOf(String className, String methodName) {
         Matcher handler = MIXIN_HANDLER.matcher(methodName);
+        if (!handler.matches()) {
+            handler = MIXIN_UNIQUE.matcher(methodName);
+        }
         if (handler.matches()) {
             String mod = CostRegistry.ownerOfNamespace(handler.group(1));
             if (REACT.equals(mod)) {
@@ -52,6 +56,21 @@ final class ModProfilerHost implements ProfilerHost {
         }
         String id = CostRegistry.ownerOf(type);
         return ModOwners.UNKNOWN.equals(id) ? Optional.empty() : Optional.of(owner(id));
+    }
+
+    @Override
+    public void loadNames() {
+        ModFrameNames.get();
+    }
+
+    @Override
+    public String readableClass(String className) {
+        return ModFrameNames.get().readableClass(className);
+    }
+
+    @Override
+    public String readableMethod(String methodName) {
+        return ModFrameNames.get().readableMethod(methodName);
     }
 
     private static FrameOwner owner(String id) {
