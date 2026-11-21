@@ -20,7 +20,9 @@ afterEvaluate {
             if (loader == 'neoforge' && properties.neoforgeUsesForge) {
                 return
             }
-            List<String> arguments = ['-p', "adapters/${loader}".toString(), "-PminecraftVersion=${minecraft}".toString()]
+            int memory = loader == 'fabric' && properties.obfuscated ? 8192 : 4096
+            List<String> arguments = ['-p', "adapters/${loader}".toString(), "-PminecraftVersion=${minecraft}".toString(),
+                    "-Dorg.gradle.jvmargs=-Xmx${memory - 1024}m -Dfile.encoding=UTF-8".toString()]
             react.each { String key, String value ->
                 if (key != 'minecraftVersion') {
                     arguments.add("-P${key}=${value}".toString())
@@ -30,8 +32,8 @@ afterEvaluate {
                 id: "${loader}-${minecraft}".toString(),
                 tasks: [':build'],
                 arguments: arguments,
-                java: 25,
-                memoryMiB: 4096,
+                java: (int) properties.javaVersion,
+                memoryMiB: memory,
                 workers: 2,
                 dependsOn: [],
                 artifacts: [[
