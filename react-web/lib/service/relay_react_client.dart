@@ -15,6 +15,7 @@ import '../model/metric_history.dart';
 import '../model/network_info.dart';
 import '../model/player_navigation.dart';
 import '../model/plugin_api_pack.dart';
+import '../model/owner_cost.dart';
 import '../model/profiler.dart';
 import '../model/range_history.dart';
 import '../model/relay_frame.dart';
@@ -358,6 +359,10 @@ class RelayReactClient
   }
 
   @override
+  Future<OwnerCostBreakdown> ownerCostBreakdown() async =>
+      OwnerCostBreakdown.fromJson(await _getData('/owners/cost'));
+
+  @override
   Future<List<OnlinePlayerInfo>> players() async {
     final RelayResponse response = await _get('/players');
     return _decodeList(response.body)
@@ -621,14 +626,17 @@ class RelayReactClient
       ProfilerStatus.fromJson(await _postData('/profiler', command.toJson()));
 
   @override
-  Future<ProfilerOwners> profilerOwners() async =>
-      ProfilerOwners.fromJson(await _getData('/profiler/owners'));
+  Future<ProfilerOwners> profilerOwners({bool idle = false}) async =>
+      ProfilerOwners.fromJson(await _getData(profilerOwnersPath(idle: idle)));
 
   @override
-  Future<ProfilerHot> profilerHot({String? owner, int limit = 50}) async =>
-      ProfilerHot.fromJson(
-        await _getData(profilerHotPath(owner: owner, limit: limit)),
-      );
+  Future<ProfilerHot> profilerHot({
+    String? owner,
+    int limit = 50,
+    bool idle = false,
+  }) async => ProfilerHot.fromJson(
+    await _getData(profilerHotPath(owner: owner, limit: limit, idle: idle)),
+  );
 
   @override
   Future<ProfilerTree> profilerTree({
@@ -636,6 +644,7 @@ class RelayReactClient
     String? thread,
     double minPercent = 0.5,
     int maxDepth = 64,
+    bool idle = false,
   }) async => ProfilerTree.fromJson(
     await _getData(
       profilerTreePath(
@@ -643,13 +652,14 @@ class RelayReactClient
         thread: thread,
         minPercent: minPercent,
         maxDepth: maxDepth,
+        idle: idle,
       ),
     ),
   );
 
   @override
-  Future<List<ProfilerThread>> profilerThreads() async =>
-      profilerThreadsFromJson(await _getData('/profiler/threads'));
+  Future<List<ProfilerThread>> profilerThreads({bool idle = false}) async =>
+      profilerThreadsFromJson(await _getData(profilerThreadsPath(idle: idle)));
 
   @override
   Future<SnapshotMeta> createSnapshot(SnapshotRequest request) async =>

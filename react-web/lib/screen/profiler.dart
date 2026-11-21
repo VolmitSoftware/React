@@ -103,6 +103,8 @@ class _ProfilerScreenState extends State<ProfilerScreen> {
             serverId: session?.serverId ?? '',
             modded: session?.identity.modded ?? false,
             owner: component.owner,
+            idle: controller.idle,
+            onIdle: controller.setIdle,
           )
         else if (error != null)
           ErrorState(

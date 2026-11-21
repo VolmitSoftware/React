@@ -17,6 +17,7 @@ import '../model/metric_history.dart';
 import '../model/network_info.dart';
 import '../model/player_navigation.dart';
 import '../model/plugin_api_pack.dart';
+import '../model/owner_cost.dart';
 import '../model/profiler.dart';
 import '../model/role_info.dart';
 import '../model/server_capabilities.dart';
@@ -157,21 +158,25 @@ abstract interface class INetworkClient {
 /// `GET /owners`: every loaded plugin or mod.
 abstract interface class IOwnerClient {
   Future<List<OwnerInfo>> owners();
+
+  /// `GET /owners/cost`: each owner's cost split by kind of work.
+  Future<OwnerCostBreakdown> ownerCostBreakdown();
 }
 
 /// The sampling profiler: `GET`/`POST /profiler` and its views.
 abstract interface class IProfilerClient {
   Future<ProfilerStatus> profiler();
   Future<ProfilerStatus> controlProfiler(ProfilerCommand command);
-  Future<ProfilerOwners> profilerOwners();
-  Future<ProfilerHot> profilerHot({String? owner, int limit});
+  Future<ProfilerOwners> profilerOwners({bool idle});
+  Future<ProfilerHot> profilerHot({String? owner, int limit, bool idle});
   Future<ProfilerTree> profilerTree({
     String? owner,
     String? thread,
     double minPercent,
     int maxDepth,
+    bool idle,
   });
-  Future<List<ProfilerThread>> profilerThreads();
+  Future<List<ProfilerThread>> profilerThreads({bool idle});
 }
 
 /// Frozen profiles and heatmaps: `/snapshots`.
@@ -190,18 +195,28 @@ String _encodeQuery(Map<String, String> params) => params.entries
     )
     .join('&');
 
-/// `/profiler/hot` with its query.
-String profilerHotPath({String? owner, int limit = 50}) =>
-    '/profiler/hot?${_encodeQuery(<String, String>{'owner': ?owner, 'limit': '$limit'})}';
+/// `/profiler/owners`; [idle] keeps samples of parked and sleeping threads.
+String profilerOwnersPath({bool idle = false}) =>
+    idle ? '/profiler/owners?idle=true' : '/profiler/owners';
 
-/// `/profiler/tree` with its query.
+/// `/profiler/threads`, with idle samples when [idle].
+String profilerThreadsPath({bool idle = false}) =>
+    idle ? '/profiler/threads?idle=true' : '/profiler/threads';
+
+/// `/profiler/hot` with its query.
+String profilerHotPath({String? owner, int limit = 50, bool idle = false}) =>
+    '/profiler/hot?${_encodeQuery(<String, String>{'owner': ?owner, 'limit': '$limit', if (idle) 'idle': 'true'})}';
+
+/// `/profiler/tree` with its query: numbered threads grouped and plumbing
+/// folded by the server.
 String profilerTreePath({
   String? owner,
   String? thread,
   double minPercent = 0.5,
   int maxDepth = 64,
+  bool idle = false,
 }) =>
-    '/profiler/tree?${_encodeQuery(<String, String>{'owner': ?owner, 'thread': ?thread, 'minPercent': '$minPercent', 'maxDepth': '$maxDepth'})}';
+    '/profiler/tree?${_encodeQuery(<String, String>{'owner': ?owner, 'thread': ?thread, 'minPercent': '$minPercent', 'maxDepth': '$maxDepth', 'group': 'true', 'collapse': 'true', if (idle) 'idle': 'true'})}';
 
 /// `/snapshots`, narrowed to [kind] when given.
 String snapshotsPath({SnapshotKind? kind}) =>
@@ -531,6 +546,10 @@ class ReactClient
       .toList(growable: false);
 
   @override
+  Future<OwnerCostBreakdown> ownerCostBreakdown() async =>
+      OwnerCostBreakdown.fromJson(await _getData('/owners/cost'));
+
+  @override
   Future<List<OnlinePlayerInfo>> players() async => (await _getList('/players'))
       .map(
         (dynamic value) =>
@@ -747,14 +766,17 @@ class ReactClient
       ProfilerStatus.fromJson(await _postData('/profiler', command.toJson()));
 
   @override
-  Future<ProfilerOwners> profilerOwners() async =>
-      ProfilerOwners.fromJson(await _getData('/profiler/owners'));
+  Future<ProfilerOwners> profilerOwners({bool idle = false}) async =>
+      ProfilerOwners.fromJson(await _getData(profilerOwnersPath(idle: idle)));
 
   @override
-  Future<ProfilerHot> profilerHot({String? owner, int limit = 50}) async =>
-      ProfilerHot.fromJson(
-        await _getData(profilerHotPath(owner: owner, limit: limit)),
-      );
+  Future<ProfilerHot> profilerHot({
+    String? owner,
+    int limit = 50,
+    bool idle = false,
+  }) async => ProfilerHot.fromJson(
+    await _getData(profilerHotPath(owner: owner, limit: limit, idle: idle)),
+  );
 
   @override
   Future<ProfilerTree> profilerTree({
@@ -762,6 +784,7 @@ class ReactClient
     String? thread,
     double minPercent = 0.5,
     int maxDepth = 64,
+    bool idle = false,
   }) async => ProfilerTree.fromJson(
     await _getData(
       profilerTreePath(
@@ -769,13 +792,14 @@ class ReactClient
         thread: thread,
         minPercent: minPercent,
         maxDepth: maxDepth,
+        idle: idle,
       ),
     ),
   );
 
   @override
-  Future<List<ProfilerThread>> profilerThreads() async =>
-      profilerThreadsFromJson(await _getData('/profiler/threads'));
+  Future<List<ProfilerThread>> profilerThreads({bool idle = false}) async =>
+      profilerThreadsFromJson(await _getData(profilerThreadsPath(idle: idle)));
 
   @override
   Future<SnapshotMeta> createSnapshot(SnapshotRequest request) async =>

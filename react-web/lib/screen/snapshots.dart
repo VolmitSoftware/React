@@ -1,5 +1,5 @@
 /// Profiler > Snapshots: every frozen profile and heatmap on the server,
-/// newest first, with export and (for admins) delete.
+/// newest first, with export and (for operators) delete.
 library;
 
 import 'dart:async';
@@ -168,7 +168,7 @@ class _SnapshotsScreenState extends State<SnapshotsScreen> {
             );
     }
     final ServerSession? session = ServerSessionScope.of(context);
-    final bool admin = RoleGate.allows(context, RoleNeed.admin);
+    final bool allowed = RoleGate.allows(context, RoleNeed.operator);
     final List<SnapshotMeta>? snapshots = _snapshots;
     final Object? error = _error;
     return AppCard(
@@ -261,7 +261,7 @@ class _SnapshotsScreenState extends State<SnapshotsScreen> {
               ),
               RowAction(
                 reactorText(ReactorText.snapshotDelete),
-                admin ? () => unawaited(_delete(meta)) : null,
+                allowed ? () => unawaited(_delete(meta)) : null,
                 icon: ArcaneIcon.trash2(),
                 iconOnly: true,
                 destructive: true,

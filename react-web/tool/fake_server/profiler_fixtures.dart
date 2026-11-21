@@ -452,12 +452,12 @@ final class FakeProfiler {
     return status(now);
   }
 
-  static const List<(String, String)> _threadNames = <(String, String)>[
+  static final List<(String, String)> _threadNames = <(String, String)>[
     ('Server thread', 'RUNNABLE'),
     ('Netty Epoll Server IO #0', 'RUNNABLE'),
     ('Netty Epoll Server IO #1', 'RUNNABLE'),
-    ('Worker-Main-1', 'WAITING'),
-    ('Worker-Main-2', 'WAITING'),
+    for (int worker = 1; worker <= 12; worker++)
+      ('Worker-Main-$worker', worker % 3 == 0 ? 'WAITING' : 'RUNNABLE'),
     ('Chunk I/O Executor', 'TIMED_WAITING'),
     ('Craft Scheduler Thread - 4', 'TIMED_WAITING'),
     ('Craft Scheduler Thread - 7', 'RUNNABLE'),
@@ -571,34 +571,48 @@ final class FakeProfiler {
           _minecraft,
           0.05,
         );
-    final List<_Shape> workers = <_Shape>[
+    _deepServerThread(level, entities, samples);
+    final Map<String, _Shape> workers = <String, _Shape>{
       for (final (String name, String _) in _threadNames.skip(1))
-        _Shape(name, _minecraft),
-    ];
-    workers[0].path(<(String, String)>[
+        name: _Shape(name, _minecraft),
+    };
+    _Shape thread(String name) => workers[name]!;
+    thread('Netty Epoll Server IO #0').path(<(String, String)>[
+      ('io.netty.util.concurrent.FastThreadLocalRunnable.run', _minecraft),
+      ('io.netty.util.internal.ThreadExecutorMap\$2.run', _minecraft),
+      ('io.netty.util.concurrent.SingleThreadEventExecutor\$4.run', _minecraft),
       ('io.netty.channel.epoll.EpollEventLoop.run', _minecraft),
       ('io.netty.channel.epoll.Native.epollWait', _minecraft),
     ], 6);
-    workers[1].path(<(String, String)>[
-      ('io.netty.channel.epoll.EpollEventLoop.run', _minecraft),
-      ('net.minecraft.network.PacketEncoder.encode', _minecraft),
-      ('java.util.zip.Deflater.deflate', _java),
-    ], 2.5);
-    for (final _Shape worker in workers.sublist(2, 4)) {
-      worker.path(<(String, String)>[
-        ('java.util.concurrent.ForkJoinWorkerThread.run', _java),
-        ('java.util.concurrent.ForkJoinPool.awaitWork', _java),
-      ], 3);
-      worker.path(<(String, String)>[
-        ('java.util.concurrent.ForkJoinWorkerThread.run', _java),
+    for (final String name in <String>[
+      'Netty Epoll Server IO #0',
+      'Netty Epoll Server IO #1',
+    ]) {
+      thread(name).path(<(String, String)>[
+        ('io.netty.util.concurrent.FastThreadLocalRunnable.run', _minecraft),
+        ('io.netty.util.internal.ThreadExecutorMap\$2.run', _minecraft),
         (
-          'net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator.doFill',
+          'io.netty.util.concurrent.SingleThreadEventExecutor\$4.run',
           _minecraft,
         ),
-        ('net.minecraft.world.level.levelgen.NoiseChunk.fillSlice', _minecraft),
-      ], 1.6);
+        ('io.netty.channel.epoll.EpollEventLoop.run', _minecraft),
+        ('io.netty.channel.epoll.EpollEventLoop.processReady', _minecraft),
+        (
+          'io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead',
+          _minecraft,
+        ),
+        ('net.minecraft.network.PacketEncoder.encode', _minecraft),
+        ('java.util.zip.Deflater.deflate', _java),
+      ], name.endsWith('#1') ? 2.5 : 1.4);
     }
-    workers[4].path(<(String, String)>[
+    final double iris = _ownerWork('Iris', samples);
+    for (int worker = 1; worker <= 12; worker++) {
+      _forgeWorker(thread('Worker-Main-$worker'), worker, iris);
+    }
+    thread('Chunk I/O Executor').path(<(String, String)>[
+      ('java.lang.Thread.run', _java),
+      ('net.minecraft.util.thread.ProcessorMailbox.run', _minecraft),
+      ('net.minecraft.util.thread.ProcessorMailbox.pollTask', _minecraft),
       (
         'net.minecraft.world.level.chunk.storage.IOWorker.storePendingChunk',
         _minecraft,
@@ -606,7 +620,15 @@ final class FakeProfiler {
       ('net.minecraft.nbt.NbtIo.write', _minecraft),
       ('java.io.DataOutputStream.write', _java),
     ], 1.2);
-    final List<_Shape> asyncThreads = <_Shape>[workers[5], workers[6]];
+    thread('Chunk I/O Executor').path(<(String, String)>[
+      ('java.lang.Thread.run', _java),
+      ('net.minecraft.util.thread.ProcessorMailbox.run', _minecraft),
+      ('java.util.concurrent.locks.LockSupport.parkNanos', _java),
+    ], 2);
+    final List<_Shape> asyncThreads = <_Shape>[
+      thread('Craft Scheduler Thread - 4'),
+      thread('Craft Scheduler Thread - 7'),
+    ];
     for (final (int index, FakeOwnerSpec owner) in fakeOwnerSpecs.indexed) {
       if (!owner.enabled || owner.work <= 0) continue;
       final double work = _sway(owner, index, samples);
@@ -647,27 +669,364 @@ final class FakeProfiler {
         heartbeat.child('$pkg.task.SyncTask.run', owner.id, work * 0.5);
       }
       for (final (int at, String job) in owner.async.indexed) {
-        final _Shape thread = owner.id == 'Iris'
-            ? workers[7]
+        final _Shape runs = owner.id == 'Iris'
+            ? thread('Iris Mantle Writer')
             : owner.id == 'React'
-            ? workers[8]
+            ? thread('React Web')
             : owner.id == 'dynmap'
-            ? workers[10]
+            ? thread('dynmap-render')
             : asyncThreads[(index + at) % asyncThreads.length];
-        thread
+        runs
+            .child('java.lang.Thread.run', _java)
+            .child('java.util.concurrent.ThreadPoolExecutor\$Worker.run', _java)
             .child('java.util.concurrent.ThreadPoolExecutor.runWorker', _java)
             .child('$pkg.$job', owner.id, work * 0.6 / owner.async.length)
             .child('java.lang.String.hashCode', _java, work * 0.05);
       }
     }
-    workers[9].path(<(String, String)>[
+    for (final _Shape idle in asyncThreads) {
+      idle.path(<(String, String)>[
+        ('java.lang.Thread.run', _java),
+        ('java.util.concurrent.ThreadPoolExecutor\$Worker.run', _java),
+        ('java.util.concurrent.ThreadPoolExecutor.runWorker', _java),
+        ('java.util.concurrent.ThreadPoolExecutor.getTask', _java),
+        ('java.util.concurrent.SynchronousQueue.poll', _java),
+        ('java.util.concurrent.locks.LockSupport.parkNanos', _java),
+      ], 1.5);
+    }
+    thread('React Web').path(<(String, String)>[
+      ('java.lang.Thread.run', _java),
       ('java.util.concurrent.locks.LockSupport.park', _java),
     ], 2);
-    return <_Shape>[main, ...workers];
+    thread('Async Chat Thread - #2').path(<(String, String)>[
+      ('java.lang.Thread.run', _java),
+      ('java.lang.Object.wait', _java),
+    ], 1);
+    return <_Shape>[main, ...workers.values];
   }
 
-  /// The tree scaled to [samples]: each frame's self samples by its weight.
-  List<FakeFrame> frames(int samples) {
+  /// How hard [id] works right now, 0 when it is not loaded.
+  double _ownerWork(String id, int samples) {
+    for (final (int index, FakeOwnerSpec owner) in fakeOwnerSpecs.indexed) {
+      if (owner.id == id) {
+        return owner.enabled ? _sway(owner, index, samples) : 0;
+      }
+    }
+    return 0;
+  }
+
+  /// The server thread past the tick loop: block entities and the deeper
+  /// entity AI, with plugin frames inside.
+  void _deepServerThread(_Shape level, _Shape entities, int samples) {
+    final _Shape blockEntities = level
+        .child('net.minecraft.world.level.Level.tickBlockEntities', _minecraft)
+        .child(
+          'net.minecraft.world.level.chunk.LevelChunk\$RebindableTickingBlockEntityWrapper.tick',
+          _minecraft,
+        )
+        .child(
+          'net.minecraft.world.level.chunk.LevelChunk\$BoundTickingBlockEntity.tick',
+          _minecraft,
+          0.2,
+        );
+    blockEntities.path(<(String, String)>[
+      (
+        'net.minecraft.world.level.block.entity.HopperBlockEntity.pushItemsTick',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.block.entity.HopperBlockEntity.tryMoveItems',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.block.entity.HopperBlockEntity.suckInItems',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.block.entity.HopperBlockEntity.getItemsAtAndAbove',
+        _minecraft,
+      ),
+      ('net.minecraft.world.level.Level.getEntities', _minecraft),
+      (
+        'net.minecraft.world.level.entity.LevelEntityGetterAdapter.get',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.entity.EntitySectionStorage.getEntities',
+        _minecraft,
+      ),
+      ('net.minecraft.util.ClassInstanceMultiMap.find', _minecraft),
+    ], 1.3);
+    final double items = _ownerWork('ItemsAdder', samples);
+    if (items > 0) {
+      blockEntities.path(<(String, String)>[
+        (
+          'net.minecraft.world.level.block.entity.BlockEntityTicker.tick',
+          _minecraft,
+        ),
+        ('dev.lone.itemsadder.main.CustomFurnace.tick', 'ItemsAdder'),
+        ('dev.lone.itemsadder.main.CustomFurnace.updateRecipe', 'ItemsAdder'),
+        ('java.util.HashMap.get', _java),
+      ], items * 0.4);
+    }
+    final _Shape goals = entities
+        .child('net.minecraft.world.entity.Mob.aiStep', _minecraft)
+        .child('net.minecraft.world.entity.LivingEntity.aiStep', _minecraft)
+        .child('net.minecraft.world.entity.Mob.serverAiStep', _minecraft, 0.4)
+        .child(
+          'net.minecraft.world.entity.ai.goal.GoalSelector.tickRunningGoals',
+          _minecraft,
+          0.3,
+        )
+        .child(
+          'net.minecraft.world.entity.ai.goal.WrappedGoal.tick',
+          _minecraft,
+        );
+    goals.path(<(String, String)>[
+      ('net.minecraft.world.entity.ai.goal.MoveToBlockGoal.tick', _minecraft),
+      (
+        'net.minecraft.world.entity.ai.navigation.PathNavigation.moveTo',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.entity.ai.navigation.PathNavigation.createPath',
+        _minecraft,
+      ),
+      ('net.minecraft.world.level.pathfinder.PathFinder.findPath', _minecraft),
+      (
+        'net.minecraft.world.level.pathfinder.WalkNodeEvaluator.getNeighbors',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.pathfinder.WalkNodeEvaluator.findAcceptedNode',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.pathfinder.WalkNodeEvaluator.getBlockPathType',
+        _minecraft,
+      ),
+      ('net.minecraft.world.level.Level.getBlockState', _minecraft),
+    ], 2.2);
+    final double mythic = _ownerWork('MythicMobs', samples);
+    if (mythic > 0) {
+      goals.path(<(String, String)>[
+        (
+          'io.lumine.mythic.bukkit.adapters.ai.PathfinderAdapter.tick',
+          'MythicMobs',
+        ),
+        (
+          'io.lumine.mythic.core.mobs.ai.goals.GoalFollowTarget.tick',
+          'MythicMobs',
+        ),
+        ('io.lumine.mythic.core.skills.SkillTrigger.run', 'MythicMobs'),
+      ], mythic * 0.3);
+    }
+  }
+
+  /// One chunk worker of a Forge-style pool: the ForkJoin and mailbox
+  /// plumbing, then noise, features and light down to the leaves, Iris
+  /// generating inside it, and the parked idle time.
+  static void _forgeWorker(_Shape worker, int index, double iris) {
+    final double sway = 1 + 0.18 * math.sin(index * 1.3);
+    const List<(String, String)> pool = <(String, String)>[
+      ('java.util.concurrent.ForkJoinWorkerThread.run', _java),
+      ('java.util.concurrent.ForkJoinPool.runWorker', _java),
+    ];
+    const List<(String, String)> task = <(String, String)>[
+      ...pool,
+      ('java.util.concurrent.ForkJoinPool.scan', _java),
+      ('java.util.concurrent.ForkJoinTask.doExec', _java),
+      ('java.util.concurrent.CompletableFuture\$AsyncSupply.exec', _java),
+      ('java.util.concurrent.CompletableFuture\$AsyncSupply.run', _java),
+      ('net.minecraft.util.thread.ProcessorMailbox.run', _minecraft),
+      ('net.minecraft.util.thread.ProcessorMailbox.pollTask', _minecraft),
+      (
+        'net.minecraft.util.thread.StrictQueue\$QueueStrictQueue.pop',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.server.level.ChunkMap.lambda\$scheduleChunkGeneration\$27',
+        _minecraft,
+      ),
+      ('net.minecraft.world.level.chunk.ChunkStatus.generate', _minecraft),
+      (
+        'net.minecraft.world.level.chunk.ChunkStatus\$SimpleGenerationTask.doWork',
+        _minecraft,
+      ),
+    ];
+    worker.path(<(String, String)>[
+      ...task,
+      (
+        'net.minecraft.world.level.chunk.ChunkStatus.lambda\$static\$9',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator.fillFromNoise',
+        _minecraft,
+      ),
+      ('java.util.concurrent.CompletableFuture.supplyAsync', _java),
+      (
+        'net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator.lambda\$fillFromNoise\$4',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator.doFill',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.NoiseChunk.selectCellYZ',
+        _minecraft,
+      ),
+      ('net.minecraft.world.level.levelgen.NoiseChunk.fillSlice', _minecraft),
+      (
+        'net.minecraft.world.level.levelgen.NoiseChunk\$NoiseInterpolator.fillArray',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.DensityFunctions\$Ap2.fillArray',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.DensityFunctions\$Ap2.compute',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.DensityFunctions\$Mapped.compute',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.DensityFunctions\$RangeChoice.compute',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.DensityFunctions\$Ap2.compute',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.DensityFunctions\$Noise.compute',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.synth.NormalNoise.getValue',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.synth.PerlinNoise.getValue',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.synth.ImprovedNoise.noise',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.synth.ImprovedNoise.sampleAndLerp',
+        _minecraft,
+      ),
+    ], 1.9 * sway);
+    worker.path(<(String, String)>[
+      ...task,
+      (
+        'net.minecraft.world.level.chunk.ChunkStatus.lambda\$static\$12',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.chunk.ChunkGenerator.applyBiomeDecoration',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.placement.PlacedFeature.placeWithBiomeCheck',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.placement.PlacedFeature.placeWithContext',
+        _minecraft,
+      ),
+      ('java.util.stream.ReferencePipeline\$3\$1.accept', _java),
+      (
+        'net.minecraft.world.level.levelgen.placement.PlacedFeature.lambda\$placeWithContext\$2',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.feature.ConfiguredFeature.place',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.feature.TreeFeature.place',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.feature.TreeFeature.doPlace',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.levelgen.feature.foliageplacers.FoliagePlacer.createFoliage',
+        _minecraft,
+      ),
+      ('net.minecraft.server.level.WorldGenRegion.setBlock', _minecraft),
+    ], 0.9 * sway);
+    worker.path(<(String, String)>[
+      ...task,
+      (
+        'net.minecraft.world.level.chunk.ChunkStatus.lambda\$static\$14',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.server.level.ThreadedLevelLightEngine.lightChunk',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.lighting.LevelLightEngine.runLightUpdates',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.lighting.LightEngine.runLightUpdates',
+        _minecraft,
+      ),
+      (
+        'net.minecraft.world.level.lighting.BlockLightEngine.propagateIncrease',
+        _minecraft,
+      ),
+    ], 0.5 * sway);
+    if (iris > 0) {
+      worker.path(<(String, String)>[
+        ...task,
+        (
+          'net.minecraft.world.level.chunk.ChunkStatus.lambda\$static\$9',
+          _minecraft,
+        ),
+        (
+          'net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator.fillFromNoise',
+          _minecraft,
+        ),
+        (
+          'art.arcane.iris.engine.platform.BukkitChunkGenerator.generateNoise',
+          'Iris',
+        ),
+        ('art.arcane.iris.engine.IrisEngine.generate', 'Iris'),
+        (
+          'art.arcane.iris.engine.framework.EngineMantle.generateMatter',
+          'Iris',
+        ),
+        (
+          'art.arcane.iris.engine.mantle.components.MantleObjectComponent.generateLayer',
+          'Iris',
+        ),
+        ('art.arcane.iris.engine.object.IrisObject.place', 'Iris'),
+        ('art.arcane.iris.util.noise.CNG.noise', 'Iris'),
+        ('art.arcane.iris.util.noise.SimplexNoise.noise', 'Iris'),
+      ], iris * 0.2 * sway);
+    }
+    worker.path(<(String, String)>[
+      ...pool,
+      ('java.util.concurrent.ForkJoinPool.awaitWork', _java),
+      ('java.util.concurrent.locks.LockSupport.park', _java),
+      ('jdk.internal.misc.Unsafe.park', _java),
+    ], 3.2 / sway);
+  }
+
+  /// The tree scaled to [samples]; without [idle] the samples parked in
+  /// an idle leaf (park, wait, sleep, epoll) are dropped.
+  List<FakeFrame> frames(int samples, {bool idle = false}) {
     if (samples <= 0) return const <FakeFrame>[];
     final List<_Shape> shapes = _shapes(samples);
     final List<_Shape> sampled = threads == 'all'
@@ -690,7 +1049,12 @@ final class FakeProfiler {
           if (weight(child) / whole * samples >= 0.5) scale(child),
       ],
     );
-    return <FakeFrame>[for (final _Shape shape in sampled) scale(shape)];
+    final List<FakeFrame> scaled = <FakeFrame>[
+      for (final _Shape shape in sampled) scale(shape),
+    ];
+    return idle
+        ? scaled
+        : <FakeFrame>[for (final FakeFrame root in scaled) ?_busy(root)];
   }
 
   static final Map<String, String> _names = <String, String>{
@@ -704,8 +1068,8 @@ final class FakeProfiler {
 
   static bool _isPlugin(String owner) => owner != _minecraft && owner != _java;
 
-  Map<String, Object?> owners(DateTime now) {
-    final List<FakeFrame> roots = frames(samples(now));
+  Map<String, Object?> owners(DateTime now, {bool idle = false}) {
+    final List<FakeFrame> roots = frames(samples(now), idle: idle);
     final int total = _sum(roots);
     final Map<String, int> byOwner = <String, int>{};
     final Map<String, Map<String, int>> methods = <String, Map<String, int>>{};
@@ -761,8 +1125,13 @@ final class FakeProfiler {
     };
   }
 
-  Map<String, Object?> hot(DateTime now, {String? owner, int limit = 50}) {
-    final List<FakeFrame> roots = frames(samples(now));
+  Map<String, Object?> hot(
+    DateTime now, {
+    String? owner,
+    int limit = 50,
+    bool idle = false,
+  }) {
+    final List<FakeFrame> roots = frames(samples(now), idle: idle);
     final int total = _sum(roots);
     final Map<String, (String, int, int)> byMethod =
         <String, (String, int, int)>{};
@@ -830,8 +1199,11 @@ final class FakeProfiler {
     String? thread,
     double minPercent = 0.5,
     int maxDepth = 64,
+    bool group = true,
+    bool collapse = true,
+    bool idle = false,
   }) {
-    final List<FakeFrame> roots = frames(samples(now));
+    final List<FakeFrame> roots = frames(samples(now), idle: idle);
     final int total = _sum(roots);
     final double floor = total * minPercent.clamp(0, 100) / 100;
     Map<String, Object?> encode(FakeFrame frame, int depth) {
@@ -853,7 +1225,7 @@ final class FakeProfiler {
         'total': frame.total,
         'self': frame.self,
         'children': !deeper
-            ? const <Object?>[]
+            ? const <Map<String, Object?>>[]
             : <Map<String, Object?>>[
                 for (final FakeFrame child in shown) encode(child, depth + 1),
                 if (folded > 0)
@@ -863,27 +1235,175 @@ final class FakeProfiler {
                     'ownerName': '',
                     'total': folded,
                     'self': folded,
-                    'children': const <Object?>[],
+                    'children': const <Map<String, Object?>>[],
                   },
               ],
       };
     }
 
-    final List<FakeFrame> kept = <FakeFrame>[
-      for (final FakeFrame root in roots)
-        if (thread == null || root.method == thread)
-          if (owner == null) root else ?_prune(root, owner),
+    final List<FakeFrame> grouped = group ? groupThreads(roots) : roots;
+    List<FakeFrame> named = <FakeFrame>[
+      for (final FakeFrame root in grouped)
+        if (thread == null || root.method == thread) root,
     ];
+    if (named.isEmpty && thread != null) {
+      named = <FakeFrame>[
+        for (final FakeFrame root in roots)
+          if (root.method == thread) root,
+      ];
+    }
+    final List<FakeFrame> kept = <FakeFrame>[
+      for (final FakeFrame root in named)
+        if (owner == null) root else ?_prune(root, owner),
+    ]..sort((FakeFrame a, FakeFrame b) => b.total - a.total);
     return <String, Object?>{
       'samples': total,
       'roots': <Map<String, Object?>>[
-        for (final FakeFrame root in kept) encode(root, 0),
+        for (final FakeFrame root in kept)
+          if (collapse) collapsePlumbing(encode(root, 0)) else encode(root, 0),
       ],
     };
   }
 
-  Map<String, Object?> threadList(DateTime now) {
-    final List<FakeFrame> roots = frames(samples(now));
+  static const List<String> _idleLeaves = <String>[
+    'java.util.concurrent.locks.LockSupport.park',
+    'jdk.internal.misc.Unsafe.park',
+    'sun.misc.Unsafe.park',
+    'java.lang.Object.wait',
+    'java.lang.Thread.sleep',
+    'java.util.concurrent.ForkJoinPool.awaitWork',
+    'io.netty.channel.epoll.Native.epollWait',
+  ];
+
+  /// Whether a leaf in [method] is a thread waiting for work.
+  static bool isIdleFrame(String method) =>
+      _idleLeaves.any((String idle) => method.startsWith(idle));
+
+  /// [frame] without the samples parked in an idle frame; null when
+  /// nothing else is left.
+  static FakeFrame? _busy(FakeFrame frame) {
+    final List<FakeFrame> children = <FakeFrame>[
+      for (final FakeFrame child in frame.children) ?_busy(child),
+    ];
+    final int self = isIdleFrame(frame.method) ? 0 : frame.self;
+    if (self == 0 && children.isEmpty) return null;
+    return FakeFrame(frame.method, frame.owner, self, children);
+  }
+
+  static final RegExp _numbered = RegExp(r'^(.*?)[\s#_-]*\d+$');
+
+  /// The name [thread] shares with its numbered siblings, or null.
+  static String? threadGroupOf(String thread) {
+    final RegExpMatch? match = _numbered.firstMatch(thread);
+    final String base = match?.group(1)?.trim() ?? '';
+    return base.isEmpty ? null : base;
+  }
+
+  /// [roots] with numbered threads of one name merged into one root,
+  /// "Worker-Main (12)", their frames summed by method.
+  static List<FakeFrame> groupThreads(List<FakeFrame> roots) {
+    final Map<String, List<FakeFrame>> byGroup = <String, List<FakeFrame>>{};
+    for (final FakeFrame root in roots) {
+      final String key = threadGroupOf(root.method) ?? root.method;
+      byGroup.putIfAbsent(key, () => <FakeFrame>[]).add(root);
+    }
+    return <FakeFrame>[
+      for (final MapEntry<String, List<FakeFrame>> entry in byGroup.entries)
+        if (entry.value.length < 2)
+          entry.value.single
+        else
+          _merge('${entry.key} (${entry.value.length})', entry.value),
+    ];
+  }
+
+  static FakeFrame _merge(String method, List<FakeFrame> frames) {
+    final Map<String, List<FakeFrame>> byMethod = <String, List<FakeFrame>>{};
+    int self = 0;
+    for (final FakeFrame frame in frames) {
+      self += frame.self;
+      for (final FakeFrame child in frame.children) {
+        byMethod.putIfAbsent(child.method, () => <FakeFrame>[]).add(child);
+      }
+    }
+    return FakeFrame(method, frames.first.owner, self, <FakeFrame>[
+      for (final MapEntry<String, List<FakeFrame>> entry in byMethod.entries)
+        entry.value.length == 1
+            ? entry.value.single
+            : _merge(entry.key, entry.value),
+    ]);
+  }
+
+  static const List<String> _plumbingClasses = <String>[
+    'ForkJoin',
+    'CompletableFuture',
+    'ProcessorMailbox',
+  ];
+
+  /// Whether [node] is JDK or scheduler glue a chain of can fold into one
+  /// row: a JDK frame, a ForkJoin, CompletableFuture or ProcessorMailbox
+  /// frame, or a lambda; never a plugin's own frame.
+  static bool isPlumbing(Map<String, Object?> node) {
+    final String owner = node['owner'] as String? ?? '';
+    if (owner != _java && owner != _minecraft) return false;
+    final String method = node['method']! as String;
+    if (method.startsWith('(')) return false;
+    if (method.startsWith('java.') ||
+        method.startsWith('jdk.') ||
+        method.startsWith('sun.') ||
+        method.contains(r'lambda$')) {
+      return true;
+    }
+    final int dot = method.lastIndexOf('.');
+    final String type = dot < 0 ? method : method.substring(0, dot);
+    final String simple = type.substring(type.lastIndexOf('.') + 1);
+    return _plumbingClasses.any(simple.startsWith);
+  }
+
+  static List<Map<String, Object?>> _childrenOf(Map<String, Object?> node) =>
+      (node['children'] as List<Object?>? ?? const <Object?>[])
+          .cast<Map<String, Object?>>();
+
+  /// [node] with every chain of two or more plumbing frames, each with one
+  /// child, folded into one "(N frames)" node that lists them top-down.
+  static Map<String, Object?> collapsePlumbing(Map<String, Object?> node) =>
+      <String, Object?>{
+        ...node,
+        'children': <Map<String, Object?>>[
+          for (final Map<String, Object?> child in _childrenOf(node))
+            _collapseChain(child),
+        ],
+      };
+
+  static Map<String, Object?> _collapseChain(Map<String, Object?> start) {
+    final List<Map<String, Object?>> chain = <Map<String, Object?>>[];
+    Map<String, Object?> node = start;
+    while (isPlumbing(node) && _childrenOf(node).length == 1) {
+      chain.add(node);
+      node = _childrenOf(node).single;
+    }
+    if (chain.length < 2) return collapsePlumbing(start);
+    final List<Map<String, Object?>> rest = _childrenOf(chain.last);
+    return <String, Object?>{
+      'method': '(${chain.length} frames)',
+      'owner': _java,
+      'ownerName': _names[_java],
+      'total': chain.first['total'],
+      'self': chain.fold<int>(
+        0,
+        (int sum, Map<String, Object?> frame) => sum + (frame['self']! as int),
+      ),
+      'collapsed': <String>[
+        for (final Map<String, Object?> frame in chain)
+          frame['method']! as String,
+      ],
+      'children': <Map<String, Object?>>[
+        for (final Map<String, Object?> child in rest) _collapseChain(child),
+      ],
+    };
+  }
+
+  Map<String, Object?> threadList(DateTime now, {bool idle = false}) {
+    final List<FakeFrame> roots = frames(samples(now), idle: idle);
     final int total = _sum(roots);
     final Map<String, String> states = <String, String>{
       for (final (String name, String state) in _threadNames) name: state,
@@ -904,13 +1424,14 @@ final class FakeProfiler {
 
   /// The profile a snapshot freezes: the live routes' shapes under one
   /// object.
-  Map<String, Object?> freeze(DateTime now) => <String, Object?>{
-    'profiler': status(now),
-    'owners': owners(now),
-    'hot': hot(now),
-    'tree': tree(now, minPercent: 0.1),
-    'threads': threadList(now),
-  };
+  Map<String, Object?> freeze(DateTime now, {bool idle = false}) =>
+      <String, Object?>{
+        'profiler': status(now),
+        'owners': owners(now, idle: idle),
+        'hot': hot(now, idle: idle),
+        'tree': tree(now, minPercent: 0.1, idle: idle),
+        'threads': threadList(now, idle: idle),
+      };
 }
 
 /// A frozen profile or heatmap.

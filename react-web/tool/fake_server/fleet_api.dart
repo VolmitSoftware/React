@@ -59,6 +59,18 @@ extension _FleetApi on FakeFleet {
       case ('owners', 1):
         _expect(request, 'GET');
         await _writeData(request, HostFixtures.owners());
+      case ('owners', 2) when route[1] == 'cost':
+        _expect(request, 'GET');
+        _requireScope(token, 'read');
+        final String? limit = request.uri.queryParameters['limit'];
+        final int? parsed = limit == null ? 0 : int.tryParse(limit);
+        if (parsed == null) {
+          throw const _Reject(HttpStatus.badRequest, 'limit must be a number');
+        }
+        await _writeData(
+          request,
+          HostFixtures.ownerCostBreakdown(profile, now, limit: parsed),
+        );
       case ('config', _):
         await _handleConfig(request, state, token, route);
       case ('profiler', _):
@@ -111,10 +123,19 @@ extension _FleetApi on FakeFleet {
       return value;
     }
 
+    bool flag(String key, bool fallback) {
+      final String? raw = text(key);
+      if (raw == null) return fallback;
+      if (raw == 'true') return true;
+      if (raw == 'false') return false;
+      throw _Reject(HttpStatus.badRequest, '$key must be true or false');
+    }
+
+    final bool idle = flag('idle', false);
     switch (route.length > 1 ? route[1] : null) {
       case null when route.length == 1:
         if (request.method == 'POST') {
-          _requireScope(token, 'admin');
+          _requireScope(token, 'op:execute');
           final Map<String, Object?>? status = profiler.apply(
             await _readBody(request),
             now,
@@ -138,7 +159,7 @@ extension _FleetApi on FakeFleet {
       case 'owners' when route.length == 2:
         _expect(request, 'GET');
         _requireScope(token, 'read');
-        await _writeData(request, profiler.owners(now));
+        await _writeData(request, profiler.owners(now, idle: idle));
       case 'hot' when route.length == 2:
         _expect(request, 'GET');
         _requireScope(token, 'read');
@@ -148,6 +169,7 @@ extension _FleetApi on FakeFleet {
             now,
             owner: text('owner'),
             limit: (number('limit') ?? 50).toInt(),
+            idle: idle,
           ),
         );
       case 'tree' when route.length == 2:
@@ -161,12 +183,15 @@ extension _FleetApi on FakeFleet {
             thread: text('thread'),
             minPercent: (number('minPercent') ?? 0.5).toDouble(),
             maxDepth: (number('maxDepth') ?? 64).toInt(),
+            group: flag('group', true),
+            collapse: flag('collapse', true),
+            idle: idle,
           ),
         );
       case 'threads' when route.length == 2:
         _expect(request, 'GET');
         _requireScope(token, 'read');
-        await _writeData(request, profiler.threadList(now));
+        await _writeData(request, profiler.threadList(now, idle: idle));
       default:
         throw const _Reject(HttpStatus.notFound, 'Profiler route not found');
     }
@@ -183,7 +208,7 @@ extension _FleetApi on FakeFleet {
     final FakeSnapshots snapshots = state.snapshots;
     if (route.length == 1) {
       if (request.method == 'POST') {
-        _requireScope(token, 'admin');
+        _requireScope(token, 'op:execute');
         await _writeData(
           request,
           _takeSnapshot(state, await _readBody(request), now).meta,
@@ -220,7 +245,7 @@ extension _FleetApi on FakeFleet {
       return;
     }
     if (request.method == 'DELETE') {
-      _requireScope(token, 'admin');
+      _requireScope(token, 'op:execute');
       snapshots.remove(snapshot.id);
       await _writeData(request, snapshot.meta);
       return;
@@ -241,7 +266,10 @@ extension _FleetApi on FakeFleet {
     }
     switch (body['kind']) {
       case 'profile':
-        final Map<String, Object?> data = state.profiler.freeze(now);
+        final Map<String, Object?> data = state.profiler.freeze(
+          now,
+          idle: body['idle'] == true,
+        );
         final Map<String, Object?> owners =
             data['owners']! as Map<String, Object?>;
         final List<Map<String, Object?>> ranked =

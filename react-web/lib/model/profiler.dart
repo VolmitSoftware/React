@@ -306,6 +306,7 @@ class ProfilerNode {
     required this.total,
     required this.self,
     this.children = const <ProfilerNode>[],
+    this.collapsed = const <String>[],
   });
 
   /// The folded children below `minPercent`.
@@ -318,7 +319,13 @@ class ProfilerNode {
   final int self;
   final List<ProfilerNode> children;
 
+  /// The plumbing frames this one row stands for, outermost first
+  /// (`"method":"(N frames)"`); empty for a real frame.
+  final List<String> collapsed;
+
   bool get isOther => method == otherMethod;
+
+  bool get isCollapsed => collapsed.isNotEmpty;
 
   factory ProfilerNode.fromJson(Map<String, dynamic> json, [int depth = 0]) {
     final String owner = _string(json['owner']);
@@ -337,6 +344,15 @@ class ProfilerNode {
               ))
                 ProfilerNode.fromJson(child, depth + 1),
             ],
+      collapsed: <String>[
+        if (json['collapsed'] case final List<dynamic> frames)
+          for (final Object? frame in frames)
+            if (frame is String && frame.isNotEmpty)
+              frame
+            else if (frame is Map<String, dynamic> &&
+                _string(frame['method']).isNotEmpty)
+              _string(frame['method']),
+      ],
     );
   }
 
@@ -349,6 +365,7 @@ class ProfilerNode {
     'children': <Map<String, Object?>>[
       for (final ProfilerNode child in children) child.toJson(),
     ],
+    if (collapsed.isNotEmpty) 'collapsed': collapsed,
   };
 }
 

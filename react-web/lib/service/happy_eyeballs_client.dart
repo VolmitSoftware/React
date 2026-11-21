@@ -16,6 +16,7 @@ import '../model/network_info.dart';
 import '../model/player_navigation.dart';
 import '../model/range_history.dart';
 import '../model/plugin_api_pack.dart';
+import '../model/owner_cost.dart';
 import '../model/profiler.dart';
 import '../model/role_info.dart';
 import '../model/server_capabilities.dart';
@@ -524,6 +525,10 @@ class HappyEyeballsClient
       _read((IReactClient client) => _owners(client).owners());
 
   @override
+  Future<OwnerCostBreakdown> ownerCostBreakdown() =>
+      _read((IReactClient client) => _owners(client).ownerCostBreakdown());
+
+  @override
   Future<PluginApiCatalog> pluginApiPacks() =>
       _read((IReactClient client) => _pluginApiPacks(client).pluginApiPacks());
 
@@ -566,13 +571,18 @@ class HappyEyeballsClient
   );
 
   @override
-  Future<ProfilerOwners> profilerOwners() =>
-      _read((IReactClient client) => _profilerOf(client).profilerOwners());
+  Future<ProfilerOwners> profilerOwners({bool idle = false}) => _read(
+    (IReactClient client) => _profilerOf(client).profilerOwners(idle: idle),
+  );
 
   @override
-  Future<ProfilerHot> profilerHot({String? owner, int limit = 50}) => _read(
+  Future<ProfilerHot> profilerHot({
+    String? owner,
+    int limit = 50,
+    bool idle = false,
+  }) => _read(
     (IReactClient client) =>
-        _profilerOf(client).profilerHot(owner: owner, limit: limit),
+        _profilerOf(client).profilerHot(owner: owner, limit: limit, idle: idle),
   );
 
   @override
@@ -581,18 +591,21 @@ class HappyEyeballsClient
     String? thread,
     double minPercent = 0.5,
     int maxDepth = 64,
+    bool idle = false,
   }) => _read(
     (IReactClient client) => _profilerOf(client).profilerTree(
       owner: owner,
       thread: thread,
       minPercent: minPercent,
       maxDepth: maxDepth,
+      idle: idle,
     ),
   );
 
   @override
-  Future<List<ProfilerThread>> profilerThreads() =>
-      _read((IReactClient client) => _profilerOf(client).profilerThreads());
+  Future<List<ProfilerThread>> profilerThreads({bool idle = false}) => _read(
+    (IReactClient client) => _profilerOf(client).profilerThreads(idle: idle),
+  );
 
   @override
   Future<SnapshotMeta> createSnapshot(SnapshotRequest request) => _execute(

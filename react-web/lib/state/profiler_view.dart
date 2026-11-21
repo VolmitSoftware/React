@@ -61,6 +61,7 @@ class ProfilerViewController extends ChangeNotifier {
   final String? owner;
 
   ProfilerRefresh _refresh;
+  bool _idle = false;
   ProfilerStatus? _status;
   ProfilerOwners? _owners;
   ProfilerHot? _hot;
@@ -78,6 +79,9 @@ class ProfilerViewController extends ChangeNotifier {
   DateTime? _updatedAt;
 
   ProfilerRefresh get refresh => _refresh;
+
+  /// Whether samples of parked, waiting and sleeping threads are kept.
+  bool get idle => _idle;
   ProfilerStatus? get status => _status;
   ProfilerOwners? get owners => _owners;
   ProfilerHot? get hot => _hot;
@@ -133,6 +137,13 @@ class ProfilerViewController extends ChangeNotifier {
     writeProfilerRefresh(_storage, refresh);
     _schedule();
     _notify();
+  }
+
+  void setIdle(bool idle) {
+    if (idle == _idle) return;
+    _idle = idle;
+    _notify();
+    unawaited(load(force: true));
   }
 
   void _schedule() {
@@ -191,14 +202,19 @@ class ProfilerViewController extends ChangeNotifier {
       return;
     }
     final String? only = owner;
-    final Future<ProfilerOwners> owners = _client.profilerOwners();
-    final Future<ProfilerHot> hot = _client.profilerHot(owner: only);
+    final bool idle = _idle;
+    final Future<ProfilerOwners> owners = _client.profilerOwners(idle: idle);
+    final Future<ProfilerHot> hot = _client.profilerHot(
+      owner: only,
+      idle: idle,
+    );
     final Future<ProfilerTree> tree = _client.profilerTree(
       owner: only,
       minPercent: only == null ? 0.5 : 0.1,
+      idle: idle,
     );
     final Future<List<ProfilerThread>>? threads = only == null
-        ? _client.profilerThreads()
+        ? _client.profilerThreads(idle: idle)
         : null;
     final ProfilerTree loadedTree = await tree;
     _owners = await owners;

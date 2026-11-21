@@ -12,6 +12,7 @@ class _FakeProfilerClient implements IProfilerClient {
   ProfilerStatus status = ProfilerStatus.idle;
   final List<String> calls = <String>[];
   ProfilerCommand? lastCommand;
+  Object? refusal;
 
   @override
   Future<ProfilerStatus> profiler() async {
@@ -22,6 +23,8 @@ class _FakeProfilerClient implements IProfilerClient {
   @override
   Future<ProfilerStatus> controlProfiler(ProfilerCommand command) async {
     lastCommand = command;
+    final Object? refused = refusal;
+    if (refused != null) throw refused;
     status = ProfilerStatus(
       running: command is ProfilerStart,
       intervalMs: 10,
@@ -33,13 +36,17 @@ class _FakeProfilerClient implements IProfilerClient {
   }
 
   @override
-  Future<ProfilerOwners> profilerOwners() async {
-    calls.add('owners');
+  Future<ProfilerOwners> profilerOwners({bool idle = false}) async {
+    calls.add('owners${idle ? ':idle' : ''}');
     return ProfilerOwners.empty;
   }
 
   @override
-  Future<ProfilerHot> profilerHot({String? owner, int limit = 50}) async {
+  Future<ProfilerHot> profilerHot({
+    String? owner,
+    int limit = 50,
+    bool idle = false,
+  }) async {
     calls.add('hot:${owner ?? ''}');
     return ProfilerHot.empty;
   }
@@ -50,8 +57,9 @@ class _FakeProfilerClient implements IProfilerClient {
     String? thread,
     double minPercent = 0.5,
     int maxDepth = 64,
+    bool idle = false,
   }) async {
-    calls.add('tree:${owner ?? ''}');
+    calls.add('tree:${owner ?? ''}${idle ? ':idle' : ''}');
     return const ProfilerTree(10, <ProfilerNode>[
       ProfilerNode(
         method: 'Server thread',
@@ -64,7 +72,7 @@ class _FakeProfilerClient implements IProfilerClient {
   }
 
   @override
-  Future<List<ProfilerThread>> profilerThreads() async {
+  Future<List<ProfilerThread>> profilerThreads({bool idle = false}) async {
     calls.add('threads');
     return const <ProfilerThread>[];
   }
@@ -185,6 +193,29 @@ void main() {
     controller.removeListener(listener);
     await Future<void>.delayed(const Duration(milliseconds: 1100));
     expect(client.calls.length, 2);
+  });
+
+  test('the idle switch asks every view again with idle samples', () async {
+    final _FakeProfilerClient client = _FakeProfilerClient()
+      ..status = _stopped(10);
+    final ProfilerViewController controller = ProfilerViewController(client);
+    addTearDown(controller.dispose);
+    await controller.load();
+    client.calls.clear();
+    controller.setIdle(true);
+    await controller.load();
+    expect(controller.idle, isTrue);
+    expect(client.calls, containsAll(<String>['owners:idle', 'tree::idle']));
+  });
+
+  test('a refused command is kept for the toast', () async {
+    final _FakeProfilerClient client = _FakeProfilerClient()
+      ..refusal = StateError('scope_missing');
+    final ProfilerViewController controller = ProfilerViewController(client);
+    addTearDown(controller.dispose);
+    expect(await controller.command(const ProfilerStart()), isFalse);
+    expect(controller.commandError, isA<StateError>());
+    expect(controller.busy, isFalse);
   });
 }
 

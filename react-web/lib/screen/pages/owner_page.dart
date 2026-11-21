@@ -18,6 +18,7 @@ import '../../ui/kit/badge.dart';
 import '../../ui/kit/card.dart';
 import '../../ui/kit/metric_tile.dart';
 import '../../ui/kit/page.dart';
+import '../owner_charts.dart';
 import '../owners.dart';
 import '../profiler.dart';
 
@@ -98,6 +99,10 @@ class OwnerPage extends StatelessWidget {
                   ),
                 ],
               ),
+            OwnerCostCharts(
+              key: ValueKey<String>('cost-$ownerId'),
+              owner: ownerId,
+            ),
             ProfilerScreen(
               key: ValueKey<String>('owner-$ownerId'),
               owner: ownerId,

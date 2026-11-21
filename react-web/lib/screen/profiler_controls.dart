@@ -1,6 +1,7 @@
 /// The sampler card: its state, start settings and start or stop, the live
 /// view's refresh pick, a manual refresh and Snapshot. Starting, stopping
-/// and snapshots are admin actions; other roles see them disabled.
+/// and snapshots need an operator or admin pairing; a viewer sees them
+/// disabled. A refused command says why in a toast.
 library;
 
 import 'dart:async';
@@ -17,7 +18,6 @@ import '../service/react_client.dart';
 import '../state/profiler_view.dart';
 import '../ui/error_text.dart';
 import '../ui/kit/action_row.dart';
-import '../ui/kit/alert.dart';
 import '../ui/kit/card.dart';
 import '../ui/kit/density.dart';
 import '../ui/kit/metric_tile.dart';
@@ -98,12 +98,22 @@ class _ProfilerControlsState extends State<ProfilerControls> {
 
   Future<void> _start() async {
     final ProfilerStatus status = _controller.status ?? ProfilerStatus.idle;
-    await _controller.command(
+    await _run(
       ProfilerStart(
         intervalMs: _interval ?? status.intervalMs,
         threads: _threads ?? status.threads,
         maxSeconds: _minutes * 60,
       ),
+    );
+  }
+
+  Future<void> _run(ProfilerCommand command) async {
+    if (await _controller.command(command)) return;
+    final Object? error = _controller.commandError;
+    if (error == null) return;
+    ArcaneSonner.error(
+      reactorText(ReactorText.profilerCommandFailed),
+      description: localizedReactorError(error),
     );
   }
 
@@ -152,7 +162,7 @@ class _ProfilerControlsState extends State<ProfilerControls> {
     dependOnReactorLocale(context);
     final ProfilerViewController controller = _controller;
     final ProfilerStatus status = controller.status ?? ProfilerStatus.idle;
-    final bool admin = RoleGate.allows(context, RoleNeed.admin);
+    final bool allowed = RoleGate.allows(context, RoleNeed.operator);
     final bool known = controller.status != null;
     final bool running = status.running;
     final int interval = _interval ?? status.intervalMs;
@@ -193,19 +203,19 @@ class _ProfilerControlsState extends State<ProfilerControls> {
           if (component.snapshots != null)
             RowAction(
               reactorText(ReactorText.snapshotTake),
-              admin && status.samples > 0 && !_snapshotting
+              allowed && status.samples > 0 && !_snapshotting
                   ? () => unawaited(_snapshot())
                   : null,
               icon: ArcaneIcon.camera(),
               loading: _snapshotting,
               id: 'profiler-snapshot',
             ),
-          if (admin && !running && status.samples > 0)
+          if (allowed && !running && status.samples > 0)
             RowAction(
               reactorText(ReactorText.profilerReset),
               controller.busy
                   ? null
-                  : () => unawaited(controller.command(const ProfilerReset())),
+                  : () => unawaited(_run(const ProfilerReset())),
               icon: ArcaneIcon.rotateCw(),
               iconOnly: true,
             ),
@@ -213,8 +223,8 @@ class _ProfilerControlsState extends State<ProfilerControls> {
         primary: running
             ? RowAction(
                 reactorText(ReactorText.profilerStop),
-                admin && !controller.busy
-                    ? () => unawaited(controller.command(const ProfilerStop()))
+                allowed && !controller.busy
+                    ? () => unawaited(_run(const ProfilerStop()))
                     : null,
                 icon: ArcaneIcon.square(),
                 loading: controller.busy,
@@ -222,7 +232,7 @@ class _ProfilerControlsState extends State<ProfilerControls> {
               )
             : RowAction(
                 reactorText(ReactorText.profilerStart),
-                admin && known && !controller.busy
+                allowed && known && !controller.busy
                     ? () => unawaited(_start())
                     : null,
                 icon: ArcaneIcon.play(),
@@ -272,7 +282,7 @@ class _ProfilerControlsState extends State<ProfilerControls> {
                 for (final int ms in _kIntervals) (ms, '$ms ms'),
               ],
               onChanged: (int value) => setState(() => _interval = value),
-              disabled: !admin,
+              disabled: !allowed,
             ),
             _select<ProfilerThreads>(
               id: 'profiler-threads',
@@ -284,7 +294,7 @@ class _ProfilerControlsState extends State<ProfilerControls> {
               ],
               onChanged: (ProfilerThreads value) =>
                   setState(() => _threads = value),
-              disabled: !admin,
+              disabled: !allowed,
             ),
             _select<int>(
               id: 'profiler-max',
@@ -294,15 +304,9 @@ class _ProfilerControlsState extends State<ProfilerControls> {
                 for (final int minutes in _kMinutes) (minutes, '$minutes min'),
               ],
               onChanged: (int value) => setState(() => _minutes = value),
-              disabled: !admin,
+              disabled: !allowed,
             ),
           ]),
-        if (controller.commandError case final Object error)
-          AppAlert(
-            tone: AlertTone.error,
-            title: reactorText(ReactorText.profilerCommandFailed),
-            message: localizedReactorError(error),
-          ),
       ],
     );
   }

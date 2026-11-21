@@ -130,6 +130,19 @@ abstract final class HostFixtures {
   static String ownerSamplerId(FakeOwnerSpec owner) =>
       'plugin-${owner.id.toLowerCase()}';
 
+  /// What [owner] costs this moment, ms of server thread per second.
+  static double ownerCostValue(
+    FakeServerProfile profile,
+    int index,
+    FakeOwnerSpec owner,
+    DateTime now,
+  ) => double.parse(
+    (owner.work *
+            (profile.isCritical ? 9 : 4) *
+            (1 + 0.2 * math.sin(now.millisecondsSinceEpoch / 9000 + index)))
+        .toStringAsFixed(2),
+  );
+
   /// The owners' live cost samplers (ms of server thread per second).
   static List<Map<String, dynamic>> ownerCosts(
     FakeServerProfile profile,
@@ -138,16 +151,7 @@ abstract final class HostFixtures {
     for (final (int index, FakeOwnerSpec owner) in fakeOwnerSpecs.indexed)
       if (owner.enabled)
         () {
-          final double value = double.parse(
-            (owner.work *
-                    (profile.isCritical ? 9 : 4) *
-                    (1 +
-                        0.2 *
-                            math.sin(
-                              now.millisecondsSinceEpoch / 9000 + index,
-                            )))
-                .toStringAsFixed(2),
-          );
+          final double value = ownerCostValue(profile, index, owner, now);
           return <String, dynamic>{
             'id': ownerSamplerId(owner),
             'name': '${owner.name} cost',
@@ -158,6 +162,124 @@ abstract final class HostFixtures {
           };
         }(),
   ];
+
+  /// The cost kinds in the plugin's order, with their labels.
+  static const List<(String, String)> costKinds = <(String, String)>[
+    ('event', 'Events'),
+    ('tick', 'Tasks'),
+    ('entity', 'Entities'),
+    ('block_entity', 'Block entities'),
+    ('worldgen', 'World generation'),
+    ('chunk_loader', 'Chunk loaders'),
+    ('network', 'Network'),
+  ];
+
+  static const Map<String, Map<String, double>> _kindBias =
+      <String, Map<String, double>>{
+        'Citizens': <String, double>{'entity': 1.6},
+        'MythicMobs': <String, double>{'entity': 1.8},
+        'ModelEngine': <String, double>{'entity': 1.2, 'network': 0.6},
+        'mcMMO': <String, double>{'entity': 0.6},
+        'ItemsAdder': <String, double>{'block_entity': 1.0},
+        'CoreProtect': <String, double>{'block_entity': 0.4},
+        'WorldGuard': <String, double>{'block_entity': 0.3},
+        'Iris': <String, double>{'worldgen': 2.4, 'chunk_loader': 0.5},
+        'Chunky': <String, double>{'worldgen': 0.8, 'chunk_loader': 0.9},
+        'WorldEdit': <String, double>{'worldgen': 0.3},
+        'dynmap': <String, double>{'chunk_loader': 0.6},
+        'BlueMap': <String, double>{'chunk_loader': 0.4},
+        'Multiverse-Core': <String, double>{'chunk_loader': 0.3},
+        'ProtocolLib': <String, double>{'network': 1.4},
+        'ViaVersion': <String, double>{'network': 1.5},
+        'Geyser-Spigot': <String, double>{'network': 1.5},
+        'floodgate': <String, double>{'network': 0.5},
+        'TAB': <String, double>{'network': 0.6},
+        'DiscordSRV': <String, double>{'network': 0.4},
+      };
+
+  /// [owner]'s cost split by kind, summing to [value].
+  static Map<String, double> _costByKind(FakeOwnerSpec owner, double value) {
+    final Map<String, double> weights = <String, double>{
+      'event': owner.listeners.length.toDouble(),
+      'tick': owner.tasks.length.toDouble(),
+      ...?_kindBias[owner.id],
+    };
+    final double sum = weights.values.fold(0, (double a, double b) => a + b);
+    if (sum <= 0) {
+      return value > 0 ? <String, double>{'tick': value} : <String, double>{};
+    }
+    return <String, double>{
+      for (final (String kind, String _) in costKinds)
+        if ((weights[kind] ?? 0) > 0 && value > 0)
+          kind: value * weights[kind]! / sum,
+    };
+  }
+
+  /// `GET /owners/cost`: every owner's cost split by kind, costliest first,
+  /// and the kind totals; [limit] 0 lists every owner.
+  static Map<String, dynamic> ownerCostBreakdown(
+    FakeServerProfile profile,
+    DateTime now, {
+    int limit = 0,
+  }) {
+    final List<Map<String, Object?>> owners = <Map<String, Object?>>[];
+    final Map<String, double> kindTotals = <String, double>{};
+    double total = 0;
+    for (final (int index, FakeOwnerSpec owner) in fakeOwnerSpecs.indexed) {
+      final double value = owner.enabled
+          ? ownerCostValue(profile, index, owner, now)
+          : 0;
+      final Map<String, double> kinds = _costByKind(owner, value);
+      kinds.forEach(
+        (String kind, double ms) =>
+            kindTotals[kind] = (kindTotals[kind] ?? 0) + ms,
+      );
+      total += value;
+      owners.add(<String, Object?>{
+        'id': owner.id,
+        'samplerId': ownerSamplerId(owner),
+        'name': owner.name,
+        'msPerSecond': value,
+        'recentMsPerSecond': value,
+        'calls': (value * 37).round(),
+        'share': 0.0,
+        'kinds': kinds,
+      });
+    }
+    for (final Map<String, Object?> row in owners) {
+      row['share'] = total > 0 ? (row['msPerSecond']! as double) / total : 0.0;
+    }
+    owners.sort((Map<String, Object?> a, Map<String, Object?> b) {
+      final int byCost = (b['msPerSecond']! as double).compareTo(
+        a['msPerSecond']! as double,
+      );
+      return byCost != 0
+          ? byCost
+          : (a['name']! as String).toLowerCase().compareTo(
+              (b['name']! as String).toLowerCase(),
+            );
+    });
+    return <String, dynamic>{
+      'ownerNoun': 'plugin',
+      'measuring': true,
+      'windowSeconds': 5.0,
+      'publishedAtMs': now.millisecondsSinceEpoch,
+      'totalMsPerSecond': total,
+      'kinds': <Map<String, Object?>>[
+        for (final (String kind, String label) in costKinds)
+          if (kindTotals[kind] case final double ms)
+            <String, Object?>{
+              'kind': kind,
+              'label': label,
+              'msPerSecond': ms,
+              'share': total > 0 ? ms / total : 0.0,
+            },
+      ],
+      'owners': limit > 0 && owners.length > limit
+          ? owners.sublist(0, limit)
+          : owners,
+    };
+  }
 
   static Map<String, dynamic> environment(
     FakeServerProfile profile,

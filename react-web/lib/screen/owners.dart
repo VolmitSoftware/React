@@ -6,6 +6,7 @@ import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component, ListenableBuilder;
 
+import '../chart/share_layout.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/owner_info.dart';
@@ -19,7 +20,9 @@ import '../state/server_session_scope.dart';
 import '../ui/error_text.dart';
 import '../ui/kit/badge.dart';
 import '../ui/kit/data_list.dart';
+import '../ui/kit/page.dart';
 import '../ui/kit/states.dart';
+import 'owner_charts.dart';
 import 'profile_view.dart';
 
 /// "1.23 ms/s".
@@ -69,12 +72,32 @@ class OwnersScreen extends StatelessWidget {
       for (final OwnerInfo owner in owners) owner.id: owner.name,
     };
     final String serverId = ServerSessionScope.of(context)?.serverId ?? '';
+    final List<OwnerCost> costs = ownerCosts(owners, samples);
+    return PageStack(
+      children: <Widget>[
+        OwnerCostCharts(
+          fallback: <ShareItem>[
+            for (final OwnerCost cost in costs)
+              if (cost.msPerSecond case final double ms)
+                ShareItem(cost.owner.id, cost.owner.name, ms),
+          ],
+        ),
+        _list(costs, names, serverId),
+      ],
+    );
+  }
+
+  Widget _list(
+    List<OwnerCost> costs,
+    Map<String, String> names,
+    String serverId,
+  ) {
     return DataList<OwnerCost>(
       href: (OwnerCost cost) => ownerPath(serverId, cost.owner.id),
       label: reactorText(
         modded ? ReactorText.pageModsTitle : ReactorText.pagePluginsTitle,
       ),
-      items: ownerCosts(owners, samples),
+      items: costs,
       emptyMessage: reactorText(
         modded ? ReactorText.ownersNoneMods : ReactorText.ownersNonePlugins,
       ),

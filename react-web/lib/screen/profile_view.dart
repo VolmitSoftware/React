@@ -1,6 +1,8 @@
-/// One profile, live or frozen in a snapshot: the owner ranking, the hot
-/// methods, the call tree and the threads. Narrowed to one owner it drops
-/// the ranking and the owner column and colours that owner's frames.
+/// One profile, live or frozen in a snapshot: the owner share and ranking,
+/// the hot methods, the call tree (a list or a flame graph, filtered by
+/// method) and the threads. Narrowed to one owner it shows that owner's
+/// share instead of the ranking, drops the owner column and marks that
+/// owner's frames.
 library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
@@ -8,14 +10,20 @@ import 'package:jaspr/dom.dart' as dom;
 import 'package:jaspr/jaspr.dart' show Component;
 
 import '../app/paths.dart';
+import '../chart/share_charts.dart';
+import '../chart/share_layout.dart';
 import '../localization/reactor_locale.dart';
 import '../localization/reactor_localizations.dart';
 import '../model/profiler.dart';
 import '../model/units.dart';
+import '../ui/kit/action_row.dart';
 import '../ui/kit/card.dart';
 import '../ui/kit/data_list.dart';
+import '../ui/kit/density.dart';
 import '../ui/kit/page.dart';
 import '../ui/kit/states.dart';
+import '../ui/kit/toggle_choice.dart';
+import '../widget/call_tree_view.dart';
 import '../widget/flame_graph.dart';
 
 /// The address of [owner]'s page on server [serverId].
@@ -30,12 +38,17 @@ Widget methodText(String method) => dom.span(
   <Widget>[Component.text(profilerShortMethod(method))],
 );
 
-class ProfileView extends StatelessWidget {
+/// How the call tree is drawn.
+enum CallTreeMode { tree, flame }
+
+class ProfileView extends StatefulWidget {
   const ProfileView({
     required this.data,
     required this.serverId,
     required this.modded,
     this.owner,
+    this.idle = false,
+    this.onIdle,
     super.key,
   });
 
@@ -46,6 +59,23 @@ class ProfileView extends StatelessWidget {
   /// The owner the view narrows to.
   final String? owner;
 
+  /// Whether idle samples are kept, and the switch for it; no switch when
+  /// [onIdle] is null (a snapshot).
+  final bool idle;
+  final void Function(bool idle)? onIdle;
+
+  @override
+  State<ProfileView> createState() => _ProfileViewState();
+}
+
+class _ProfileViewState extends State<ProfileView> {
+  CallTreeMode _mode = CallTreeMode.tree;
+  String _query = '';
+
+  ProfileData get data => component.data;
+  String get serverId => component.serverId;
+  bool get modded => component.modded;
+
   @override
   Widget build(BuildContext context) {
     dependOnReactorLocale(context);
@@ -55,10 +85,11 @@ class ProfileView extends StatelessWidget {
         icon: ArcaneIcon.flame(),
       );
     }
-    final String? only = owner;
+    final String? only = component.owner;
     return PageStack(
       children: <Widget>[
-        if (only == null) _owners(),
+        if (only == null) ...<Widget>[_ownerShare(), _owners()],
+        if (only != null) _share(only),
         _hot(only),
         _tree(only),
         _threads(),
@@ -141,21 +172,154 @@ class ProfileView extends StatelessWidget {
     );
   }
 
-  Widget _tree(String? only) => AppCard(
-    title: reactorText(ReactorText.profilerCallTree),
-    attributes: const <String, String>{'data-profiler': 'tree'},
-    children: <Widget>[
-      if (data.tree.roots.isEmpty)
-        dom.p(classes: 'ui-caption', <Widget>[
-          Component.text(reactorText(ReactorText.profilerNoSamples)),
-        ])
-      else
-        FlameGraph(
-          tree: data.tree,
-          rootLabel: reactorText(ReactorText.profilerThreadsAll),
-          highlight: only,
+  Widget _ownerShare() {
+    final List<ShareSlice> slices = shareSlices(<ShareItem>[
+      for (final ProfilerOwner owner in data.owners.owners)
+        ShareItem(owner.id, owner.name, owner.samples.toDouble()),
+    ], otherLabel: reactorText(ReactorText.chartOther));
+    return AppCard(
+      title: reactorText(ReactorText.profilerShare),
+      attributes: const <String, String>{'data-profiler': 'share'},
+      children: <Widget>[
+        if (slices.isEmpty)
+          dom.p(classes: 'ui-caption', <Widget>[
+            Component.text(reactorText(ReactorText.profilerNoSamples)),
+          ])
+        else
+          DonutChart(
+            slices: slices,
+            label: reactorText(ReactorText.profilerShare),
+            total: groupThousands(data.owners.samples),
+            valueText: (double samples) => groupThousands(samples.round()),
+            href: (String id) => ownerPath(serverId, id),
+          ),
+      ],
+    );
+  }
+
+  /// [only]'s part of every sample beside the rest.
+  Widget _share(String only) {
+    final ProfilerOwner? owner = data.owners.byId(only);
+    final int whole = data.owners.samples;
+    final int mine = owner?.samples ?? 0;
+    return AppCard(
+      title: reactorText(ReactorText.profilerShare),
+      attributes: const <String, String>{'data-profiler': 'share'},
+      children: <Widget>[
+        if (whole <= 0)
+          dom.p(classes: 'ui-caption', <Widget>[
+            Component.text(reactorText(ReactorText.profilerNoSamples)),
+          ])
+        else
+          DonutChart(
+            slices: orderedSlices(<ShareItem>[
+              ShareItem(only, owner?.name ?? only, mine.toDouble()),
+              ShareItem(
+                '',
+                reactorText(ReactorText.chartOther),
+                (whole - mine).toDouble(),
+              ),
+            ]),
+            label: reactorText(ReactorText.profilerShare),
+            total: profilerPercentText(whole == 0 ? 0 : mine * 100 / whole),
+            valueText: (double samples) => groupThousands(samples.round()),
+            colorOf: (ShareSlice slice) =>
+                kSeriesColors[slice.id == only ? 1 : kSeriesColors.length - 1],
+          ),
+      ],
+    );
+  }
+
+  ActionRow _treeTools() {
+    final void Function(bool idle)? onIdle = component.onIdle;
+    return ActionRow(
+      dense: true,
+      label: reactorText(ReactorText.profilerCallTree),
+      leading: <Widget>[
+        dom.div(classes: 'reactor-grow', <Widget>[
+          TextInput(
+            type: TextInputType.search,
+            size: controlSize(Density.dense),
+            value: _query,
+            placeholder: reactorText(ReactorText.profilerFilter),
+            attributes: <String, String>{
+              'aria-label': reactorText(ReactorText.profilerFilter),
+              'data-profiler': 'filter',
+            },
+            fullWidth: true,
+            onChanged: (String value) => setState(() => _query = value),
+          ),
+        ]),
+        ToggleChoice<CallTreeMode>(
+          label: reactorText(ReactorText.profilerView),
+          value: _mode,
+          options: <ChoiceOption<CallTreeMode>>[
+            ChoiceOption<CallTreeMode>(
+              CallTreeMode.tree,
+              reactorText(ReactorText.profilerViewTree),
+            ),
+            ChoiceOption<CallTreeMode>(
+              CallTreeMode.flame,
+              reactorText(ReactorText.profilerViewFlame),
+            ),
+          ],
+          onChanged: (CallTreeMode mode) => setState(() => _mode = mode),
         ),
-    ],
+        if (onIdle != null)
+          dom.div(
+            styles: const dom.Styles(
+              raw: <String, String>{
+                'display': 'inline-flex',
+                'align-items': 'center',
+                'min-height': '2rem',
+                'white-space': 'nowrap',
+              },
+            ),
+            attributes: const <String, String>{'data-profiler': 'idle'},
+            <Widget>[
+              ArcaneToggleSwitch(
+                value: component.idle,
+                label: reactorText(ReactorText.profilerIdle),
+                size: controlSize(Density.dense),
+                onChanged: onIdle,
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _tree(String? only) {
+    final ProfilerTree tree = data.tree;
+    return AppCard(
+      title: reactorText(ReactorText.profilerCallTree),
+      attributes: const <String, String>{'data-profiler': 'tree'},
+      actions: _treeTools(),
+      children: <Widget>[
+        if (tree.roots.isEmpty)
+          dom.p(classes: 'ui-caption', <Widget>[
+            Component.text(reactorText(ReactorText.profilerNoSamples)),
+          ])
+        else if (_mode == CallTreeMode.flame)
+          FlameGraph(
+            tree: tree,
+            rootLabel: reactorText(ReactorText.profilerThreadsAll),
+            highlight: only,
+          )
+        else
+          _list(tree, only),
+      ],
+    );
+  }
+
+  Widget _list(ProfilerTree tree, String? only) => CallTreeView(
+    tree: tree,
+    label: reactorText(ReactorText.profilerCallTree),
+    totalLabel: reactorText(ReactorText.profilerTotal),
+    selfLabel: reactorText(ReactorText.profilerSelf),
+    noMatches: reactorText(ReactorText.profilerNoMatches),
+    query: _query,
+    highlight: only,
   );
 
   Widget _threads() {

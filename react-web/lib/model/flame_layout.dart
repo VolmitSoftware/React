@@ -3,6 +3,7 @@
 /// the row below, busiest first. Pure, so the geometry is unit tested.
 library;
 
+import 'call_tree.dart';
 import 'profiler.dart';
 
 /// The top of the view: every thread under one frame.
@@ -44,11 +45,7 @@ class FlameBox {
 /// [node]'s children busiest first, ties by name, so a frame keeps its
 /// place between refreshes.
 List<ProfilerNode> flameChildren(ProfilerNode node) =>
-    List<ProfilerNode>.of(node.children)
-      ..sort((ProfilerNode a, ProfilerNode b) {
-        final int byTotal = b.total.compareTo(a.total);
-        return byTotal != 0 ? byTotal : a.method.compareTo(b.method);
-      });
+    hottestFirst(node.children);
 
 /// The frame at [path] under [root], or null when the tree no longer has it.
 ProfilerNode? flameNodeAt(ProfilerNode root, List<int> path) {
@@ -136,3 +133,18 @@ int flameRows(List<FlameBox> boxes) => boxes.fold(
   0,
   (int rows, FlameBox box) => box.depth + 1 > rows ? box.depth + 1 : rows,
 );
+
+/// The width of one character of the frame font (0.6875rem monospace) and
+/// a frame's side padding, in CSS pixels.
+const double flameCharPx = 6.7;
+const double flamePaddingPx = 8;
+
+/// What fits on a frame [px] wide: the class and method, else the method,
+/// else nothing.
+String flameLabel(String method, double px) {
+  final FrameName name = splitFrame(method);
+  for (final String text in <String>[name.short, name.call]) {
+    if (text.length * flameCharPx + flamePaddingPx <= px) return text;
+  }
+  return '';
+}

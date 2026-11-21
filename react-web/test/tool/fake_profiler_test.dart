@@ -14,6 +14,7 @@ import 'package:react_web/service/react_exceptions.dart';
 
 import '../../tool/fake_server/fixtures.dart';
 import '../../tool/fake_server/fleet.dart';
+import '../../tool/fake_server/profiler_fixtures.dart';
 
 void main() {
   late FakeFleet fleet;
@@ -51,6 +52,25 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
     }
   }
+
+  Future<Map<String, dynamic>> getData(
+    FakeServerProfile profile,
+    FakeToken token,
+    String path,
+  ) async {
+    final http.Client transport = http.Client();
+    addTearDown(transport.close);
+    final http.Response response = await transport.get(
+      Uri.parse('http://127.0.0.1:${fleet.port}/${profile.slug}/api/v1$path'),
+      headers: <String, String>{'Authorization': 'Bearer ${token.bearer}'},
+    );
+    expect(response.statusCode, HttpStatus.ok, reason: response.body);
+    return (jsonDecode(response.body) as Map<String, dynamic>)['data']
+        as Map<String, dynamic>;
+  }
+
+  List<Map<String, dynamic>> nodes(Object? value) =>
+      (value as List<dynamic>).cast<Map<String, dynamic>>();
 
   test('the profiler is off until an admin starts it', () async {
     final ReactClient admin = clientFor(
@@ -137,6 +157,238 @@ void main() {
       const ProfilerReset(),
     );
     expect(reset.samples, 0);
+  });
+
+  test(
+    'an operator runs the profiler and snapshots, a viewer cannot',
+    () async {
+      final FakeServerProfile edge = fleet.profiles.first;
+      final ReactClient operator = clientFor(
+        credential(edge, fleet.issue(edge, role: 'operator')),
+      );
+      final ReactClient viewer = clientFor(
+        credential(edge, fleet.issue(edge, role: 'viewer')),
+      );
+      await expectLater(
+        viewer.controlProfiler(const ProfilerStart()),
+        throwsA(isA<ReactForbidden>()),
+      );
+      expect(
+        (await operator.controlProfiler(const ProfilerStart(intervalMs: 1)))
+            .running,
+        isTrue,
+      );
+      await sampled(operator);
+      final SnapshotMeta meta = await operator.createSnapshot(
+        const SnapshotRequest.profile(),
+      );
+      await expectLater(
+        viewer.createSnapshot(const SnapshotRequest.profile()),
+        throwsA(isA<ReactForbidden>()),
+      );
+      await expectLater(
+        viewer.deleteSnapshot(meta.id),
+        throwsA(isA<ReactForbidden>()),
+      );
+      await operator.deleteSnapshot(meta.id);
+      await expectLater(
+        viewer.snapshot(meta.id),
+        throwsA(isA<ReactNotFound>()),
+      );
+      expect(
+        (await operator.controlProfiler(const ProfilerStop())).running,
+        isFalse,
+      );
+    },
+  );
+
+  test(
+    'numbered threads group, plumbing collapses, idle is left out',
+    () async {
+      final FakeServerProfile lobby = fleet.profiles[2];
+      final FakeToken token = fleet.adminToken(lobby);
+      final ReactClient admin = clientFor(credential(lobby, token));
+      await admin.controlProfiler(
+        const ProfilerStart(intervalMs: 1, threads: ProfilerThreads.all),
+      );
+      await sampled(admin);
+      await admin.controlProfiler(const ProfilerStop());
+
+      final Map<String, dynamic> grouped = await getData(
+        lobby,
+        token,
+        '/profiler/tree?minPercent=0',
+      );
+      final List<String> roots = <String>[
+        for (final Map<String, dynamic> root in nodes(grouped['roots']))
+          root['method'] as String,
+      ];
+      expect(roots, contains('Worker-Main (12)'));
+      expect(roots, contains('Netty Epoll Server IO (2)'));
+      expect(
+        roots.where((String name) => name.startsWith('Worker-Main-')),
+        isEmpty,
+      );
+
+      final Map<String, dynamic> raw = await getData(
+        lobby,
+        token,
+        '/profiler/tree?minPercent=0&group=false&collapse=false',
+      );
+      final List<Map<String, dynamic>> rawRoots = nodes(raw['roots']);
+      expect(
+        rawRoots.where(
+          (Map<String, dynamic> root) =>
+              (root['method'] as String).startsWith('Worker-Main-'),
+        ),
+        hasLength(12),
+      );
+      final int workers = rawRoots
+          .where(
+            (Map<String, dynamic> root) =>
+                (root['method'] as String).startsWith('Worker-Main-'),
+          )
+          .fold(
+            0,
+            (int sum, Map<String, dynamic> root) =>
+                sum + (root['total'] as int),
+          );
+      final Map<String, dynamic> pool = nodes(grouped['roots']).firstWhere(
+        (Map<String, dynamic> root) => root['method'] == 'Worker-Main (12)',
+      );
+      expect(pool['total'], workers);
+      int depth(Map<String, dynamic> node) {
+        final List<Map<String, dynamic>> children = nodes(node['children']);
+        return children.isEmpty
+            ? 1
+            : 1 + children.map(depth).reduce((int a, int b) => a > b ? a : b);
+      }
+
+      expect(
+        depth(
+          rawRoots.firstWhere(
+            (Map<String, dynamic> root) => root['method'] == 'Worker-Main-1',
+          ),
+        ),
+        greaterThanOrEqualTo(30),
+      );
+
+      final List<Map<String, dynamic>> folded = <Map<String, dynamic>>[];
+      void collect(Map<String, dynamic> node) {
+        if (node['collapsed'] != null) folded.add(node);
+        nodes(node['children']).forEach(collect);
+      }
+
+      nodes(grouped['roots']).forEach(collect);
+      expect(folded, isNotEmpty);
+      for (final Map<String, dynamic> node in folded) {
+        final List<String> chain = (node['collapsed'] as List<dynamic>)
+            .cast<String>();
+        expect(chain.length, greaterThanOrEqualTo(2));
+        expect(node['method'], '(${chain.length} frames)');
+        expect(node['owner'], 'java');
+      }
+      expect(
+        folded.any(
+          (Map<String, dynamic> node) => (node['collapsed'] as List<dynamic>)
+              .contains('java.util.concurrent.ForkJoinWorkerThread.run'),
+        ),
+        isTrue,
+      );
+
+      bool parked(Map<String, dynamic> node) =>
+          (node['method'] as String).contains('LockSupport.park') ||
+          ((node['collapsed'] as List<dynamic>?) ?? const <dynamic>[]).any(
+            (dynamic method) => (method as String).contains('LockSupport.park'),
+          ) ||
+          nodes(node['children']).any(parked);
+      final Map<String, dynamic> withIdle = await getData(
+        lobby,
+        token,
+        '/profiler/tree?minPercent=0&idle=true',
+      );
+      expect(nodes(grouped['roots']).any(parked), isFalse);
+      expect(nodes(withIdle['roots']).any(parked), isTrue);
+      expect(
+        withIdle['samples'] as int,
+        greaterThan(grouped['samples'] as int),
+      );
+      final Map<String, dynamic> owners = await getData(
+        lobby,
+        token,
+        '/profiler/owners',
+      );
+      expect(owners['samples'], grouped['samples']);
+      final Map<String, dynamic> threads = await getData(
+        lobby,
+        token,
+        '/profiler/threads?idle=true',
+      );
+      expect(
+        nodes(threads['threads']).map((Map<String, dynamic> t) => t['name']),
+        contains('Worker-Main-7'),
+      );
+      await admin.controlProfiler(const ProfilerReset());
+    },
+  );
+
+  test('owner cost splits each owner by kind', () async {
+    final FakeToken token = fleet.issue(survival, role: 'viewer');
+    final Map<String, dynamic> cost = await getData(
+      survival,
+      token,
+      '/owners/cost',
+    );
+    expect(cost['ownerNoun'], 'plugin');
+    expect(cost['measuring'], isTrue);
+    final List<Map<String, dynamic>> owners = nodes(cost['owners']);
+    expect(owners.length, fakeOwnerSpecs.length);
+    for (int index = 1; index < owners.length; index++) {
+      expect(
+        owners[index - 1]['msPerSecond'] as double,
+        greaterThanOrEqualTo(owners[index]['msPerSecond'] as double),
+      );
+    }
+    double total = 0;
+    for (final Map<String, dynamic> owner in owners) {
+      final double ms = owner['msPerSecond'] as double;
+      total += ms;
+      final double kinds = (owner['kinds'] as Map<String, dynamic>).values.fold(
+        0,
+        (double sum, dynamic value) => sum + (value as double),
+      );
+      expect(kinds, closeTo(ms, 1e-9), reason: owner['id'] as String);
+      expect(
+        owner['samplerId'],
+        'plugin-${(owner['id'] as String).toLowerCase()}',
+      );
+    }
+    expect(cost['totalMsPerSecond'] as double, closeTo(total, 1e-9));
+    final List<String> kinds = <String>[
+      for (final Map<String, dynamic> kind in nodes(cost['kinds']))
+        kind['kind'] as String,
+    ];
+    expect(kinds, <String>[
+      'event',
+      'tick',
+      'entity',
+      'block_entity',
+      'worldgen',
+      'chunk_loader',
+      'network',
+    ]);
+    final double shares = nodes(cost['kinds']).fold(
+      0,
+      (double sum, Map<String, dynamic> kind) =>
+          sum + (kind['share'] as double),
+    );
+    expect(shares, closeTo(1, 1e-9));
+    final Map<String, dynamic> top = await getData(
+      survival,
+      token,
+      '/owners/cost?limit=3',
+    );
+    expect(nodes(top['owners']), hasLength(3));
   });
 
   test('snapshots freeze, list, export and delete', () async {

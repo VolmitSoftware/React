@@ -662,7 +662,7 @@ class _HeatmapsScreenState extends State<HeatmapsScreen> {
             ready &&
                     _grid != null &&
                     !_snapshotting &&
-                    RoleGate.allows(context, RoleNeed.admin)
+                    RoleGate.allows(context, RoleNeed.operator)
                 ? () => unawaited(_snapshot())
                 : null,
             icon: ArcaneIcon.camera(),

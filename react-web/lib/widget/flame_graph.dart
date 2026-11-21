@@ -1,5 +1,6 @@
-/// The call tree as an icicle: threads on top, callees below, each frame as
-/// wide as its share of its parent. A click zooms to a frame (the top row
+/// The call tree as an icicle: threads on top (numbered ones merged),
+/// callees below, each frame as wide as its share of its parent and
+/// labelled only where its name fits. A click zooms to a frame (the top row
 /// zooms out one level) and the trail above it walks back up. Frames are
 /// tinted by owner; with [FlameGraph.highlight] only that owner's frames
 /// carry colour.
@@ -7,10 +8,14 @@ library;
 
 import 'package:arcane_jaspr/arcane_jaspr.dart';
 import 'package:jaspr/dom.dart' as dom;
-import 'package:jaspr/jaspr.dart' show Component, EventCallback;
+import 'package:jaspr/jaspr.dart' show Component, EventCallback, kIsWeb;
+import 'package:universal_web/js_interop.dart';
+import 'package:universal_web/web.dart' as web;
 
+import '../model/call_tree.dart';
 import '../model/flame_layout.dart';
 import '../model/profiler.dart';
+import '../ui/kit/browser.dart';
 import '../ui/kit/density.dart';
 
 /// The series colours of the charts, so an owner reads the same here.
@@ -71,6 +76,45 @@ class _FlameGraphState extends State<FlameGraph> {
   /// refreshes that reorder siblings.
   List<String> _focus = const <String>[];
 
+  /// The drawn width in CSS pixels; a desktop guess until measured.
+  double _width = 960;
+  web.ResizeObserver? _observer;
+
+  @override
+  void initState() {
+    super.initState();
+    afterFrame(_observe);
+  }
+
+  @override
+  void dispose() {
+    _observer?.disconnect();
+    super.dispose();
+  }
+
+  void _observe() {
+    if (!kIsWeb || !mounted || _observer != null) return;
+    final web.Element? frame = web.document.getElementById(_id);
+    if (frame == null) return;
+    _observer = web.ResizeObserver(
+      ((
+        JSArray<web.ResizeObserverEntry> _,
+        web.ResizeObserver _,
+      ) => _measure()).toJS,
+    );
+    _observer!.observe(frame);
+    _measure();
+  }
+
+  void _measure() {
+    final web.Element? frame = web.document.getElementById(_id);
+    if (frame == null || !mounted) return;
+    final double width = frame.getBoundingClientRect().width;
+    if (width > 0 && (width - _width).abs() >= 1) {
+      setState(() => _width = width);
+    }
+  }
+
   void _zoom(ProfilerNode root, List<int> path) {
     final List<ProfilerNode> trail = flameTrail(root, path);
     setState(() {
@@ -85,7 +129,10 @@ class _FlameGraphState extends State<FlameGraph> {
 
   @override
   Widget build(BuildContext context) {
-    final ProfilerNode root = flameRoot(component.tree, component.rootLabel);
+    final ProfilerNode root = flameRoot(
+      ProfilerTree(component.tree.samples, readableRoots(component.tree)),
+      component.rootLabel,
+    );
     final List<int> path = flamePathOf(root, _focus);
     final List<ProfilerNode> trail = flameTrail(root, path);
     final List<FlameBox> boxes = layoutFlame(
@@ -104,7 +151,7 @@ class _FlameGraphState extends State<FlameGraph> {
           <Widget>[
             for (final (int index, ProfilerNode node) in trail.indexed)
               Button(
-                label: profilerShortMethod(node.method),
+                label: splitFrame(node.method).short,
                 size: buttonSize(Density.dense),
                 variant: index == trail.length - 1
                     ? ButtonVariant.secondary
@@ -137,6 +184,9 @@ class _FlameGraphState extends State<FlameGraph> {
     final ProfilerNode node = box.node;
     final String share = _percent(node.total, whole);
     final String owner = node.ownerName.isEmpty ? '' : ' · ${node.ownerName}';
+    final String frames = node.isCollapsed
+        ? '\n${node.collapsed.join('\n')}'
+        : '';
     final String label = '${node.method}$owner · $share';
     final List<int> target = box.depth == 0 && box.path.isNotEmpty
         ? box.path.sublist(0, box.path.length - 1)
@@ -145,7 +195,7 @@ class _FlameGraphState extends State<FlameGraph> {
       classes: 'reactor-flame-cell',
       attributes: <String, String>{
         'type': 'button',
-        'title': '$label · ${node.total}',
+        'title': '$label · ${node.total}$frames',
         'aria-label': label,
         'data-method': node.method,
       },
@@ -161,7 +211,7 @@ class _FlameGraphState extends State<FlameGraph> {
         },
       ),
       events: <String, EventCallback>{'click': (_) => _zoom(root, target)},
-      <Widget>[Component.text(profilerShortMethod(node.method))],
+      <Widget>[Component.text(flameLabel(node.method, box.width * _width))],
     );
   }
 }

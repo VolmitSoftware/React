@@ -105,7 +105,7 @@ class _SnapshotPageState extends State<SnapshotPage> {
     dependOnReactorLocale(context);
     final SnapshotDetail? detail = _detail;
     final ISnapshotClient? client = _client;
-    final bool admin = RoleGate.allows(context, RoleNeed.admin);
+    final bool allowed = RoleGate.allows(context, RoleNeed.operator);
     final HeatmapGrid? grid = detail?.heatmap;
     return AppPage(
       title: detail?.meta.label ?? reactorText(ReactorText.profilerSnapshots),
@@ -123,7 +123,7 @@ class _SnapshotPageState extends State<SnapshotPage> {
                   ),
                 RowAction(
                   reactorText(ReactorText.snapshotDelete),
-                  admin ? () => unawaited(_delete(detail.meta)) : null,
+                  allowed ? () => unawaited(_delete(detail.meta)) : null,
                   icon: ArcaneIcon.trash2(),
                   destructive: true,
                 ),

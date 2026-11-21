@@ -116,3 +116,8 @@
 .reactor-flame-cell:hover { filter: brightness(1.25); }
 .reactor-flame-cell:active { filter: brightness(0.9); }
 .reactor-flame-cell:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; z-index: 1; }
+
+/* Call tree rows (lib/widget/call_tree_view.dart lays them out inline). */
+.reactor-calltree-row:hover { background: color-mix(in oklab, var(--muted) 60%, transparent); }
+.reactor-calltree-row:active { background: var(--muted); }
+.reactor-calltree-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
